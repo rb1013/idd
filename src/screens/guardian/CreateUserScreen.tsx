@@ -15,7 +15,7 @@ import { RootStackParamList } from '../../navigation';
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'CreateUser'> };
 
-type Step = 'social' | 'location' | 'professional' | 'chat' | 'health';
+type Step = 'social' | 'interests' | 'location' | 'professional' | 'chat' | 'health';
 
 export default function CreateUserScreen({ navigation }: Props) {
   const { guardian } = useAuth();
@@ -88,10 +88,14 @@ export default function CreateUserScreen({ navigation }: Props) {
 
     const userId = userProfile.id;
 
-    // Insert likes, dislikes, abilities
-    const likesRows = selectedLikes.map(id => ({ user_id: userId, category_id: id }));
-    const dislikesRows = selectedDislikes.map(id => ({ user_id: userId, category_id: id }));
-    const abilitiesRows = selectedAbilities.map(id => ({ user_id: userId, category_id: id }));
+    // Map selected names back to category UUIDs
+    const likeIds = selectedLikes.map(name => likeCategories.find(c => c.name === name)?.id).filter(Boolean) as string[];
+    const dislikeIds = selectedDislikes.map(name => dislikeCategories.find(c => c.name === name)?.id).filter(Boolean) as string[];
+    const abilityIds = selectedAbilities.map(name => abilityCategories.find(c => c.name === name)?.id).filter(Boolean) as string[];
+
+    const likesRows = likeIds.map(id => ({ user_id: userId, category_id: id }));
+    const dislikesRows = dislikeIds.map(id => ({ user_id: userId, category_id: id }));
+    const abilitiesRows = abilityIds.map(id => ({ user_id: userId, category_id: id }));
 
     await Promise.all([
       likesRows.length && supabase.from('user_likes').insert(likesRows),
@@ -116,7 +120,7 @@ export default function CreateUserScreen({ navigation }: Props) {
     navigation.goBack();
   }
 
-  const steps: Step[] = ['social', 'location', 'professional', 'chat', 'health'];
+  const steps: Step[] = ['social', 'interests', 'location', 'professional', 'chat', 'health'];
   const stepIndex = steps.indexOf(step);
 
   return (
@@ -151,11 +155,23 @@ export default function CreateUserScreen({ navigation }: Props) {
             <Text style={styles.label}>Languages</Text>
             <MultiSelectChips options={LANGUAGES} selected={languages} onToggle={setLanguages} />
 
-            <Text style={styles.label}>Likes</Text>
-            <MultiSelectChips options={likeCategories.map(c => c.name)} selected={selectedLikes} onToggle={setSelectedLikes} />
+          </View>
+        )}
 
-            <Text style={styles.label}>Dislikes</Text>
-            <MultiSelectChips options={dislikeCategories.map(c => c.name)} selected={selectedDislikes} onToggle={setSelectedDislikes} />
+        {step === 'interests' && (
+          <View>
+            <Text style={styles.sectionTitle}>Interests</Text>
+            <Text style={styles.sectionSubtitle}>What does this person like and dislike?</Text>
+
+            {likeCategories.length === 0
+              ? <Text style={styles.emptyHint}>Loading categories...</Text>
+              : <>
+                  <Text style={styles.label}>Likes</Text>
+                  <MultiSelectChips options={likeCategories.map(c => c.name)} selected={selectedLikes} onToggle={setSelectedLikes} />
+                  <Text style={styles.label}>Dislikes</Text>
+                  <MultiSelectChips options={dislikeCategories.map(c => c.name)} selected={selectedDislikes} onToggle={setSelectedDislikes} />
+                </>
+            }
           </View>
         )}
 
@@ -302,6 +318,7 @@ const styles = StyleSheet.create({
   toggleThumb: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff' },
   toggleThumbOn: { alignSelf: 'flex-end' },
   navRow: { flexDirection: 'row', gap: 12, padding: 16, paddingBottom: 32, backgroundColor: COLORS.background, borderTopWidth: 1, borderTopColor: COLORS.border },
+  emptyHint: { color: COLORS.textLight, fontSize: 14, marginTop: 16, textAlign: 'center' },
   backBtn: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
   backBtnText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   nextBtn: { flex: 2, backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center' },
