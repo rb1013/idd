@@ -10,20 +10,36 @@ import { COLORS } from '../../constants';
 import { UserProfile } from '../../types';
 import { RootStackParamList } from '../../navigation';
 
+function NotifToggle({ label, value, onToggle }: { label: string; value: boolean; onToggle: () => void }) {
+  return (
+    <TouchableOpacity style={notifStyles.row} onPress={onToggle} delayPressIn={50}>
+      <Text style={notifStyles.label}>{label}</Text>
+      <View style={[notifStyles.toggle, value && notifStyles.toggleOn]}>
+        <View style={[notifStyles.thumb, value && notifStyles.thumbOn]} />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'SelectUser'> };
 
 export default function SelectUserScreen({ navigation }: Props) {
   const { guardian, setActiveUser, signOut } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notifSettings, setNotifSettings] = useState<any>(null);
 
   const guardianRef = useRef(guardian);
   guardianRef.current = guardian;
 
   // Initial load when guardian becomes available
   useEffect(() => {
-    if (guardian) fetchUsers(guardian.id);
-    else setLoading(false);
+    if (guardian) {
+      fetchUsers(guardian.id);
+      fetchNotifSettings(guardian.id);
+    } else {
+      setLoading(false);
+    }
   }, [guardian]);
 
   // Re-fetch on screen focus (navigating back from CreateUser)
@@ -42,6 +58,27 @@ export default function SelectUserScreen({ navigation }: Props) {
     if (error) Alert.alert('Error loading profiles', error.message);
     else setUsers(data || []);
     setLoading(false);
+  }
+
+  async function fetchNotifSettings(guardianId: string) {
+    const { data } = await supabase
+      .from('guardian_notification_settings')
+      .select('*')
+      .eq('guardian_id', guardianId)
+      .single();
+    setNotifSettings(data || null);
+  }
+
+  async function toggleNotifSetting(key: string) {
+    const current = notifSettings?.[key] ?? false;
+    const newValue = !current;
+    const newSettings = { ...notifSettings, [key]: newValue, guardian_id: guardian!.id };
+    if (!notifSettings) {
+      await supabase.from('guardian_notification_settings').insert(newSettings);
+    } else {
+      await supabase.from('guardian_notification_settings').update({ [key]: newValue }).eq('guardian_id', guardian!.id);
+    }
+    setNotifSettings(newSettings);
   }
 
   function selectUser(user: UserProfile) {
@@ -69,7 +106,9 @@ export default function SelectUserScreen({ navigation }: Props) {
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.meta}>{item.age} years • {item.city}</Text>
             </View>
-            <Text style={styles.arrow}>›</Text>
+            <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('EditUser', { userId: item.id })}>
+              <Text style={styles.editBtnText}>Edit</Text>
+            </TouchableOpacity>
           </TouchableOpacity>
         )}
         ListEmptyComponent={
@@ -81,12 +120,30 @@ export default function SelectUserScreen({ navigation }: Props) {
         <Text style={styles.addButtonText}>+ Create New Profile</Text>
       </TouchableOpacity>
 
+      <View style={notifStyles.section}>
+        <Text style={notifStyles.sectionTitle}>Guardian Notifications</Text>
+        <NotifToggle label="Friend requests" value={notifSettings?.notify_on_friend_request ?? false} onToggle={() => toggleNotifSetting('notify_on_friend_request')} />
+        <NotifToggle label="Messages" value={notifSettings?.notify_on_message ?? false} onToggle={() => toggleNotifSetting('notify_on_message')} />
+        <NotifToggle label="Profile changes" value={notifSettings?.notify_on_profile_change ?? false} onToggle={() => toggleNotifSetting('notify_on_profile_change')} />
+      </View>
+
       <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
     </View>
   );
 }
+
+const notifStyles = StyleSheet.create({
+  section: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: COLORS.border },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 8 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
+  label: { fontSize: 15, color: COLORS.text },
+  toggle: { width: 46, height: 26, borderRadius: 13, backgroundColor: COLORS.border, justifyContent: 'center', padding: 2 },
+  toggleOn: { backgroundColor: COLORS.primary },
+  thumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff' },
+  thumbOn: { alignSelf: 'flex-end' },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background, padding: 24 },
@@ -104,6 +161,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
+  editBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: COLORS.primary },
+  editBtnText: { color: COLORS.primary, fontSize: 13, fontWeight: '600' },
   avatar: { width: 56, height: 56, borderRadius: 28 },
   avatarPlaceholder: {
     width: 56, height: 56, borderRadius: 28,

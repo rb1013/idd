@@ -4,6 +4,8 @@ import {
   ScrollView, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
@@ -68,12 +70,15 @@ export default function CreateUserScreen({ navigation }: Props) {
 
     let photo_url: string | null = null;
     if (photoUri) {
-      const ext = photoUri.split('.').pop();
+      const ext = (photoUri.split('.').pop() || 'jpg').toLowerCase();
       const fileName = `${guardian!.id}-${Date.now()}.${ext}`;
-      const formData = new FormData();
-      formData.append('file', { uri: photoUri, name: fileName, type: `image/${ext}` } as any);
-      const { data: uploadData } = await supabase.storage.from('avatars').upload(fileName, formData);
-      if (uploadData) {
+      const base64 = await FileSystem.readAsStringAsync(photoUri, { encoding: FileSystem.EncodingType.Base64 });
+      const arrayBuffer = decode(base64);
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, arrayBuffer, { contentType: `image/${ext}`, upsert: true });
+      if (uploadError) Alert.alert('Photo upload failed', uploadError.message);
+      else if (uploadData) {
         const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
         photo_url = publicUrl;
       }
@@ -97,7 +102,7 @@ export default function CreateUserScreen({ navigation }: Props) {
     const dislikesRows = dislikeIds.map(id => ({ user_id: userId, category_id: id }));
     const abilitiesRows = abilityIds.map(id => ({ user_id: userId, category_id: id }));
 
-    await Promise.all([
+    const [, , , chatResult, healthResult] = await Promise.all([
       likesRows.length && supabase.from('user_likes').insert(likesRows),
       dislikesRows.length && supabase.from('user_dislikes').insert(dislikesRows),
       abilitiesRows.length && supabase.from('user_abilities').insert(abilitiesRows),
@@ -115,6 +120,9 @@ export default function CreateUserScreen({ navigation }: Props) {
         description: willingToShare ? healthDesc : null,
       }),
     ]);
+    if (chatResult && 'error' in chatResult && chatResult.error) {
+      Alert.alert('Chat prefs error', chatResult.error.message);
+    }
 
     setLoading(false);
     navigation.goBack();
@@ -220,7 +228,12 @@ export default function CreateUserScreen({ navigation }: Props) {
             <MultiSelectChips options={DAYS_OF_WEEK} selected={availableDays} onToggle={setAvailableDays} />
 
             <Text style={styles.label}>Comprehension Level</Text>
-            <MultiSelectChips options={COMPREHENSION_LEVELS.map(c => c.label)} selected={[comprehension]} onToggle={(v) => setComprehension(v[0] || 'easy')} single />
+            <MultiSelectChips
+              options={COMPREHENSION_LEVELS.map(c => c.label)}
+              selected={[COMPREHENSION_LEVELS.find(c => c.value === comprehension)?.label ?? 'Easy']}
+              onToggle={(v) => setComprehension(COMPREHENSION_LEVELS.find(c => c.label === v[0])?.value ?? 'easy')}
+              single
+            />
           </View>
         )}
 
@@ -229,14 +242,18 @@ export default function CreateUserScreen({ navigation }: Props) {
             <Text style={styles.sectionTitle}>Health Information</Text>
             <Toggle label="Willing to share health info" value={willingToShare} onToggle={() => setWillingToShare(!willingToShare)} />
             {willingToShare && (
-              <TextInput
-                style={[styles.input, { height: 120, textAlignVertical: 'top' }]}
-                placeholder="Brief description of health situation..."
-                value={healthDesc}
-                onChangeText={setHealthDesc}
-                multiline
-                placeholderTextColor={COLORS.textLight}
-              />
+              <>
+                <TextInput
+                  style={[styles.input, { height: 120, textAlignVertical: 'top' }]}
+                  placeholder="Brief description of health situation..."
+                  value={healthDesc}
+                  onChangeText={setHealthDesc}
+                  multiline
+                  maxLength={500}
+                  placeholderTextColor={COLORS.textLight}
+                />
+                <Text style={styles.charCount}>{healthDesc.length}/500</Text>
+              </>
             )}
           </View>
         )}
@@ -318,6 +335,7 @@ const styles = StyleSheet.create({
   toggleThumb: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff' },
   toggleThumbOn: { alignSelf: 'flex-end' },
   navRow: { flexDirection: 'row', gap: 12, padding: 16, paddingBottom: 32, backgroundColor: COLORS.background, borderTopWidth: 1, borderTopColor: COLORS.border },
+  charCount: { fontSize: 12, color: COLORS.textLight, textAlign: 'right', marginTop: 4 },
   emptyHint: { color: COLORS.textLight, fontSize: 14, marginTop: 16, textAlign: 'center' },
   backBtn: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
   backBtnText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },

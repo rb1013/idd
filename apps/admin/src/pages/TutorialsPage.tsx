@@ -4,6 +4,7 @@ import type { Tutorial } from '../../../mobile/src/types';
 
 export default function TutorialsPage() {
   const [tutorials, setTutorials] = useState<Tutorial[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -13,7 +14,11 @@ export default function TutorialsPage() {
   const videoRef = useRef<HTMLInputElement>(null);
   const thumbRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { fetchTutorials(); }, []);
+  useEffect(() => {
+    fetchTutorials();
+    supabase.from('categories').select('id, name').eq('type', 'like').order('name')
+      .then(({ data }) => setCategories(data || []));
+  }, []);
 
   async function fetchTutorials() {
     const { data } = await supabase.from('tutorials').select('*').order('created_at', { ascending: false });
@@ -76,7 +81,20 @@ export default function TutorialsPage() {
         <form onSubmit={handleSubmit} style={styles.form}>
           <h3 style={styles.formTitle}>Upload New Tutorial</h3>
           <Field label="Title *" value={title} onChange={setTitle} />
-          <Field label="Category *" value={category} onChange={setCategory} placeholder="e.g. Soccer, Speech" />
+          <div style={styles.field}>
+            <label style={styles.label}>Category *</label>
+            <select
+              style={styles.input}
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+              required
+            >
+              <option value="">Select a category...</option>
+              {categories.map(c => (
+                <option key={c.id} value={c.name}>{c.name}</option>
+              ))}
+            </select>
+          </div>
           <div style={styles.field}>
             <label style={styles.label}>Description</label>
             <textarea style={{ ...styles.input, height: 80, resize: 'vertical' } as React.CSSProperties}

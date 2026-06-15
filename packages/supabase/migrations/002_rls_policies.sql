@@ -13,7 +13,7 @@ grant select, insert, update, delete on public.conversation_participants to auth
 grant select, insert, update, delete on public.messages to authenticated;
 grant select, insert, update, delete on public.guardian_notification_settings to authenticated;
 grant select, insert on public.notifications to authenticated;
-grant select on public.tutorials to authenticated;
+grant select, insert, update, delete on public.tutorials TO authenticated;
 grant select on public.categories to authenticated;
 grant select on public.admins to authenticated;
 

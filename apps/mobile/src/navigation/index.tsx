@@ -13,6 +13,7 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 // Guardian screens
 import SelectUserScreen from '../screens/guardian/SelectUserScreen';
 import CreateUserScreen from '../screens/guardian/CreateUserScreen';
+import EditUserScreen from '../screens/guardian/EditUserScreen';
 
 // Main app screens
 import DiscoveryScreen from '../screens/discovery/DiscoveryScreen';
@@ -27,6 +28,7 @@ export type RootStackParamList = {
   Register: undefined;
   SelectUser: undefined;
   CreateUser: undefined;
+  EditUser: { userId: string };
   MainTabs: undefined;
   Chat: { conversationId: string; participantName: string };
 };
@@ -83,11 +85,13 @@ export default function Navigation() {
           <>
             <Stack.Screen name="SelectUser" component={SelectUserScreen} options={{ title: 'Select Profile', headerLeft: () => null }} />
             <Stack.Screen name="CreateUser" component={CreateUserScreen} options={{ title: 'Create Profile' }} />
+            <Stack.Screen name="EditUser" component={EditUserScreen} options={{ title: 'Edit Profile' }} />
           </>
         ) : (
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
             <Stack.Screen name="Chat" component={ChatScreen} options={({ route }) => ({ title: route.params.participantName })} />
+            <Stack.Screen name="EditUser" component={EditUserScreen} options={{ title: 'Edit Profile' }} />
           </>
         )}
       </Stack.Navigator>
