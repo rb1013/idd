@@ -21,7 +21,7 @@ type Props = {
   route: RouteProp<RootStackParamList, 'EditUser'>;
 };
 
-type Step = 'social' | 'interests' | 'location' | 'professional' | 'chat' | 'health';
+type Step = 'social' | 'interests' | 'location' | 'professional' | 'chat' | 'health' | 'account';
 
 export default function EditUserScreen({ navigation, route }: Props) {
   const { userId } = route.params;
@@ -34,6 +34,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('');
   const [languages, setLanguages] = useState<string[]>([]);
+  const [email, setEmail] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
   const [city, setCity] = useState('');
@@ -50,6 +51,9 @@ export default function EditUserScreen({ navigation, route }: Props) {
   const [comprehension, setComprehension] = useState('easy');
   const [willingToShare, setWillingToShare] = useState(false);
   const [healthDesc, setHealthDesc] = useState('');
+  const [existingAuthUserId, setExistingAuthUserId] = useState<string | null>(null);
+  const [accountPassword, setAccountPassword] = useState('');
+  const [accountConfirmPassword, setAccountConfirmPassword] = useState('');
 
   const likeCategories = categories.filter(c => c.type === 'like');
   const dislikeCategories = categories.filter(c => c.type === 'dislike');
@@ -88,6 +92,8 @@ export default function EditUserScreen({ navigation, route }: Props) {
       setRegion(p.region || '');
       setCountry(p.country || 'USA');
       setExistingPhotoUrl(p.photo_url || null);
+      setEmail(p.email || '');
+      setExistingAuthUserId(p.auth_user_id || null);
     }
 
     if (catsRes.data) setCategories(catsRes.data);
@@ -121,6 +127,12 @@ export default function EditUserScreen({ navigation, route }: Props) {
 
   async function handleSave() {
     if (!name || !age || !gender || !city || !region) { Alert.alert('Please fill in all required fields'); return; }
+    if (!existingAuthUserId && email && accountPassword && accountPassword !== accountConfirmPassword) {
+      Alert.alert('Passwords do not match'); return;
+    }
+    if (!existingAuthUserId && email && accountPassword && accountPassword.length < 6) {
+      Alert.alert('Password must be at least 6 characters'); return;
+    }
     setLoading(true);
 
     let photo_url = existingPhotoUrl;
@@ -141,6 +153,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
 
     const { error } = await supabase.from('user_profiles').update({
       name, age: parseInt(age), gender, languages, photo_url, city, region, country,
+      email: email.toLowerCase().trim() || null,
     }).eq('id', userId);
 
     if (error) { Alert.alert('Error saving profile', error.message); setLoading(false); return; }
@@ -174,11 +187,26 @@ export default function EditUserScreen({ navigation, route }: Props) {
       }),
     ]);
 
+    // Create login account if not already set and credentials provided
+    if (!existingAuthUserId && email && accountPassword) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('create-user-account', {
+        body: { email: email.toLowerCase().trim(), password: accountPassword, profile_id: userId },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (fnError) {
+        const detail = fnData?.error ?? fnError.message;
+        Alert.alert('Account setup failed', detail);
+        setLoading(false);
+        return;
+      }
+    }
+
     setLoading(false);
     navigation.goBack();
   }
 
-  const steps: Step[] = ['social', 'interests', 'location', 'professional', 'chat', 'health'];
+  const steps: Step[] = ['social', 'interests', 'location', 'professional', 'chat', 'health', 'account'];
   const stepIndex = steps.indexOf(step);
   const photoSource = photoUri || existingPhotoUrl;
 
@@ -287,6 +315,63 @@ export default function EditUserScreen({ navigation, route }: Props) {
             )}
           </View>
         )}
+
+        {step === 'account' && (
+          <View>
+            <Text style={styles.sectionTitle}>Login Account</Text>
+
+            {existingAuthUserId ? (
+              <>
+                <View style={styles.infoCard}>
+                  <Text style={styles.infoText}>
+                    ✓ Login account is set up for this person.
+                  </Text>
+                  {email ? <Text style={[styles.infoText, { marginTop: 6, fontWeight: '600' }]}>{email}</Text> : null}
+                </View>
+                <Text style={styles.skipHint}>
+                  To change the password, the user can use "Forgot Password" on the login screen.
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.sectionSubtitle}>Set up login credentials so this person can sign in to the app</Text>
+                <View style={styles.infoCard}>
+                  <Text style={styles.infoText}>
+                    Once created, this person can log in with these credentials on the User login screen.
+                  </Text>
+                </View>
+                <Field
+                  label="Login Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="e.g. alex@example.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <Field
+                  label="Password"
+                  value={accountPassword}
+                  onChangeText={setAccountPassword}
+                  placeholder="At least 6 characters"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <Field
+                  label="Confirm Password"
+                  value={accountConfirmPassword}
+                  onChangeText={setAccountConfirmPassword}
+                  placeholder="Re-enter password"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <Text style={styles.skipHint}>Leave blank to skip — save the profile without creating a login.</Text>
+              </>
+            )}
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.navRow}>
@@ -361,6 +446,16 @@ const styles = StyleSheet.create({
   navRow: { flexDirection: 'row', gap: 12, padding: 16, paddingBottom: 32, backgroundColor: COLORS.background, borderTopWidth: 1, borderTopColor: COLORS.border },
   charCount: { fontSize: 12, color: COLORS.textLight, textAlign: 'right', marginTop: 4 },
   emptyHint: { color: COLORS.textLight, fontSize: 14, marginTop: 16, textAlign: 'center' },
+  infoCard: {
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '40',
+  },
+  infoText: { fontSize: 14, color: COLORS.text, lineHeight: 20 },
+  skipHint: { fontSize: 13, color: COLORS.textLight, marginTop: 24, textAlign: 'center', lineHeight: 18 },
   backBtn: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
   backBtnText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   nextBtn: { flex: 2, backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center' },

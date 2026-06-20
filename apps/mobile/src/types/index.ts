@@ -22,6 +22,8 @@ export interface UserProfile {
   city: string;
   region: string;
   country: string;
+  email?: string;
+  auth_user_id?: string;
   created_at: string;
 }
 

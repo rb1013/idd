@@ -11,7 +11,7 @@ import { COLORS } from '../../constants';
 import { RootStackParamList } from '../../navigation';
 
 export default function ProfileScreen() {
-  const { activeUser, setActiveUser, signOut } = useAuth();
+  const { activeUser, signOut } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [likes, setLikes] = useState<string[]>([]);
   const [dislikes, setDislikes] = useState<string[]>([]);
@@ -68,7 +68,7 @@ export default function ProfileScreen() {
           onPress: async () => {
             const { error } = await supabase.from('user_profiles').delete().eq('id', activeUser!.id);
             if (error) Alert.alert('Error', error.message);
-            else setActiveUser(null);
+            else signOut();
           },
         },
       ]
@@ -91,19 +91,8 @@ export default function ProfileScreen() {
             />
             <View style={styles.menuDivider} />
             <MenuItem
-              label="Switch Profile"
-              onPress={() => { setShowMenu(false); setActiveUser(null); }}
-            />
-            <View style={styles.menuDivider} />
-            <MenuItem
               label="Sign Out"
               onPress={() => { setShowMenu(false); signOut(); }}
-            />
-            <View style={styles.menuDivider} />
-            <MenuItem
-              label="Delete Profile"
-              color={COLORS.error}
-              onPress={() => { setShowMenu(false); handleDeleteProfile(); }}
             />
           </View>
         </TouchableOpacity>
@@ -170,9 +159,7 @@ export default function ProfileScreen() {
                 <Text style={styles.infoLabel}>Available days</Text>
                 <View style={styles.daysChips}>
                   {chatPrefs.available_days.map((d: string) => (
-                    <View key={d} style={styles.dayChip}>
-                      <Text style={styles.dayChipText}>{d}</Text>
-                    </View>
+                    <Chip key={d} label={d} color={COLORS.primary} />
                   ))}
                 </View>
               </View>
@@ -276,8 +263,6 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 15, color: COLORS.textLight },
   infoValue: { fontSize: 15, color: COLORS.text, fontWeight: '500', textTransform: 'capitalize' },
   daysRow: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  daysChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
-  dayChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: COLORS.primaryLight },
-  dayChipText: { fontSize: 13, color: COLORS.primary, fontWeight: '500' },
+  daysChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
   healthDesc: { fontSize: 15, color: COLORS.text, lineHeight: 22 },
 });

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Session } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { Guardian, UserProfile } from '../types';
 
@@ -23,14 +23,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchGuardian(session.user.id);
+      if (session) fetchRole(session.user.id);
       else setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchGuardian(session.user.id);
-      else {
+      if (session) {
+        setLoading(true);
+        fetchRole(session.user.id);
+      } else {
         setGuardian(null);
         setActiveUser(null);
         setLoading(false);
@@ -40,13 +42,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function fetchGuardian(userId: string) {
-    const { data } = await supabase
+  async function fetchRole(userId: string) {
+    // Check if this auth user is a guardian
+    const { data: guardianData } = await supabase
       .from('guardians')
       .select('*')
       .eq('id', userId)
       .single();
-    setGuardian(data);
+
+    if (guardianData) {
+      setGuardian(guardianData);
+      setActiveUser(null);
+      setLoading(false);
+      return;
+    }
+
+    // Check if this auth user is a user profile
+    const { data: profileData } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('auth_user_id', userId)
+      .single();
+
+    if (profileData) {
+      setActiveUser(profileData);
+      setGuardian(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(false);
   }
 
