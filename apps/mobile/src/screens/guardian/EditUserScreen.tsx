@@ -22,6 +22,8 @@ type Props = {
 };
 
 type Step = 'social' | 'interests' | 'location' | 'professional' | 'chat' | 'health' | 'account';
+const GUARDIAN_STEPS: Step[] = ['social', 'interests', 'location', 'professional', 'chat', 'health', 'account'];
+const USER_STEPS: Step[] = ['social', 'interests', 'location', 'professional', 'chat', 'health'];
 
 export default function EditUserScreen({ navigation, route }: Props) {
   const { userId } = route.params;
@@ -195,7 +197,8 @@ export default function EditUserScreen({ navigation, route }: Props) {
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       if (fnError) {
-        const detail = fnData?.error ?? fnError.message;
+        let detail = fnError.message;
+        try { detail = (fnError as any).context ? await (fnError as any).context.json().then((b: any) => b.error) : fnError.message; } catch {}
         Alert.alert('Account setup failed', detail);
         setLoading(false);
         return;
@@ -206,7 +209,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
     navigation.goBack();
   }
 
-  const steps: Step[] = ['social', 'interests', 'location', 'professional', 'chat', 'health', 'account'];
+  const steps = guardian ? GUARDIAN_STEPS : USER_STEPS;
   const stepIndex = steps.indexOf(step);
   const photoSource = photoUri || existingPhotoUrl;
 

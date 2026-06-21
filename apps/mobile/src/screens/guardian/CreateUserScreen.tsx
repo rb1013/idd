@@ -154,7 +154,8 @@ export default function CreateUserScreen({ navigation }: Props) {
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       if (fnError) {
-        const detail = fnData?.error ?? fnError.message;
+        let detail = fnError.message;
+        try { detail = (fnError as any).context ? await (fnError as any).context.json().then((b: any) => b.error) : fnError.message; } catch {}
         Alert.alert('Account setup failed', detail);
         setLoading(false);
         return;
