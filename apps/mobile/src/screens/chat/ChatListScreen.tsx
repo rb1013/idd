@@ -9,9 +9,9 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 import { Conversation } from '../../types';
-import { RootStackParamList } from '../../navigation';
+import { UserStackParamList } from '../../navigation';
 
-type Nav = NativeStackNavigationProp<RootStackParamList>;
+type Nav = NativeStackNavigationProp<UserStackParamList>;
 
 export default function ChatListScreen() {
   const { activeUser } = useAuth();

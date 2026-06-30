@@ -8,11 +8,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
-import { RootStackParamList } from '../../navigation';
+import { UserStackParamList } from '../../navigation';
 
 export default function ProfileScreen() {
   const { activeUser, signOut } = useAuth();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<UserStackParamList>>();
   const [likes, setLikes] = useState<string[]>([]);
   const [dislikes, setDislikes] = useState<string[]>([]);
   const [abilities, setAbilities] = useState<string[]>([]);

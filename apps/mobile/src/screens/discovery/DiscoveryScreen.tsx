@@ -16,23 +16,41 @@ export default function DiscoveryScreen() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'suggested' | 'search'>('suggested');
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
+  const [excludedIds, setExcludedIds] = useState<string[]>([]);
 
   useEffect(() => {
-    if (activeUser) {
-      fetchSuggestions();
-      fetchSentRequests();
-    }
+    if (activeUser) loadExcludedThenSuggestions();
   }, [activeUser]);
 
-  async function fetchSentRequests() {
-    const { data } = await supabase
-      .from('friendships')
-      .select('addressee_id')
-      .eq('requester_id', activeUser!.id);
-    setSentRequests(new Set((data || []).map(r => r.addressee_id)));
+  async function loadExcludedThenSuggestions() {
+    const excluded = await fetchExcluded();
+    await fetchSuggestions(excluded);
   }
 
-  async function fetchSuggestions() {
+  async function fetchExcluded(): Promise<string[]> {
+    const userId = activeUser!.id;
+
+    const { data } = await supabase
+      .from('friendships')
+      .select('requester_id, addressee_id, status')
+      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
+
+    const sent = new Set<string>();
+    const accepted = new Set<string>();
+
+    for (const f of data || []) {
+      const otherId = f.requester_id === userId ? f.addressee_id : f.requester_id;
+      if (f.status === 'pending' && f.requester_id === userId) sent.add(otherId);
+      if (f.status === 'accepted') accepted.add(otherId);
+    }
+
+    setSentRequests(sent);
+    const excluded = [userId, ...Array.from(accepted)];
+    setExcludedIds(excluded);
+    return excluded;
+  }
+
+  async function fetchSuggestions(excluded: string[]) {
     setLoading(true);
     const { data: myLikes } = await supabase
       .from('user_likes')
@@ -44,7 +62,7 @@ export default function DiscoveryScreen() {
     let query = supabase
       .from('user_profiles')
       .select('*, user_likes(category_id)')
-      .neq('id', activeUser!.id)
+      .not('id', 'in', `(${excluded.join(',')})`)
       .eq('city', activeUser!.city)
       .limit(20);
 
@@ -63,10 +81,11 @@ export default function DiscoveryScreen() {
   async function searchUsers() {
     if (!search.trim()) return;
     setLoading(true);
+    const excluded = excludedIds.length > 0 ? excludedIds : [activeUser!.id];
     const { data } = await supabase
       .from('user_profiles')
       .select('*')
-      .neq('id', activeUser!.id)
+      .not('id', 'in', `(${excluded.join(',')})`)
       .ilike('name', `%${search}%`)
       .limit(20);
     setUsers(data || []);

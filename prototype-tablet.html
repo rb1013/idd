@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IDD App – Tablet Prototype</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    font-family: -apple-system, Arial, sans-serif;
+    gap: 48px;
+    padding: 48px 24px 64px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Tablet Shell ── */
+  .tablet-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .tablet-label {
+    color: #aaa;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+  .tablet {
+    width: 680px;
+    height: 960px;
+    background: #F7F9FC;
+    border-radius: 32px;
+    border: 14px solid #222;
+    box-shadow: 0 0 0 2px #555, 0 40px 100px rgba(0,0,0,0.65);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  /* Top bar (camera etc) */
+  .tablet-bar {
+    background: #222;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .tablet-camera {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #444;
+  }
+
+  /* ─────────────────────────────────────────
+     HOME SCREEN
+  ───────────────────────────────────────── */
+  .home-header {
+    background: #F7F9FC;
+    padding: 24px 36px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .home-greeting { font-size: 36px; font-weight: 800; color: #2C3E50; }
+  .home-sub { font-size: 18px; color: #7F8C8D; margin-top: 4px; }
+
+  .avatar-area { position: relative; }
+  .avatar-circle {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4A90E2, #2F6BBF);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; font-weight: 800; color: #fff;
+  }
+  .mood-badge {
+    position: absolute;
+    bottom: -2px; right: -2px;
+    width: 32px; height: 32px;
+    background: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    border: 2.5px solid #F7F9FC;
+  }
+
+  /* 2×2 tile grid */
+  .tile-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 16px 32px 36px;
+  }
+  .tile {
+    border-radius: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 36px 20px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.13);
+    transition: transform 0.1s;
+  }
+  .tile:hover { transform: scale(0.98); }
+  .tile-emoji { font-size: 72px; margin-bottom: 16px; }
+  .tile-title { font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+  .tile-sub   { font-size: 15px; color: rgba(255,255,255,0.85); text-align: center; line-height: 1.5; }
+
+  .tile-friends  { background: linear-gradient(145deg, #5CBB7A, #3d8a55); }
+  .tile-messages { background: linear-gradient(145deg, #4A90E2, #2F6BBF); }
+  .tile-mood     { background: linear-gradient(145deg, #F5A623, #c47d0e); }
+  .tile-learn    { background: linear-gradient(145deg, #9B59B6, #6c3483); }
+
+  /* Mood picker overlay */
+  .mood-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+  .mood-picker {
+    background: #fff;
+    border-radius: 32px;
+    padding: 36px 40px 32px;
+    width: 500px;
+    box-shadow: 0 16px 60px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    position: relative;
+  }
+  .mood-close {
+    position: absolute;
+    top: 16px; right: 20px;
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    font-weight: 900;
+    color: #7F8C8D;
+    cursor: pointer;
+    border-radius: 12px;
+    line-height: 1;
+  }
+  .mood-close:hover { background: #F0F4F8; color: #2C3E50; }
+  .mood-close::after { content: attr(title); }
+
+  .mood-picker-title { font-size: 22px; font-weight: 800; color: #2C3E50; }
+  .mood-options {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+  }
+  .mood-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .mood-option-emoji {
+    width: 80px; height: 80px;
+    border-radius: 24px;
+    background: #F0F4F8;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 42px;
+    transition: transform 0.1s, background 0.1s;
+  }
+  .mood-option-emoji:hover {
+    transform: scale(1.1);
+    background: #D6E8FA;
+    outline: 3px solid #4A90E2;
+  }
+  .mood-option-emoji.selected {
+    background: #D6E8FA;
+    outline: 3px solid #4A90E2;
+  }
+  .mood-option-label { font-size: 14px; color: #7F8C8D; font-weight: 700; }
+
+  /* ─────────────────────────────────────────
+     FRIENDS LIST SCREEN
+  ───────────────────────────────────────── */
+  .friends-header {
+    background: #fff;
+    padding: 20px 32px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #E2E8F0;
+    flex-shrink: 0;
+  }
+  .friends-title { font-size: 30px; font-weight: 800; color: #2C3E50; }
+  .friends-sub   { font-size: 15px; color: #7F8C8D; margin-top: 3px; }
+
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 28px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scrollbar-width: none;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  .section-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #7F8C8D;
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+    padding: 4px 4px 0;
+  }
+
+  /* Friend card */
+  .card {
+    background: #fff;
+    border-radius: 26px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.07);
+    cursor: pointer;
+    position: relative;
+    min-height: 110px;
+    transition: transform 0.1s;
+  }
+  .card:hover { transform: scale(0.99); }
+  .card.pinned { border: 3px solid #F5A623; }
+
+  /* Avatar + ring */
+  .av-wrap { position: relative; flex-shrink: 0; }
+  .av {
+    width: 82px; height: 82px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; font-weight: 800; color: #fff;
+  }
+  .ring {
+    position: absolute;
+    top: -6px; left: -6px; right: -6px; bottom: -6px;
+    border-radius: 50%;
+    border: 5px solid transparent;
+  }
+  .ring.online  { border-color: #5CBB7A; }
+  .ring.offline { border-color: #BDC3C7; }
+  .status-dot {
+    position: absolute;
+    bottom: 3px; right: 3px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+  }
+  .status-dot.online  { background: #5CBB7A; }
+  .status-dot.offline { background: #BDC3C7; }
+  .pin-star {
+    position: absolute;
+    top: -4px; left: -4px;
+    width: 24px; height: 24px;
+    background: #F5A623;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    border: 2px solid #fff;
+  }
+
+  /* Card info */
+  .card-info { flex: 1; min-width: 0; }
+  .card-name {
+    font-size: 22px;
+    font-weight: 800;
+    color: #2C3E50;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-emojis {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    font-size: 28px;
+  }
+
+  .speak-btn {
+    width: 60px; height: 60px;
+    border-radius: 20px;
+    background: #FDE8C0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: transform 0.1s;
+    position: relative;
+  }
+  .speak-btn:hover { transform: scale(1.08); }
+  .speak-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2C3E50;
+    color: #fff;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     TABLET 1 — Home (mood picker open)
+══════════════════════════════════════ -->
+<div class="tablet-wrap">
+  <div class="tablet">
+    <div class="tablet-bar"><div class="tablet-camera"></div></div>
+
+    <div class="home-header">
+      <div>
+        <div class="home-greeting">Hi, Reyaan! 👋</div>
+        <div class="home-sub">What do you want to do today?</div>
+      </div>
+      <div class="avatar-area">
+        <div class="avatar-circle">R</div>
+        <div class="mood-badge">😊</div>
+      </div>
+    </div>
+
+    <div class="tile-grid">
+      <div class="tile tile-friends">
+        <div class="tile-emoji">🤝</div>
+        <div class="tile-title">Friends</div>
+        <div class="tile-sub">Meet new people and connect</div>
+      </div>
+      <div class="tile tile-messages">
+        <div class="tile-emoji">💬</div>
+        <div class="tile-title">Messages</div>
+        <div class="tile-sub">Chat with your friends</div>
+      </div>
+      <div class="tile tile-mood">
+        <div class="tile-emoji">😊</div>
+        <div class="tile-title">My Mood</div>
+        <div class="tile-sub">How are you feeling today?</div>
+      </div>
+      <div class="tile tile-learn">
+        <div class="tile-emoji">📚</div>
+        <div class="tile-title">Learn</div>
+        <div class="tile-sub">Watch videos and discover things</div>
+      </div>
+    </div>
+
+    <!-- Mood picker overlay -->
+    <div class="mood-overlay">
+      <div class="mood-picker">
+        <!-- Bold ✕ close button -->
+        <div class="mood-close" title="Cancel" style="
+          position:absolute; top:14px; right:18px;
+          width:44px; height:44px;
+          display:flex; align-items:center; justify-content:center;
+          font-size:28px; font-weight:900; color:#7F8C8D;
+          cursor:pointer; border-radius:14px; line-height:1;
+        ">✕</div>
+
+        <div class="mood-picker-title">How are you feeling?</div>
+        <div class="mood-options">
+          <div class="mood-option">
+            <div class="mood-option-emoji selected" title="Happy">😊</div>
+            <div class="mood-option-label">Happy</div>
+          </div>
+          <div class="mood-option">
+            <div class="mood-option-emoji" title="Sad">😔</div>
+            <div class="mood-option-label">Sad</div>
+          </div>
+          <div class="mood-option">
+            <div class="mood-option-emoji" title="Angry">😡</div>
+            <div class="mood-option-label">Angry</div>
+          </div>
+          <div class="mood-option">
+            <div class="mood-option-emoji" title="Tired">😴</div>
+            <div class="mood-option-label">Tired</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="tablet-label">Home — Mood Picker Open</div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TABLET 2 — Friends List
+══════════════════════════════════════ -->
+<div class="tablet-wrap">
+  <div class="tablet">
+    <div class="tablet-bar"><div class="tablet-camera"></div></div>
+
+    <!-- No search icon in header -->
+    <div class="friends-header">
+      <div>
+        <div class="friends-title">My Friends</div>
+        <div class="friends-sub">5 friends · 3 online</div>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+
+      <div class="section-label">⭐ Favourites</div>
+
+      <!-- Pinned + Online -->
+      <div class="card pinned">
+        <div class="av-wrap">
+          <div class="av" style="background:linear-gradient(135deg,#4A90E2,#2F6BBF)">R</div>
+          <div class="ring online"></div>
+          <div class="status-dot online"></div>
+          <div class="pin-star">⭐</div>
+        </div>
+        <div class="card-info">
+          <div class="card-name">Rahman B</div>
+          <div class="card-emojis">🎵 🎮 🐕 🍕</div>
+        </div>
+        <div class="speak-btn" title="Speak name &amp; likes">🔊</div>
+      </div>
+
+      <!-- Pinned + Online -->
+      <div class="card pinned">
+        <div class="av-wrap">
+          <div class="av" style="background:linear-gradient(135deg,#5CBB7A,#3d8a55)">S</div>
+          <div class="ring online"></div>
+          <div class="status-dot online"></div>
+          <div class="pin-star">⭐</div>
+        </div>
+        <div class="card-info">
+          <div class="card-name">Shahnaz K</div>
+          <div class="card-emojis">🎨 📸 🌺 🍦</div>
+        </div>
+        <div class="speak-btn" title="Speak name &amp; likes">🔊</div>
+      </div>
+
+      <div class="section-label" style="margin-top:6px">All Friends</div>
+
+      <!-- Online -->
+      <div class="card">
+        <div class="av-wrap">
+          <div class="av" style="background:linear-gradient(135deg,#9B59B6,#6c3483)">A</div>
+          <div class="ring online"></div>
+          <div class="status-dot online"></div>
+        </div>
+        <div class="card-info">
+          <div class="card-name">Avantika B</div>
+          <div class="card-emojis">🎭 📚 🌊 🐱</div>
+        </div>
+        <div class="speak-btn" title="Speak name &amp; likes">🔊</div>
+      </div>
+
+      <!-- Offline -->
+      <div class="card">
+        <div class="av-wrap">
+          <div class="av" style="background:linear-gradient(135deg,#F5A623,#c47d0e)">J</div>
+          <div class="ring offline"></div>
+          <div class="status-dot offline"></div>
+        </div>
+        <div class="card-info">
+          <div class="card-name">Johny D</div>
+          <div class="card-emojis">⚽ 🎸 🍔 🚗</div>
+        </div>
+        <div class="speak-btn" title="Speak name &amp; likes">🔊</div>
+      </div>
+
+      <!-- Offline -->
+      <div class="card">
+        <div class="av-wrap">
+          <div class="av" style="background:linear-gradient(135deg,#E53E3E,#9b1c1c)">Y</div>
+          <div class="ring offline"></div>
+          <div class="status-dot offline"></div>
+        </div>
+        <div class="card-info">
+          <div class="card-name">Yogesh H</div>
+          <div class="card-emojis">🏏 🎬 🍜 🌙</div>
+        </div>
+        <div class="speak-btn" title="Speak name &amp; likes">🔊</div>
+      </div>
+
+    </div>
+  </div>
+  <div class="tablet-label">Friends Hub</div>
+</div>
+
+</body>
+</html>

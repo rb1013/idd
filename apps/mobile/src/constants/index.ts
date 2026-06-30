@@ -1,16 +1,19 @@
 export const COLORS = {
-  primary: '#5B8DB8',
-  primaryLight: '#A8C8E8',
-  primaryDark: '#3A6A9A',
-  secondary: '#7DBDA2',
-  background: '#F5F7FA',
+  primary: '#4A90E2',
+  primaryLight: '#D6E8FA',
+  primaryDark: '#2F6BBF',
+  secondary: '#5CBB7A',
+  secondaryLight: '#D4F0DE',
+  accent: '#F5A623',
+  accentLight: '#FDE8C0',
+  background: '#F7F9FC',
   surface: '#FFFFFF',
-  text: '#2D3748',
-  textLight: '#718096',
+  text: '#2C3E50',
+  textLight: '#7F8C8D',
   border: '#E2E8F0',
   error: '#E53E3E',
-  success: '#38A169',
-  warning: '#D69E2E',
+  success: '#5CBB7A',
+  warning: '#F5A623',
 };
 
 export const DAYS_OF_WEEK = [

@@ -213,9 +213,9 @@ export default function CreateUserScreen({ navigation }: Props) {
               ? <Text style={styles.emptyHint}>Loading categories...</Text>
               : <>
                   <Text style={styles.label}>Likes</Text>
-                  <MultiSelectChips options={likeCategories.map(c => c.name)} selected={selectedLikes} onToggle={setSelectedLikes} />
+                  <MultiSelectChips options={likeCategories.map(c => c.name)} selected={selectedLikes} onToggle={setSelectedLikes} max={4} />
                   <Text style={styles.label}>Dislikes</Text>
-                  <MultiSelectChips options={dislikeCategories.map(c => c.name)} selected={selectedDislikes} onToggle={setSelectedDislikes} />
+                  <MultiSelectChips options={dislikeCategories.map(c => c.name)} selected={selectedDislikes} onToggle={setSelectedDislikes} max={4} />
                 </>
             }
           </View>

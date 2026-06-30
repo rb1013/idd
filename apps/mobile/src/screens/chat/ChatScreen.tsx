@@ -1,16 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 import { Message } from '../../types';
-import { RootStackParamList } from '../../navigation';
+import { UserStackParamList } from '../../navigation';
 
-type Route = RouteProp<RootStackParamList, 'Chat'>;
+type Route = RouteProp<UserStackParamList, 'Chat'>;
 
 export default function ChatScreen() {
   const { activeUser } = useAuth();
@@ -40,12 +40,14 @@ export default function ChatScreen() {
     return () => { supabase.removeChannel(channel); };
   }, [conversationId]);
 
+
   async function fetchMessages() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('messages')
       .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
+    if (error) Alert.alert('Load error', error.message);
     setMessages(data || []);
     setLoading(false);
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 100);
@@ -53,13 +55,25 @@ export default function ChatScreen() {
 
   async function sendMessage() {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || !activeUser) return;
     setText('');
-    await supabase.from('messages').insert({
-      conversation_id: conversationId,
-      sender_id: activeUser!.id,
-      content: trimmed,
-    });
+
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({ conversation_id: conversationId, sender_id: activeUser.id, content: trimmed })
+      .select()
+      .single();
+
+    if (error) {
+      Alert.alert('Send error', error.message);
+      setText(trimmed);
+      return;
+    }
+
+    if (data) {
+      setMessages(prev => prev.some(m => m.id === data.id) ? prev : [...prev, data as Message]);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    }
   }
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;

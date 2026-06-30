@@ -24,6 +24,8 @@ import GuardianNotificationsScreen from '../screens/guardian/GuardianNotificatio
 import GuardianAccountScreen from '../screens/guardian/GuardianAccountScreen';
 
 // User screens
+import UserHomeScreen from '../screens/user/UserHomeScreen';
+import FriendsHubScreen from '../screens/user/FriendsHubScreen';
 import DiscoveryScreen from '../screens/discovery/DiscoveryScreen';
 import ChatListScreen from '../screens/chat/ChatListScreen';
 import ChatScreen from '../screens/chat/ChatScreen';
@@ -37,8 +39,19 @@ export type RootStackParamList = {
   GuardianTabs: undefined;
   CreateUser: undefined;
   EditUser: { userId: string };
-  UserTabs: undefined;
+  UserHome: undefined;
   Chat: { conversationId: string; participantName: string };
+};
+
+export type UserStackParamList = {
+  Home: undefined;
+  FriendsHub: undefined;
+  Discovery: undefined;
+  ChatList: undefined;
+  Tutorials: undefined;
+  Profile: undefined;
+  Chat: { conversationId: string; participantName: string };
+  EditUser: { userId: string };
 };
 
 export type GuardianTabParamList = {
@@ -47,26 +60,17 @@ export type GuardianTabParamList = {
   Account: undefined;
 };
 
-export type UserTabParamList = {
-  Discovery: undefined;
-  ChatList: undefined;
-  Tutorials: undefined;
-  Profile: undefined;
-};
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const UserStack = createNativeStackNavigator<UserStackParamList>();
 const GuardianTab = createBottomTabNavigator<GuardianTabParamList>();
-const UserTab = createBottomTabNavigator<UserTabParamList>();
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const icons: Record<string, string> = {
     Profiles: '👥', Notifications: '🔔', Account: '👤',
-    Discovery: '🔍', ChatList: '💬', Tutorials: '📚', Profile: '👤',
   };
   return <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>{icons[label] ?? '●'}</Text>;
 }
 
-// Shared gear menu for all guardian tab screens
 function GuardianGearMenu() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { signOut } = useAuth();
@@ -142,23 +146,25 @@ function GuardianTabs() {
   );
 }
 
-function UserTabs() {
+function UserNavigator() {
   return (
-    <UserTab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused }) => <TabIcon label={route.name} focused={focused} />,
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textLight,
-        tabBarStyle: { backgroundColor: COLORS.surface, borderTopColor: COLORS.border },
-        headerStyle: { backgroundColor: COLORS.surface },
+    <UserStack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: COLORS.background },
         headerTintColor: COLORS.text,
-      })}
+        headerBackTitle: ' ',
+        headerShadowVisible: false,
+      }}
     >
-      <UserTab.Screen name="Discovery" component={DiscoveryScreen} options={{ title: 'Find Friends' }} />
-      <UserTab.Screen name="ChatList" component={ChatListScreen} options={{ title: 'Messages' }} />
-      <UserTab.Screen name="Tutorials" component={TutorialsScreen} options={{ title: 'Learn' }} />
-      <UserTab.Screen name="Profile" component={ProfileScreen} options={{ title: 'My Profile' }} />
-    </UserTab.Navigator>
+      <UserStack.Screen name="Home" component={UserHomeScreen} options={{ headerShown: false }} />
+      <UserStack.Screen name="FriendsHub" component={FriendsHubScreen} options={{ title: '🤝  My Friends' }} />
+      <UserStack.Screen name="Discovery" component={DiscoveryScreen} options={{ title: '🔍  Find Friends' }} />
+      <UserStack.Screen name="ChatList" component={ChatListScreen} options={{ title: '💬  Messages' }} />
+      <UserStack.Screen name="Tutorials" component={TutorialsScreen} options={{ title: '📚  Learn' }} />
+      <UserStack.Screen name="Profile" component={ProfileScreen} options={{ title: 'My Profile' }} />
+      <UserStack.Screen name="Chat" component={ChatScreen} options={({ route }) => ({ title: route.params.participantName })} />
+      <UserStack.Screen name="EditUser" component={EditUserScreen} options={{ title: 'Edit Profile' }} />
+    </UserStack.Navigator>
   );
 }
 
@@ -190,9 +196,7 @@ export default function Navigation() {
           </>
         ) : activeUser ? (
           <>
-            <Stack.Screen name="UserTabs" component={UserTabs} options={{ headerShown: false }} />
-            <Stack.Screen name="Chat" component={ChatScreen} options={({ route }) => ({ title: route.params.participantName })} />
-            <Stack.Screen name="EditUser" component={EditUserScreen} options={{ title: 'Edit Profile' }} />
+            <Stack.Screen name="UserHome" component={UserNavigator} options={{ headerShown: false }} />
           </>
         ) : null}
       </Stack.Navigator>
