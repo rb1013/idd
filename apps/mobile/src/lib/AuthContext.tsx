@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { Guardian, UserProfile } from '../types';
@@ -19,6 +20,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [guardian, setGuardian] = useState<Guardian | null>(null);
   const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const activeUserRef = useRef<UserProfile | null>(null);
+  activeUserRef.current = activeUser;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -40,6 +43,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active' && activeUserRef.current) {
+        supabase.from('user_profiles')
+          .update({ last_seen_at: new Date().toISOString() })
+          .eq('id', activeUserRef.current.id);
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   async function fetchRole(userId: string) {
@@ -68,6 +82,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setActiveUser(profileData);
       setGuardian(null);
       setLoading(false);
+      supabase.from('user_profiles')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('id', profileData.id);
       return;
     }
 

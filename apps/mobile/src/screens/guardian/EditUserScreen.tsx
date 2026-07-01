@@ -21,9 +21,17 @@ type Props = {
   route: RouteProp<RootStackParamList, 'EditUser'>;
 };
 
-type Step = 'social' | 'interests' | 'location' | 'professional' | 'chat' | 'health' | 'account';
-const GUARDIAN_STEPS: Step[] = ['social', 'interests', 'location', 'professional', 'chat', 'health', 'account'];
+type Step = 'social' | 'interests' | 'location' | 'professional' | 'chat' | 'health' | 'friends' | 'account';
+const GUARDIAN_STEPS: Step[] = ['social', 'interests', 'location', 'professional', 'chat', 'health', 'friends', 'account'];
 const USER_STEPS: Step[] = ['social', 'interests', 'location', 'professional', 'chat', 'health'];
+
+interface FriendForPin {
+  friendshipId: string;
+  friendName: string;
+  friendPhotoUrl: string | null;
+  isPinned: boolean;
+  isRequester: boolean;
+}
 
 export default function EditUserScreen({ navigation, route }: Props) {
   const { userId } = route.params;
@@ -56,6 +64,8 @@ export default function EditUserScreen({ navigation, route }: Props) {
   const [existingAuthUserId, setExistingAuthUserId] = useState<string | null>(null);
   const [accountPassword, setAccountPassword] = useState('');
   const [accountConfirmPassword, setAccountConfirmPassword] = useState('');
+  const [friendsForPin, setFriendsForPin] = useState<FriendForPin[]>([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
 
   const likeCategories = categories.filter(c => c.type === 'like');
   const dislikeCategories = categories.filter(c => c.type === 'dislike');
@@ -72,6 +82,57 @@ export default function EditUserScreen({ navigation, route }: Props) {
   }, [navigation]);
 
   useEffect(() => { loadAll(); }, []);
+
+  useEffect(() => {
+    if (step === 'friends' && friendsForPin.length === 0) loadFriendsForPin();
+  }, [step]);
+
+  async function loadFriendsForPin() {
+    setFriendsLoading(true);
+    const { data, error } = await supabase
+      .from('friendships')
+      .select(`
+        id, requester_id, addressee_id, requester_pinned, addressee_pinned,
+        requester:user_profiles!friendships_requester_id_fkey(id, name, photo_url),
+        addressee:user_profiles!friendships_addressee_id_fkey(id, name, photo_url)
+      `)
+      .eq('status', 'accepted')
+      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
+
+    if (!error && data) {
+      const list: FriendForPin[] = data.map((f: any) => {
+        const isRequester = f.requester_id === userId;
+        const friend = isRequester ? f.addressee : f.requester;
+        return {
+          friendshipId: f.id,
+          friendName: friend.name,
+          friendPhotoUrl: friend.photo_url,
+          isPinned: isRequester ? f.requester_pinned : f.addressee_pinned,
+          isRequester,
+        };
+      });
+      setFriendsForPin(list.sort((a, b) => a.friendName.localeCompare(b.friendName)));
+    }
+    setFriendsLoading(false);
+  }
+
+  async function togglePin(item: FriendForPin) {
+    const pinnedCount = friendsForPin.filter(f => f.isPinned).length;
+    if (!item.isPinned && pinnedCount >= 3) {
+      Alert.alert('Max 3 favourites', 'Unpin a friend first before adding another.');
+      return;
+    }
+    const column = item.isRequester ? 'requester_pinned' : 'addressee_pinned';
+    const { error } = await supabase
+      .from('friendships')
+      .update({ [column]: !item.isPinned })
+      .eq('id', item.friendshipId);
+    if (!error) {
+      setFriendsForPin(prev =>
+        prev.map(f => f.friendshipId === item.friendshipId ? { ...f, isPinned: !f.isPinned } : f)
+      );
+    }
+  }
 
   async function loadAll() {
     const [profileRes, catsRes, likesRes, dislikesRes, abilitiesRes, chatRes, healthRes] = await Promise.all([
@@ -319,6 +380,44 @@ export default function EditUserScreen({ navigation, route }: Props) {
           </View>
         )}
 
+        {step === 'friends' && (
+          <View>
+            <Text style={styles.sectionTitle}>Favourite Friends</Text>
+            <Text style={styles.sectionSubtitle}>
+              Pin up to 3 friends — they will appear at the top of the Friends list.
+            </Text>
+            {friendsLoading
+              ? <ActivityIndicator color={COLORS.primary} style={{ marginTop: 32 }} />
+              : friendsForPin.length === 0
+                ? <Text style={styles.emptyHint}>No friends yet</Text>
+                : friendsForPin.map(item => (
+                    <TouchableOpacity
+                      key={item.friendshipId}
+                      style={styles.friendPinRow}
+                      onPress={() => togglePin(item)}
+                      activeOpacity={0.8}
+                    >
+                      {item.friendPhotoUrl
+                        ? <Image source={{ uri: item.friendPhotoUrl }} style={styles.friendPinAvatar} />
+                        : (
+                          <View style={[styles.friendPinAvatar, styles.friendPinAvatarPlaceholder]}>
+                            <Text style={styles.friendPinInitial}>{item.friendName[0]}</Text>
+                          </View>
+                        )
+                      }
+                      <Text style={styles.friendPinName}>{item.friendName}</Text>
+                      <View style={[styles.pinToggle, item.isPinned && styles.pinToggleActive]}>
+                        <Text style={styles.pinToggleIcon}>{item.isPinned ? '⭐' : '☆'}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+            }
+            <Text style={styles.skipHint}>
+              {friendsForPin.filter(f => f.isPinned).length}/3 pinned
+            </Text>
+          </View>
+        )}
+
         {step === 'account' && (
           <View>
             <Text style={styles.sectionTitle}>Login Account</Text>
@@ -463,4 +562,22 @@ const styles = StyleSheet.create({
   backBtnText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   nextBtn: { flex: 2, backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center' },
   nextBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+
+  friendPinRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  friendPinAvatar: { width: 48, height: 48, borderRadius: 24 },
+  friendPinAvatarPlaceholder: {
+    backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center',
+  },
+  friendPinInitial: { fontSize: 18, fontWeight: '700', color: COLORS.primary },
+  friendPinName: { flex: 1, fontSize: 16, fontWeight: '600', color: COLORS.text },
+  pinToggle: {
+    width: 44, height: 44, borderRadius: 12,
+    backgroundColor: COLORS.border,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  pinToggleActive: { backgroundColor: '#FDE8C0' },
+  pinToggleIcon: { fontSize: 22 },
 });

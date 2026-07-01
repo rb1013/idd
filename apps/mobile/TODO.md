@@ -1,38 +1,50 @@
 # IDD Mobile App — Todo List
 
-## Database Migrations
+All items below have been implemented.
 
-- [ ] Add `last_seen_at` to `user_profiles`
-- [ ] Add `is_pinned` to `friendships` (max 3 per guardian)
+## ✅ Database Migrations
 
-## App
+- [x] Add `last_seen_at` to `user_profiles` — `008_last_seen_at.sql`
+- [x] Add `requester_pinned` / `addressee_pinned` to `friendships` — `009_friendships_pinned.sql`
+  - Two separate columns so each side of a friendship can independently be pinned
 
-- [ ] Update `last_seen_at` on app foreground (AppState listener)
+## ✅ App
 
-## Home Screen (`UserHomeScreen`)
+- [x] Update `last_seen_at` on login and on app foreground (`AppState` listener in `AuthContext`)
 
-- [ ] Add **Messages** tile as placeholder (no action on click)
-- [ ] Add **Mood** tile — inline emoji picker (😊 😔 😡 😴)
-  - On hover / long-press each emoji, speak the mood name in a soft tone via TTS
-  - On select, set the chosen emoji as a badge on the avatar (top-right of header)
-  - Dismiss via thick bold ✕ icon (tooltip: "Cancel" on hover)
+## ✅ Home Screen (`UserHomeScreen`)
+
+- [x] 2×2 tile grid: Friends 🤝 · Messages 💬 · My Mood 😊 · Learn 📚
+- [x] Messages tile is a placeholder (no action on click, slightly dimmed)
+- [x] Mood tile opens inline picker (😊 😔 😡 😴)
+  - Long-press each emoji speaks the mood name via TTS (soft volume)
+  - Tap to select — chosen emoji appears as badge on avatar (top-right)
+  - Bold ✕ button dismisses the picker
   - No navigation to a child page
 
-## Friends Hub (`FriendsHubScreen`)
+## ✅ Friends Hub (`FriendsHubScreen`)
 
-- [ ] Switch to single-column full-width cards
-- [ ] Show name only on card (remove city and status text)
-- [ ] Show likes emoji row only below name (max 4 — no dislikes shown)
-- [ ] On hover / long-press over friend's name, speak the name via TTS
-- [ ] On hover / long-press over individual likes emoji, speak that like's label via TTS
-- [ ] 🔊 Speaker button speaks friend's name then their likes via TTS
-      e.g. *"Rahman. Likes: Music, Gaming, Dogs, Pizza"*
-- [ ] Sort order: Pinned → Online → Offline (A–Z within each group)
-- [ ] Show ⭐ pinned badge on favourited cards
-- [ ] Online status ring: green if `last_seen_at` within 5 min, gray otherwise
-- [ ] Tap full card to open chat (no separate chat button)
-- [ ] Remove search icon from top-right header
+- [x] Single-column full-width cards
+- [x] Name only on card (city and status text removed)
+- [x] Likes emoji row below name (max 4, no dislikes shown)
+  - Category → emoji map: Music 🎵, Sports ⚽, Art 🎨, Cooking 🍳, Movies 🎬, Reading 📚, Dancing 💃, Gaming 🎮, Animals 🐾, Nature 🌿, Swimming 🏊
+- [x] Long-press friend's name → speak name via TTS
+- [x] Long-press individual likes emoji → speak that like's label via TTS
+- [x] 🔊 Speaker button speaks full intro: *"Rahman. Likes: Music, Gaming, Animals"*
+- [x] Sort: Pinned → Online → Offline (A–Z within each group), shown under Favourites / All Friends section headers
+- [x] ⭐ pinned badge + gold border on favourited cards
+- [x] Online status ring: green if `last_seen_at` within 5 min, gray otherwise
+- [x] Tap full card to open chat (no separate chat button)
+- [x] Search icon removed from header
 
-## Guardian — Edit User Screen (`EditUserScreen`)
+## ✅ Guardian — Edit User Screen (`EditUserScreen`)
 
-- [ ] Add pin / unpin friend option (max 3 pinned per guardian)
+- [x] New **Favourite Friends** step added to guardian flow (between Health and Account)
+  - Lists all accepted friends with pin toggle (⭐)
+  - Max 3 pinned — shows alert if limit reached
+  - Displays current pin count (e.g. "2/3 pinned")
+  - Saves `requester_pinned` or `addressee_pinned` column depending on friendship direction
+
+---
+
+> **Next steps:** Run the two new migrations (`008`, `009`) in Supabase before testing.

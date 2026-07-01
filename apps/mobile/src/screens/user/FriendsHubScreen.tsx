@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Image, ActivityIndicator, Dimensions, Alert,
+  View, Text, StyleSheet, SectionList, TouchableOpacity,
+  Image, ActivityIndicator, Alert,
 } from 'react-native';
 import * as Speech from 'expo-speech';
 import { useNavigation } from '@react-navigation/native';
@@ -11,17 +11,28 @@ import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 import { UserStackParamList } from '../../navigation';
 
-const COLUMN_COUNT = 2;
-const GAP = 16;
-const PADDING = 20;
-const CARD_WIDTH = (Dimensions.get('window').width - PADDING * 2 - GAP) / COLUMN_COUNT;
+const CATEGORY_EMOJI: Record<string, string> = {
+  Music: '🎵', Sports: '⚽', Art: '🎨', Cooking: '🍳',
+  Movies: '🎬', Reading: '📚', Dancing: '💃', Gaming: '🎮',
+  Animals: '🐾', Nature: '🌿', Swimming: '🏊',
+};
+
+function getEmoji(name: string): string {
+  return CATEGORY_EMOJI[name] ?? '⭐';
+}
+
+function isOnline(lastSeenAt: string | null): boolean {
+  if (!lastSeenAt) return false;
+  return Date.now() - new Date(lastSeenAt).getTime() < 5 * 60 * 1000;
+}
 
 interface Friend {
   id: string;
   name: string;
   photo_url: string | null;
-  city: string | null;
-  conversationId?: string;
+  last_seen_at: string | null;
+  is_pinned: boolean;
+  likes: string[];
 }
 
 export default function FriendsHubScreen() {
@@ -31,17 +42,7 @@ export default function FriendsHubScreen() {
   const [loading, setLoading] = useState(true);
 
   useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity
-          style={styles.discoverBtn}
-          onPress={() => navigation.navigate('Discovery')}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Text style={styles.discoverIcon}>🔍</Text>
-        </TouchableOpacity>
-      ),
-    });
+    navigation.setOptions({ headerRight: undefined });
   }, [navigation]);
 
   useEffect(() => {
@@ -52,20 +53,44 @@ export default function FriendsHubScreen() {
     const { data, error } = await supabase
       .from('friendships')
       .select(`
-        id, requester_id, addressee_id,
-        requester:user_profiles!friendships_requester_id_fkey(id, name, photo_url, city),
-        addressee:user_profiles!friendships_addressee_id_fkey(id, name, photo_url, city)
+        id, requester_id, addressee_id, requester_pinned, addressee_pinned,
+        requester:user_profiles!friendships_requester_id_fkey(id, name, photo_url, last_seen_at),
+        addressee:user_profiles!friendships_addressee_id_fkey(id, name, photo_url, last_seen_at)
       `)
       .eq('status', 'accepted')
       .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
 
     if (error) { setLoading(false); return; }
 
-    const list: Friend[] = (data || []).map((f: any) => {
+    const list = (data || []).map((f: any) => {
       const isRequester = f.requester_id === userId;
       const friend = isRequester ? f.addressee : f.requester;
-      return { id: friend.id, name: friend.name, photo_url: friend.photo_url, city: friend.city };
+      const isPinned = isRequester ? f.requester_pinned : f.addressee_pinned;
+      return {
+        id: friend.id,
+        name: friend.name,
+        photo_url: friend.photo_url,
+        last_seen_at: friend.last_seen_at,
+        is_pinned: isPinned,
+        likes: [] as string[],
+      };
     });
+
+    if (list.length > 0) {
+      const friendIds = list.map((f: Friend) => f.id);
+      const { data: likesData } = await supabase
+        .from('user_likes')
+        .select('user_id, categories(name)')
+        .in('user_id', friendIds);
+
+      const likesByUser: Record<string, string[]> = {};
+      (likesData || []).forEach((row: any) => {
+        if (!likesByUser[row.user_id]) likesByUser[row.user_id] = [];
+        if (row.categories?.name) likesByUser[row.user_id].push(row.categories.name);
+      });
+
+      list.forEach((f: Friend) => { f.likes = (likesByUser[f.id] || []).slice(0, 4); });
+    }
 
     setFriends(list);
     setLoading(false);
@@ -81,8 +106,14 @@ export default function FriendsHubScreen() {
     navigation.navigate('Chat', { conversationId: convId, participantName: friend.name });
   }
 
-  function speakName(name: string) {
-    Speech.speak(name, { rate: 0.85, pitch: 1.0 });
+  function speakFriend(friend: Friend) {
+    const likeLabels = friend.likes.join(', ');
+    const text = likeLabels ? `${friend.name}. Likes: ${likeLabels}` : friend.name;
+    Speech.speak(text, { rate: 0.85, pitch: 1.0 });
+  }
+
+  function speakWord(word: string) {
+    Speech.speak(word, { rate: 0.85, pitch: 1.0 });
   }
 
   if (loading) {
@@ -94,54 +125,101 @@ export default function FriendsHubScreen() {
       <View style={styles.center}>
         <Text style={styles.emptyEmoji}>🤝</Text>
         <Text style={styles.emptyText}>No friends yet!</Text>
-        <Text style={styles.emptyHint}>Tap 🔍 to find people to connect with</Text>
+        <Text style={styles.emptyHint}>Go to Discovery to find people to connect with</Text>
       </View>
     );
   }
 
+  const sortGroup = (list: Friend[]) =>
+    [...list].sort((a, b) => a.name.localeCompare(b.name));
+
+  const pinned = sortGroup(friends.filter(f => f.is_pinned));
+  const online = sortGroup(friends.filter(f => !f.is_pinned && isOnline(f.last_seen_at)));
+  const offline = sortGroup(friends.filter(f => !f.is_pinned && !isOnline(f.last_seen_at)));
+
+  const sections = [
+    { title: '⭐  Favourites', data: pinned },
+    { title: 'All Friends', data: [...online, ...offline] },
+  ].filter(s => s.data.length > 0);
+
   return (
-    <FlatList
-      data={friends}
+    <SectionList
+      sections={sections}
       keyExtractor={item => item.id}
-      numColumns={COLUMN_COUNT}
-      contentContainerStyle={styles.grid}
-      columnWrapperStyle={{ gap: GAP }}
-      renderItem={({ item }) => (
-        <View style={styles.card}>
-          {/* Photo with green active ring */}
-          <View style={styles.photoWrapper}>
-            {item.photo_url
-              ? <Image source={{ uri: item.photo_url }} style={styles.photo} />
-              : (
-                <View style={styles.photoPlaceholder}>
-                  <Text style={styles.photoInitial}>{item.name[0]}</Text>
-                </View>
-              )
-            }
-            <View style={styles.activeRing} />
-            <View style={styles.activeDot} />
-          </View>
-
-          {/* Name — tap to hear it spoken */}
-          <TouchableOpacity
-            style={styles.nameRow}
-            onPress={() => speakName(item.name)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-            <Text style={styles.speakerIcon}>📣</Text>
-          </TouchableOpacity>
-
-          {item.city ? <Text style={styles.city} numberOfLines={1}>{item.city}</Text> : null}
-
-          {/* Message button */}
-          <TouchableOpacity style={styles.messageBtn} onPress={() => openChat(item)} activeOpacity={0.85}>
-            <Text style={styles.messageBtnText}>💬  Message</Text>
-          </TouchableOpacity>
-        </View>
+      contentContainerStyle={styles.list}
+      stickySectionHeadersEnabled={false}
+      renderSectionHeader={({ section }) => (
+        <Text style={styles.sectionLabel}>{section.title}</Text>
       )}
+      renderItem={({ item }) => {
+        const online = isOnline(item.last_seen_at);
+        return (
+          <TouchableOpacity
+            style={[styles.card, item.is_pinned && styles.cardPinned]}
+            onPress={() => openChat(item)}
+            activeOpacity={0.85}
+          >
+            {/* Avatar + status ring */}
+            <View style={styles.avatarWrap}>
+              {item.photo_url
+                ? <Image source={{ uri: item.photo_url }} style={styles.avatar} />
+                : (
+                  <View style={[styles.avatarPlaceholder, { backgroundColor: stringToColor(item.name) }]}>
+                    <Text style={styles.avatarInitial}>{item.name[0]}</Text>
+                  </View>
+                )
+              }
+              <View style={[styles.ring, online ? styles.ringOnline : styles.ringOffline]} />
+              <View style={[styles.statusDot, online ? styles.dotOnline : styles.dotOffline]} />
+              {item.is_pinned && <View style={styles.pinBadge}><Text style={styles.pinStar}>⭐</Text></View>}
+            </View>
+
+            {/* Info */}
+            <View style={styles.info}>
+              <TouchableOpacity
+                onLongPress={() => speakWord(item.name)}
+                delayLongPress={400}
+                activeOpacity={1}
+              >
+                <Text style={styles.name}>{item.name}</Text>
+              </TouchableOpacity>
+
+              {item.likes.length > 0 && (
+                <View style={styles.likesRow}>
+                  {item.likes.map(like => (
+                    <TouchableOpacity
+                      key={like}
+                      onLongPress={() => speakWord(like)}
+                      delayLongPress={400}
+                      activeOpacity={1}
+                    >
+                      <Text style={styles.likeEmoji}>{getEmoji(like)}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Speaker button — stops propagation via onPress priority */}
+            <TouchableOpacity
+              style={styles.speakBtn}
+              onPress={() => speakFriend(item)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.speakIcon}>🔊</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        );
+      }}
     />
   );
+}
+
+const AVATAR_COLORS = ['#4A90E2', '#5CBB7A', '#F5A623', '#9B59B6', '#E53E3E', '#1ABC9C'];
+function stringToColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
 const styles = StyleSheet.create({
@@ -150,104 +228,76 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 22, fontWeight: '700', color: COLORS.text, marginBottom: 8 },
   emptyHint: { fontSize: 15, color: COLORS.textLight, textAlign: 'center' },
 
-  grid: { padding: PADDING, paddingBottom: 48, gap: GAP },
+  list: { padding: 16, paddingBottom: 48, gap: 12 },
+
+  sectionLabel: {
+    fontSize: 13, fontWeight: '700', color: COLORS.textLight,
+    textTransform: 'uppercase', letterSpacing: 0.8,
+    paddingHorizontal: 4, paddingTop: 8, paddingBottom: 4,
+  },
 
   card: {
-    width: CARD_WIDTH,
     backgroundColor: COLORS.surface,
     borderRadius: 24,
-    alignItems: 'center',
-    paddingVertical: 24,
-    paddingHorizontal: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-
-  photoWrapper: {
-    position: 'relative',
-    marginBottom: 12,
-  },
-  photo: {
-    width: CARD_WIDTH * 0.65,
-    height: CARD_WIDTH * 0.65,
-    borderRadius: CARD_WIDTH * 0.325,
-  },
-  photoPlaceholder: {
-    width: CARD_WIDTH * 0.65,
-    height: CARD_WIDTH * 0.65,
-    borderRadius: CARD_WIDTH * 0.325,
-    backgroundColor: COLORS.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  photoInitial: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
-  activeRing: {
-    position: 'absolute',
-    top: -4,
-    left: -4,
-    right: -4,
-    bottom: -4,
-    borderRadius: CARD_WIDTH * 0.375,
-    borderWidth: 3,
-    borderColor: COLORS.secondary,
-  },
-  activeDot: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 3,
-    borderColor: COLORS.surface,
-  },
-
-  nameRow: {
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-    paddingHorizontal: 4,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 3,
+    minHeight: 96,
   },
-  name: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-    flexShrink: 1,
-  },
-  speakerIcon: { fontSize: 16 },
-
-  city: {
-    fontSize: 13,
-    color: COLORS.textLight,
-    marginBottom: 14,
+  cardPinned: {
+    borderWidth: 2.5,
+    borderColor: '#F5A623',
   },
 
-  messageBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    width: '100%',
-    alignItems: 'center',
+  avatarWrap: { position: 'relative', flexShrink: 0 },
+  avatar: { width: 72, height: 72, borderRadius: 36 },
+  avatarPlaceholder: {
+    width: 72, height: 72, borderRadius: 36,
+    justifyContent: 'center', alignItems: 'center',
   },
-  messageBtnText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
+  avatarInitial: { fontSize: 28, fontWeight: '800', color: '#fff' },
 
-  discoverBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  ring: {
+    position: 'absolute', top: -5, left: -5, right: -5, bottom: -5,
+    borderRadius: 41, borderWidth: 4,
   },
-  discoverIcon: { fontSize: 28 },
+  ringOnline:  { borderColor: '#5CBB7A' },
+  ringOffline: { borderColor: '#BDC3C7' },
+
+  statusDot: {
+    position: 'absolute', bottom: 2, right: 2,
+    width: 18, height: 18, borderRadius: 9,
+    borderWidth: 3, borderColor: COLORS.surface,
+  },
+  dotOnline:  { backgroundColor: '#5CBB7A' },
+  dotOffline: { backgroundColor: '#BDC3C7' },
+
+  pinBadge: {
+    position: 'absolute', top: -3, left: -3,
+    width: 22, height: 22, borderRadius: 11,
+    backgroundColor: '#F5A623',
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: COLORS.surface,
+  },
+  pinStar: { fontSize: 10 },
+
+  info: { flex: 1, minWidth: 0 },
+  name: { fontSize: 19, fontWeight: '800', color: COLORS.text },
+  likesRow: { flexDirection: 'row', gap: 6, marginTop: 8 },
+  likeEmoji: { fontSize: 26 },
+
+  speakBtn: {
+    width: 52, height: 52,
+    borderRadius: 16,
+    backgroundColor: '#FDE8C0',
+    justifyContent: 'center', alignItems: 'center',
+    flexShrink: 0,
+  },
+  speakIcon: { fontSize: 24 },
 });
