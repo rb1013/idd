@@ -74,14 +74,55 @@ export interface Conversation {
   last_message?: Message;
 }
 
+export type TutorialFormat = 'video' | 'slideshow' | 'cards';
+export type TutorialStatus = 'generating' | 'preview' | 'pending' | 'approved' | 'rejected';
+export type TutorialSource = 'admin_upload' | 'ai_generated';
+
 export interface Tutorial {
   id: string;
   title: string;
   description: string;
   category: string;
-  video_url: string;
-  thumbnail_url?: string;
+  video_url: string | null;
+  thumbnail_url?: string | null;
   created_at: string;
+  // AI-generation columns (null on admin-uploaded rows)
+  format: TutorialFormat;
+  topic: string | null;
+  category_id: string | null;
+  comprehension_level: string;
+  duration_seconds: number | null;
+  status: TutorialStatus;
+  source: TutorialSource;
+  ai_prompt: string | null;
+  created_by_guardian_id: string | null;
+  link_count: number;
+  admin_notes: string | null;
+  updated_at: string | null;
+}
+
+export interface TutorialFrame {
+  id: string;
+  tutorial_id: string;
+  order_index: number;
+  caption: string | null;
+  tts_text: string | null;
+  image_url: string | null;
+  audio_url: string | null;
+}
+
+export interface TutorialWithFrames extends Tutorial {
+  frames: TutorialFrame[];
+}
+
+export interface UserTutorial {
+  id: string;
+  user_id: string;
+  tutorial_id: string;
+  added_by_guardian_id: string | null;
+  added_at: string;
+  completed_at: string | null;
+  tutorial?: Tutorial;
 }
 
 export interface GuardianNotificationSettings {

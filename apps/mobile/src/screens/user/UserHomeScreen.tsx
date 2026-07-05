@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Image, SafeAreaView,
   Modal, Dimensions,
 } from 'react-native';
 import * as Speech from 'expo-speech';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 import { UserStackParamList } from '../../navigation';
@@ -59,6 +60,21 @@ export default function UserHomeScreen() {
   const [mood, setMood] = useState<string | null>(null);
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [showUserCard, setShowUserCard] = useState(false);
+  const [activityProgress, setActivityProgress] = useState<{ done: number; total: number } | null>(null);
+
+  useFocusEffect(useCallback(() => {
+    if (!activeUser) return;
+    supabase
+      .rpc('get_user_activities_today', { p_user_id: activeUser.id })
+      .then(({ data }) => {
+        const list = (data || []) as { completed: boolean }[];
+        if (list.length > 0) {
+          setActivityProgress({ done: list.filter(a => a.completed).length, total: list.length });
+        } else {
+          setActivityProgress(null);
+        }
+      });
+  }, [activeUser]));
 
   const firstName = activeUser?.name?.split(' ')[0] ?? 'there';
 
@@ -101,6 +117,29 @@ export default function UserHomeScreen() {
       </View>
 
       <View style={styles.grid}>
+
+        {/* Activities tile — full width, only shown when guardian has set activities */}
+        {activityProgress !== null && (
+          <TouchableOpacity
+            style={[styles.tile, styles.activitiesTile]}
+            onPress={() => navigation.navigate('Activities')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.tileEmoji}>✅</Text>
+            <View style={styles.activitiesInfo}>
+              <Text style={styles.tileTitle}>Today's Activities</Text>
+              <Text style={styles.tileSub}>
+                {activityProgress.done === activityProgress.total
+                  ? '🎉 All done!'
+                  : `${activityProgress.done} of ${activityProgress.total} done`}
+              </Text>
+              <View style={styles.actBarBg}>
+                <View style={[styles.actBarFill, { width: `${(activityProgress.done / activityProgress.total) * 100}%` }]} />
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity
           style={[styles.tile, styles.friendsTile]}
           onPress={() => navigation.navigate('FriendsHub')}
@@ -111,7 +150,7 @@ export default function UserHomeScreen() {
           <Text style={styles.tileSub}>Meet new people{'\n'}and connect</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.tile, styles.messagesTile]} activeOpacity={0.85}>
+        <TouchableOpacity style={[styles.tile, styles.messagesTile]} onPress={() => navigation.navigate('Messages')} activeOpacity={0.85}>
           <Text style={styles.tileEmoji}>💬</Text>
           <Text style={styles.tileTitle}>Messages</Text>
           <Text style={styles.tileSub}>Chat with{'\n'}your friends</Text>
@@ -286,8 +325,17 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 6,
   },
+  activitiesTile: {
+    backgroundColor: '#2563EB',
+    width: '100%', flexDirection: 'row',
+    paddingVertical: 22, paddingHorizontal: 20, gap: 16,
+    alignItems: 'center', justifyContent: 'flex-start',
+  },
+  activitiesInfo: { flex: 1, gap: 6 },
+  actBarBg: { height: 8, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 4, overflow: 'hidden' },
+  actBarFill: { height: 8, backgroundColor: '#fff', borderRadius: 4 },
   friendsTile:  { backgroundColor: '#5CBB7A' },
-  messagesTile: { backgroundColor: '#4A90E2', opacity: 0.75 },
+  messagesTile: { backgroundColor: '#4A90E2' },
   moodTile:     { backgroundColor: '#F5A623' },
   learnTile:    { backgroundColor: '#9B59B6' },
   tileEmoji:  { fontSize: 56, marginBottom: 12 },

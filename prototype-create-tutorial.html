@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Create Tutorial — Collapsible Sections</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #E8EDF2; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; }
+
+  h1 { color: #2C3E50; font-size: 20px; margin-bottom: 6px; }
+  p.desc { color: #7F8C8D; font-size: 13px; margin-bottom: 10px; }
+  .hint { color: #4A90E2; font-size: 13px; font-weight: 600; margin-bottom: 28px; }
+
+  .phone {
+    width: 390px;
+    background: #F0F4F8;
+    border-radius: 48px;
+    overflow: hidden;
+    box-shadow: 0 28px 72px rgba(0,0,0,0.22);
+    border: 9px solid #1A1A2E;
+  }
+
+  .status-bar {
+    background: #fff;
+    padding: 14px 24px 10px;
+    display: flex; justify-content: space-between;
+    font-size: 12px; font-weight: 600; color: #2C3E50;
+  }
+
+  .nav-header {
+    background: #fff;
+    padding: 12px 20px 14px;
+    border-bottom: 1px solid #E2E8F0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .nav-back  { font-size: 15px; color: #4A90E2; font-weight: 500; }
+  .nav-title { font-size: 18px; font-weight: 800; color: #2C3E50; }
+
+  /* Scroll area */
+  .scroll {
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 12px;
+    max-height: 720px;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* Quota */
+  .quota-pill {
+    background: #EBF4FF; border-radius: 12px;
+    padding: 10px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .quota-pill span:first-child { font-size: 14px; font-weight: 600; color: #2C3E50; }
+  .quota-pill span:last-child  { font-size: 14px; font-weight: 800; color: #4A90E2; }
+
+  /* ── COLLAPSIBLE SECTION CARD ── */
+  .section-card {
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    transition: box-shadow 0.2s;
+  }
+
+  .section-band {
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .band1 { background: #4A90E2; }
+  .band2 { background: #9B59B6; }
+  .band3 { background: #1ABC9C; }
+
+  .section-num {
+    width: 28px; height: 28px; border-radius: 14px;
+    background: rgba(255,255,255,0.28);
+    color: #fff; font-size: 14px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .section-name { font-size: 16px; font-weight: 800; color: #fff; flex: 1; }
+
+  /* Summary shown when collapsed */
+  .section-summary {
+    font-size: 12px; color: rgba(255,255,255,0.8);
+    font-weight: 500; flex: 2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Arrow */
+  .arrow {
+    color: rgba(255,255,255,0.9);
+    font-size: 16px; font-weight: 700;
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+  }
+  .arrow.collapsed { transform: rotate(-90deg); }
+
+  /* Tick when complete */
+  .tick {
+    width: 22px; height: 22px; border-radius: 11px;
+    background: rgba(255,255,255,0.9);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+
+  /* Content area */
+  .section-content {
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 14px;
+    overflow: hidden;
+    max-height: 600px;
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.2s ease;
+    opacity: 1;
+  }
+  .section-content.collapsed {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+  }
+
+  /* Divider inside card */
+  .divider { height: 1px; background: #F0F4F8; margin: 2px 0; }
+
+  /* Fields */
+  .field-label { font-size: 14px; font-weight: 700; color: #2C3E50; margin-bottom: 8px; }
+
+  .chip-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    padding: 8px 13px; border-radius: 20px;
+    background: #F0F4F8; border: 1.5px solid #E2E8F0;
+    font-size: 13px; font-weight: 600; color: #2C3E50;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .chip.c1 { background: #4A90E2; border-color: #4A90E2; color: #fff; }
+  .chip.c2 { background: #9B59B6; border-color: #9B59B6; color: #fff; }
+  .chip.c3 { background: #1ABC9C; border-color: #1ABC9C; color: #fff; }
+
+  .text-input {
+    background: #F0F4F8; border: 1.5px solid #E2E8F0; border-radius: 12px;
+    padding: 12px 14px; font-size: 15px; color: #2C3E50; width: 100%;
+  }
+  .char-count { font-size: 11px; color: #7F8C8D; text-align: right; margin-top: 3px; }
+
+  .format-row { display: flex; gap: 8px; }
+  .format-opt {
+    flex: 1; border: 2px solid #E2E8F0; border-radius: 14px;
+    background: #F0F4F8; padding: 14px 6px; text-align: center; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .format-opt.active { border-color: #4A90E2; background: #EBF4FF; }
+  .format-emoji { font-size: 26px; margin-bottom: 5px; }
+  .format-label { font-size: 13px; font-weight: 700; color: #7F8C8D; }
+  .format-opt.active .format-label { color: #4A90E2; }
+
+  .seg-row { display: flex; background: #F0F4F8; border-radius: 12px; padding: 3px; gap: 3px; }
+  .seg {
+    flex: 1; padding: 9px 0; border-radius: 10px; cursor: pointer;
+    font-size: 13px; font-weight: 600; color: #7F8C8D; text-align: center;
+    transition: all 0.15s;
+  }
+  .seg.active {
+    background: #fff; color: #2C3E50; font-weight: 800;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+
+  .toggle-row { display: flex; gap: 8px; }
+  .toggle-opt {
+    flex: 1; padding: 12px 8px; border-radius: 14px; cursor: pointer;
+    border: 2px solid #E2E8F0; background: #F0F4F8; text-align: center;
+    transition: all 0.15s;
+  }
+  .toggle-opt.active { border-color: #9B59B6; background: #F5EEFF; }
+  .toggle-emoji { font-size: 22px; margin-bottom: 4px; }
+  .toggle-label { font-size: 13px; font-weight: 700; color: #7F8C8D; }
+  .toggle-opt.active .toggle-label { color: #9B59B6; }
+
+  /* Next / Done button inside section */
+  .next-btn {
+    background: #4A90E2; color: #fff; border: none;
+    border-radius: 12px; padding: 13px;
+    font-size: 14px; font-weight: 700; width: 100%; cursor: pointer;
+    margin-top: 4px;
+  }
+  .next-btn.purple { background: #9B59B6; }
+  .next-btn.teal   { background: #1ABC9C; }
+
+  /* Submit */
+  .submit-btn {
+    background: #4A90E2; color: #fff; border: none;
+    border-radius: 18px; padding: 17px;
+    font-size: 17px; font-weight: 800; width: 100%;
+    box-shadow: 0 6px 20px rgba(74,144,226,0.4);
+    cursor: pointer;
+  }
+  .footer-note { font-size: 12px; color: #7F8C8D; text-align: center; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<h1>Create Tutorial — Collapsible Sections</h1>
+<p class="desc">Tap any section header to expand or collapse it</p>
+<p class="hint">▶ Try clicking the coloured headers</p>
+
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+  <div class="nav-header">
+    <div class="nav-back">‹ Learning</div>
+    <div class="nav-title">Create Tutorial</div>
+    <div style="width:50px"></div>
+  </div>
+
+  <div class="scroll">
+
+    <div class="quota-pill">
+      <span>Monthly quota</span>
+      <span>3 / 10 used</span>
+    </div>
+
+    <!-- ── SECTION 1: What to Teach ── -->
+    <div class="section-card" id="card1">
+      <div class="section-band band1" onclick="toggle(1)">
+        <div class="section-num">1</div>
+        <div class="section-name">What to Teach</div>
+        <!-- summary shown when collapsed -->
+        <div class="section-summary" id="summary1" style="display:none">Motor Skills · Slideshow · 20s</div>
+        <div class="tick" id="tick1" style="display:none">✓</div>
+        <div class="arrow" id="arrow1">▼</div>
+      </div>
+      <div class="section-content" id="content1">
+
+        <div>
+          <div class="field-label">Target Skill *</div>
+          <div class="chip-grid">
+            <div class="chip c1">Motor Skills</div>
+            <div class="chip">Daily Living</div>
+            <div class="chip">Social Skills</div>
+            <div class="chip">Speech</div>
+            <div class="chip">Numeracy</div>
+            <div class="chip">Emotions</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+          <div class="field-label">Core Action *</div>
+          <div class="text-input">Dribbling a soccer ball</div>
+          <div class="char-count">23 / 60</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+          <div class="field-label">Format *</div>
+          <div class="format-row">
+            <div class="format-opt"><div class="format-emoji">🎬</div><div class="format-label">Video</div></div>
+            <div class="format-opt active"><div class="format-emoji">🖼</div><div class="format-label">Slideshow</div></div>
+            <div class="format-opt"><div class="format-emoji">🃏</div><div class="format-label">Cards</div></div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+          <div class="field-label">Duration</div>
+          <div class="seg-row">
+            <div class="seg">15s</div>
+            <div class="seg active">20s</div>
+            <div class="seg">25s</div>
+            <div class="seg">30s</div>
+          </div>
+        </div>
+
+        <button class="next-btn" onclick="completeSection(1)">Next: Look & Feel →</button>
+      </div>
+    </div>
+
+    <!-- ── SECTION 2: Look & Feel ── -->
+    <div class="section-card" id="card2">
+      <div class="section-band band2" onclick="toggle(2)">
+        <div class="section-num">2</div>
+        <div class="section-name">Look & Feel</div>
+        <div class="section-summary" id="summary2" style="display:none">2D Animation · Calm · Simple</div>
+        <div class="tick" id="tick2" style="display:none">✓</div>
+        <div class="arrow collapsed" id="arrow2">▼</div>
+      </div>
+      <div class="section-content collapsed" id="content2">
+
+        <div>
+          <div class="field-label">Visual Style *</div>
+          <div class="chip-grid">
+            <div class="chip c2">2D Animation</div>
+            <div class="chip">3D Cartoon</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+          <div class="field-label">Image Style *</div>
+          <div class="chip-grid">
+            <div class="chip c2">Simple & Bold</div>
+            <div class="chip">Detailed</div>
+            <div class="chip">Symbol-Based</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+          <div class="field-label">Pacing</div>
+          <div class="toggle-row">
+            <div class="toggle-opt active"><div class="toggle-emoji">🐢</div><div class="toggle-label">Slow</div></div>
+            <div class="toggle-opt"><div class="toggle-emoji">▶️</div><div class="toggle-label">Normal</div></div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+          <div class="field-label">Tone</div>
+          <div class="toggle-row">
+            <div class="toggle-opt active"><div class="toggle-emoji">😌</div><div class="toggle-label">Calm</div></div>
+            <div class="toggle-opt"><div class="toggle-emoji">🎉</div><div class="toggle-label">Enthusiastic</div></div>
+          </div>
+        </div>
+
+        <button class="next-btn purple" onclick="completeSection(2)">Next: Context →</button>
+      </div>
+    </div>
+
+    <!-- ── SECTION 3: Context ── -->
+    <div class="section-card" id="card3">
+      <div class="section-band band3" onclick="toggle(3)">
+        <div class="section-num">3</div>
+        <div class="section-name">Context</div>
+        <div class="section-summary" id="summary3" style="display:none">Easy · English · No audio</div>
+        <div class="tick" id="tick3" style="display:none">✓</div>
+        <div class="arrow collapsed" id="arrow3">▼</div>
+      </div>
+      <div class="section-content collapsed" id="content3">
+
+        <div>
+          <div class="field-label">Comprehension Level</div>
+          <div class="seg-row">
+            <div class="seg active">Easy</div>
+            <div class="seg">Medium</div>
+            <div class="seg">Complex</div>
+            <div class="seg">Fluent</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+          <div class="field-label">Language</div>
+          <div class="chip-grid">
+            <div class="chip c3">English</div>
+            <div class="chip">Spanish</div>
+            <div class="chip">French</div>
+            <div class="chip">Hindi</div>
+            <div class="chip">Arabic</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+          <div class="field-label">Background Audio</div>
+          <div class="seg-row">
+            <div class="seg active">🔇 None</div>
+            <div class="seg">🎵 Calm</div>
+            <div class="seg">🥁 Upbeat</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <button class="submit-btn">✨ Create Tutorial</button>
+    <div class="footer-note">Uses 1 of your 10 monthly credits<br>AI generation takes ~30 seconds</div>
+
+  </div>
+</div>
+
+<script>
+  function toggle(n) {
+    const content = document.getElementById('content' + n);
+    const arrow   = document.getElementById('arrow'   + n);
+    const summary = document.getElementById('summary' + n);
+    const tick    = document.getElementById('tick'    + n);
+    const isCollapsed = content.classList.contains('collapsed');
+
+    content.classList.toggle('collapsed');
+    arrow.classList.toggle('collapsed');
+
+    // Show summary + tick when collapsed (if section was completed)
+    if (!isCollapsed && tick.style.display === 'flex') {
+      summary.style.display = 'block';
+    } else {
+      summary.style.display = 'none';
+    }
+  }
+
+  function completeSection(n) {
+    const content = document.getElementById('content' + n);
+    const arrow   = document.getElementById('arrow'   + n);
+    const summary = document.getElementById('summary' + n);
+    const tick    = document.getElementById('tick'    + n);
+
+    // Mark complete
+    tick.style.display = 'flex';
+    summary.style.display = 'block';
+
+    // Collapse this section
+    content.classList.add('collapsed');
+    arrow.classList.add('collapsed');
+
+    // Open next section
+    const next = n + 1;
+    if (next <= 3) {
+      const nc = document.getElementById('content' + next);
+      const na = document.getElementById('arrow'   + next);
+      const ns = document.getElementById('summary' + next);
+      if (nc.classList.contains('collapsed')) {
+        nc.classList.remove('collapsed');
+        na.classList.remove('collapsed');
+        ns.style.display = 'none';
+      }
+      // Scroll next card into view
+      setTimeout(() => {
+        document.getElementById('card' + next).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }
+</script>
+</body>
+</html>

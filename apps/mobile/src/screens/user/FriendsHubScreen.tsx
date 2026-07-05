@@ -103,7 +103,7 @@ export default function FriendsHubScreen() {
       p_user_b: friend.id,
     });
     if (error || !convId) { Alert.alert('Chat error', error?.message ?? 'Failed to open chat'); return; }
-    navigation.navigate('Chat', { conversationId: convId, participantName: friend.name });
+    navigation.navigate('Chat', { conversationId: convId, participantName: friend.name, participantPhoto: friend.photo_url });
   }
 
   function speakFriend(friend: Friend) {

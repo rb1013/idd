@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guardian Tutorial Screens — Prototype</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #E8EDF2; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; padding: 40px 20px; }
+
+  h1 { text-align: center; color: #2C3E50; font-size: 22px; margin-bottom: 8px; }
+  p.desc { text-align: center; color: #7F8C8D; font-size: 14px; margin-bottom: 40px; }
+
+  .screens { display: flex; gap: 32px; justify-content: center; flex-wrap: wrap; align-items: flex-start; }
+
+  .screen-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .screen-label { font-size: 13px; font-weight: 700; color: #7F8C8D; text-transform: uppercase; letter-spacing: 1px; }
+
+  .phone {
+    width: 375px;
+    background: #F7F9FC;
+    border-radius: 44px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+    border: 8px solid #1A1A2E;
+    position: relative;
+  }
+
+  /* Status bar */
+  .status-bar {
+    background: #fff;
+    padding: 14px 24px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #2C3E50;
+  }
+
+  /* Nav header */
+  .nav-header {
+    background: #fff;
+    padding: 12px 20px 14px;
+    border-bottom: 1px solid #E2E8F0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .nav-title { font-size: 18px; font-weight: 800; color: #2C3E50; }
+  .nav-back { font-size: 15px; color: #4A90E2; font-weight: 500; }
+
+  /* Scrollable content area */
+  .content { background: #F7F9FC; padding: 16px; max-height: 680px; overflow: hidden; }
+
+  /* Quota bar */
+  .quota-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    border: 1px solid #E2E8F0;
+  }
+  .quota-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .quota-label { font-size: 14px; font-weight: 600; color: #2C3E50; }
+  .quota-count { font-size: 14px; font-weight: 700; color: #4A90E2; }
+  .quota-track { height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden; }
+  .quota-fill { height: 100%; background: #4A90E2; border-radius: 4px; width: 30%; }
+
+  /* Action buttons */
+  .btn-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .btn-primary {
+    flex: 1; background: #4A90E2; color: #fff;
+    border: none; border-radius: 14px; padding: 14px 0;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(74,144,226,0.35);
+  }
+  .btn-secondary {
+    flex: 1; background: #fff; color: #4A90E2;
+    border: 2px solid #4A90E2; border-radius: 14px; padding: 14px 0;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+
+  /* Filter chips */
+  .filter-row { display: flex; gap: 8px; margin-bottom: 16px; overflow: hidden; }
+  .chip {
+    padding: 7px 14px; border-radius: 20px;
+    background: #fff; border: 1.5px solid #E2E8F0;
+    font-size: 13px; font-weight: 600; color: #2C3E50;
+    white-space: nowrap;
+  }
+  .chip.active { background: #4A90E2; border-color: #4A90E2; color: #fff; }
+
+  /* Tutorial card */
+  .tutorial-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 14px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .t-thumb {
+    width: 80px; height: 80px; border-radius: 14px;
+    background: #D6E8FA; display: flex; align-items: center;
+    justify-content: center; font-size: 34px; flex-shrink: 0;
+    overflow: hidden;
+  }
+  .t-thumb.green { background: #D4F0DE; }
+  .t-thumb.purple { background: #E8D5F5; }
+  .t-info { flex: 1; min-width: 0; }
+  .t-title { font-size: 17px; font-weight: 800; color: #2C3E50; margin-bottom: 3px; line-height: 1.3; }
+  .t-sub { font-size: 13px; font-weight: 500; color: #7F8C8D; margin-bottom: 10px; }
+  .t-badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .badge {
+    font-size: 12px; font-weight: 700; padding: 4px 10px;
+    border-radius: 8px; display: inline-block;
+  }
+  .badge-orange { background: #FEF3C7; color: #D97706; }
+  .badge-blue   { background: #DBEAFE; color: #1D4ED8; }
+  .badge-green  { background: #D1FAE5; color: #065F46; }
+  .badge-red    { background: #FEE2E2; color: #B91C1C; }
+  .badge-grey   { background: #F1F5F9; color: #475569; }
+  .t-delete { font-size: 20px; padding: 4px; opacity: 0.5; flex-shrink: 0; }
+
+  /* Bottom tab bar */
+  .tab-bar {
+    background: #fff;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    padding: 10px 0 20px;
+  }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .tab-icon { font-size: 22px; opacity: 0.4; }
+  .tab-icon.active { opacity: 1; }
+  .tab-text { font-size: 10px; font-weight: 600; color: #7F8C8D; }
+  .tab-text.active { color: #4A90E2; }
+
+  /* ── CREATE TUTORIAL SCREEN ── */
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    margin: 20px 0 12px;
+  }
+  .section-num {
+    width: 30px; height: 30px; border-radius: 15px;
+    background: #4A90E2; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800; flex-shrink: 0;
+  }
+  .section-title { font-size: 18px; font-weight: 800; color: #2C3E50; }
+
+  .field-label { font-size: 15px; font-weight: 700; color: #2C3E50; margin-bottom: 8px; margin-top: 16px; }
+  .field-hint { font-size: 12px; color: #7F8C8D; margin-bottom: 8px; margin-top: -4px; }
+
+  .text-input {
+    background: #fff; border: 1.5px solid #E2E8F0; border-radius: 12px;
+    padding: 13px 14px; font-size: 15px; color: #2C3E50; width: 100%;
+  }
+  .char-count { font-size: 11px; color: #7F8C8D; text-align: right; margin-top: 4px; }
+
+  .skill-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .skill-chip {
+    padding: 9px 14px; border-radius: 20px;
+    background: #fff; border: 1.5px solid #E2E8F0;
+    font-size: 13px; font-weight: 600; color: #2C3E50;
+  }
+  .skill-chip.active { background: #4A90E2; border-color: #4A90E2; color: #fff; }
+
+  .format-row { display: flex; gap: 10px; }
+  .format-opt {
+    flex: 1; border: 2px solid #E2E8F0; border-radius: 16px;
+    background: #fff; padding: 16px 8px; text-align: center;
+  }
+  .format-opt.active { border-color: #4A90E2; background: #EBF4FF; }
+  .format-emoji { font-size: 28px; margin-bottom: 6px; }
+  .format-label { font-size: 13px; font-weight: 700; color: #2C3E50; }
+  .format-opt.active .format-label { color: #4A90E2; }
+
+  .seg-row { display: flex; background: #E2E8F0; border-radius: 12px; padding: 3px; gap: 3px; }
+  .seg {
+    flex: 1; padding: 10px 0; border-radius: 10px;
+    font-size: 14px; font-weight: 600; color: #7F8C8D;
+    text-align: center;
+  }
+  .seg.active {
+    background: #fff; color: #2C3E50; font-weight: 700;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+
+  .submit-btn {
+    background: #4A90E2; color: #fff; border: none; border-radius: 16px;
+    padding: 16px; font-size: 16px; font-weight: 800; width: 100%;
+    margin-top: 24px; cursor: pointer;
+    box-shadow: 0 6px 18px rgba(74,144,226,0.4);
+  }
+  .footer-note { font-size: 12px; color: #7F8C8D; text-align: center; margin-top: 10px; line-height: 1.6; }
+
+  /* ── PREVIEW SCREEN ── */
+  .status-banner {
+    border-radius: 12px; padding: 12px 16px;
+    text-align: center; font-size: 15px; font-weight: 700;
+    color: #fff; margin-bottom: 14px;
+  }
+  .p-title { font-size: 22px; font-weight: 800; color: #2C3E50; margin-bottom: 10px; }
+  .meta-badges { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .meta-badge { padding: 5px 12px; border-radius: 10px; background: #EBF4FF; border: 1px solid #4A90E2; font-size: 13px; font-weight: 600; color: #4A90E2; text-transform: capitalize; }
+
+  .frame-card { background: #fff; border-radius: 20px; overflow: hidden; margin-bottom: 18px; border: 1px solid #E2E8F0; }
+  .frame-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; }
+  .frame-counter { font-size: 14px; font-weight: 600; color: #7F8C8D; }
+  .frame-edit-btn { background: #EBF4FF; border-radius: 8px; padding: 7px 12px; font-size: 13px; font-weight: 700; color: #4A90E2; border: none; cursor: pointer; }
+  .frame-img { width: 100%; height: 170px; background: linear-gradient(135deg, #D6E8FA 0%, #C7D9F5 100%); display: flex; align-items: center; justify-content: center; font-size: 56px; }
+  .frame-text { padding: 16px; }
+  .frame-caption { font-size: 22px; font-weight: 900; color: #2C3E50; margin-bottom: 6px; }
+  .frame-narration { font-size: 15px; color: #4A5568; line-height: 1.6; }
+  .frame-nav { display: flex; justify-content: space-between; align-items: center; padding: 0 16px 16px; }
+  .frame-nav-btn { background: #EBF4FF; border-radius: 12px; padding: 10px 18px; font-size: 14px; font-weight: 700; color: #4A90E2; border: none; cursor: pointer; }
+  .frame-dots { display: flex; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 4px; background: #E2E8F0; }
+  .dot.active { background: #4A90E2; width: 20px; }
+
+  .action-btn {
+    width: 100%; padding: 16px; border-radius: 14px;
+    font-size: 16px; font-weight: 800; border: none; cursor: pointer; color: #fff;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  }
+  .action-primary { background: #4A90E2; }
+</style>
+</head>
+<body>
+
+<h1>Guardian — Tutorial Screens</h1>
+<p class="desc">Proposed redesign with larger text, darker colors, better readability</p>
+
+<div class="screens">
+
+  <!-- ── SCREEN 1: MY TUTORIALS ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">Learning Tab</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-title">Learning</div>
+        <div style="font-size:22px">⚙</div>
+      </div>
+      <div class="content">
+
+        <!-- Quota -->
+        <div class="quota-card">
+          <div class="quota-row">
+            <span class="quota-label">Monthly tutorials</span>
+            <span class="quota-count">3 / 10 used</span>
+          </div>
+          <div class="quota-track"><div class="quota-fill"></div></div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="btn-row">
+          <button class="btn-primary">+ Create Tutorial</button>
+          <button class="btn-secondary">Browse Library</button>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-row">
+          <div class="chip active">All</div>
+          <div class="chip">Review Needed</div>
+          <div class="chip">Approved</div>
+          <div class="chip">Rejected</div>
+        </div>
+
+        <!-- Tutorial cards -->
+        <div class="tutorial-card">
+          <div class="t-thumb">🖼</div>
+          <div class="t-info">
+            <div class="t-title">Motor Skills: Dribbling a Soccer Ball</div>
+            <div class="t-sub">Motor Skills • 20s • Slideshow</div>
+            <div class="t-badges">
+              <span class="badge badge-orange">Review Needed</span>
+            </div>
+          </div>
+          <div class="t-delete">🗑</div>
+        </div>
+
+        <div class="tutorial-card">
+          <div class="t-thumb green">🃏</div>
+          <div class="t-info">
+            <div class="t-title">Daily Living: Brushing Teeth</div>
+            <div class="t-sub">Daily Living • 15s • Cards</div>
+            <div class="t-badges">
+              <span class="badge badge-green">Approved</span>
+              <span class="badge badge-grey">🔗 2</span>
+            </div>
+          </div>
+          <div class="t-delete">🗑</div>
+        </div>
+
+        <div class="tutorial-card">
+          <div class="t-thumb purple">🖼</div>
+          <div class="t-info">
+            <div class="t-title">Social Skills: Taking Turns</div>
+            <div class="t-sub">Social Skills • 25s • Slideshow</div>
+            <div class="t-badges">
+              <span class="badge badge-red">Rejected</span>
+            </div>
+          </div>
+          <div class="t-delete">🗑</div>
+        </div>
+
+      </div>
+      <div class="tab-bar">
+        <div class="tab"><div class="tab-icon">👥</div><div class="tab-text">Profiles</div></div>
+        <div class="tab"><div class="tab-icon">🔔</div><div class="tab-text">Notifications</div></div>
+        <div class="tab"><div class="tab-icon active">📚</div><div class="tab-text active">Learning</div></div>
+        <div class="tab"><div class="tab-icon">👤</div><div class="tab-text">Account</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 2: CREATE TUTORIAL ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">Create Tutorial</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Back</div>
+        <div class="nav-title">Create Tutorial</div>
+        <div style="width:40px"></div>
+      </div>
+      <div class="content" style="max-height:680px; overflow:hidden;">
+
+        <div style="background:#EBF4FF; border-radius:12px; padding:11px 14px; display:flex; justify-content:space-between;">
+          <span style="font-size:14px; font-weight:600; color:#2C3E50;">Monthly quota</span>
+          <span style="font-size:14px; font-weight:700; color:#4A90E2;">3 / 10 used</span>
+        </div>
+
+        <div class="section-header">
+          <div class="section-num">1</div>
+          <div class="section-title">What to Teach</div>
+        </div>
+
+        <div class="field-label">Target Skill *</div>
+        <div class="skill-grid">
+          <div class="skill-chip active">Motor Skills</div>
+          <div class="skill-chip">Daily Living</div>
+          <div class="skill-chip">Social Skills</div>
+          <div class="skill-chip">Speech</div>
+          <div class="skill-chip">Numeracy</div>
+          <div class="skill-chip">Emotions</div>
+        </div>
+
+        <div class="field-label">Core Action *</div>
+        <div class="field-hint">e.g. Dribbling a soccer ball (max 60 chars)</div>
+        <div class="text-input" style="color:#2C3E50;">Dribbling a soccer ball</div>
+        <div class="char-count">23 / 60</div>
+
+        <div class="field-label">Format *</div>
+        <div class="format-row">
+          <div class="format-opt">
+            <div class="format-emoji">🎬</div>
+            <div class="format-label">Video</div>
+          </div>
+          <div class="format-opt active">
+            <div class="format-emoji">🖼</div>
+            <div class="format-label">Slideshow</div>
+          </div>
+          <div class="format-opt">
+            <div class="format-emoji">🃏</div>
+            <div class="format-label">Cards</div>
+          </div>
+        </div>
+
+        <div class="field-label">Duration</div>
+        <div class="seg-row">
+          <div class="seg">15s</div>
+          <div class="seg active">20s</div>
+          <div class="seg">25s</div>
+          <div class="seg">30s</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 3: TUTORIAL PREVIEW ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">Tutorial Preview</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Back</div>
+        <div class="nav-title">Preview Tutorial</div>
+        <div style="width:40px"></div>
+      </div>
+      <div class="content">
+
+        <div class="status-banner" style="background:#F5A623;">Review Needed — Submit when ready</div>
+
+        <div class="p-title">Motor Skills: Dribbling a Soccer Ball</div>
+        <div class="meta-badges">
+          <span class="meta-badge">20s</span>
+          <span class="meta-badge">Slideshow</span>
+          <span class="meta-badge">Easy</span>
+        </div>
+
+        <div class="frame-card">
+          <div class="frame-header">
+            <span class="frame-counter">Frame 1 of 4</span>
+            <button class="frame-edit-btn">Edit ✏️</button>
+          </div>
+          <div class="frame-img">⚽</div>
+          <div class="frame-text">
+            <div class="frame-caption">Get the ball</div>
+            <div class="frame-narration">Place the ball on the ground right in front of you.</div>
+          </div>
+          <div class="frame-nav">
+            <button class="frame-nav-btn" style="opacity:0.3">← Prev</button>
+            <div class="frame-dots">
+              <div class="dot active"></div>
+              <div class="dot"></div>
+              <div class="dot"></div>
+              <div class="dot"></div>
+            </div>
+            <button class="frame-nav-btn">Next →</button>
+          </div>
+        </div>
+
+        <button class="action-btn action-primary">Submit for Review</button>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

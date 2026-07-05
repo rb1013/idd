@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Image, ActivityIndicator, Alert,
+  View, Text, StyleSheet, TouchableOpacity,
+  Image, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,6 +20,24 @@ interface ConversationItem {
   unread_count: number;
 }
 
+const AVATAR_COLORS = ['#5CBB7A', '#9B59B6', '#F5A623', '#4A90E2', '#E53E3E', '#1ABC9C'];
+function avatarColor(name: string) {
+  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+}
+
+function timeAgo(iso: string | null): string {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return 'Yesterday';
+  return `${days} days ago`;
+}
+
 export default function MessagesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<UserStackParamList>>();
   const { activeUser } = useAuth();
@@ -29,35 +47,43 @@ export default function MessagesScreen() {
   const load = useCallback(async () => {
     if (!activeUser) return;
     const { data } = await supabase.rpc('get_user_conversations', { p_user_id: activeUser.id });
-    const filtered = (data || []).filter((c: ConversationItem) => c.unread_count > 0 && c.last_message);
-    setConversations(filtered);
+    setConversations((data || []) as ConversationItem[]);
     setLoading(false);
   }, [activeUser]);
 
   useEffect(() => {
     load();
-    const unsubscribe = navigation.addListener('focus', load);
-    return unsubscribe;
+    const unsub = navigation.addListener('focus', load);
+    return unsub;
   }, [navigation, load]);
 
-  function openChat(item: ConversationItem) {
-    // Remove from unread list immediately so count clears on return
-    setConversations(prev => prev.filter(c => c.conversation_id !== item.conversation_id));
+  async function openChat(item: ConversationItem) {
+    // Await the stamp so DB is updated before MessagesScreen reloads on focus
     if (activeUser) {
-      supabase.rpc('mark_conversation_read', {
+      await supabase.rpc('mark_conversation_read', {
         p_conversation_id: item.conversation_id,
         p_user_id: activeUser.id,
       });
     }
+    setConversations(prev =>
+      prev.map(c => c.conversation_id === item.conversation_id ? { ...c, unread_count: 0 } : c),
+    );
     navigation.navigate('Chat', {
       conversationId: item.conversation_id,
       participantName: item.friend_name,
+      participantPhoto: item.friend_photo,
     });
   }
 
   if (loading) {
     return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.accent} /></View>;
   }
+
+  const unread = conversations.filter(c => c.unread_count > 0);
+  const recent = conversations
+    .filter(c => c.last_message_at && c.unread_count === 0)
+    .sort((a, b) => new Date(b.last_message_at!).getTime() - new Date(a.last_message_at!).getTime())
+    .slice(0, 3);
 
   if (conversations.length === 0) {
     return (
@@ -70,110 +96,131 @@ export default function MessagesScreen() {
   }
 
   return (
-    <FlatList
-      data={conversations}
-      keyExtractor={item => item.conversation_id}
-      contentContainerStyle={styles.list}
-      renderItem={({ item }) => (
-        <View style={[styles.card, item.unread_count > 0 && styles.cardUnread]}>
-          <View style={styles.avatarWrapper}>
-            {item.friend_photo
-              ? <Image source={{ uri: item.friend_photo }} style={styles.avatar} />
-              : (
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarInitial}>{item.friend_name[0]}</Text>
-                </View>
-              )
-            }
-            {item.unread_count > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{item.unread_count}</Text>
-              </View>
-            )}
-          </View>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
-          <View style={styles.info}>
-            <Text style={styles.name}>{item.friend_name}</Text>
-            {item.last_message ? (
-              <Text
-                style={[styles.preview, item.unread_count > 0 && styles.previewUnread]}
-                numberOfLines={1}
-              >
-                {item.last_message}
-              </Text>
-            ) : (
-              <Text style={styles.preview}>No messages yet</Text>
-            )}
+      {/* ── Unread section ── */}
+      {unread.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionEmoji}>💬</Text>
+            <Text style={styles.sectionTitle}>New Messages</Text>
           </View>
-
-          <TouchableOpacity style={styles.readBtn} onPress={() => openChat(item)} activeOpacity={0.85}>
-            <Text style={styles.readBtnText}>Read</Text>
-          </TouchableOpacity>
+          <View style={styles.bubblesRow}>
+            {unread.map(item => {
+              const color = avatarColor(item.friend_name);
+              return (
+                <TouchableOpacity key={item.conversation_id} style={styles.bubble} onPress={() => openChat(item)} activeOpacity={0.8}>
+                  <View style={[styles.bubbleRing, { borderColor: color }]}>
+                    <AvatarCircle name={item.friend_name} photo={item.friend_photo} size={84} />
+                    <View style={styles.unreadBadge}>
+                      <Text style={styles.unreadBadgeText}>{item.unread_count > 9 ? '9+' : item.unread_count}</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.bubbleName, { color }]} numberOfLines={1}>{item.friend_name.split(' ')[0]}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
       )}
-    />
+
+      {/* ── Recent section — individual card per conversation ── */}
+      {recent.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionEmoji}>🕐</Text>
+            <Text style={styles.sectionTitle}>Recent</Text>
+          </View>
+          {recent.map(item => {
+            const color = avatarColor(item.friend_name);
+            return (
+              <TouchableOpacity
+                key={item.conversation_id}
+                style={[styles.recentCard, { borderLeftColor: color, backgroundColor: color + '12' }]}
+                onPress={() => openChat(item)}
+                activeOpacity={0.8}
+              >
+                <AvatarCircle name={item.friend_name} photo={item.friend_photo} size={64} />
+                <View style={styles.recentInfo}>
+                  <Text style={styles.recentName}>{item.friend_name}</Text>
+                  <Text style={[styles.recentTime, { color }]}>{timeAgo(item.last_message_at)}</Text>
+                </View>
+                <Text style={[styles.recentArrow, { color }]}>›</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+
+    </ScrollView>
+  );
+}
+
+function AvatarCircle({ name, photo, size }: { name: string; photo: string | null; size: number }) {
+  const radius = size / 2;
+  if (photo) {
+    return <Image source={{ uri: photo }} style={{ width: size, height: size, borderRadius: radius }} />;
+  }
+  return (
+    <View style={{
+      width: size, height: size, borderRadius: radius,
+      backgroundColor: avatarColor(name),
+      justifyContent: 'center', alignItems: 'center',
+    }}>
+      <Text style={{ fontSize: size * 0.38, fontWeight: '800', color: '#fff' }}>{name[0]}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.background },
+  content: { padding: 20, gap: 28, paddingBottom: 48 },
   center: {
     flex: 1, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: COLORS.background, padding: 32,
+    backgroundColor: COLORS.background, padding: 32, gap: 12,
   },
-  emptyEmoji: { fontSize: 64, marginBottom: 16 },
-  emptyText: { fontSize: 22, fontWeight: '700', color: COLORS.text, marginBottom: 8 },
-  emptyHint: { fontSize: 15, color: COLORS.textLight, textAlign: 'center' },
+  emptyEmoji: { fontSize: 72 },
+  emptyText: { fontSize: 24, fontWeight: '900', color: COLORS.text },
+  emptyHint: { fontSize: 16, color: COLORS.textLight, textAlign: 'center' },
 
-  list: { padding: 20, gap: 12 },
+  section: { gap: 16 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  sectionEmoji: { fontSize: 26 },
+  sectionTitle: { fontSize: 22, fontWeight: '900', color: COLORS.text },
 
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: 20,
-    padding: 16,
-    gap: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  cardUnread: {
-    borderColor: COLORS.accent,
-  },
-
-  avatarWrapper: { position: 'relative' },
-  avatar: { width: 60, height: 60, borderRadius: 30 },
-  avatarPlaceholder: {
-    width: 60, height: 60, borderRadius: 30,
-    backgroundColor: COLORS.accentLight,
+  // Unread bubbles
+  bubblesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 24 },
+  bubble: { alignItems: 'center', gap: 10 },
+  bubbleRing: {
+    width: 92, height: 92, borderRadius: 46,
+    borderWidth: 3.5,
     justifyContent: 'center', alignItems: 'center',
+    position: 'relative',
   },
-  avatarInitial: { fontSize: 24, fontWeight: '700', color: COLORS.accent },
-
-  badge: {
+  bubbleName: {
+    fontSize: 15, fontWeight: '800',
+    maxWidth: 92, textAlign: 'center',
+  },
+  unreadBadge: {
     position: 'absolute', top: -4, right: -4,
-    backgroundColor: COLORS.accent,
-    borderRadius: 11, minWidth: 22, height: 22,
+    backgroundColor: COLORS.error,
+    borderRadius: 13, minWidth: 26, height: 26,
     justifyContent: 'center', alignItems: 'center',
     paddingHorizontal: 5,
-    borderWidth: 2, borderColor: COLORS.surface,
+    borderWidth: 2.5, borderColor: COLORS.background,
   },
-  badgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  unreadBadgeText: { color: '#fff', fontSize: 13, fontWeight: '900' },
 
-  info: { flex: 1 },
-  name: { fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 4 },
-  preview: { fontSize: 14, color: COLORS.textLight },
-  previewUnread: { color: COLORS.text, fontWeight: '600' },
-
-  readBtn: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+  // Recent — one card per person
+  recentCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 16,
+    borderRadius: 22, padding: 16,
+    borderLeftWidth: 6,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07, shadowRadius: 10, elevation: 3,
   },
-  readBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  recentInfo: { flex: 1 },
+  recentName: { fontSize: 22, fontWeight: '900', color: COLORS.text },
+  recentTime: { fontSize: 14, fontWeight: '600', marginTop: 4 },
+  recentArrow: { fontSize: 28, fontWeight: '900' },
 });

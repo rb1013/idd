@@ -34,6 +34,21 @@ export const LANGUAGES = [
   'Hindi', 'Arabic', 'Portuguese', 'Russian', 'Japanese',
 ];
 
+export const TUTORIAL_TARGET_SKILLS = [
+  'Speech & Communication',
+  'Motor Skills',
+  'Daily Living',
+  'Social Skills',
+  'Numeracy & Literacy',
+  'Emotional Regulation',
+];
+
+export const TUTORIAL_VISUAL_STYLES = ['2D Animation', '3D Cartoon', 'Real Human'];
+export const TUTORIAL_IMAGE_STYLES = ['Simple & Bold', 'Detailed', 'Symbol-Based'];
+export const TUTORIAL_AUDIO = ['None', 'Calm Music', 'Upbeat Music'];
+export const TUTORIAL_DURATIONS = [15, 20, 25, 30];
+export const TUTORIAL_COMPREHENSION = ['easy', 'medium', 'complex', 'fluent'];
+
 export const US_STATES = [
   'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California',
   'Colorado', 'Connecticut', 'Delaware', 'Florida', 'Georgia',

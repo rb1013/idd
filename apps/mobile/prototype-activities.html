@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Activities Feature — UI Prototype</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; min-height: 100vh; padding: 40px 20px; }
+
+  h1 { color: #fff; text-align: center; font-size: 22px; margin-bottom: 8px; font-weight: 800; }
+  .subtitle { color: #888; text-align: center; font-size: 14px; margin-bottom: 40px; }
+
+  .screens { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; align-items: flex-start; }
+
+  .screen-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .screen-label { color: #aaa; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Phone shell */
+  .phone {
+    width: 320px;
+    background: #F7F9FC;
+    border-radius: 44px;
+    border: 8px solid #2a2a3e;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.05);
+    position: relative;
+  }
+  .phone-notch {
+    height: 36px; background: #1a1a2e;
+    border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
+    width: 120px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .phone-notch-bar { width: 60px; height: 5px; background: #333; border-radius: 3px; }
+  .phone-body { padding: 0 0 24px; max-height: 680px; overflow-y: auto; }
+
+  /* Nav bar */
+  .nav { background: #fff; padding: 12px 16px; display: flex; align-items: center; border-bottom: 1px solid #E2E8F0; }
+  .nav-back { font-size: 15px; color: #4A90E2; font-weight: 600; margin-right: 8px; }
+  .nav-title { font-size: 17px; font-weight: 800; color: #2C3E50; flex: 1; text-align: center; }
+  .nav-spacer { width: 40px; }
+
+  /* ──────────────────────────────────── */
+  /* SCREEN 1: Home tile */
+  /* ──────────────────────────────────── */
+  .home-screen { background: #F7F9FC; padding: 20px 16px; }
+  .home-greeting { font-size: 22px; font-weight: 900; color: #2C3E50; margin-bottom: 4px; }
+  .home-sub { font-size: 14px; color: #7F8C8D; margin-bottom: 20px; }
+
+  .tiles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .tile {
+    background: #fff; border-radius: 20px; padding: 16px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.07);
+    display: flex; flex-direction: column; gap: 8px;
+    cursor: pointer; transition: transform 0.15s;
+  }
+  .tile:hover { transform: scale(0.97); }
+  .tile-emoji { font-size: 28px; }
+  .tile-label { font-size: 15px; font-weight: 800; color: #2C3E50; }
+
+  /* Activities tile — special */
+  .tile-activities {
+    background: linear-gradient(135deg, #4A90E2 0%, #9B59B6 100%);
+    grid-column: span 2;
+    flex-direction: row; align-items: center; padding: 18px 20px; gap: 16px;
+  }
+  .tile-activities .tile-emoji { font-size: 36px; }
+  .tile-activities .tile-label { color: #fff; font-size: 18px; flex: 1; }
+  .tile-progress-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .tile-progress-text { color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 700; }
+  .tile-progress-bar-bg { width: 80px; height: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; }
+  .tile-progress-bar { height: 8px; background: #fff; border-radius: 4px; width: 43%; }
+
+  /* ──────────────────────────────────── */
+  /* SCREEN 2: User activities */
+  /* ──────────────────────────────────── */
+  .act-screen { background: #F7F9FC; }
+  .act-header { background: #fff; padding: 16px; border-bottom: 1px solid #E2E8F0; }
+  .act-date { font-size: 13px; color: #7F8C8D; font-weight: 600; margin-bottom: 8px; }
+  .act-progress-row { display: flex; align-items: center; gap: 10px; }
+  .act-progress-label { font-size: 14px; font-weight: 800; color: #2C3E50; white-space: nowrap; }
+  .act-bar-bg { flex: 1; height: 10px; background: #E2E8F0; border-radius: 5px; overflow: hidden; }
+  .act-bar { height: 10px; border-radius: 5px; background: linear-gradient(90deg, #5CBB7A, #4A90E2); transition: width 0.4s; }
+
+  .act-list { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+  .act-card {
+    border-radius: 20px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 14px;
+    cursor: pointer; transition: opacity 0.2s, transform 0.15s;
+    border-left: 6px solid transparent;
+  }
+  .act-card:hover { transform: scale(0.98); }
+
+  .act-card.done { opacity: 0.6; }
+  .act-card.done .act-name { text-decoration: line-through; }
+
+  .act-icon-wrap {
+    width: 60px; height: 60px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; flex-shrink: 0;
+  }
+  .act-name { font-size: 18px; font-weight: 900; color: #2C3E50; flex: 1; }
+  .act-check {
+    width: 36px; height: 36px; border-radius: 18px;
+    border: 3px solid currentColor; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 900; transition: all 0.2s;
+  }
+  .act-check.checked { background: #5CBB7A; border-color: #5CBB7A; color: #fff; }
+  .act-check:not(.checked) { color: #BDC3C7; }
+
+  /* Activity colour themes */
+  .act-blue   { background: #EBF4FF; border-left-color: #4A90E2; }
+  .act-blue   .act-icon-wrap { background: #D6E8FA; }
+  .act-blue   .act-check:not(.checked) { border-color: #4A90E2; color: #4A90E2; }
+
+  .act-green  { background: #EDFBF2; border-left-color: #5CBB7A; }
+  .act-green  .act-icon-wrap { background: #D4F0DE; }
+  .act-green  .act-check:not(.checked) { border-color: #5CBB7A; color: #5CBB7A; }
+
+  .act-purple { background: #F5EEFF; border-left-color: #9B59B6; }
+  .act-purple .act-icon-wrap { background: #E8D5F5; }
+  .act-purple .act-check:not(.checked) { border-color: #9B59B6; color: #9B59B6; }
+
+  .act-orange { background: #FFF8ED; border-left-color: #F5A623; }
+  .act-orange .act-icon-wrap { background: #FDE8C0; }
+  .act-orange .act-check:not(.checked) { border-color: #F5A623; color: #F5A623; }
+
+  .act-red    { background: #FFF0F0; border-left-color: #E53E3E; }
+  .act-red    .act-icon-wrap { background: #FFD5D5; }
+  .act-red    .act-check:not(.checked) { border-color: #E53E3E; color: #E53E3E; }
+
+  .act-teal   { background: #E8FDFB; border-left-color: #1ABC9C; }
+  .act-teal   .act-icon-wrap { background: #C9F5EF; }
+  .act-teal   .act-check:not(.checked) { border-color: #1ABC9C; color: #1ABC9C; }
+
+  .act-pink   { background: #FFF0F8; border-left-color: #E91E8C; }
+  .act-pink   .act-icon-wrap { background: #FFD6EE; }
+  .act-pink   .act-check:not(.checked) { border-color: #E91E8C; color: #E91E8C; }
+
+  /* Done banner */
+  .done-banner {
+    margin: 0 16px 16px; padding: 14px;
+    background: linear-gradient(135deg, #5CBB7A, #1ABC9C);
+    border-radius: 16px; text-align: center;
+    color: #fff; font-size: 17px; font-weight: 800;
+    display: none;
+  }
+
+  /* ──────────────────────────────────── */
+  /* SCREEN 3: Guardian — Activity picker */
+  /* ──────────────────────────────────── */
+  .guardian-screen { background: #F7F9FC; }
+  .guardian-quota { margin: 14px 16px; padding: 12px 16px;
+    background: #fff; border-radius: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .quota-label { font-size: 14px; color: #7F8C8D; font-weight: 600; }
+  .quota-count { font-size: 22px; font-weight: 900; color: #4A90E2; }
+  .quota-max   { font-size: 14px; color: #BDC3C7; font-weight: 700; }
+
+  .preset-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 0 16px 20px; }
+  .preset-card {
+    background: #fff; border-radius: 16px; padding: 12px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    cursor: pointer; border: 2.5px solid transparent;
+    transition: all 0.15s; position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .preset-card:hover { transform: scale(0.96); }
+  .preset-card.selected { border-color: #4A90E2; background: #EBF4FF; }
+  .preset-card .p-emoji { font-size: 28px; }
+  .preset-card .p-name { font-size: 11px; font-weight: 700; color: #2C3E50; text-align: center; line-height: 1.3; }
+  .preset-tick {
+    position: absolute; top: -6px; right: -6px;
+    width: 20px; height: 20px; border-radius: 10px;
+    background: #4A90E2; color: #fff; font-size: 11px;
+    display: none; align-items: center; justify-content: center; font-weight: 900;
+  }
+  .preset-card.selected .preset-tick { display: flex; }
+  .preset-card.disabled { opacity: 0.4; pointer-events: none; }
+
+  .save-btn {
+    margin: 0 16px 20px; padding: 16px;
+    background: linear-gradient(135deg, #4A90E2, #9B59B6);
+    border: none; border-radius: 16px; width: calc(100% - 32px);
+    color: #fff; font-size: 16px; font-weight: 800;
+    cursor: pointer; box-shadow: 0 6px 20px rgba(74,144,226,0.4);
+  }
+
+  /* ──────────────────────────────────── */
+  /* SCREEN 4: Guardian report */
+  /* ──────────────────────────────────── */
+  .report-screen { background: #F7F9FC; }
+  .report-date-row { display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: #fff; border-bottom: 1px solid #E2E8F0; }
+  .report-date-label { font-size: 15px; font-weight: 800; color: #2C3E50; }
+  .report-date-nav { display: flex; gap: 12px; }
+  .report-date-btn { font-size: 18px; color: #4A90E2; cursor: pointer; padding: 2px 8px; font-weight: 700; }
+
+  .report-summary { display: flex; gap: 10px; padding: 14px 16px; }
+  .report-stat {
+    flex: 1; background: #fff; border-radius: 14px; padding: 12px;
+    text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .report-stat-num { font-size: 26px; font-weight: 900; }
+  .report-stat-lbl { font-size: 11px; font-weight: 700; color: #7F8C8D; margin-top: 2px; }
+  .stat-green { color: #5CBB7A; }
+  .stat-orange { color: #F5A623; }
+  .stat-blue { color: #4A90E2; }
+
+  .report-list { padding: 0 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .report-user-card {
+    background: #fff; border-radius: 18px; padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .report-user-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .report-avatar {
+    width: 44px; height: 44px; border-radius: 22px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 900; color: #fff; flex-shrink: 0;
+  }
+  .report-user-info { flex: 1; }
+  .report-user-name { font-size: 16px; font-weight: 900; color: #2C3E50; }
+  .report-user-prog { font-size: 12px; color: #7F8C8D; font-weight: 600; margin-top: 2px; }
+  .report-mini-bar-bg { flex: 1; height: 6px; background: #E2E8F0; border-radius: 3px; overflow: hidden; }
+  .report-mini-bar { height: 6px; border-radius: 3px; }
+
+  .report-acts-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .act-pip {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; position: relative;
+  }
+  .act-pip.done-pip { background: #EDFBF2; }
+  .act-pip.skip-pip { background: #F7F9FC; opacity: 0.45; }
+  .act-pip.done-pip::after {
+    content: '✓'; position: absolute; bottom: -3px; right: -3px;
+    width: 14px; height: 14px; border-radius: 7px;
+    background: #5CBB7A; color: #fff; font-size: 8px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 14px; text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>Activities Feature — UI Prototype</h1>
+<p class="subtitle">4 views: Home tile · User activities · Guardian setup · Guardian report</p>
+
+<div class="screens">
+
+  <!-- ── SCREEN 1: Home tile ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">1 — Home Screen (user)</div>
+    <div class="phone">
+      <div class="phone-notch"><div class="phone-notch-bar"></div></div>
+      <div class="phone-body">
+        <div class="home-screen">
+          <div class="home-greeting">Good morning, Priya 👋</div>
+          <div class="home-sub">Friday, 4 July 2026</div>
+
+          <div class="tiles-grid">
+            <!-- Activities tile — full width, special -->
+            <div class="tile tile-activities" onclick="alert('Opens Activities screen')">
+              <div class="tile-emoji">✅</div>
+              <div class="tile-label">Today's Activities</div>
+              <div class="tile-progress-wrap">
+                <div class="tile-progress-text">3 of 7</div>
+                <div class="tile-progress-bar-bg">
+                  <div class="tile-progress-bar"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="tile"><div class="tile-emoji">💬</div><div class="tile-label">Messages</div></div>
+            <div class="tile"><div class="tile-emoji">🤝</div><div class="tile-label">Friends</div></div>
+            <div class="tile"><div class="tile-emoji">📚</div><div class="tile-label">Learning</div></div>
+            <div class="tile"><div class="tile-emoji">🔍</div><div class="tile-label">Discover</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 2: User activities ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">2 — Activities Screen (user)</div>
+    <div class="phone">
+      <div class="phone-notch"><div class="phone-notch-bar"></div></div>
+      <div class="phone-body">
+        <div class="act-screen">
+          <div class="nav">
+            <span class="nav-back">‹ Home</span>
+            <span class="nav-title">Today's Activities</span>
+            <span class="nav-spacer"></span>
+          </div>
+
+          <div class="act-header">
+            <div class="act-date">Friday, 4 July 2026</div>
+            <div class="act-progress-row">
+              <span class="act-progress-label" id="progress-label">3 of 7 done</span>
+              <div class="act-bar-bg">
+                <div class="act-bar" id="progress-bar" style="width: 43%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="act-list" id="act-list">
+            <div class="act-card act-blue" onclick="toggleAct(this)">
+              <div class="act-icon-wrap">🪥</div>
+              <div class="act-name">Brush Teeth</div>
+              <div class="act-check checked">✓</div>
+            </div>
+            <div class="act-card act-green" onclick="toggleAct(this)">
+              <div class="act-icon-wrap">🚿</div>
+              <div class="act-name">Take a Shower</div>
+              <div class="act-check checked">✓</div>
+            </div>
+            <div class="act-card act-orange" onclick="toggleAct(this)">
+              <div class="act-icon-wrap">🍳</div>
+              <div class="act-name">Eat Breakfast</div>
+              <div class="act-check checked">✓</div>
+            </div>
+            <div class="act-card act-purple" onclick="toggleAct(this)">
+              <div class="act-icon-wrap">💊</div>
+              <div class="act-name">Take Medicine</div>
+              <div class="act-check">○</div>
+            </div>
+            <div class="act-card act-teal" onclick="toggleAct(this)">
+              <div class="act-icon-wrap">🚶</div>
+              <div class="act-name">Go for a Walk</div>
+              <div class="act-check">○</div>
+            </div>
+            <div class="act-card act-red" onclick="toggleAct(this)">
+              <div class="act-icon-wrap">🛏️</div>
+              <div class="act-name">Make Bed</div>
+              <div class="act-check">○</div>
+            </div>
+            <div class="act-card act-pink" onclick="toggleAct(this)">
+              <div class="act-icon-wrap">📚</div>
+              <div class="act-name">Read a Book</div>
+              <div class="act-check">○</div>
+            </div>
+          </div>
+
+          <div class="done-banner" id="done-banner">🎉 All done! Great job today!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 3: Guardian setup ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">3 — Activity Setup (guardian)</div>
+    <div class="phone">
+      <div class="phone-notch"><div class="phone-notch-bar"></div></div>
+      <div class="phone-body">
+        <div class="guardian-screen">
+          <div class="nav">
+            <span class="nav-back">‹ Back</span>
+            <span class="nav-title">Daily Activities</span>
+            <span class="nav-spacer"></span>
+          </div>
+
+          <div class="guardian-quota">
+            <span class="quota-label">Activities selected</span>
+            <div style="display:flex;align-items:baseline;gap:4px">
+              <span class="quota-count" id="quota-count">4</span>
+              <span class="quota-max">/ 7</span>
+            </div>
+          </div>
+
+          <div class="preset-grid" id="preset-grid">
+            <!-- populated by JS -->
+          </div>
+
+          <button class="save-btn">Save Activities</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 4: Guardian report ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">4 — Completion Report (guardian)</div>
+    <div class="phone">
+      <div class="phone-notch"><div class="phone-notch-bar"></div></div>
+      <div class="phone-body">
+        <div class="report-screen">
+          <div class="nav">
+            <span class="nav-back">‹ Back</span>
+            <span class="nav-title">Activity Report</span>
+            <span class="nav-spacer"></span>
+          </div>
+
+          <div class="report-date-row">
+            <span class="report-date-btn">‹</span>
+            <span class="report-date-label">Friday, 4 July 2026</span>
+            <span class="report-date-btn">›</span>
+          </div>
+
+          <div class="report-summary">
+            <div class="report-stat">
+              <div class="report-stat-num stat-green">3</div>
+              <div class="report-stat-lbl">All done</div>
+            </div>
+            <div class="report-stat">
+              <div class="report-stat-num stat-orange">2</div>
+              <div class="report-stat-lbl">In progress</div>
+            </div>
+            <div class="report-stat">
+              <div class="report-stat-num stat-blue">5</div>
+              <div class="report-stat-lbl">Users total</div>
+            </div>
+          </div>
+
+          <div class="report-list">
+
+            <div class="report-user-card">
+              <div class="report-user-row">
+                <div class="report-avatar" style="background:#5CBB7A">P</div>
+                <div class="report-user-info">
+                  <div class="report-user-name">Priya S.</div>
+                  <div class="report-user-prog">7 of 7 complete</div>
+                </div>
+                <div class="report-mini-bar-bg" style="max-width:60px">
+                  <div class="report-mini-bar" style="width:100%;background:#5CBB7A"></div>
+                </div>
+              </div>
+              <div class="report-acts-row">
+                <div class="act-pip done-pip">🪥</div>
+                <div class="act-pip done-pip">🚿</div>
+                <div class="act-pip done-pip">🍳</div>
+                <div class="act-pip done-pip">💊</div>
+                <div class="act-pip done-pip">🚶</div>
+                <div class="act-pip done-pip">🛏️</div>
+                <div class="act-pip done-pip">📚</div>
+              </div>
+            </div>
+
+            <div class="report-user-card">
+              <div class="report-user-row">
+                <div class="report-avatar" style="background:#4A90E2">R</div>
+                <div class="report-user-info">
+                  <div class="report-user-name">Ravi M.</div>
+                  <div class="report-user-prog">5 of 7 complete</div>
+                </div>
+                <div class="report-mini-bar-bg" style="max-width:60px">
+                  <div class="report-mini-bar" style="width:71%;background:#4A90E2"></div>
+                </div>
+              </div>
+              <div class="report-acts-row">
+                <div class="act-pip done-pip">🪥</div>
+                <div class="act-pip done-pip">🚿</div>
+                <div class="act-pip done-pip">🍳</div>
+                <div class="act-pip skip-pip">💊</div>
+                <div class="act-pip done-pip">🚶</div>
+                <div class="act-pip done-pip">🛏️</div>
+                <div class="act-pip skip-pip">📚</div>
+              </div>
+            </div>
+
+            <div class="report-user-card">
+              <div class="report-user-row">
+                <div class="report-avatar" style="background:#F5A623">S</div>
+                <div class="report-user-info">
+                  <div class="report-user-name">Sneha K.</div>
+                  <div class="report-user-prog">3 of 7 complete</div>
+                </div>
+                <div class="report-mini-bar-bg" style="max-width:60px">
+                  <div class="report-mini-bar" style="width:43%;background:#F5A623"></div>
+                </div>
+              </div>
+              <div class="report-acts-row">
+                <div class="act-pip done-pip">🪥</div>
+                <div class="act-pip skip-pip">🚿</div>
+                <div class="act-pip done-pip">🍳</div>
+                <div class="act-pip skip-pip">💊</div>
+                <div class="act-pip skip-pip">🚶</div>
+                <div class="act-pip done-pip">🛏️</div>
+                <div class="act-pip skip-pip">📚</div>
+              </div>
+            </div>
+
+            <div class="report-user-card">
+              <div class="report-user-row">
+                <div class="report-avatar" style="background:#9B59B6">A</div>
+                <div class="report-user-info">
+                  <div class="report-user-name">Ankit D.</div>
+                  <div class="report-user-prog">2 of 7 complete</div>
+                </div>
+                <div class="report-mini-bar-bg" style="max-width:60px">
+                  <div class="report-mini-bar" style="width:29%;background:#9B59B6"></div>
+                </div>
+              </div>
+              <div class="report-acts-row">
+                <div class="act-pip done-pip">🪥</div>
+                <div class="act-pip skip-pip">🚿</div>
+                <div class="act-pip skip-pip">🍳</div>
+                <div class="act-pip skip-pip">💊</div>
+                <div class="act-pip skip-pip">🚶</div>
+                <div class="act-pip done-pip">🛏️</div>
+                <div class="act-pip skip-pip">📚</div>
+              </div>
+            </div>
+
+            <div class="report-user-card">
+              <div class="report-user-row">
+                <div class="report-avatar" style="background:#1ABC9C">M</div>
+                <div class="report-user-info">
+                  <div class="report-user-name">Meera T.</div>
+                  <div class="report-user-prog">7 of 7 complete</div>
+                </div>
+                <div class="report-mini-bar-bg" style="max-width:60px">
+                  <div class="report-mini-bar" style="width:100%;background:#1ABC9C"></div>
+                </div>
+              </div>
+              <div class="report-acts-row">
+                <div class="act-pip done-pip">🪥</div>
+                <div class="act-pip done-pip">🚿</div>
+                <div class="act-pip done-pip">🍳</div>
+                <div class="act-pip done-pip">💊</div>
+                <div class="act-pip done-pip">🚶</div>
+                <div class="act-pip done-pip">🛏️</div>
+                <div class="act-pip done-pip">📚</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /screens -->
+
+<script>
+  // ── Screen 2: toggle activities ──
+  let doneCount = 3;
+  const total = 7;
+
+  function toggleAct(card) {
+    const check = card.querySelector('.act-check');
+    const isDone = card.classList.contains('done');
+    if (isDone) {
+      card.classList.remove('done');
+      check.classList.remove('checked');
+      check.textContent = '○';
+      doneCount--;
+    } else {
+      card.classList.add('done');
+      check.classList.add('checked');
+      check.textContent = '✓';
+      doneCount++;
+      // Move done card to bottom
+      const list = document.getElementById('act-list');
+      list.appendChild(card);
+    }
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const pct = Math.round((doneCount / total) * 100);
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('progress-label').textContent = doneCount + ' of ' + total + ' done';
+    const banner = document.getElementById('done-banner');
+    banner.style.display = doneCount === total ? 'block' : 'none';
+  }
+
+  // ── Screen 3: preset picker ──
+  const PRESETS = [
+    { emoji: '🪥', name: 'Brush Teeth' },
+    { emoji: '🚿', name: 'Take a Shower' },
+    { emoji: '👗', name: 'Get Dressed' },
+    { emoji: '🍳', name: 'Eat Breakfast' },
+    { emoji: '💊', name: 'Take Medicine' },
+    { emoji: '🚶', name: 'Go for a Walk' },
+    { emoji: '🛏️', name: 'Make Bed' },
+    { emoji: '📚', name: 'Read a Book' },
+    { emoji: '🧹', name: 'Tidy Room' },
+    { emoji: '🥗', name: 'Eat Lunch' },
+    { emoji: '🍲', name: 'Eat Dinner' },
+    { emoji: '💧', name: 'Drink Water' },
+    { emoji: '🎨', name: 'Art & Craft' },
+    { emoji: '🎵', name: 'Music Time' },
+    { emoji: '🧘', name: 'Calm Time' },
+    { emoji: '🐕', name: 'Feed Pet' },
+    { emoji: '🧴', name: 'Wash Hands' },
+    { emoji: '😴', name: 'Rest / Nap' },
+  ];
+
+  const MAX = 7;
+  let selectedCount = 4;
+  const preSelected = new Set([0, 1, 3, 4]); // Brush, Shower, Breakfast, Medicine
+
+  const grid = document.getElementById('preset-grid');
+  PRESETS.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'preset-card' + (preSelected.has(i) ? ' selected' : '');
+    card.innerHTML = `
+      <div class="p-emoji">${p.emoji}</div>
+      <div class="p-name">${p.name}</div>
+      <div class="preset-tick">✓</div>
+    `;
+    card.addEventListener('click', () => {
+      const isSel = card.classList.contains('selected');
+      if (!isSel && selectedCount >= MAX) return;
+      card.classList.toggle('selected');
+      selectedCount += isSel ? -1 : 1;
+      document.getElementById('quota-count').textContent = selectedCount;
+      // Disable non-selected when at max
+      document.querySelectorAll('.preset-card').forEach(c => {
+        if (!c.classList.contains('selected') && selectedCount >= MAX) {
+          c.classList.add('disabled');
+        } else {
+          c.classList.remove('disabled');
+        }
+      });
+    });
+    grid.appendChild(card);
+  });
+</script>
+</body>
+</html>
