@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IDD — Schedule & Guardian Home Prototype</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
+  background:#C9D1DC;
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;
+  padding:24px 16px;gap:16px;
+}
+
+/* ── Nav ── */
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:640px}
+.nb{
+  padding:7px 14px;border-radius:20px;
+  border:1.5px solid #9CA3AF;background:#fff;
+  color:#374151;font-size:12px;font-weight:600;
+  cursor:pointer;transition:all .15s;
+}
+.nb:hover{border-color:#8B5CF6;color:#8B5CF6}
+.nb.on{background:#8B5CF6;color:#fff;border-color:#8B5CF6}
+
+/* ── Phone frame ── */
+.phone{
+  width:375px;height:812px;
+  background:#fff;border-radius:50px;
+  overflow:hidden;
+  box-shadow:0 0 0 11px #1C1C1E, 0 30px 80px rgba(0,0,0,.35);
+  display:flex;flex-direction:column;
+  position:relative;
+  flex-shrink:0;
+}
+
+/* ── Status bar ── */
+.sb{
+  height:44px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;
+  font-size:15px;font-weight:700;color:#111;
+  background:#fff;
+}
+.sb-icons{display:flex;align-items:center;gap:5px;font-size:13px}
+
+/* ── Screens ── */
+.screen{display:none;flex-direction:column;flex:1;overflow:hidden}
+.screen.on{display:flex}
+
+/* scrollable zone */
+.sa{flex:1;overflow-y:auto;overflow-x:hidden}
+.sa::-webkit-scrollbar{display:none}
+
+/* fixed header inside screen (not scrollable) */
+.shdr{
+  flex-shrink:0;
+  background:#fff;
+  padding:12px 20px 13px;
+  border-bottom:1px solid #F3F4F6;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.back{font-size:15px;font-weight:700;color:#8B5CF6;cursor:pointer;min-width:60px}
+.shdr-title{font-size:17px;font-weight:800;color:#111827}
+.shdr-r{min-width:60px;text-align:right}
+
+/* segmented control */
+.seg{
+  flex-shrink:0;
+  display:flex;background:#F3F4F6;
+  margin:10px 16px 2px;border-radius:12px;padding:3px;
+}
+.seg-btn{
+  flex:1;padding:10px;text-align:center;
+  border-radius:10px;font-size:14px;font-weight:700;
+  color:#9CA3AF;cursor:pointer;border:none;background:transparent;
+  transition:all .15s;
+}
+.seg-btn.on{background:#fff;color:#111827;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+
+/* spacer */
+.bsp{height:36px}
+
+/* ═══════════════════════════
+   GUARDIAN HOME
+═══════════════════════════ */
+#gh .sa{background:#F9FAFB}
+
+.gh-hero{
+  background:#fff;
+  padding:20px 20px 20px;
+  border-bottom:1px solid #F3F4F6;
+}
+.gh-row{display:flex;justify-content:space-between;align-items:flex-start}
+.gh-name{font-size:23px;font-weight:900;color:#111827}
+.gh-sub{font-size:14px;color:#9CA3AF;margin-top:3px}
+.gear{
+  width:42px;height:42px;border-radius:21px;
+  background:#F3F4F6;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;cursor:pointer;
+}
+
+.tiles{padding:16px;display:flex;flex-direction:column;gap:12px}
+
+.tile-wide{
+  background:#fff;border-radius:20px;
+  padding:18px 20px;
+  display:flex;align-items:center;gap:16px;
+  box-shadow:0 2px 12px rgba(0,0,0,.06);
+  border-left:5px solid #6366F1;
+  cursor:pointer;transition:transform .1s;
+}
+.tile-wide:active{transform:scale(.98)}
+.tw-icon{
+  width:52px;height:52px;border-radius:15px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;flex-shrink:0;
+}
+.tw-txt{flex:1}
+.tw-title{font-size:18px;font-weight:800;color:#111827}
+.tw-sub{font-size:13px;color:#9CA3AF;margin-top:3px}
+.tw-arr{font-size:18px;color:#D1D5DB}
+
+.tile-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile-half{
+  background:#fff;border-radius:20px;
+  padding:18px 16px;
+  box-shadow:0 2px 12px rgba(0,0,0,.06);
+  border-top:4px solid;
+  cursor:pointer;transition:transform .1s;
+}
+.tile-half:active{transform:scale(.97)}
+.th-ico{font-size:28px;margin-bottom:10px}
+.th-title{font-size:16px;font-weight:800;color:#111827}
+.th-sub{font-size:12px;color:#9CA3AF;margin-top:3px}
+
+/* ═══════════════════════════
+   SCHEDULE — USER LIST
+═══════════════════════════ */
+#gsu .sa{background:#F9FAFB}
+
+.sec-lbl{
+  font-size:12px;font-weight:700;color:#9CA3AF;
+  text-transform:uppercase;letter-spacing:.8px;
+  padding:16px 20px 8px;
+}
+
+.ucard{
+  margin:0 16px 10px;
+  background:#fff;border-radius:18px;
+  padding:16px;
+  display:flex;align-items:center;gap:14px;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+  cursor:pointer;transition:transform .1s;
+}
+.ucard:active{transform:scale(.98)}
+.uav{
+  width:50px;height:50px;border-radius:25px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:900;color:#fff;flex-shrink:0;
+}
+.un{font-size:17px;font-weight:800;color:#111827}
+.us{font-size:12px;color:#9CA3AF;margin-top:2px}
+.uarr{font-size:18px;color:#D1D5DB;margin-left:auto}
+
+/* ═══════════════════════════
+   SCHEDULE — MAYA WEEKLY
+═══════════════════════════ */
+#gmw .sa, #gmo .sa{background:#F9FAFB}
+
+.day-block{margin:14px 16px 0}
+.day-lbl{
+  font-size:12px;font-weight:700;color:#6B7280;
+  text-transform:uppercase;letter-spacing:.5px;
+  margin-bottom:8px;
+}
+.ccard{
+  background:#fff;border-radius:14px;
+  padding:13px 14px;
+  display:flex;align-items:center;gap:12px;
+  box-shadow:0 1px 6px rgba(0,0,0,.06);
+  margin-bottom:6px;
+}
+.cc-em{font-size:24px;flex-shrink:0}
+.cc-inf{flex:1}
+.cc-ti{font-size:15px;font-weight:700;color:#111827}
+.cc-tm{font-size:12px;color:#9CA3AF;margin-top:2px}
+.cc-del{
+  width:28px;height:28px;border-radius:14px;
+  background:#FEF2F2;color:#EF4444;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;cursor:pointer;flex-shrink:0;
+}
+.add-day{
+  width:100%;padding:10px 14px;
+  border-radius:12px;border:2px dashed #E5E7EB;
+  color:#8B5CF6;font-size:13px;font-weight:700;
+  background:transparent;cursor:pointer;text-align:left;
+  margin-top:2px;
+}
+.empty-d{font-size:13px;color:#C4C9D4;font-style:italic;margin-bottom:4px}
+
+/* ═══════════════════════════
+   ONE-OFF
+═══════════════════════════ */
+.oo-top{display:flex;justify-content:flex-end;padding:10px 16px 4px}
+.add-pill{
+  background:#8B5CF6;color:#fff;border:none;
+  border-radius:12px;padding:9px 18px;
+  font-size:13px;font-weight:700;cursor:pointer;
+}
+.oo-dl{
+  font-size:11px;font-weight:700;color:#9CA3AF;
+  text-transform:uppercase;letter-spacing:.5px;
+  padding:10px 16px 5px;
+}
+.cxcard{
+  margin:0 16px 8px;
+  background:#FFF1F2;border-radius:14px;
+  padding:13px 14px;
+  display:flex;align-items:center;gap:12px;
+  border:1px solid #FECDD3;
+}
+.cx-badge{
+  font-size:10px;font-weight:800;color:#E11D48;
+  background:#FFE4E6;padding:3px 8px;border-radius:6px;
+  letter-spacing:.3px;
+}
+
+/* ═══════════════════════════
+   BOTTOM SHEET
+═══════════════════════════ */
+.overlay{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,.45);
+  z-index:50;display:none;align-items:flex-end;
+}
+.overlay.open{display:flex}
+.sheet{
+  background:#fff;
+  border-radius:24px 24px 0 0;
+  padding:0 20px 36px;
+  width:100%;max-height:88%;
+  overflow-y:auto;
+}
+.sheet::-webkit-scrollbar{display:none}
+.sh-handle{width:40px;height:4px;background:#E5E7EB;border-radius:2px;margin:12px auto 18px}
+.sh-title{font-size:18px;font-weight:800;color:#111827;text-align:center;margin-bottom:20px}
+.fl{font-size:13px;font-weight:700;color:#374151;margin-bottom:6px}
+.fi{
+  width:100%;padding:12px 14px;
+  border:1.5px solid #E5E7EB;border-radius:12px;
+  font-size:15px;color:#111827;outline:none;
+  margin-bottom:14px;font-family:inherit;
+}
+.fi:focus{border-color:#8B5CF6}
+.erow{display:flex;gap:10px;margin-bottom:14px}
+.ec{
+  width:46px;height:46px;border-radius:12px;
+  background:#F3F4F6;
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;cursor:pointer;
+  border:2px solid transparent;transition:all .1s;
+}
+.ec:hover{background:#EDE9FE}
+.ec.sel{background:#EDE9FE;border-color:#8B5CF6}
+.esug-lbl{font-size:11px;color:#9CA3AF;margin-bottom:6px;font-weight:600}
+.frow2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.fbox{
+  padding:12px 14px;
+  border:1.5px solid #E5E7EB;border-radius:12px;
+  font-size:15px;color:#111827;background:#F9FAFB;
+}
+.fhint{font-size:12px;color:#9CA3AF;margin:-8px 0 14px}
+.sh-save{
+  width:100%;padding:16px;
+  background:#8B5CF6;color:#fff;border:none;
+  border-radius:16px;font-size:16px;font-weight:800;
+  cursor:pointer;margin-top:8px;
+}
+.sh-cancel{
+  width:100%;padding:16px;
+  background:#FEE2E2;color:#EF4444;border:none;
+  border-radius:16px;font-size:16px;font-weight:800;
+  cursor:pointer;margin-top:8px;
+}
+.radio{
+  padding:12px 14px;border-radius:14px;
+  border:2px solid #E5E7EB;cursor:pointer;
+  margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;
+  transition:all .1s;
+}
+.radio.sel{border-color:#8B5CF6;background:#F5F3FF}
+.rdot{
+  width:18px;height:18px;border-radius:9px;
+  border:2.5px solid #D1D5DB;margin-top:2px;flex-shrink:0;
+  transition:all .1s;
+}
+.radio.sel .rdot{border-color:#8B5CF6;background:#8B5CF6}
+.rt{font-size:14px;font-weight:700;color:#374151}
+.rs{font-size:12px;color:#9CA3AF;margin-top:2px}
+.ddown{
+  width:100%;padding:12px 14px;
+  border:1.5px solid #E5E7EB;border-radius:12px;
+  font-size:15px;color:#111827;background:#F9FAFB;
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;cursor:pointer;
+}
+
+/* ═══════════════════════════
+   USER HOME
+═══════════════════════════ */
+#uh .sa{background:#EFF6FF}
+
+.uh-header{padding:22px 20px 14px}
+.uh-greet{font-size:26px;font-weight:900;color:#1E1B4B}
+.uh-day{font-size:14px;font-weight:600;color:#818CF8;margin-top:3px}
+
+/* schedule tile */
+.stile{
+  margin:0 16px 12px;
+  background:linear-gradient(135deg,#8B5CF6 0%,#6366F1 100%);
+  border-radius:22px;padding:18px 20px;
+  box-shadow:0 8px 24px rgba(99,102,241,.32);
+  cursor:pointer;
+}
+.stile-hdr{
+  font-size:11px;font-weight:700;
+  color:rgba(255,255,255,.65);
+  text-transform:uppercase;letter-spacing:.8px;
+  margin-bottom:14px;
+}
+.stile-body{display:flex;align-items:center;gap:14px}
+.stile-ico{
+  width:64px;height:64px;
+  background:rgba(255,255,255,.2);border-radius:18px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;flex-shrink:0;
+}
+.stile-name{font-size:21px;font-weight:900;color:#fff}
+.stile-time{font-size:13px;color:rgba(255,255,255,.75);margin-top:3px;font-weight:600}
+.stile-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.2);color:#fff;
+  font-size:12px;font-weight:700;
+  padding:6px 14px;border-radius:20px;margin-top:13px;
+}
+.stile-badge.live{background:rgba(74,222,128,.3);color:#D1FAE5}
+
+/* activities tile */
+.atile{
+  margin:0 16px 12px;
+  background:#4F46E5;border-radius:22px;
+  padding:18px 20px;
+  box-shadow:0 6px 20px rgba(79,70,229,.28);cursor:pointer;
+}
+.at-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.at-ttl{font-size:16px;font-weight:800;color:#fff}
+.at-cnt{font-size:13px;color:rgba(255,255,255,.65);font-weight:600}
+.pbar{height:8px;background:rgba(255,255,255,.2);border-radius:4px;overflow:hidden}
+.pbar-f{height:8px;background:#A5F3FC;border-radius:4px}
+
+/* feature grid */
+.feat-grid{
+  padding:0 16px 24px;
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+}
+.ft{
+  background:#fff;border-radius:20px;padding:18px;
+  box-shadow:0 2px 10px rgba(0,0,0,.06);cursor:pointer;
+}
+.ft-em{font-size:30px;margin-bottom:10px}
+.ft-ti{font-size:16px;font-weight:800;color:#111827}
+.ft-su{font-size:12px;color:#9CA3AF;margin-top:3px}
+
+/* state toggle (prototype helper) */
+.state-row{
+  display:flex;justify-content:center;gap:8px;
+  padding:0 16px 10px;
+}
+.stog{
+  padding:6px 14px;border-radius:20px;
+  border:1.5px solid #C7D2FE;background:transparent;
+  color:#6366F1;font-size:12px;font-weight:700;
+  cursor:pointer;transition:all .15s;
+}
+.stog.on{background:#6366F1;color:#fff;border-color:#6366F1}
+
+/* ═══════════════════════════
+   NOTIFICATION
+═══════════════════════════ */
+#nf .sa{background:#E5E7EB}
+
+.nwrap{padding:20px;display:flex;flex-direction:column;gap:14px}
+.nlbl{
+  font-size:11px;font-weight:700;color:#9CA3AF;
+  text-transform:uppercase;letter-spacing:.5px;text-align:center;
+}
+.ls{
+  background:linear-gradient(160deg,#1a1a2e 0%,#16213e 55%,#0f3460 100%);
+  border-radius:24px;padding:28px 18px 24px;
+}
+.ls-time{font-size:58px;font-weight:200;color:#fff;text-align:center;line-height:1}
+.ls-date{font-size:14px;color:rgba(255,255,255,.5);text-align:center;margin-top:5px;margin-bottom:24px}
+.nbanner{
+  background:rgba(255,255,255,.12);
+  backdrop-filter:blur(20px);
+  border-radius:16px;padding:14px;
+  display:flex;gap:12px;align-items:flex-start;
+}
+.nb-ico{
+  width:40px;height:40px;border-radius:10px;
+  background:linear-gradient(135deg,#8B5CF6,#6366F1);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0;
+}
+.nb-app{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.nb-ttl{font-size:14px;font-weight:700;color:#fff;margin-top:2px}
+.nb-bod{font-size:13px;color:rgba(255,255,255,.65);margin-top:2px}
+
+.ninfo{
+  background:#fff;border-radius:14px;padding:14px 16px;
+  box-shadow:0 1px 6px rgba(0,0,0,.06);
+  font-size:13px;color:#374151;line-height:1.8;
+}
+.ninfo strong{color:#111827}
+.ninfo .dim{color:#9CA3AF;font-size:12px}
+</style>
+</head>
+<body>
+
+<!-- ── Screen navigation ── -->
+<div class="nav">
+  <button class="nb on"  onclick="show('gh')">👤 Guardian Home</button>
+  <button class="nb"     onclick="show('gsu')">👥 Schedule — Users</button>
+  <button class="nb"     onclick="show('gmw')">📅 Schedule — Weekly</button>
+  <button class="nb"     onclick="show('gmo')">✨ Schedule — One-off</button>
+  <button class="nb"     onclick="show('uh')">🏠 User Home</button>
+  <button class="nb"     onclick="show('nf')">🔔 Push Notification</button>
+</div>
+
+<!-- ── Phone ── -->
+<div class="phone">
+
+  <!-- Status bar -->
+  <div class="sb" id="status-bar">
+    <span>9:41</span>
+    <div class="sb-icons"><span>▲▲▲</span><span>WiFi</span><span>🔋</span></div>
+  </div>
+
+  <!-- ════════════════════════
+       GUARDIAN HOME
+  ════════════════════════ -->
+  <div class="screen on" id="gh">
+    <div class="sa">
+
+      <div class="gh-hero">
+        <div class="gh-row">
+          <div>
+            <div class="gh-name">Good morning, Sarah</div>
+            <div class="gh-sub">Guardian Portal</div>
+          </div>
+          <div class="gear">⚙️</div>
+        </div>
+      </div>
+
+      <div class="tiles">
+
+        <!-- Profiles — full width -->
+        <div class="tile-wide" style="border-left-color:#6366F1" onclick="show('gsu')">
+          <div class="tw-icon" style="background:#EEF2FF">👥</div>
+          <div class="tw-txt">
+            <div class="tw-title">Profiles</div>
+            <div class="tw-sub">Manage your users</div>
+          </div>
+          <div class="tw-arr">›</div>
+        </div>
+
+        <!-- Schedule + Activities -->
+        <div class="tile-row">
+          <div class="tile-half" style="border-top-color:#8B5CF6" onclick="show('gsu')">
+            <div class="th-ico">📅</div>
+            <div class="th-title">Schedule</div>
+            <div class="th-sub">Set classes</div>
+          </div>
+          <div class="tile-half" style="border-top-color:#10B981">
+            <div class="th-ico">✅</div>
+            <div class="th-title">Activities</div>
+            <div class="th-sub">Daily tasks</div>
+          </div>
+        </div>
+
+        <!-- Learning + Notifications -->
+        <div class="tile-row">
+          <div class="tile-half" style="border-top-color:#F59E0B">
+            <div class="th-ico">📚</div>
+            <div class="th-title">Learning</div>
+            <div class="th-sub">Tutorials</div>
+          </div>
+          <div class="tile-half" style="border-top-color:#EF4444">
+            <div class="th-ico">🔔</div>
+            <div class="th-title">Notifications</div>
+            <div class="th-sub">Updates</div>
+          </div>
+        </div>
+
+      </div>
+      <div class="bsp"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════
+       SCHEDULE — USER LIST
+  ════════════════════════ -->
+  <div class="screen" id="gsu">
+    <div class="shdr">
+      <div class="back" onclick="show('gh')">‹ Home</div>
+      <div class="shdr-title">Schedule</div>
+      <div class="shdr-r"></div>
+    </div>
+    <div class="sa">
+      <div class="sec-lbl">Choose a user</div>
+
+      <div class="ucard" onclick="show('gmw')">
+        <div class="uav" style="background:#8B5CF6">M</div>
+        <div>
+          <div class="un">Maya</div>
+          <div class="us">2 classes this week</div>
+        </div>
+        <div class="uarr">›</div>
+      </div>
+
+      <div class="ucard">
+        <div class="uav" style="background:#10B981">J</div>
+        <div>
+          <div class="un">Jake</div>
+          <div class="us">No classes set</div>
+        </div>
+        <div class="uarr">›</div>
+      </div>
+
+      <div class="ucard">
+        <div class="uav" style="background:#F59E0B">L</div>
+        <div>
+          <div class="un">Lily</div>
+          <div class="us">1 class this week</div>
+        </div>
+        <div class="uarr">›</div>
+      </div>
+
+      <div class="bsp"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════
+       SCHEDULE — MAYA WEEKLY
+  ════════════════════════ -->
+  <div class="screen" id="gmw">
+    <div class="shdr">
+      <div class="back" onclick="show('gsu')">‹ Back</div>
+      <div class="shdr-title">Maya's Schedule</div>
+      <div class="shdr-r"></div>
+    </div>
+    <div class="seg">
+      <button class="seg-btn on">📅  Weekly</button>
+      <button class="seg-btn" onclick="show('gmo')">✨  One-off</button>
+    </div>
+    <div class="sa">
+
+      <!-- Monday -->
+      <div class="day-block">
+        <div class="day-lbl">Monday</div>
+        <div class="ccard">
+          <div class="cc-em">🎹</div>
+          <div class="cc-inf">
+            <div class="cc-ti">Piano Lesson</div>
+            <div class="cc-tm">3:00 – 4:00 PM · Every Mon · Until Sep 20</div>
+          </div>
+          <div class="cc-del">✕</div>
+        </div>
+        <button class="add-day" onclick="openSheet('sh-weekly')">+ Add Monday class</button>
+      </div>
+
+      <!-- Tuesday -->
+      <div class="day-block">
+        <div class="day-lbl">Tuesday</div>
+        <div class="empty-d">No classes</div>
+        <button class="add-day" onclick="openSheet('sh-weekly')">+ Add Tuesday class</button>
+      </div>
+
+      <!-- Wednesday -->
+      <div class="day-block">
+        <div class="day-lbl">Wednesday</div>
+        <div class="ccard">
+          <div class="cc-em">🏊</div>
+          <div class="cc-inf">
+            <div class="cc-ti">Swimming</div>
+            <div class="cc-tm">5:00 – 6:00 PM · Every Wed · Until Sep 20</div>
+          </div>
+          <div class="cc-del">✕</div>
+        </div>
+        <button class="add-day" onclick="openSheet('sh-weekly')">+ Add Wednesday class</button>
+      </div>
+
+      <!-- Thu–Sun -->
+      <div class="day-block">
+        <div class="day-lbl">Thursday</div>
+        <div class="empty-d">No classes</div>
+        <button class="add-day" onclick="openSheet('sh-weekly')">+ Add Thursday class</button>
+      </div>
+      <div class="day-block">
+        <div class="day-lbl">Friday</div>
+        <div class="empty-d">No classes</div>
+        <button class="add-day" onclick="openSheet('sh-weekly')">+ Add Friday class</button>
+      </div>
+      <div class="day-block">
+        <div class="day-lbl">Saturday</div>
+        <div class="empty-d">No classes</div>
+        <button class="add-day" onclick="openSheet('sh-weekly')">+ Add Saturday class</button>
+      </div>
+      <div class="day-block">
+        <div class="day-lbl">Sunday</div>
+        <div class="empty-d">No classes</div>
+        <button class="add-day" onclick="openSheet('sh-weekly')">+ Add Sunday class</button>
+      </div>
+
+      <div class="bsp"></div>
+    </div>
+
+    <!-- Add Weekly Class sheet -->
+    <div class="overlay" id="sh-weekly" onclick="closeBg(event,'sh-weekly')">
+      <div class="sheet">
+        <div class="sh-handle"></div>
+        <div class="sh-title">Add Monday Class</div>
+
+        <div class="fl">Class name</div>
+        <input class="fi" type="text" id="wname" placeholder="e.g. Piano Lesson" oninput="suggest(this.value,'wemojis')"/>
+
+        <div class="esug-lbl">Suggested emoji</div>
+        <div class="erow" id="wemojis">
+          <div class="ec sel" onclick="selEc(this)">📅</div>
+          <div class="ec" onclick="selEc(this)">⭐</div>
+          <div class="ec" onclick="selEc(this)">🎯</div>
+          <div class="ec" onclick="selEc(this)">✨</div>
+        </div>
+
+        <div class="frow2">
+          <div>
+            <div class="fl">Start time</div>
+            <div class="fbox">3:00 PM</div>
+          </div>
+          <div>
+            <div class="fl">End time</div>
+            <div class="fbox">4:00 PM</div>
+          </div>
+        </div>
+
+        <div class="frow2">
+          <div>
+            <div class="fl">Valid from</div>
+            <div class="fbox">Jul 5, 2026</div>
+          </div>
+          <div>
+            <div class="fl">Until</div>
+            <div class="fbox">Oct 5, 2026</div>
+          </div>
+        </div>
+        <div class="fhint">Repeats every Monday within this range · Max 3 months</div>
+
+        <button class="sh-save" onclick="closeSheet('sh-weekly')">Save Class</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════
+       SCHEDULE — MAYA ONE-OFF
+  ════════════════════════ -->
+  <div class="screen" id="gmo">
+    <div class="shdr">
+      <div class="back" onclick="show('gsu')">‹ Back</div>
+      <div class="shdr-title">Maya's Schedule</div>
+      <div class="shdr-r"></div>
+    </div>
+    <div class="seg">
+      <button class="seg-btn" onclick="show('gmw')">📅  Weekly</button>
+      <button class="seg-btn on">✨  One-off</button>
+    </div>
+    <div class="sa">
+
+      <div class="oo-top">
+        <button class="add-pill" onclick="openSheet('sh-oneoff')">+ Add</button>
+      </div>
+
+      <!-- Cancellation -->
+      <div class="oo-dl">Jul 7 — cancellation</div>
+      <div class="cxcard">
+        <div style="font-size:22px">🚫</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700;color:#DC2626">Piano Lesson</div>
+          <div style="font-size:12px;color:#EF4444;margin-top:2px">Monday · 3:00 – 4:00 PM</div>
+        </div>
+        <div class="cx-badge">CANCELLED</div>
+        <div class="cc-del" style="margin-left:8px">✕</div>
+      </div>
+
+      <!-- One-off event -->
+      <div class="oo-dl" style="margin-top:10px">Jul 25</div>
+      <div class="ccard" style="margin:0 16px 8px">
+        <div class="cc-em">🎭</div>
+        <div class="cc-inf">
+          <div class="cc-ti">Theatre Trip</div>
+          <div class="cc-tm">10:00 AM – 12:00 PM · One-off</div>
+        </div>
+        <div class="cc-del">✕</div>
+      </div>
+
+      <div class="bsp"></div>
+    </div>
+
+    <!-- Add One-off sheet -->
+    <div class="overlay" id="sh-oneoff" onclick="closeBg(event,'sh-oneoff')">
+      <div class="sheet">
+        <div class="sh-handle"></div>
+        <div class="sh-title">Add One-off Event</div>
+
+        <div class="radio sel" id="r-new" onclick="switchOO('new')">
+          <div class="rdot"></div>
+          <div>
+            <div class="rt">New class on a specific date</div>
+            <div class="rs">Add a class that doesn't repeat</div>
+          </div>
+        </div>
+        <div class="radio" id="r-cancel" onclick="switchOO('cancel')">
+          <div class="rdot"></div>
+          <div>
+            <div class="rt">Cancel a recurring class</div>
+            <div class="rs">Mark one occurrence as cancelled</div>
+          </div>
+        </div>
+
+        <!-- New class form -->
+        <div id="form-new">
+          <div class="fl">Date</div>
+          <div class="fbox" style="margin-bottom:14px">Thursday, Jul 25</div>
+
+          <div class="fl">Class name</div>
+          <input class="fi" type="text" placeholder="e.g. Theatre Trip" oninput="suggest(this.value,'oemojis')"/>
+
+          <div class="esug-lbl">Suggested emoji</div>
+          <div class="erow" id="oemojis">
+            <div class="ec sel" onclick="selEc(this)">🎭</div>
+            <div class="ec" onclick="selEc(this)">🎬</div>
+            <div class="ec" onclick="selEc(this)">🎪</div>
+            <div class="ec" onclick="selEc(this)">🌟</div>
+          </div>
+
+          <div class="frow2">
+            <div>
+              <div class="fl">Start time</div>
+              <div class="fbox">10:00 AM</div>
+            </div>
+            <div>
+              <div class="fl">End time</div>
+              <div class="fbox">12:00 PM</div>
+            </div>
+          </div>
+          <button class="sh-save" onclick="closeSheet('sh-oneoff')">Save Event</button>
+        </div>
+
+        <!-- Cancel recurring form -->
+        <div id="form-cancel" style="display:none">
+          <div class="fl">Date to cancel</div>
+          <div class="fbox" style="margin-bottom:14px">Monday, Jul 7</div>
+
+          <div class="fl">Which class to cancel?</div>
+          <div class="ddown">
+            <span>🎹&nbsp; Piano Lesson (Mon 3:00 PM)</span>
+            <span>▾</span>
+          </div>
+
+          <button class="sh-cancel" onclick="closeSheet('sh-oneoff')">Mark as Cancelled</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════
+       USER HOME
+  ════════════════════════ -->
+  <div class="screen" id="uh">
+    <div class="sa">
+
+      <div class="uh-header">
+        <div class="uh-greet">Hi Maya 👋</div>
+        <div class="uh-day">Friday, July 5</div>
+      </div>
+
+      <!-- Prototype state toggle -->
+      <div class="state-row">
+        <button class="stog on" id="tog-up" onclick="schedState('up')">⏰ Upcoming</button>
+        <button class="stog" id="tog-now" onclick="schedState('now')">🟢 Happening now</button>
+        <button class="stog" id="tog-none" onclick="schedState('none')">— No class</button>
+      </div>
+
+      <!-- Schedule tile: upcoming -->
+      <div class="stile" id="st-up">
+        <div class="stile-hdr">📅  Next Class</div>
+        <div class="stile-body">
+          <div class="stile-ico">🎹</div>
+          <div>
+            <div class="stile-name">Piano Lesson</div>
+            <div class="stile-time">Today · 3:00 – 4:00 PM</div>
+          </div>
+        </div>
+        <div class="stile-badge">⏰&nbsp; In 25 minutes</div>
+      </div>
+
+      <!-- Schedule tile: happening now -->
+      <div class="stile" id="st-now" style="display:none">
+        <div class="stile-hdr">📅  Now</div>
+        <div class="stile-body">
+          <div class="stile-ico">🎹</div>
+          <div>
+            <div class="stile-name">Piano Lesson</div>
+            <div class="stile-time">3:00 – 4:00 PM</div>
+          </div>
+        </div>
+        <div class="stile-badge live">🟢&nbsp; Happening now</div>
+      </div>
+
+      <!-- Activities tile -->
+      <div class="atile">
+        <div class="at-hdr">
+          <div class="at-ttl">✅  Today's Activities</div>
+          <div class="at-cnt">2 of 5 done</div>
+        </div>
+        <div class="pbar"><div class="pbar-f" style="width:40%"></div></div>
+      </div>
+
+      <!-- Feature grid -->
+      <div class="feat-grid">
+        <div class="ft">
+          <div class="ft-em">💬</div>
+          <div class="ft-ti">Messages</div>
+          <div class="ft-su">Chat with friends</div>
+        </div>
+        <div class="ft">
+          <div class="ft-em">🤝</div>
+          <div class="ft-ti">Friends</div>
+          <div class="ft-su">My friends hub</div>
+        </div>
+        <div class="ft">
+          <div class="ft-em">🔍</div>
+          <div class="ft-ti">Discovery</div>
+          <div class="ft-su">Find new friends</div>
+        </div>
+        <div class="ft">
+          <div class="ft-em">📚</div>
+          <div class="ft-ti">Learn</div>
+          <div class="ft-su">Tutorials</div>
+        </div>
+      </div>
+
+      <div class="bsp"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════
+       PUSH NOTIFICATION
+  ════════════════════════ -->
+  <div class="screen" id="nf">
+    <div class="shdr">
+      <div style="min-width:60px"></div>
+      <div class="shdr-title">Push Notification</div>
+      <div style="min-width:60px"></div>
+    </div>
+    <div class="sa">
+      <div class="nwrap">
+
+        <div class="nlbl">Device lock screen · app in background</div>
+
+        <!-- Lock screen mockup -->
+        <div class="ls">
+          <div class="ls-time">2:45</div>
+          <div class="ls-date">Friday, July 5</div>
+          <div class="nbanner">
+            <div class="nb-ico">📅</div>
+            <div>
+              <div class="nb-app">IDD App · now</div>
+              <div class="nb-ttl">⏰ Piano Lesson starts in 15 minutes</div>
+              <div class="nb-bod">Today · 3:00 – 4:00 PM</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info card -->
+        <div class="ninfo">
+          <strong>How it works</strong><br>
+          Local notification is scheduled on the device when the user's app loads their schedule for the day.<br><br>
+          <strong>Fires:</strong> 15 minutes before each class<br>
+          <strong>Works:</strong> App open in background / screen off<br>
+          <span class="dim">Does not fire if app is fully closed</span>
+        </div>
+
+        <!-- Second notification example -->
+        <div class="nlbl" style="margin-top:4px">Second class same day</div>
+        <div class="ls" style="padding:20px 18px 20px">
+          <div class="nbanner">
+            <div class="nb-ico">📅</div>
+            <div>
+              <div class="nb-app">IDD App · now</div>
+              <div class="nb-ttl">⏰ Swimming starts in 15 minutes</div>
+              <div class="nb-bod">Today · 5:00 – 6:00 PM</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="bsp"></div>
+    </div>
+  </div>
+
+</div><!-- end phone -->
+
+<script>
+// ── Screen switching ──────────────────────────────
+const SCREEN_IDS = ['gh','gsu','gmw','gmo','uh','nf'];
+
+function show(id) {
+  SCREEN_IDS.forEach(s => document.getElementById(s).classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  document.querySelectorAll('.nb').forEach((b, i) => b.classList.toggle('on', SCREEN_IDS[i] === id));
+  // sync status bar background
+  const dark = ['nf'];
+  document.getElementById('status-bar').style.background = dark.includes(id) ? '#E5E7EB' : '#fff';
+}
+
+// ── Bottom sheets ─────────────────────────────────
+function openSheet(id) { document.getElementById(id).classList.add('open'); }
+function closeSheet(id) { document.getElementById(id).classList.remove('open'); }
+function closeBg(e, id) { if (e.target.id === id) closeSheet(id); }
+
+// ── Emoji selection ───────────────────────────────
+function selEc(el) {
+  el.closest('.erow').querySelectorAll('.ec').forEach(e => e.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// ── Smart emoji suggestions ───────────────────────
+const EMAP = [
+  [['piano','keyboard'],       ['🎹','🎵','🎼','🎶']],
+  [['music','singing','choir'],['🎵','🎤','🎼','🎸']],
+  [['swim','pool','water'],    ['🏊','🌊','💦','🏅']],
+  [['art','draw','paint'],     ['🎨','🖌️','✏️','🖍️']],
+  [['dance','ballet'],         ['💃','🕺','🎭','🩰']],
+  [['yoga','meditation'],      ['🧘','🌿','💆','☮️']],
+  [['gym','sport','fitness'],  ['💪','🏋️','🤸','🏅']],
+  [['read','book','library'],  ['📚','📖','📝','🔤']],
+  [['cook','bak','kitchen'],   ['🍳','👨‍🍳','🥘','🧁']],
+  [['theatre','theater','play'],['🎭','🎬','🎪','🌟']],
+  [['football','soccer'],      ['⚽','🏃','🥅','🏆']],
+  [['basketball'],             ['🏀','🏃','🤸','🏆']],
+  [['riding','horse'],         ['🐴','🤠','🎠','🏇']],
+  [['game','gaming'],          ['🎮','🕹️','🧩','🎯']],
+];
+function suggest(val, rowId) {
+  const v = val.toLowerCase();
+  let emojis = null;
+  for (const [keys, ems] of EMAP) {
+    if (keys.some(k => v.includes(k))) { emojis = ems; break; }
+  }
+  if (!emojis) {
+    if (!v) emojis = ['📅','⭐','🎯','✨'];
+    else emojis = ['📅','⭐','🎯','✨'];
+  }
+  document.getElementById(rowId).innerHTML = emojis
+    .map((e,i) => `<div class="ec ${i===0?'sel':''}" onclick="selEc(this)">${e}</div>`)
+    .join('');
+}
+
+// ── One-off mode toggle ───────────────────────────
+function switchOO(mode) {
+  const isNew = mode === 'new';
+  document.getElementById('r-new').classList.toggle('sel', isNew);
+  document.getElementById('r-cancel').classList.toggle('sel', !isNew);
+  document.getElementById('form-new').style.display = isNew ? 'block' : 'none';
+  document.getElementById('form-cancel').style.display = isNew ? 'none' : 'block';
+}
+
+// ── User home schedule tile state ─────────────────
+function schedState(s) {
+  document.getElementById('st-up').style.display   = s === 'up'   ? 'block' : 'none';
+  document.getElementById('st-now').style.display  = s === 'now'  ? 'block' : 'none';
+  document.getElementById('tog-up').classList.toggle('on',   s === 'up');
+  document.getElementById('tog-now').classList.toggle('on',  s === 'now');
+  document.getElementById('tog-none').classList.toggle('on', s === 'none');
+}
+</script>
+
+</body>
+</html>

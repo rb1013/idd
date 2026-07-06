@@ -7,13 +7,13 @@ import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navig
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { COLORS } from '../../constants';
-import { RootStackParamList } from '../../navigation';
+import { GuardianNavParamList } from '../../navigation';
 import type { TutorialWithFrames, TutorialFrame, TutorialStatus } from '../../types';
 
 const { width } = Dimensions.get('window');
 
-type NavProp = NativeStackNavigationProp<RootStackParamList, 'TutorialPreview'>;
-type RouteType = RouteProp<RootStackParamList, 'TutorialPreview'>;
+type NavProp = NativeStackNavigationProp<GuardianNavParamList, 'TutorialPreview'>;
+type RouteType = RouteProp<GuardianNavParamList, 'TutorialPreview'>;
 
 const STATUS_COLORS: Record<TutorialStatus, { bg: string; text: string }> = {
   generating: { bg: '#E8ECEF', text: '#5D6D7E' },

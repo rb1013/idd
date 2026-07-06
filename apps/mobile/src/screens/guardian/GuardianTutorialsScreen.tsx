@@ -8,7 +8,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
-import { RootStackParamList } from '../../navigation';
+import { GuardianNavParamList } from '../../navigation';
 import type { Tutorial, TutorialStatus } from '../../types';
 
 const STATUS_COLORS: Record<TutorialStatus, { bg: string; text: string }> = {
@@ -42,7 +42,7 @@ const FILTERS: { key: Filter; label: string }[] = [
 ];
 
 export default function GuardianTutorialsScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<GuardianNavParamList>>();
   const { guardian } = useAuth();
   const [tutorials, setTutorials] = useState<Tutorial[]>([]);
   const [loading, setLoading] = useState(true);

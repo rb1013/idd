@@ -142,6 +142,42 @@ export interface Notification {
   created_at: string;
 }
 
+export interface ScheduleTemplate {
+  id: string;
+  guardian_id: string;
+  user_id: string;
+  day_of_week: number; // 0 = Sun … 6 = Sat
+  start_time: string;  // "HH:MM:SS"
+  end_time: string;
+  title: string;
+  emoji: string;
+  valid_from: string;  // ISO date "YYYY-MM-DD"
+  valid_until: string;
+  created_at: string;
+}
+
+export interface ScheduleEvent {
+  id: string;
+  guardian_id: string;
+  user_id: string;
+  event_date: string;  // "YYYY-MM-DD"
+  start_time: string;
+  end_time: string;
+  title: string;
+  emoji: string;
+  is_cancellation: boolean;
+  template_id: string | null;
+  created_at: string;
+}
+
+export interface ScheduleItem {
+  id: string;
+  title: string;
+  emoji: string;
+  start_time: string;
+  end_time: string;
+}
+
 export interface UserWithDetails extends UserProfile {
   likes: Category[];
   dislikes: Category[];

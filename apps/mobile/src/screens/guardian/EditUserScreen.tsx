@@ -14,11 +14,11 @@ import { COLORS, DAYS_OF_WEEK, COMPREHENSION_LEVELS, GENDERS, LANGUAGES, US_STAT
 import DropdownPicker from '../../components/DropdownPicker';
 import type { Category } from '../../types';
 import MultiSelectChips from '../../components/MultiSelectChips';
-import { RootStackParamList } from '../../navigation';
+import { GuardianNavParamList } from '../../navigation';
 
 type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'EditUser'>;
-  route: RouteProp<RootStackParamList, 'EditUser'>;
+  navigation: NativeStackNavigationProp<GuardianNavParamList, 'EditUser'>;
+  route: RouteProp<GuardianNavParamList, 'EditUser'>;
 };
 
 type Step = 'social' | 'interests' | 'location' | 'professional' | 'chat' | 'health' | 'friends' | 'account';

@@ -1,7 +1,7 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Image, SafeAreaView,
-  Modal, Dimensions,
+  Modal, Dimensions, ScrollView, Animated,
 } from 'react-native';
 import * as Speech from 'expo-speech';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -10,35 +10,23 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 import { UserStackParamList } from '../../navigation';
+import { ScheduleItem } from '../../types';
+import { refreshScheduleNotifications } from '../../lib/scheduleNotifications';
 
 function LogoutIcon() {
   const c = '#fff';
   return (
     <View style={{ width: 38, height: 38 }}>
-      {/* Person: head */}
       <View style={{ position: 'absolute', top: 2, left: 2, width: 9, height: 9, borderRadius: 4.5, backgroundColor: c }} />
-      {/* Person: body leaning forward */}
       <View style={{ position: 'absolute', top: 12, left: 4, width: 3.5, height: 12, borderRadius: 1.75, backgroundColor: c, transform: [{ rotate: '10deg' }] }} />
-      {/* Person: front leg */}
       <View style={{ position: 'absolute', top: 22, left: 8, width: 3.5, height: 9, borderRadius: 1.75, backgroundColor: c, transform: [{ rotate: '20deg' }] }} />
-      {/* Person: back leg */}
       <View style={{ position: 'absolute', top: 22, left: 1, width: 3.5, height: 9, borderRadius: 1.75, backgroundColor: c, transform: [{ rotate: '-20deg' }] }} />
-      {/* Person: arm reaching toward door */}
       <View style={{ position: 'absolute', top: 14, left: 7, width: 9, height: 3.5, borderRadius: 1.75, backgroundColor: c, transform: [{ rotate: '-25deg' }] }} />
-
-      {/* Door frame: top */}
       <View style={{ position: 'absolute', top: 4, left: 20, right: 2, height: 3.5, borderRadius: 1.75, backgroundColor: c }} />
-      {/* Door frame: right side */}
       <View style={{ position: 'absolute', top: 4, right: 2, bottom: 4, width: 3.5, borderRadius: 1.75, backgroundColor: c }} />
-      {/* Door frame: bottom */}
       <View style={{ position: 'absolute', bottom: 4, left: 20, right: 2, height: 3.5, borderRadius: 1.75, backgroundColor: c }} />
-
-      {/* Arrow going into door */}
-      {/* Stem */}
       <View style={{ position: 'absolute', top: 17, left: 16, width: 14, height: 3.5, borderRadius: 1.75, backgroundColor: c }} />
-      {/* Top wing */}
       <View style={{ position: 'absolute', top: 10, left: 23, width: 3.5, height: 10, borderRadius: 1.75, backgroundColor: c, transform: [{ rotate: '45deg' }] }} />
-      {/* Bottom wing */}
       <View style={{ position: 'absolute', top: 17, left: 23, width: 3.5, height: 10, borderRadius: 1.75, backgroundColor: c, transform: [{ rotate: '-45deg' }] }} />
     </View>
   );
@@ -54,6 +42,46 @@ const MOODS = [
 const { width } = Dimensions.get('window');
 const TILE_W = (width - 48 - 16) / 2;
 
+// ── Schedule helpers ──────────────────────────────────────────────────────
+
+function nowMinsOfDay(): number {
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function startMinsOfDay(t: string): number {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function findNextClass(items: ScheduleItem[]): { item: ScheduleItem; state: 'upcoming' | 'now' } | null {
+  const now = nowMinsOfDay();
+  const happeningNow = items.find(i => {
+    const diff = startMinsOfDay(i.start_time) - now;
+    return diff >= -15 && diff <= 0;
+  });
+  if (happeningNow) return { item: happeningNow, state: 'now' };
+  const upcoming = items.find(i => startMinsOfDay(i.start_time) > now);
+  if (upcoming) return { item: upcoming, state: 'upcoming' };
+  return null;
+}
+
+function timeUntil(startTime: string): string {
+  const diff = startMinsOfDay(startTime) - nowMinsOfDay();
+  if (diff <= 0) return 'Starting now';
+  if (diff < 60) return `In ${diff} min${diff === 1 ? '' : 's'}`;
+  const h = Math.floor(diff / 60), m = diff % 60;
+  return m > 0 ? `In ${h}h ${m}m` : `In ${h}h`;
+}
+
+function formatTime(t: string): string {
+  const [h, m] = t.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  return `${h % 12 || 12}:${m.toString().padStart(2, '0')} ${period}`;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────
+
 export default function UserHomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<UserStackParamList>>();
   const { activeUser, signOut } = useAuth();
@@ -61,20 +89,45 @@ export default function UserHomeScreen() {
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [showUserCard, setShowUserCard] = useState(false);
   const [activityProgress, setActivityProgress] = useState<{ done: number; total: number } | null>(null);
+  const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
+
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const pulseLoop = useRef<Animated.CompositeAnimation | null>(null);
 
   useFocusEffect(useCallback(() => {
     if (!activeUser) return;
-    supabase
-      .rpc('get_user_activities_today', { p_user_id: activeUser.id })
-      .then(({ data }) => {
-        const list = (data || []) as { completed: boolean }[];
-        if (list.length > 0) {
-          setActivityProgress({ done: list.filter(a => a.completed).length, total: list.length });
-        } else {
-          setActivityProgress(null);
-        }
-      });
+    Promise.all([
+      supabase.rpc('get_user_activities_today', { p_user_id: activeUser.id }),
+      supabase.rpc('get_user_schedule_today',   { p_user_id: activeUser.id }),
+    ]).then(([{ data: acts }, { data: sched }]) => {
+      const list = (acts || []) as { completed: boolean }[];
+      setActivityProgress(list.length > 0
+        ? { done: list.filter(a => a.completed).length, total: list.length }
+        : null
+      );
+      const schedList = (sched || []) as ScheduleItem[];
+      setScheduleItems(schedList);
+      refreshScheduleNotifications(schedList);
+    });
   }, [activeUser]));
+
+  const nextClass = findNextClass(scheduleItems);
+
+  useEffect(() => {
+    if (nextClass?.state === 'now') {
+      pulseLoop.current = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 0.3, duration: 700, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1,   duration: 700, useNativeDriver: true }),
+        ])
+      );
+      pulseLoop.current.start();
+    } else {
+      pulseLoop.current?.stop();
+      pulseAnim.setValue(1);
+    }
+    return () => { pulseLoop.current?.stop(); };
+  }, [nextClass?.state]);
 
   const firstName = activeUser?.name?.split(' ')[0] ?? 'there';
 
@@ -116,19 +169,54 @@ export default function UserHomeScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.grid}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
 
-        {/* Activities tile — full width, only shown when guardian has set activities */}
+        {/* Schedule tile — hidden when no upcoming class today */}
+        {nextClass && (
+          <TouchableOpacity
+            style={[
+              styles.scheduleTile,
+              nextClass.state === 'now' ? styles.scheduleTileNow : styles.scheduleTileUpcoming,
+            ]}
+            activeOpacity={0.88}
+          >
+            <View style={styles.scheduleLeft}>
+              <Text style={styles.scheduleEmoji}>{nextClass.item.emoji}</Text>
+              <View>
+                <Text style={styles.scheduleTitle}>{nextClass.item.title}</Text>
+                <Text style={styles.scheduleTime}>
+                  {formatTime(nextClass.item.start_time)} – {formatTime(nextClass.item.end_time)}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.scheduleRight}>
+              {nextClass.state === 'now' ? (
+                <View style={styles.nowBadge}>
+                  <Animated.View style={[styles.nowDot, { opacity: pulseAnim }]} />
+                  <Text style={styles.nowBadgeTxt}>Now</Text>
+                </View>
+              ) : (
+                <Text style={styles.untilTxt}>{timeUntil(nextClass.item.start_time)}</Text>
+              )}
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* Activities tile */}
         {activityProgress !== null && (
           <TouchableOpacity
-            style={[styles.tile, styles.activitiesTile]}
+            style={styles.activitiesTile}
             onPress={() => navigation.navigate('Activities')}
             activeOpacity={0.85}
           >
-            <Text style={styles.tileEmoji}>✅</Text>
+            <Text style={styles.actEmoji}>✅</Text>
             <View style={styles.activitiesInfo}>
-              <Text style={styles.tileTitle}>Today's Activities</Text>
-              <Text style={styles.tileSub}>
+              <Text style={styles.actTitle}>Today's Activities</Text>
+              <Text style={styles.actSub}>
                 {activityProgress.done === activityProgress.total
                   ? '🎉 All done!'
                   : `${activityProgress.done} of ${activityProgress.total} done`}
@@ -140,55 +228,53 @@ export default function UserHomeScreen() {
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity
-          style={[styles.tile, styles.friendsTile]}
-          onPress={() => navigation.navigate('FriendsHub')}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.tileEmoji}>🤝</Text>
-          <Text style={styles.tileTitle}>Friends</Text>
-          <Text style={styles.tileSub}>Meet new people{'\n'}and connect</Text>
-        </TouchableOpacity>
+        {/* Explore section */}
+        <Text style={styles.sectionLabel}>🌈  Explore</Text>
 
-        <TouchableOpacity style={[styles.tile, styles.messagesTile]} onPress={() => navigation.navigate('Messages')} activeOpacity={0.85}>
-          <Text style={styles.tileEmoji}>💬</Text>
-          <Text style={styles.tileTitle}>Messages</Text>
-          <Text style={styles.tileSub}>Chat with{'\n'}your friends</Text>
-        </TouchableOpacity>
+        <View style={styles.grid}>
+          <TouchableOpacity
+            style={[styles.tile, styles.friendsTile]}
+            onPress={() => navigation.navigate('FriendsHub')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.tileEmoji}>🤝</Text>
+            <Text style={styles.tileTitle}>Friends</Text>
+            <Text style={styles.tileSub}>Meet new people{'\n'}and connect</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tile, styles.moodTile]}
-          onPress={() => setShowMoodPicker(true)}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.tileEmoji}>{mood ?? '😊'}</Text>
-          <Text style={styles.tileTitle}>My Mood</Text>
-          <Text style={styles.tileSub}>How are you{'\n'}feeling today?</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={[styles.tile, styles.messagesTile]} onPress={() => navigation.navigate('Messages')} activeOpacity={0.85}>
+            <Text style={styles.tileEmoji}>💬</Text>
+            <Text style={styles.tileTitle}>Messages</Text>
+            <Text style={styles.tileSub}>Chat with{'\n'}your friends</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tile, styles.learnTile]}
-          onPress={() => navigation.navigate('Tutorials')}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.tileEmoji}>📚</Text>
-          <Text style={styles.tileTitle}>Learn</Text>
-          <Text style={styles.tileSub}>Watch videos and{'\n'}discover new things</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={[styles.tile, styles.moodTile]}
+            onPress={() => setShowMoodPicker(true)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.tileEmoji}>{mood ?? '😊'}</Text>
+            <Text style={styles.tileTitle}>My Mood</Text>
+            <Text style={styles.tileSub}>How are you{'\n'}feeling today?</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tile, styles.learnTile]}
+            onPress={() => navigation.navigate('Tutorials')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.tileEmoji}>📚</Text>
+            <Text style={styles.tileTitle}>Learn</Text>
+            <Text style={styles.tileSub}>Watch videos and{'\n'}discover new things</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ height: 32 }} />
+      </ScrollView>
 
       {/* User card */}
-      <Modal
-        visible={showUserCard}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowUserCard(false)}
-      >
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={() => setShowUserCard(false)}
-        >
+      <Modal visible={showUserCard} transparent animationType="fade" onRequestClose={() => setShowUserCard(false)}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowUserCard(false)}>
           <TouchableOpacity style={styles.userCard} activeOpacity={1} onPress={() => {}}>
             <TouchableOpacity
               style={styles.closeBtn}
@@ -197,7 +283,6 @@ export default function UserHomeScreen() {
             >
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
-
             {activeUser?.photo_url
               ? <Image source={{ uri: activeUser.photo_url }} style={styles.userCardAvatar} />
               : (
@@ -206,9 +291,7 @@ export default function UserHomeScreen() {
                 </View>
               )
             }
-
             <Text style={styles.userCardName}>Hi, {activeUser?.name}!</Text>
-
             <TouchableOpacity
               style={styles.logoutBtn}
               onPress={signOut}
@@ -223,17 +306,8 @@ export default function UserHomeScreen() {
       </Modal>
 
       {/* Mood picker */}
-      <Modal
-        visible={showMoodPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowMoodPicker(false)}
-      >
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={() => setShowMoodPicker(false)}
-        >
+      <Modal visible={showMoodPicker} transparent animationType="fade" onRequestClose={() => setShowMoodPicker(false)}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowMoodPicker(false)}>
           <TouchableOpacity style={styles.pickerCard} activeOpacity={1} onPress={() => {}}>
             <TouchableOpacity
               style={styles.closeBtn}
@@ -242,9 +316,7 @@ export default function UserHomeScreen() {
             >
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
-
             <Text style={styles.pickerTitle}>How are you feeling?</Text>
-
             <View style={styles.moodRow}>
               {MOODS.map(m => (
                 <TouchableOpacity
@@ -290,27 +362,71 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: 26, fontWeight: '700', color: COLORS.primary },
   moodBadge: {
-    position: 'absolute',
-    bottom: -2, right: -2,
-    width: 28, height: 28,
-    borderRadius: 14,
-    backgroundColor: '#fff',
-    justifyContent: 'center', alignItems: 'center',
+    position: 'absolute', bottom: -2, right: -2,
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2, shadowRadius: 4,
-    elevation: 4,
+    shadowOpacity: 0.2, shadowRadius: 4, elevation: 4,
     borderWidth: 2, borderColor: COLORS.background,
   },
   moodBadgeEmoji: { fontSize: 16 },
 
+  scrollContent: { paddingHorizontal: 16, paddingBottom: 16, gap: 14 },
+
+  // Schedule tile
+  scheduleTile: {
+    borderRadius: 22,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  scheduleTileUpcoming: { backgroundColor: '#6D28D9' },
+  scheduleTileNow:      { backgroundColor: '#059669' },
+  scheduleLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+  scheduleEmoji: { fontSize: 36 },
+  scheduleTitle: { fontSize: 17, fontWeight: '800', color: '#fff', marginBottom: 2 },
+  scheduleTime:  { fontSize: 12, color: 'rgba(255,255,255,0.8)' },
+  scheduleRight: { alignItems: 'flex-end', paddingLeft: 8 },
+  untilTxt: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.9)' },
+  nowBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  nowDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' },
+  nowBadgeTxt: { fontSize: 13, fontWeight: '800', color: '#fff' },
+
+  // Activities tile
+  activitiesTile: {
+    backgroundColor: '#2563EB',
+    borderRadius: 22,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  actEmoji: { fontSize: 38 },
+  activitiesInfo: { flex: 1, gap: 6 },
+  actTitle: { fontSize: 17, fontWeight: '800', color: '#fff' },
+  actSub:   { fontSize: 13, color: 'rgba(255,255,255,0.85)' },
+  actBarBg: { height: 8, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 4, overflow: 'hidden' },
+  actBarFill: { height: 8, backgroundColor: '#fff', borderRadius: 4 },
+
+  // Section label
+  sectionLabel: { fontSize: 20, fontWeight: '800', color: COLORS.text, paddingLeft: 4 },
+
+  // Feature grid
   grid: {
-    flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    paddingBottom: 32,
     gap: 16,
-    alignContent: 'center',
   },
   tile: {
     width: TILE_W,
@@ -325,105 +441,60 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 6,
   },
-  activitiesTile: {
-    backgroundColor: '#2563EB',
-    width: '100%', flexDirection: 'row',
-    paddingVertical: 22, paddingHorizontal: 20, gap: 16,
-    alignItems: 'center', justifyContent: 'flex-start',
-  },
-  activitiesInfo: { flex: 1, gap: 6 },
-  actBarBg: { height: 8, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 4, overflow: 'hidden' },
-  actBarFill: { height: 8, backgroundColor: '#fff', borderRadius: 4 },
   friendsTile:  { backgroundColor: '#5CBB7A' },
   messagesTile: { backgroundColor: '#4A90E2' },
   moodTile:     { backgroundColor: '#F5A623' },
   learnTile:    { backgroundColor: '#9B59B6' },
-  tileEmoji:  { fontSize: 56, marginBottom: 12 },
-  tileTitle:  { fontSize: 24, fontWeight: '800', color: '#fff', marginBottom: 6 },
-  tileSub:    { fontSize: 13, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 18 },
+  tileEmoji: { fontSize: 56, marginBottom: 12 },
+  tileTitle: { fontSize: 24, fontWeight: '800', color: '#fff', marginBottom: 6 },
+  tileSub:   { fontSize: 13, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 18 },
 
   // User card
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
   userCard: {
-    backgroundColor: '#fff',
-    borderRadius: 28,
-    paddingHorizontal: 32,
-    paddingTop: 16,
-    paddingBottom: 36,
-    width: width - 80,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
-    elevation: 12,
+    backgroundColor: '#fff', borderRadius: 28,
+    paddingHorizontal: 32, paddingTop: 16, paddingBottom: 36,
+    width: width - 80, alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25, shadowRadius: 24, elevation: 12,
   },
   userCardAvatar: { width: 88, height: 88, borderRadius: 44, marginBottom: 16 },
   userCardAvatarPlaceholder: {
     width: 88, height: 88, borderRadius: 44,
     backgroundColor: COLORS.primaryLight,
-    justifyContent: 'center', alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 16,
   },
   userCardAvatarText: { fontSize: 36, fontWeight: '800', color: COLORS.primary },
   userCardName: { fontSize: 22, fontWeight: '800', color: COLORS.text, marginBottom: 28 },
   logoutBtn: {
-    width: 72, height: 72,
-    borderRadius: 36,
+    width: 72, height: 72, borderRadius: 36,
     backgroundColor: '#E53E3E',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#E53E3E',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#E53E3E', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
   },
 
   // Mood picker
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   pickerCard: {
-    backgroundColor: '#fff',
-    borderRadius: 28,
-    paddingHorizontal: 28,
-    paddingTop: 20,
-    paddingBottom: 28,
-    width: width - 48,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
-    elevation: 12,
+    backgroundColor: '#fff', borderRadius: 28,
+    paddingHorizontal: 28, paddingTop: 20, paddingBottom: 28,
+    width: width - 48, alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25, shadowRadius: 24, elevation: 12,
   },
   closeBtn: {
-    alignSelf: 'flex-end',
-    width: 40, height: 40,
-    borderRadius: 12,
+    alignSelf: 'flex-end', width: 40, height: 40, borderRadius: 12,
     justifyContent: 'center', alignItems: 'center',
-    backgroundColor: COLORS.border,
-    marginBottom: 8,
+    backgroundColor: COLORS.border, marginBottom: 8,
   },
   closeBtnText: { fontSize: 20, fontWeight: '900', color: COLORS.text, lineHeight: 22 },
   pickerTitle: { fontSize: 20, fontWeight: '800', color: COLORS.text, marginBottom: 24 },
   moodRow: { flexDirection: 'row', gap: 16 },
   moodOption: {
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    borderRadius: 20,
-    backgroundColor: COLORS.surface,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    alignItems: 'center', gap: 8, padding: 12, borderRadius: 20,
+    backgroundColor: COLORS.surface, borderWidth: 2, borderColor: 'transparent',
   },
-  moodOptionSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primaryLight,
-  },
+  moodOptionSelected: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
   moodEmoji: { fontSize: 44 },
   moodLabel: { fontSize: 13, fontWeight: '700', color: COLORS.textLight },
 });

@@ -12,7 +12,7 @@ import {
   COLORS, LANGUAGES, TUTORIAL_TARGET_SKILLS, TUTORIAL_VISUAL_STYLES,
   TUTORIAL_IMAGE_STYLES, TUTORIAL_AUDIO, TUTORIAL_DURATIONS, TUTORIAL_COMPREHENSION,
 } from '../../constants';
-import { RootStackParamList } from '../../navigation';
+import { GuardianNavParamList } from '../../navigation';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -29,7 +29,7 @@ const FORMAT_OPTIONS: { key: Format; emoji: string; label: string }[] = [
 const SECTION_COLORS = ['#4A90E2', '#9B59B6', '#1ABC9C'] as const;
 
 export default function CreateTutorialScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<GuardianNavParamList>>();
   const { guardian } = useAuth();
 
   // Section open state: 1 = open, 2 & 3 start collapsed

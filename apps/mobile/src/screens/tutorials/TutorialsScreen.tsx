@@ -232,7 +232,7 @@ function SlideshowModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; o
           {currentFrame?.tts_text && (
             <Text style={styles.slideshowNarration}>{currentFrame.tts_text}</Text>
           )}
-          {speaking && <Text style={styles.speakingIndicator}>🔊 Reading aloud…</Text>}
+          {speaking && <Text style={styles.speakingIndicator}>📢 Reading aloud…</Text>}
         </View>
 
         {/* Navigation */}

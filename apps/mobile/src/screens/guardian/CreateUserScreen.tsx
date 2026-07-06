@@ -13,9 +13,9 @@ import { COLORS, DAYS_OF_WEEK, COMPREHENSION_LEVELS, GENDERS, LANGUAGES, US_STAT
 import DropdownPicker from '../../components/DropdownPicker';
 import { Category } from '../../types';
 import MultiSelectChips from '../../components/MultiSelectChips';
-import { RootStackParamList } from '../../navigation';
+import { GuardianNavParamList } from '../../navigation';
 
-type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'CreateUser'> };
+type Props = { navigation: NativeStackNavigationProp<GuardianNavParamList, 'CreateUser'> };
 
 type Step = 'social' | 'interests' | 'location' | 'professional' | 'chat' | 'health' | 'account';
 

@@ -7,12 +7,12 @@ import { useFocusEffect, useRoute, RouteProp } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS, TUTORIAL_TARGET_SKILLS, TUTORIAL_COMPREHENSION } from '../../constants';
-import { RootStackParamList } from '../../navigation';
+import { GuardianNavParamList } from '../../navigation';
 import type { Tutorial } from '../../types';
 
 const { width } = Dimensions.get('window');
 
-type RouteType = RouteProp<RootStackParamList, 'TutorialLibrary'>;
+type RouteType = RouteProp<GuardianNavParamList, 'TutorialLibrary'>;
 
 const FORMAT_EMOJI: Record<string, string> = { video: '🎬', slideshow: '🖼', cards: '🃏' };
 

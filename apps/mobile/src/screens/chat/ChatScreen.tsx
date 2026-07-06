@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
-  Alert, ScrollView, Image,
+  Alert, Image,
 } from 'react-native';
 import * as Speech from 'expo-speech';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -17,17 +17,6 @@ import { isSymbolMessage } from '../../lib/aacSymbols';
 
 type Route = RouteProp<UserStackParamList, 'Chat'>;
 
-const QUICK_REPLIES = [
-  { emoji: '👋', text: 'Hello! How are you?' },
-  { emoji: '🤔', text: 'What are you doing?' },
-  { emoji: '🎮', text: 'Want to play?' },
-];
-
-const REACTIONS = ['👍', '❌', '⏳', '👀'];
-
-const MACROS = [
-  'Yes 👍', 'No ❌', 'On my way 🏃', 'Talk later 📞', 'Received 📥', 'Running late ⏳',
-];
 
 const AVATAR_COLORS = ['#5CBB7A', '#9B59B6', '#F5A623', '#4A90E2', '#E53E3E', '#1ABC9C'];
 function avatarColor(name: string) {
@@ -71,7 +60,7 @@ export default function ChatScreen() {
                 </View>
               )
             }
-            <Text style={styles.headerSpeaker}>🔊</Text>
+            <Text style={styles.headerSpeaker}>📢</Text>
           </View>
           <Text style={styles.headerName}>{participantName}</Text>
           {isOnline
@@ -209,7 +198,7 @@ export default function ChatScreen() {
                   onPress={() => Speech.speak(isSymbol ? item.content.split('/').pop()?.split('.')[0]?.replace(/_/g, ' ') ?? '' : item.content, { rate: 0.85, pitch: 1.0 })}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.speakMsgIcon}>🔊</Text>
+                  <Text style={styles.speakMsgIcon}>📢</Text>
                 </TouchableOpacity>
               </View>
               <Text style={[styles.timestamp, styles.timestampThem]}>{timeLabel}</Text>
@@ -221,64 +210,18 @@ export default function ChatScreen() {
       {/* Bottom controls */}
       <View style={styles.bottom}>
 
-        {/* 3 quick-reply sentence buttons */}
-        <View style={styles.quickReplies}>
-          {QUICK_REPLIES.map(q => (
-            <TouchableOpacity
-              key={q.text}
-              style={styles.quickReplyBtn}
-              onPress={() => sendMessage(`${q.emoji} ${q.text}`)}
-              activeOpacity={0.75}
-            >
-              <Text style={styles.quickReplyEmoji}>{q.emoji}</Text>
-              <Text style={styles.quickReplyText}>{q.text}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Emoji reaction tray */}
-        <View style={styles.reactionRow}>
-          <Text style={styles.reactionLabel}>REACT</Text>
-          {REACTIONS.map(r => (
-            <TouchableOpacity
-              key={r}
-              style={styles.reactionBtn}
-              onPress={() => sendMessage(r)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.reactionEmoji}>{r}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Macro chip row */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.macroScroll}
-          contentContainerStyle={styles.macroContent}
+        {/* Communication Board — prominent button */}
+        <TouchableOpacity
+          style={styles.boardBtn}
+          onPress={() => setBoardVisible(true)}
+          activeOpacity={0.8}
         >
-          {MACROS.map(m => (
-            <TouchableOpacity
-              key={m}
-              style={styles.macroChip}
-              onPress={() => sendMessage(m)}
-              activeOpacity={0.75}
-            >
-              <Text style={styles.macroText}>{m}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+          <Text style={styles.boardBtnIcon}>🗣️</Text>
+          <Text style={styles.boardBtnLabel}>Communication Board</Text>
+        </TouchableOpacity>
 
         {/* Text input */}
         <View style={styles.inputRow}>
-          <TouchableOpacity
-            style={styles.boardBtn}
-            onPress={() => setBoardVisible(true)}
-            activeOpacity={0.75}
-          >
-            <Text style={styles.boardBtnIcon}>🗣️</Text>
-          </TouchableOpacity>
           <TextInput
             style={styles.input}
             value={text}
@@ -309,7 +252,7 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: '#EFF6FF' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // Header
@@ -333,13 +276,14 @@ const styles = StyleSheet.create({
     maxWidth: '75%', padding: 12, borderRadius: 20,
   },
   bubbleThem: {
-    backgroundColor: COLORS.surface, alignSelf: 'flex-start',
+    backgroundColor: '#FFF7ED', alignSelf: 'flex-start',
     borderBottomLeftRadius: 6,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 4, elevation: 1,
+    borderLeftWidth: 4, borderLeftColor: '#F97316',
+    shadowColor: '#F97316', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1, shadowRadius: 4, elevation: 1,
   },
   bubbleMine: {
-    backgroundColor: COLORS.primary, alignSelf: 'flex-end',
+    backgroundColor: '#4F46E5', alignSelf: 'flex-end',
     borderBottomRightRadius: 6,
   },
   bubbleWrapThem: { alignSelf: 'flex-start', alignItems: 'flex-start', gap: 3 },
@@ -347,11 +291,11 @@ const styles = StyleSheet.create({
   bubbleSpeakRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   speakMsgBtn: {
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#EDE9FE',
     justifyContent: 'center', alignItems: 'center',
   },
   speakMsgIcon: { fontSize: 16 },
-  bubbleText: { fontSize: 16, color: COLORS.text, lineHeight: 22 },
+  bubbleText: { fontSize: 19, color: COLORS.text, lineHeight: 27 },
   bubbleTextMine: { color: '#fff' },
   timestamp: { fontSize: 11 },
   timestampThem: { color: COLORS.textLight, marginLeft: 6 },
@@ -366,69 +310,36 @@ const styles = StyleSheet.create({
     gap: 10,
   },
 
-  // Quick replies
-  quickReplies: { gap: 7 },
-  quickReplyBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: COLORS.primaryLight,
-    borderWidth: 1.5, borderColor: COLORS.primary,
-    borderRadius: 16, paddingVertical: 11, paddingHorizontal: 14,
-  },
-  quickReplyEmoji: { fontSize: 20 },
-  quickReplyText: { fontSize: 15, fontWeight: '700', color: '#1D4ED8' },
-
-  // Reaction tray
-  reactionRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-  },
-  reactionLabel: {
-    fontSize: 10, fontWeight: '800', color: COLORS.textLight,
-    letterSpacing: 0.8, width: 40,
-  },
-  reactionBtn: {
-    width: 46, height: 46, borderRadius: 23,
-    backgroundColor: '#F0F4F8',
-    borderWidth: 1.5, borderColor: COLORS.border,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  reactionEmoji: { fontSize: 22 },
-
-  // Macros
-  macroScroll: { flexGrow: 0 },
-  macroContent: { gap: 8, paddingHorizontal: 2 },
-  macroChip: {
-    backgroundColor: '#F0F4F8',
-    borderWidth: 1.5, borderColor: COLORS.border,
-    borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14,
-  },
-  macroText: { fontSize: 14, fontWeight: '600', color: COLORS.text },
-
   // Symbol bubbles
   bubbleSymbol: { padding: 6, backgroundColor: 'transparent' },
   symbolBubbleImg: { width: 80, height: 80 },
+
+  // Communication Board button — prominent
+  boardBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 10, backgroundColor: '#8B5CF6',
+    borderRadius: 20, paddingVertical: 16,
+    shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.4, shadowRadius: 14, elevation: 8,
+  },
+  boardBtnIcon: { fontSize: 28 },
+  boardBtnLabel: { fontSize: 18, fontWeight: '900', color: '#fff', letterSpacing: 0.3 },
 
   // Input
   inputRow: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 10,
   },
-  boardBtn: {
-    width: 46, height: 46, borderRadius: 23,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1.5, borderColor: COLORS.primary,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  boardBtnIcon: { fontSize: 22 },
   input: {
-    flex: 1, backgroundColor: '#F0F4F8',
-    borderWidth: 1.5, borderColor: COLORS.border,
+    flex: 1, backgroundColor: '#EEF2FF',
+    borderWidth: 1.5, borderColor: '#C7D2FE',
     borderRadius: 22, paddingHorizontal: 16, paddingVertical: 10,
     fontSize: 16, color: COLORS.text, maxHeight: 100,
   },
   sendBtn: {
     width: 46, height: 46, borderRadius: 23,
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#4F46E5',
     justifyContent: 'center', alignItems: 'center',
-    shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 },
+    shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35, shadowRadius: 8, elevation: 5,
   },
   sendBtnDisabled: { opacity: 0.4 },

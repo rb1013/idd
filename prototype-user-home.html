@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IDD — User Home</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  background: #C9D1DC;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 16px 48px;
+  gap: 18px;
+}
+
+/* ── State toggles ── */
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.controls-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,.55);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.toggle-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.tog {
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(255,255,255,.35);
+  background: rgba(255,255,255,.12);
+  color: rgba(255,255,255,.8);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+  backdrop-filter: blur(4px);
+}
+.tog:hover { background: rgba(255,255,255,.22); }
+.tog.on { background: #fff; color: #374151; border-color: #fff; }
+
+/* ── Phone frame ── */
+.phone {
+  width: 390px;
+  background: #EFF6FF;
+  border-radius: 52px;
+  overflow: hidden;
+  box-shadow: 0 0 0 11px #1C1C1E, 0 36px 90px rgba(0,0,0,.4);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ── Status bar ── */
+.statusbar {
+  background: #EFF6FF;
+  padding: 14px 28px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.sb-time { font-size: 16px; font-weight: 700; color: #1E1B4B; }
+.sb-icons { display: flex; align-items: center; gap: 6px; }
+.sb-icon { font-size: 13px; }
+.sb-bat {
+  width: 26px; height: 13px;
+  border: 1.5px solid #1E1B4B;
+  border-radius: 3px;
+  position: relative;
+  display: flex; align-items: center;
+  padding: 2px;
+}
+.sb-bat::after {
+  content: '';
+  position: absolute;
+  right: -5px; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 6px;
+  background: #1E1B4B;
+  border-radius: 0 2px 2px 0;
+}
+.sb-bat-fill {
+  width: 72%;
+  height: 100%;
+  background: #1E1B4B;
+  border-radius: 1px;
+}
+
+/* ── Scroll area ── */
+.scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 36px;
+}
+.scroll::-webkit-scrollbar { display: none; }
+
+/* ── Greeting ── */
+.greeting {
+  padding: 16px 22px 6px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.greet-left {}
+.greet-hi {
+  font-size: 28px;
+  font-weight: 900;
+  color: #1E1B4B;
+  line-height: 1.1;
+}
+.greet-date {
+  font-size: 14px;
+  font-weight: 600;
+  color: #818CF8;
+  margin-top: 4px;
+}
+.avatar-btn {
+  width: 46px; height: 46px;
+  border-radius: 23px;
+  background: linear-gradient(135deg, #A78BFA, #818CF8);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 4px 12px rgba(139,92,246,.35);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* ── Section label ── */
+.sec-lbl {
+  font-size: 11px;
+  font-weight: 800;
+  color: #A5B4FC;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 14px 22px 6px;
+}
+
+/* ══════════════════════════
+   SCHEDULE TILE
+══════════════════════════ */
+.sched-tile {
+  margin: 0 16px 14px;
+  border-radius: 26px;
+  padding: 20px 22px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .12s;
+}
+.sched-tile:active { transform: scale(.98); }
+
+/* upcoming */
+.sched-tile.upcoming {
+  background: linear-gradient(135deg, #7C3AED 0%, #6366F1 60%, #818CF8 100%);
+  box-shadow: 0 10px 32px rgba(124,58,237,.38);
+}
+/* happening now */
+.sched-tile.happening {
+  background: linear-gradient(135deg, #059669 0%, #10B981 60%, #34D399 100%);
+  box-shadow: 0 10px 32px rgba(5,150,105,.38);
+}
+
+/* decorative circles */
+.sched-tile::before {
+  content: '';
+  position: absolute;
+  width: 180px; height: 180px;
+  border-radius: 90px;
+  background: rgba(255,255,255,.06);
+  top: -60px; right: -40px;
+}
+.sched-tile::after {
+  content: '';
+  position: absolute;
+  width: 100px; height: 100px;
+  border-radius: 50px;
+  background: rgba(255,255,255,.06);
+  bottom: -20px; right: 60px;
+}
+
+.st-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.st-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255,255,255,.65);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.st-badge-live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255,255,255,.22);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: .3px;
+}
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #6EE7B7;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .6; transform: scale(.8); }
+}
+
+.st-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.st-emoji-box {
+  width: 72px; height: 72px;
+  background: rgba(255,255,255,.18);
+  border-radius: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+}
+.st-text { flex: 1; }
+.st-name {
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.15;
+}
+.st-time {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,.75);
+  margin-top: 4px;
+}
+
+.st-footer {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.st-countdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 22px;
+}
+.st-more {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,.6);
+}
+
+/* ══════════════════════════
+   ACTIVITIES TILE
+══════════════════════════ */
+.act-tile {
+  margin: 0 16px 14px;
+  background: #4F46E5;
+  border-radius: 26px;
+  padding: 20px 22px;
+  box-shadow: 0 8px 24px rgba(79,70,229,.32);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform .12s;
+}
+.act-tile:active { transform: scale(.98); }
+.act-tile::before {
+  content: '';
+  position: absolute;
+  width: 140px; height: 140px;
+  border-radius: 70px;
+  background: rgba(255,255,255,.05);
+  top: -50px; right: -20px;
+}
+
+.at-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.at-left {}
+.at-title {
+  font-size: 17px;
+  font-weight: 900;
+  color: #fff;
+}
+.at-sub {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,.6);
+  margin-top: 3px;
+}
+.at-count-box {
+  background: rgba(255,255,255,.18);
+  border-radius: 14px;
+  padding: 6px 14px;
+  text-align: center;
+}
+.at-count-num {
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+}
+.at-count-of {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,.6);
+}
+.pbar-bg {
+  height: 10px;
+  background: rgba(255,255,255,.18);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.pbar-fill {
+  height: 10px;
+  background: linear-gradient(90deg, #A5F3FC, #67E8F9);
+  border-radius: 5px;
+  transition: width .4s ease;
+  position: relative;
+}
+.pbar-fill::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 12px;
+  background: rgba(255,255,255,.4);
+  border-radius: 5px;
+}
+
+/* ══════════════════════════
+   FEATURE GRID
+══════════════════════════ */
+.feat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 0 16px;
+}
+.feat-card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 20px 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+  position: relative;
+  overflow: hidden;
+}
+.feat-card:active { transform: scale(.96); box-shadow: 0 1px 6px rgba(0,0,0,.07); }
+.feat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  border-radius: 24px 24px 0 0;
+}
+.fc-messages::before { background: linear-gradient(90deg, #6366F1, #818CF8); }
+.fc-friends::before  { background: linear-gradient(90deg, #10B981, #34D399); }
+.fc-discover::before { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+.fc-learn::before    { background: linear-gradient(90deg, #EF4444, #F87171); }
+
+.fc-emoji { font-size: 34px; margin-bottom: 12px; display: block; }
+.fc-title { font-size: 17px; font-weight: 900; color: #111827; }
+.fc-sub { font-size: 12px; color: #9CA3AF; margin-top: 4px; font-weight: 500; }
+
+/* ── Unread badge on messages ── */
+.fc-badge {
+  position: absolute;
+  top: 16px; right: 16px;
+  min-width: 22px; height: 22px;
+  background: #EF4444;
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: #fff;
+  padding: 0 6px;
+}
+
+/* ── Bottom home indicator ── */
+.home-bar {
+  padding: 12px 0 8px;
+  display: flex;
+  justify-content: center;
+}
+.home-ind {
+  width: 130px; height: 5px;
+  background: #1E1B4B;
+  border-radius: 3px;
+  opacity: .18;
+}
+
+/* ══════════════════════════
+   EMPTY STATE (no schedule)
+══════════════════════════ */
+.no-sched {
+  display: none;
+}
+</style>
+</head>
+<body>
+
+<!-- State controls -->
+<div class="controls">
+  <div class="controls-label">Schedule tile state</div>
+  <div class="toggle-row">
+    <button class="tog on" id="t-up"   onclick="setState('upcoming')">⏰ Upcoming</button>
+    <button class="tog"    id="t-now"  onclick="setState('happening')">🟢 Happening now</button>
+    <button class="tog"    id="t-none" onclick="setState('none')">— No class today</button>
+  </div>
+</div>
+
+<!-- Phone -->
+<div class="phone">
+
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <div class="sb-icons">
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+        <rect x="0" y="4" width="3" height="8" rx="1" fill="#1E1B4B" opacity=".3"/>
+        <rect x="4.5" y="2.5" width="3" height="9.5" rx="1" fill="#1E1B4B" opacity=".5"/>
+        <rect x="9" y="1" width="3" height="11" rx="1" fill="#1E1B4B" opacity=".7"/>
+        <rect x="13.5" y="0" width="3" height="12" rx="1" fill="#1E1B4B"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+        <path d="M8 3C5.5 3 3.3 4.1 1.8 5.8L0 4C2 1.5 4.8 0 8 0s6 1.5 8 4l-1.8 1.8C12.7 4.1 10.5 3 8 3z" fill="#1E1B4B" opacity=".3"/>
+        <path d="M8 6c-1.7 0-3.2.7-4.3 1.8L2 6.2C3.5 4.5 5.6 3.5 8 3.5s4.5 1 6 2.7L12.3 7.8C11.2 6.7 9.7 6 8 6z" fill="#1E1B4B" opacity=".6"/>
+        <path d="M8 9c-.8 0-1.6.3-2.1.9L8 12l2.1-2.1C9.6 9.3 8.8 9 8 9z" fill="#1E1B4B"/>
+      </svg>
+      <div class="sb-bat"><div class="sb-bat-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="scroll">
+
+    <!-- Greeting -->
+    <div class="greeting">
+      <div class="greet-left">
+        <div class="greet-hi">Hi Maya 👋</div>
+        <div class="greet-date">Friday, July 5</div>
+      </div>
+      <div class="avatar-btn">😊</div>
+    </div>
+
+    <!-- Schedule section -->
+    <div class="sec-lbl" id="sched-label">📅  Today's Class</div>
+
+    <!-- Schedule tile: upcoming -->
+    <div class="sched-tile upcoming" id="tile-upcoming">
+      <div class="st-top-row">
+        <div class="st-label">Next Class</div>
+      </div>
+      <div class="st-body">
+        <div class="st-emoji-box" id="st-emoji">🎹</div>
+        <div class="st-text">
+          <div class="st-name" id="st-name">Piano Lesson</div>
+          <div class="st-time" id="st-time">Today · 3:00 – 4:00 PM</div>
+        </div>
+      </div>
+      <div class="st-footer">
+        <div class="st-countdown">⏰&nbsp; In 25 minutes</div>
+        <div class="st-more">Wed: 🏊 Swimming</div>
+      </div>
+    </div>
+
+    <!-- Schedule tile: happening now -->
+    <div class="sched-tile happening" id="tile-happening" style="display:none">
+      <div class="st-top-row">
+        <div class="st-label">Now</div>
+        <div class="st-badge-live">
+          <div class="live-dot"></div>
+          Happening now
+        </div>
+      </div>
+      <div class="st-body">
+        <div class="st-emoji-box">🎹</div>
+        <div class="st-text">
+          <div class="st-name">Piano Lesson</div>
+          <div class="st-time">3:00 – 4:00 PM · ends in 52 min</div>
+        </div>
+      </div>
+      <div class="st-footer">
+        <div class="st-countdown" style="background:rgba(255,255,255,.2)">🏁&nbsp; Enjoy your class!</div>
+      </div>
+    </div>
+
+    <!-- No class today -->
+    <div id="tile-none" style="display:none; margin:0 16px 14px">
+      <!-- tile hidden, section label also hidden -->
+    </div>
+
+    <!-- Activities -->
+    <div class="sec-lbl">✅  Today's Activities</div>
+
+    <div class="act-tile" id="act-tile">
+      <div class="at-top">
+        <div class="at-left">
+          <div class="at-title">Daily Activities</div>
+          <div class="at-sub" id="act-sub">Keep it up! 3 more to go</div>
+        </div>
+        <div class="at-count-box">
+          <div class="at-count-num" id="act-num">2</div>
+          <div class="at-count-of" id="act-of">of 5</div>
+        </div>
+      </div>
+      <div class="pbar-bg">
+        <div class="pbar-fill" id="pbar" style="width:40%"></div>
+      </div>
+    </div>
+
+    <!-- Activities progress toggle (prototype helper) -->
+    <div style="display:flex;justify-content:center;gap:8px;margin:-4px 0 14px">
+      <button onclick="setActivity(0,5)"  style="font-size:11px;padding:4px 10px;border-radius:10px;border:1.5px solid #C7D2FE;background:transparent;color:#6366F1;font-weight:700;cursor:pointer">0/5</button>
+      <button onclick="setActivity(2,5)"  style="font-size:11px;padding:4px 10px;border-radius:10px;border:1.5px solid #C7D2FE;background:#6366F1;color:#fff;font-weight:700;cursor:pointer">2/5</button>
+      <button onclick="setActivity(5,5)"  style="font-size:11px;padding:4px 10px;border-radius:10px;border:1.5px solid #C7D2FE;background:transparent;color:#6366F1;font-weight:700;cursor:pointer">5/5 🌟</button>
+    </div>
+
+    <!-- Features -->
+    <div class="sec-lbl">🌈  Explore</div>
+
+    <div class="feat-grid">
+
+      <div class="feat-card fc-messages">
+        <div class="fc-badge">3</div>
+        <span class="fc-emoji">💬</span>
+        <div class="fc-title">Messages</div>
+        <div class="fc-sub">Chat with friends</div>
+      </div>
+
+      <div class="feat-card fc-friends">
+        <span class="fc-emoji">🤝</span>
+        <div class="fc-title">Friends</div>
+        <div class="fc-sub">My friends hub</div>
+      </div>
+
+      <div class="feat-card fc-discover">
+        <span class="fc-emoji">🔍</span>
+        <div class="fc-title">Discovery</div>
+        <div class="fc-sub">Find new friends</div>
+      </div>
+
+      <div class="feat-card fc-learn">
+        <span class="fc-emoji">📚</span>
+        <div class="fc-title">Learn</div>
+        <div class="fc-sub">Tutorials</div>
+      </div>
+
+    </div>
+
+  </div><!-- end scroll -->
+
+  <!-- Home indicator -->
+  <div class="home-bar"><div class="home-ind"></div></div>
+
+</div><!-- end phone -->
+
+<script>
+function setState(s) {
+  document.getElementById('tile-upcoming').style.display  = s === 'upcoming'  ? 'block' : 'none';
+  document.getElementById('tile-happening').style.display = s === 'happening' ? 'block' : 'none';
+  document.getElementById('tile-none').style.display      = s === 'none'      ? 'block' : 'none';
+  document.getElementById('sched-label').style.display    = s === 'none'      ? 'none'  : 'block';
+
+  document.getElementById('t-up').classList.toggle('on',   s === 'upcoming');
+  document.getElementById('t-now').classList.toggle('on',  s === 'happening');
+  document.getElementById('t-none').classList.toggle('on', s === 'none');
+}
+
+function setActivity(done, total) {
+  const pct = total > 0 ? (done / total) * 100 : 0;
+  document.getElementById('pbar').style.width = pct + '%';
+  document.getElementById('act-num').textContent = done;
+  document.getElementById('act-of').textContent  = 'of ' + total;
+
+  const sub = document.getElementById('act-sub');
+  const remaining = total - done;
+  if (done === 0)        sub.textContent = "Let's get started!";
+  else if (remaining > 0) sub.textContent = `Keep it up! ${remaining} more to go`;
+  else                   sub.textContent  = '🌟 Amazing job today!';
+
+  // All done: change tile colour
+  document.getElementById('act-tile').style.background = done === total
+    ? '#059669'
+    : '#4F46E5';
+  document.getElementById('act-tile').style.boxShadow = done === total
+    ? '0 8px 24px rgba(5,150,105,.32)'
+    : '0 8px 24px rgba(79,70,229,.32)';
+}
+</script>
+</body>
+</html>
