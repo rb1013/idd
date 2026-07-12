@@ -55,6 +55,8 @@ SecureStore is key-value only — no "list all keys" capability. Solution: maint
 **On revoke:** remove userId from index array + delete credentials entry.
 **On login screen load:** read index → fetch each entry → render a card per user.
 
+> **No Supabase storage.** Biometric details are never sent to or stored in any database table. All data lives exclusively on the device via iOS Keychain / Android Keystore through `expo-secure-store`. If the device is lost or replaced, the guardian must redo setup on the new device.
+
 ---
 
 ## Key Design Decisions
@@ -73,13 +75,29 @@ SecureStore is key-value only — no "list all keys" capability. Solution: maint
 
 ## TODO
 
-- [ ] Add "Enable biometric login on this device" toggle to `CreateUserScreen`
-- [ ] Add same toggle to `EditUserScreen` (enable / revoke)
-- [ ] Implement SecureStore index helpers (read index, add entry, remove entry)
-- [ ] On guardian login success, save `guardian_profile` (name, photo_url) to SecureStore for tile rendering
-- [ ] Update `LoginScreen` to read SecureStore on mount and render: one guardian tile + N IDD user tiles
-- [ ] Guardian tile tap → navigate to existing email + password form (no biometric prompt, no biometric option)
-- [ ] Implement biometric prompt using `expo-local-authentication` → on success, retrieve credentials and call `supabase.auth.signInWithPassword`
-- [ ] Handle edge cases: biometrics not enrolled on device, biometric failure, device doesn't support it → fall back to standard login gracefully
+- [x] Add "Enable biometric login on this device" toggle to `CreateUserScreen`
+- [x] Add same toggle to `EditUserScreen` (enable / revoke)
+- [x] Implement SecureStore index helpers (read index, add entry, remove entry)
+- [x] On guardian login success, save `guardian_profile` (name, photo_url) to SecureStore for tile rendering
+- [x] Update `LoginScreen` to read SecureStore on mount and render: one guardian tile + N IDD user tiles
+- [x] Guardian tile tap → navigate to existing email + password form (no biometric prompt, no biometric option)
+- [x] Implement biometric prompt using `expo-local-authentication` → on success, retrieve credentials and call `supabase.auth.signInWithPassword`
+- [x] Handle edge cases: biometrics not enrolled on device, biometric failure, device doesn't support it → fall back to standard login gracefully
 - [ ] Test multi-user scenario (2 IDD users on same device)
 - [ ] Test new device scenario (no SecureStore entries → standard login only)
+
+---
+
+## Implementation Summary
+
+### Files created
+- **`src/lib/biometricStore.ts`** — all SecureStore operations: save/load guardian profile, maintain IDD user index, save/remove/load per-user credentials, check biometric hardware, trigger biometric prompt via `expo-local-authentication`
+
+### Files changed
+- **`src/screens/auth/LoginScreen.tsx`** — replaced toggle + email form with tile grid. On launch reads SecureStore for guardian profile + enrolled IDD users. Guardian tile (🔒) → email/password form. IDD user tile (🫆) → biometric prompt → silent sign-in. Falls back to email/password form on fresh device with no tiles.
+- **`src/lib/AuthContext.tsx`** — saves guardian name + photo to SecureStore after every successful guardian login so the guardian tile renders on next launch.
+- **`src/screens/guardian/CreateUserScreen.tsx`** — account step shows "Enable biometric login on this device" toggle (visible only when email + password are filled in and device supports biometrics). Saves credentials to SecureStore on successful account creation.
+- **`src/screens/guardian/EditUserScreen.tsx`** — account step shows biometric toggle for both existing accounts (enable/revoke) and new accounts. Syncs SecureStore on save.
+
+### Dependencies added
+- `expo-local-authentication ~56.0.4`

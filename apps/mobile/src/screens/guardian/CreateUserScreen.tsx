@@ -9,6 +9,7 @@ import { decode } from 'base64-arraybuffer';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
+import { saveBiometricUser, isBiometricSupported, isBiometricAvailable, promptBiometric } from '../../lib/biometricStore';
 import { COLORS, DAYS_OF_WEEK, COMPREHENSION_LEVELS, GENDERS, LANGUAGES, US_STATES } from '../../constants';
 import DropdownPicker from '../../components/DropdownPicker';
 import { Category } from '../../types';
@@ -65,10 +66,30 @@ export default function CreateUserScreen({ navigation }: Props) {
   // Account setup
   const [accountPassword, setAccountPassword] = useState('');
   const [accountConfirmPassword, setAccountConfirmPassword] = useState('');
+  const [enableBiometric, setEnableBiometric] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+
+  useEffect(() => {
+    isBiometricSupported().then(setBiometricAvailable);
+  }, []);
 
   useEffect(() => {
     supabase.from('categories').select('*').then(({ data }) => setCategories(data || []));
   }, []);
+
+  async function handleBiometricToggle() {
+    if (enableBiometric) {
+      setEnableBiometric(false);
+      return;
+    }
+    const available = await isBiometricAvailable();
+    if (!available) {
+      Alert.alert('Biometrics not set up', 'Please set up Face ID or fingerprint on this device first, then try again.');
+      return;
+    }
+    const passed = await promptBiometric('Confirm to enable biometric login');
+    if (passed) setEnableBiometric(true);
+  }
 
   const likeCategories = categories.filter(c => c.type === 'like');
   const dislikeCategories = categories.filter(c => c.type === 'dislike');
@@ -149,7 +170,7 @@ export default function CreateUserScreen({ navigation }: Props) {
     // Create login account if email + password provided
     if (email && accountPassword) {
       const { data: { session } } = await supabase.auth.getSession();
-      const { data: fnData, error: fnError } = await supabase.functions.invoke('create-user-account', {
+      const { error: fnError } = await supabase.functions.invoke('create-user-account', {
         body: { email: email.toLowerCase().trim(), password: accountPassword, profile_id: userId },
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
@@ -159,6 +180,17 @@ export default function CreateUserScreen({ navigation }: Props) {
         Alert.alert('Account setup failed', detail);
         setLoading(false);
         return;
+      }
+
+      // Save biometric credentials if enabled
+      if (enableBiometric) {
+        await saveBiometricUser({
+          id: userId,
+          name,
+          photo_url: photo_url ?? null,
+          email: email.toLowerCase().trim(),
+          password: accountPassword,
+        });
       }
     }
 
@@ -335,6 +367,19 @@ export default function CreateUserScreen({ navigation }: Props) {
               autoCorrect={false}
             />
 
+            {email && accountPassword && biometricAvailable && (
+              <View style={styles.biometricCard}>
+                <Toggle
+                  label="Enable biometric login on this device"
+                  value={enableBiometric}
+                  onToggle={handleBiometricToggle}
+                />
+                <Text style={styles.biometricHint}>
+                  When enabled, {name || 'this user'} will appear as a tile on the login screen and can be unlocked using face or fingerprint recognition.
+                </Text>
+              </View>
+            )}
+
             <Text style={styles.skipHint}>Leave blank to skip account setup — you can do this later from Edit Profile.</Text>
           </View>
         )}
@@ -428,6 +473,11 @@ const styles = StyleSheet.create({
   },
   infoText: { fontSize: 14, color: COLORS.text, lineHeight: 20 },
   skipHint: { fontSize: 13, color: COLORS.textLight, marginTop: 24, textAlign: 'center', lineHeight: 18 },
+  biometricCard: {
+    marginTop: 20, backgroundColor: COLORS.primaryLight, borderRadius: 14,
+    padding: 16, borderWidth: 1, borderColor: COLORS.primary + '40',
+  },
+  biometricHint: { fontSize: 13, color: COLORS.text, lineHeight: 18, marginTop: 6 },
   backBtn: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
   backBtnText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   nextBtn: { flex: 2, backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center' },

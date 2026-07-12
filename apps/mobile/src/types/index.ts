@@ -8,6 +8,7 @@ export interface Guardian {
   email: string;
   full_name: string;
   phone?: string;
+  photo_url?: string;
   created_at: string;
 }
 

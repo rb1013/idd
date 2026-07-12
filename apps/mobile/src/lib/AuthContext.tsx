@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { AppState } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { saveGuardianProfile } from './biometricStore';
 import { Guardian, UserProfile } from '../types';
 
 interface AuthContextType {
@@ -68,6 +69,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setGuardian(guardianData);
       setActiveUser(null);
       setLoading(false);
+      // Persist guardian profile so the login tile can show their name/photo on next launch
+      saveGuardianProfile({ name: guardianData.full_name, photo_url: guardianData.photo_url ?? null });
       return;
     }
 

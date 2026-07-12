@@ -10,6 +10,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
+import { saveBiometricUser, removeBiometricUser, isBiometricEnabledForUser, isBiometricSupported, isBiometricAvailable, promptBiometric } from '../../lib/biometricStore';
 import { COLORS, DAYS_OF_WEEK, COMPREHENSION_LEVELS, GENDERS, LANGUAGES, US_STATES } from '../../constants';
 import DropdownPicker from '../../components/DropdownPicker';
 import type { Category } from '../../types';
@@ -64,6 +65,9 @@ export default function EditUserScreen({ navigation, route }: Props) {
   const [existingAuthUserId, setExistingAuthUserId] = useState<string | null>(null);
   const [accountPassword, setAccountPassword] = useState('');
   const [accountConfirmPassword, setAccountConfirmPassword] = useState('');
+  const [enableBiometric, setEnableBiometric] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricPassword, setBiometricPassword] = useState('');
   const [friendsForPin, setFriendsForPin] = useState<FriendForPin[]>([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
 
@@ -180,7 +184,29 @@ export default function EditUserScreen({ navigation, route }: Props) {
       setHealthDesc(health.description || '');
     }
 
+    // Load biometric state for this user
+    const [bioEnabled, bioAvail] = await Promise.all([
+      isBiometricEnabledForUser(userId),
+      isBiometricSupported(),
+    ]);
+    setEnableBiometric(bioEnabled);
+    setBiometricAvailable(bioAvail);
+
     setInitialLoading(false);
+  }
+
+  async function handleBiometricToggle() {
+    if (enableBiometric) {
+      setEnableBiometric(false);
+      return;
+    }
+    const available = await isBiometricAvailable();
+    if (!available) {
+      Alert.alert('Biometrics not set up', 'Please set up Face ID or fingerprint on this device first, then try again.');
+      return;
+    }
+    const passed = await promptBiometric('Confirm to enable biometric login');
+    if (passed) setEnableBiometric(true);
   }
 
   async function pickPhoto() {
@@ -253,7 +279,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
     // Create login account if not already set and credentials provided
     if (!existingAuthUserId && email && accountPassword) {
       const { data: { session } } = await supabase.auth.getSession();
-      const { data: fnData, error: fnError } = await supabase.functions.invoke('create-user-account', {
+      const { error: fnError } = await supabase.functions.invoke('create-user-account', {
         body: { email: email.toLowerCase().trim(), password: accountPassword, profile_id: userId },
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
@@ -264,6 +290,27 @@ export default function EditUserScreen({ navigation, route }: Props) {
         setLoading(false);
         return;
       }
+    }
+
+    // Sync biometric store
+    const passwordToStore = existingAuthUserId ? biometricPassword : accountPassword;
+    const hasAccount = existingAuthUserId || (email && accountPassword);
+    if (hasAccount && enableBiometric && email) {
+      if (!passwordToStore) {
+        Alert.alert('Password required', 'Please enter this user\'s current password to enable biometric login.');
+        setLoading(false);
+        return;
+      }
+      const profileData = await supabase.from('user_profiles').select('name, photo_url').eq('id', userId).single();
+      await saveBiometricUser({
+        id: userId,
+        name: profileData.data?.name ?? name,
+        photo_url: profileData.data?.photo_url ?? existingPhotoUrl ?? null,
+        email: email.toLowerCase().trim(),
+        password: passwordToStore,
+      });
+    } else if (!enableBiometric) {
+      await removeBiometricUser(userId);
     }
 
     setLoading(false);
@@ -425,14 +472,43 @@ export default function EditUserScreen({ navigation, route }: Props) {
             {existingAuthUserId ? (
               <>
                 <View style={styles.infoCard}>
-                  <Text style={styles.infoText}>
-                    ✓ Login account is set up for this person.
-                  </Text>
+                  <Text style={styles.infoText}>✓ Login account is set up for this person.</Text>
                   {email ? <Text style={[styles.infoText, { marginTop: 6, fontWeight: '600' }]}>{email}</Text> : null}
                 </View>
                 <Text style={styles.skipHint}>
                   To change the password, the user can use "Forgot Password" on the login screen.
                 </Text>
+                {biometricAvailable && (
+                  <View style={styles.biometricCard}>
+                    <Toggle
+                      label="Biometric login on this device"
+                      value={enableBiometric}
+                      onToggle={handleBiometricToggle}
+                    />
+                    <Text style={styles.biometricHint}>
+                      {enableBiometric
+                        ? 'This user will appear as a tile on the login screen and can be unlocked with face or fingerprint recognition.'
+                        : 'Enable to let this user log in via face or fingerprint recognition on this device.'}
+                    </Text>
+                    {enableBiometric && (
+                      <>
+                        <TextInput
+                          style={[styles.input, { marginTop: 12, marginBottom: 0 }]}
+                          placeholder="Enter this user's current password"
+                          value={biometricPassword}
+                          onChangeText={setBiometricPassword}
+                          secureTextEntry
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          placeholderTextColor={COLORS.textLight}
+                        />
+                        <Text style={[styles.biometricHint, { marginTop: 6 }]}>
+                          Required so the app can sign in automatically after biometric verification.
+                        </Text>
+                      </>
+                    )}
+                  </View>
+                )}
               </>
             ) : (
               <>
@@ -469,6 +545,18 @@ export default function EditUserScreen({ navigation, route }: Props) {
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
+                {email && accountPassword && biometricAvailable && (
+                  <View style={styles.biometricCard}>
+                    <Toggle
+                      label="Enable biometric login on this device"
+                      value={enableBiometric}
+                      onToggle={handleBiometricToggle}
+                    />
+                    <Text style={styles.biometricHint}>
+                      When enabled, this user will appear as a tile on the login screen and can be unlocked with face or fingerprint recognition.
+                    </Text>
+                  </View>
+                )}
                 <Text style={styles.skipHint}>Leave blank to skip — save the profile without creating a login.</Text>
               </>
             )}
@@ -558,6 +646,11 @@ const styles = StyleSheet.create({
   },
   infoText: { fontSize: 14, color: COLORS.text, lineHeight: 20 },
   skipHint: { fontSize: 13, color: COLORS.textLight, marginTop: 24, textAlign: 'center', lineHeight: 18 },
+  biometricCard: {
+    marginTop: 20, backgroundColor: COLORS.primaryLight, borderRadius: 14,
+    padding: 16, borderWidth: 1, borderColor: COLORS.primary + '40',
+  },
+  biometricHint: { fontSize: 13, color: COLORS.text, lineHeight: 18, marginTop: 6 },
   backBtn: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
   backBtnText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   nextBtn: { flex: 2, backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center' },

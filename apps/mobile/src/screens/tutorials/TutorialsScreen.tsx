@@ -158,7 +158,7 @@ export default function TutorialsScreen() {
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyEmoji}>📚</Text>
           <Text style={styles.emptyText}>No tutorials yet</Text>
-          <Text style={styles.emptyHint}>Ask your carer to add learning videos for you</Text>
+          <Text style={styles.emptyHint}>Ask your Guardian to add learning videos for you</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
@@ -169,7 +169,7 @@ export default function TutorialsScreen() {
                 <Text style={styles.featuredHeaderEmoji}>⭐</Text>
                 <View>
                   <Text style={styles.featuredHeaderTitle}>Your Favourites</Text>
-                  <Text style={styles.featuredHeaderSub}>Chosen for you by your carer</Text>
+                  <Text style={styles.featuredHeaderSub}>Chosen for you by your Guardian</Text>
                 </View>
               </View>
               {featuredItems.map(item => (
