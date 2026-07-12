@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 import { UserStackParamList } from '../../navigation';
+import AvatarWithMood from '../../components/AvatarWithMood';
 
 export default function ProfileScreen() {
   const { activeUser, signOut } = useAuth();
@@ -108,10 +109,13 @@ export default function ProfileScreen() {
       >
         {/* Avatar + name */}
         <View style={styles.header}>
-          {activeUser!.photo_url
-            ? <Image source={{ uri: activeUser!.photo_url }} style={styles.avatar} />
-            : <View style={styles.avatarPlaceholder}><Text style={styles.avatarInitial}>{activeUser!.name[0]}</Text></View>
-          }
+          <AvatarWithMood
+            name={activeUser!.name}
+            photo={activeUser!.photo_url}
+            size={96}
+            mood={activeUser!.current_mood}
+            badgeSize={32}
+          />
           <Text style={styles.name}>{activeUser!.name}</Text>
           <Text style={styles.meta}>{activeUser!.age} yrs • {activeUser!.gender}</Text>
           {locationParts ? <Text style={styles.metaLocation}>{locationParts}</Text> : null}

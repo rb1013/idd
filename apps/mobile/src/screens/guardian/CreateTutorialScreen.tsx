@@ -18,12 +18,11 @@ if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
 }
 
-type Format = 'video' | 'slideshow' | 'cards';
+type Format = 'video' | 'slideshow';
 
 const FORMAT_OPTIONS: { key: Format; emoji: string; label: string }[] = [
   { key: 'video',     emoji: '🎬', label: 'Video' },
   { key: 'slideshow', emoji: '🖼',  label: 'Slideshow' },
-  { key: 'cards',     emoji: '🃏', label: 'Cards' },
 ];
 
 const SECTION_COLORS = ['#4A90E2', '#9B59B6', '#1ABC9C'] as const;
@@ -39,6 +38,7 @@ export default function CreateTutorialScreen() {
   // Section 1
   const [targetSkill, setTargetSkill] = useState('');
   const [coreAction, setCoreAction] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [format, setFormat] = useState<Format>('slideshow');
   const [duration, setDuration] = useState(20);
 
@@ -57,6 +57,7 @@ export default function CreateTutorialScreen() {
   const [quota, setQuota] = useState<{ used: number; limit: number } | null>(null);
 
   const title = [targetSkill, coreAction].filter(Boolean).join(': ');
+  const tutorialDisplayName = displayName.trim() || title;
 
   useEffect(() => {
     if (guardian) loadQuota(guardian.id);
@@ -112,6 +113,7 @@ export default function CreateTutorialScreen() {
         body: {
           guardian_id: guardian.id,
           title,
+          display_name: displayName.trim() || null,
           target_skill: targetSkill,
           core_action: coreAction.trim(),
           format,
@@ -186,6 +188,21 @@ export default function CreateTutorialScreen() {
             returnKeyType="done"
           />
           <Text style={styles.charCount}>{coreAction.length}/60</Text>
+        </FieldBlock>
+
+        <Divider />
+
+        <FieldBlock label="Tutorial Name" hint="Short friendly name shown to your user (e.g. 'Soccer Fun'). Optional — auto-generated if left blank.">
+          <TextInput
+            style={styles.input}
+            value={displayName}
+            onChangeText={t => setDisplayName(t.slice(0, 40))}
+            placeholder="Give it a name your user will recognise…"
+            placeholderTextColor={COLORS.textLight}
+            maxLength={40}
+            returnKeyType="done"
+          />
+          <Text style={styles.charCount}>{displayName.length}/40</Text>
         </FieldBlock>
 
         <Divider />
@@ -349,11 +366,16 @@ export default function CreateTutorialScreen() {
         </FieldBlock>
       </SectionCard>
 
-      {/* Title preview */}
-      {title.length > 0 && (
+      {/* Name preview */}
+      {(displayName.trim().length > 0 || title.length > 0) && (
         <View style={styles.previewPill}>
-          <Text style={styles.previewPillLabel}>Tutorial title</Text>
-          <Text style={styles.previewPillText}>"{title}"</Text>
+          <Text style={styles.previewPillLabel}>
+            {displayName.trim() ? 'Shown to user as' : 'Tutorial title (auto-named)'}
+          </Text>
+          <Text style={styles.previewPillText}>"{tutorialDisplayName}"</Text>
+          {!displayName.trim() && title.length > 0 && (
+            <Text style={styles.previewPillSub}>Add a "Tutorial Name" above to customise this</Text>
+          )}
         </View>
       )}
 
@@ -449,7 +471,7 @@ function NextButton({ label, color, onPress }: { label: string; color: string; o
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F0F4F8' },
-  content: { padding: 14, paddingBottom: 48, gap: 12 },
+  content: { padding: 14, paddingBottom: 120, gap: 12 },
 
   quotaPill: {
     backgroundColor: '#EBF4FF', borderRadius: 14,
@@ -555,6 +577,7 @@ const styles = StyleSheet.create({
   },
   previewPillLabel: { fontSize: 12, color: COLORS.primary, fontWeight: '600' },
   previewPillText: { fontSize: 15, fontWeight: '700', color: COLORS.text },
+  previewPillSub: { fontSize: 11, color: COLORS.textLight, marginTop: 2 },
 
   // Submit
   submitBtn: {

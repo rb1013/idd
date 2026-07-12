@@ -25,6 +25,7 @@ export interface UserProfile {
   email?: string;
   auth_user_id?: string;
   created_at: string;
+  current_mood?: string | null;
 }
 
 export interface ChatPreferences {
@@ -74,13 +75,14 @@ export interface Conversation {
   last_message?: Message;
 }
 
-export type TutorialFormat = 'video' | 'slideshow' | 'cards';
+export type TutorialFormat = 'video' | 'slideshow';
 export type TutorialStatus = 'generating' | 'preview' | 'pending' | 'approved' | 'rejected';
 export type TutorialSource = 'admin_upload' | 'ai_generated';
 
 export interface Tutorial {
   id: string;
   title: string;
+  display_name: string | null;
   description: string;
   category: string;
   video_url: string | null;
@@ -109,6 +111,7 @@ export interface TutorialFrame {
   tts_text: string | null;
   image_url: string | null;
   audio_url: string | null;
+  image_prompt: string | null;
 }
 
 export interface TutorialWithFrames extends Tutorial {

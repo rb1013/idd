@@ -1,7 +1,11 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import React, { useState } from 'react';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, View } from 'react-native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import {
+  ActivityIndicator, View, TouchableOpacity, Text,
+  Modal, StyleSheet, Alert,
+} from 'react-native';
 import { useAuth } from '../lib/AuthContext';
 import { COLORS } from '../constants';
 
@@ -79,6 +83,87 @@ const Stack        = createNativeStackNavigator<RootStackParamList>();
 const GuardianNav  = createNativeStackNavigator<GuardianNavParamList>();
 const UserStack    = createNativeStackNavigator<UserStackParamList>();
 
+// ── Guardian header gear icon ────────────────────────────────────────────
+
+function GuardianSettingsBtn() {
+  const navigation = useNavigation<NativeStackNavigationProp<GuardianNavParamList>>();
+  const { guardian, signOut } = useAuth();
+  const [visible, setVisible] = useState(false);
+
+  function handleSignOut() {
+    setVisible(false);
+    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: signOut },
+    ]);
+  }
+
+  return (
+    <>
+      <TouchableOpacity onPress={() => setVisible(true)} style={navStyles.gearBtn} activeOpacity={0.7}>
+        <Text style={navStyles.gearIcon}>⚙️</Text>
+      </TouchableOpacity>
+
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
+        <TouchableOpacity style={navStyles.overlay} activeOpacity={1} onPress={() => setVisible(false)}>
+          <TouchableOpacity style={navStyles.card} activeOpacity={1} onPress={() => {}}>
+            <Text style={navStyles.cardTitle}>Settings</Text>
+
+            <TouchableOpacity style={navStyles.item} onPress={() => { setVisible(false); navigation.navigate('Account'); }}>
+              <Text style={navStyles.itemIcon}>👤</Text>
+              <Text style={navStyles.itemText}>Account</Text>
+            </TouchableOpacity>
+            <View style={navStyles.divider} />
+
+            <TouchableOpacity style={navStyles.item} onPress={() => { setVisible(false); navigation.navigate('CreateUser'); }}>
+              <Text style={navStyles.itemIcon}>➕</Text>
+              <Text style={navStyles.itemText}>Create New Profile</Text>
+            </TouchableOpacity>
+            <View style={navStyles.divider} />
+
+            <TouchableOpacity style={[navStyles.item, { paddingBottom: 4 }]} onPress={handleSignOut}>
+              <Text style={navStyles.itemIcon}>🚪</Text>
+              <Text style={[navStyles.itemText, { color: '#EF4444' }]}>Sign Out</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+    </>
+  );
+}
+
+const navStyles = StyleSheet.create({
+  gearBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center', alignItems: 'center',
+    marginRight: 4,
+  },
+  gearIcon: { fontSize: 18 },
+  overlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,.45)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  card: {
+    backgroundColor: '#fff', borderRadius: 20,
+    paddingTop: 20, paddingBottom: 8, width: 280,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.2, shadowRadius: 24, elevation: 12,
+    overflow: 'hidden',
+  },
+  cardTitle: {
+    fontSize: 17, fontWeight: '800', color: '#111827',
+    textAlign: 'center', marginBottom: 12,
+  },
+  divider: { height: 1, backgroundColor: '#F3F4F6' },
+  item: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 14, paddingHorizontal: 20,
+  },
+  itemIcon: { fontSize: 18 },
+  itemText: { fontSize: 15, fontWeight: '600', color: '#111827' },
+});
+
 // ── Guardian stack (replaces bottom tabs) ────────────────────────────────
 
 function GuardianTabs() {
@@ -89,6 +174,7 @@ function GuardianTabs() {
         headerTintColor: COLORS.text,
         headerBackTitle: '',
         headerShadowVisible: false,
+        headerRight: () => <GuardianSettingsBtn />,
       }}
     >
       <GuardianNav.Screen name="GuardianHome"    component={GuardianHomeScreen}          options={{ headerShown: false }} />

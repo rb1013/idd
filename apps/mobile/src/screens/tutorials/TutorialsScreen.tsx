@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
-  Image, ActivityIndicator, Modal, Dimensions, SafeAreaView,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  Image, ActivityIndicator, Modal, Dimensions, SafeAreaView, Platform,
 } from 'react-native';
 import * as Speech from 'expo-speech';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useFocusEffect } from '@react-navigation/native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { supabase } from '../../lib/supabase';
@@ -13,10 +14,30 @@ import type { Tutorial, TutorialFrame } from '../../types';
 
 const { width } = Dimensions.get('window');
 
-const FORMAT_EMOJI: Record<string, string> = { video: '🎬', slideshow: '🖼', cards: '🃏' };
+const FORMAT_EMOJI: Record<string, string> = { video: '🎬', slideshow: '🖼' };
+
+const CATEGORY_META: Record<string, { emoji: string; color: string }> = {
+  'Math':      { emoji: '🔢', color: '#4A90E2' },
+  'Reading':   { emoji: '📖', color: '#5CBB7A' },
+  'Science':   { emoji: '🔬', color: '#1ABC9C' },
+  'Life Skills': { emoji: '🏠', color: '#F5A623' },
+  'Social':    { emoji: '🤝', color: '#9B59B6' },
+  'Health':    { emoji: '🍎', color: '#E53E3E' },
+  'Art':       { emoji: '🎨', color: '#E67E22' },
+  'Music':     { emoji: '🎵', color: '#8E44AD' },
+  'Sport':     { emoji: '⚽', color: '#27AE60' },
+  'Cooking':   { emoji: '🍳', color: '#D35400' },
+  'Safety':    { emoji: '⛑️', color: '#C0392B' },
+};
+const CAT_COLORS = ['#4A90E2', '#5CBB7A', '#F5A623', '#9B59B6', '#E53E3E', '#1ABC9C', '#E67E22'];
+function categoryColor(name: string): string {
+  return CATEGORY_META[name]?.color ?? CAT_COLORS[Math.abs([...name].reduce((h, c) => c.charCodeAt(0) + ((h << 5) - h), 0)) % CAT_COLORS.length];
+}
+function categoryEmoji(name: string): string { return CATEGORY_META[name]?.emoji ?? '📚'; }
 
 interface TutorialWithFrames extends Tutorial {
   frames: TutorialFrame[];
+  is_featured?: boolean;
 }
 
 export default function TutorialsScreen() {
@@ -26,6 +47,7 @@ export default function TutorialsScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [playing, setPlaying] = useState<TutorialWithFrames | null>(null);
+  const [categoryOpen, setCategoryOpen] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -34,10 +56,9 @@ export default function TutorialsScreen() {
   );
 
   async function fetchTutorials(userId: string) {
-    // Fetch tutorials linked to this specific user via user_tutorials
     const { data: links } = await supabase
       .from('user_tutorials')
-      .select('tutorial_id')
+      .select('tutorial_id, is_featured')
       .eq('user_id', userId);
 
     if (!links || links.length === 0) {
@@ -47,7 +68,9 @@ export default function TutorialsScreen() {
       return;
     }
 
+    const featuredIds = new Set(links.filter((l: any) => l.is_featured).map((l: any) => l.tutorial_id));
     const tutorialIds = links.map((l: any) => l.tutorial_id);
+
     const { data: tuts } = await supabase
       .from('tutorials')
       .select('*, tutorial_frames(*)')
@@ -58,6 +81,7 @@ export default function TutorialsScreen() {
     const items: TutorialWithFrames[] = (tuts ?? []).map((t: any) => ({
       ...t,
       frames: [...(t.tutorial_frames ?? [])].sort((a: TutorialFrame, b: TutorialFrame) => a.order_index - b.order_index),
+      is_featured: featuredIds.has(t.id),
     }));
 
     setTutorials(items);
@@ -66,68 +90,166 @@ export default function TutorialsScreen() {
     setLoading(false);
   }
 
-  const filtered = selectedCategory && selectedCategory !== 'All'
-    ? tutorials.filter(t => t.category === selectedCategory)
-    : tutorials;
-
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+
+  const featuredItems = tutorials.filter(t => t.is_featured);
+  const regularItems = tutorials.filter(t => !t.is_featured);
+
+  const filtered = selectedCategory && selectedCategory !== 'All'
+    ? regularItems.filter(t => t.category === selectedCategory)
+    : regularItems;
+
+  // Build sections: when filtering by category show one section, else group all
+  const sections = selectedCategory && selectedCategory !== 'All'
+    ? [{ category: selectedCategory, data: filtered }]
+    : [...new Set(regularItems.map(t => t.category))].map(cat => ({
+        category: cat,
+        data: regularItems.filter(t => t.category === cat),
+      }));
+
+  const activeLabel = selectedCategory ?? 'All Categories';
 
   return (
     <View style={styles.container}>
-      {/* Category filter */}
-      <FlatList
-        horizontal
-        data={categories}
-        keyExtractor={c => c}
-        style={styles.categoryBar}
-        contentContainerStyle={styles.categoryBarContent}
-        showsHorizontalScrollIndicator={false}
-        renderItem={({ item }) => {
-          const active = (!selectedCategory && item === 'All') || selectedCategory === item;
-          return (
-            <TouchableOpacity
-              style={[styles.categoryChip, active && styles.categoryChipActive]}
-              onPress={() => setSelectedCategory(item === 'All' ? null : item)}
-            >
-              <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>{item}</Text>
-            </TouchableOpacity>
-          );
-        }}
-      />
+      {/* Category dropdown */}
+      <View style={styles.filterBar}>
+        <TouchableOpacity
+          style={styles.filterBtn}
+          onPress={() => setCategoryOpen(true)}
+          activeOpacity={0.75}
+        >
+          <Text style={styles.filterBtnText}>{activeLabel}</Text>
+          <Text style={styles.filterBtnArrow}>▾</Text>
+        </TouchableOpacity>
+      </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} onPress={() => setPlaying(item)} activeOpacity={0.85}>
-            {item.thumbnail_url
-              ? <Image source={{ uri: item.thumbnail_url }} style={styles.thumbnail} />
-              : (
-                <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
-                  <Text style={styles.formatEmoji}>{FORMAT_EMOJI[item.format] ?? '📚'}</Text>
-                </View>
-              )
-            }
-            <View style={styles.cardBody}>
-              <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-              <View style={styles.cardMeta}>
-                <Text style={styles.cardCategory}>{item.category}</Text>
-                {item.duration_seconds && <Text style={styles.cardDuration}>{item.duration_seconds}s</Text>}
-              </View>
+      {/* Bottom-sheet modal for category selection */}
+      <Modal visible={categoryOpen} transparent animationType="slide" onRequestClose={() => setCategoryOpen(false)}>
+        <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => setCategoryOpen(false)}>
+          <SafeAreaView style={styles.sheet}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Filter by Category</Text>
+              <TouchableOpacity onPress={() => setCategoryOpen(false)}>
+                <Text style={styles.sheetDone}>Done</Text>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyEmoji}>📚</Text>
-            <Text style={styles.emptyText}>No tutorials yet</Text>
-            <Text style={styles.emptyHint}>Ask your carer to add learning videos for you</Text>
-          </View>
-        }
-      />
+            <ScrollView>
+              {categories.map(cat => {
+                const isActive = cat === 'All' ? !selectedCategory : selectedCategory === cat;
+                const color = cat === 'All' ? COLORS.primary : categoryColor(cat);
+                return (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[styles.sheetOption, isActive && { backgroundColor: color + '18' }]}
+                    onPress={() => { setSelectedCategory(cat === 'All' ? null : cat); setCategoryOpen(false); }}
+                  >
+                    {cat !== 'All' && <Text style={styles.sheetOptionEmoji}>{categoryEmoji(cat)}</Text>}
+                    <Text style={[styles.sheetOptionText, isActive && { color, fontWeight: '800' }]}>{cat}</Text>
+                    {isActive && <Text style={[styles.sheetCheck, { color }]}>✓</Text>}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </SafeAreaView>
+        </TouchableOpacity>
+      </Modal>
+
+      {tutorials.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyEmoji}>📚</Text>
+          <Text style={styles.emptyText}>No tutorials yet</Text>
+          <Text style={styles.emptyHint}>Ask your carer to add learning videos for you</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.list}>
+          {/* ⭐ Featured / Favourites section */}
+          {featuredItems.length > 0 && !selectedCategory && (
+            <View style={styles.featuredSection}>
+              <View style={styles.featuredHeader}>
+                <Text style={styles.featuredHeaderEmoji}>⭐</Text>
+                <View>
+                  <Text style={styles.featuredHeaderTitle}>Your Favourites</Text>
+                  <Text style={styles.featuredHeaderSub}>Chosen for you by your carer</Text>
+                </View>
+              </View>
+              {featuredItems.map(item => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.featuredCard}
+                  onPress={() => setPlaying(item)}
+                  activeOpacity={0.88}
+                >
+                  {/* Image */}
+                  <View style={styles.featuredImgWrap}>
+                    {item.thumbnail_url
+                      ? <Image source={{ uri: item.thumbnail_url }} style={styles.featuredImg} resizeMode="cover" />
+                      : (
+                        <View style={[styles.featuredImg, styles.featuredImgPlaceholder]}>
+                          <Text style={{ fontSize: 56 }}>{FORMAT_EMOJI[item.format] ?? '📚'}</Text>
+                        </View>
+                      )
+                    }
+                    <View style={styles.featuredBadge}>
+                      <Text style={styles.featuredBadgeText}>⭐ Favourite</Text>
+                    </View>
+                  </View>
+                  {/* Text */}
+                  <View style={styles.featuredBody}>
+                    <Text style={styles.featuredTitle} numberOfLines={2}>{item.display_name || item.category}</Text>
+                    <Text style={styles.featuredMeta}>{categoryEmoji(item.category)} {item.category}</Text>
+                    <View style={styles.featuredPlayBtn}>
+                      <Text style={styles.featuredPlayBtnText}>▶  Start Learning</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Regular category sections */}
+          {sections.map(section => {
+            const color = categoryColor(section.category);
+            return (
+              <View key={section.category} style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionEmoji}>{categoryEmoji(section.category)}</Text>
+                  <Text style={styles.sectionTitle}>{section.category}</Text>
+                </View>
+
+                {section.data.map(item => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[styles.card, { borderLeftColor: color, backgroundColor: color + '12' }]}
+                    onPress={() => setPlaying(item)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.thumbWrap}>
+                      {item.thumbnail_url
+                        ? <Image source={{ uri: item.thumbnail_url }} style={styles.thumb} />
+                        : (
+                          <View style={[styles.thumb, styles.thumbPlaceholder]}>
+                            <Text style={styles.thumbEmoji}>{FORMAT_EMOJI[item.format] ?? '📚'}</Text>
+                          </View>
+                        )
+                      }
+                    </View>
+                    <View style={styles.info}>
+                      <Text style={styles.cardTitle} numberOfLines={2}>{item.display_name || item.category}</Text>
+                      <View style={styles.cardMeta}>
+                        <Text style={[styles.cardFormat, { color }]}>{FORMAT_EMOJI[item.format] ?? '📚'} {item.format}</Text>
+                        {item.frames?.length > 0 && (
+                          <Text style={styles.cardFrames}>{item.frames.length} slides</Text>
+                        )}
+                      </View>
+                    </View>
+                    <Text style={[styles.arrow, { color }]}>›</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            );
+          })}
+        </ScrollView>
+      )}
 
       {playing && (
         playing.format === 'video'
@@ -170,52 +292,130 @@ function VideoModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; onClo
 
 function SlideshowModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; onClose: () => void }) {
   const frames = tutorial.frames;
+  const [started, setStarted] = useState(false);
   const [index, setIndex] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(false);
   const [speaking, setSpeaking] = useState(false);
 
+  const autoPlayRef = useRef(false);
+  const wasPlayingRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const currentFrame = frames[index];
+  const isLast = index === frames.length - 1;
 
+  // Stored audio — prefer over device TTS when available
+  const player = useAudioPlayer(currentFrame?.audio_url ? { uri: currentFrame.audio_url } : null);
+  const playerStatus = useAudioPlayerStatus(player);
+
+  useEffect(() => { autoPlayRef.current = autoPlay; }, [autoPlay]);
+
+  // On frame change: play stored audio OR device TTS — only after user taps Start
   useEffect(() => {
-    speakFrame(currentFrame);
-  }, [index]);
-
-  function speakFrame(frame: TutorialFrame | undefined) {
-    if (!frame?.tts_text) return;
-    setSpeaking(true);
-    Speech.speak(frame.tts_text, {
-      rate: 0.8,
-      pitch: 1.0,
-      onDone: () => setSpeaking(false),
-      onStopped: () => setSpeaking(false),
-    });
-  }
-
-  function goNext() {
+    if (!started) return;
     Speech.stop();
-    setIndex(i => Math.min(frames.length - 1, i + 1));
-  }
+    setSpeaking(false);
+    if (timerRef.current) clearTimeout(timerRef.current);
 
-  function goPrev() {
-    Speech.stop();
-    setIndex(i => Math.max(0, i - 1));
+    if (currentFrame?.audio_url) {
+      player.seekTo(0);
+      player.play();
+    } else if (currentFrame?.tts_text) {
+      setSpeaking(true);
+      Speech.speak(currentFrame.tts_text, {
+        rate: 0.8, pitch: 1.0,
+        onDone: () => {
+          setSpeaking(false);
+          if (autoPlayRef.current && !isLast) setIndex(i => i + 1);
+          else if (autoPlayRef.current && isLast) setAutoPlay(false);
+        },
+        onStopped: () => setSpeaking(false),
+      });
+    } else if (autoPlayRef.current) {
+      timerRef.current = setTimeout(() => {
+        if (!isLast) setIndex(i => i + 1); else setAutoPlay(false);
+      }, 3000);
+    }
+  }, [index, started]);
+
+  // Detect stored audio finishing → auto-advance
+  useEffect(() => {
+    const wasPlaying = wasPlayingRef.current;
+    wasPlayingRef.current = playerStatus.playing;
+    const finished = wasPlaying && !playerStatus.playing
+      && playerStatus.duration > 0
+      && playerStatus.currentTime >= playerStatus.duration - 0.5;
+    if (finished && autoPlayRef.current) {
+      if (!isLast) setIndex(i => i + 1); else setAutoPlay(false);
+    }
+  }, [playerStatus.playing]);
+
+  function stopAll() { Speech.stop(); player.pause(); if (timerRef.current) clearTimeout(timerRef.current); }
+
+  function goNext() { stopAll(); setIndex(i => Math.min(frames.length - 1, i + 1)); }
+  function goPrev() { stopAll(); setAutoPlay(false); setIndex(i => Math.max(0, i - 1)); }
+  function handleClose() { stopAll(); setAutoPlay(false); setStarted(false); setIndex(0); onClose(); }
+
+  // ── Start screen ──────────────────────────────────────────────────────────
+  if (!started) {
+    const firstImage = frames[0]?.image_url ?? tutorial.thumbnail_url;
+    return (
+      <Modal visible animationType="slide" onRequestClose={handleClose}>
+        <SafeAreaView style={styles.startContainer}>
+          <TouchableOpacity onPress={handleClose} style={styles.startClose}>
+            <Text style={styles.startCloseText}>✕</Text>
+          </TouchableOpacity>
+
+          {firstImage
+            ? <Image source={{ uri: firstImage }} style={styles.startImage} resizeMode="cover" />
+            : (
+              <View style={[styles.startImage, styles.startImagePlaceholder]}>
+                <Text style={{ fontSize: 80 }}>📖</Text>
+              </View>
+            )
+          }
+
+          <View style={styles.startInfo}>
+            <Text style={styles.startTitle}>{tutorial.display_name || tutorial.category}</Text>
+            <Text style={styles.startMeta}>{frames.length} slides · {tutorial.category}</Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.startBtn}
+            onPress={() => { setStarted(true); setAutoPlay(true); }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.startBtnText}>▶  Start</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.startManualBtn}
+            onPress={() => setStarted(true)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.startManualBtnText}>Browse manually</Text>
+          </TouchableOpacity>
+        </SafeAreaView>
+      </Modal>
+    );
   }
 
   return (
-    <Modal visible animationType="slide" onRequestClose={() => { Speech.stop(); onClose(); }}>
+    <Modal visible animationType="slide" onRequestClose={handleClose}>
       <SafeAreaView style={styles.slideshowContainer}>
         {/* Header */}
         <View style={styles.slideshowHeader}>
           <Text style={styles.slideshowCounter}>{index + 1} / {frames.length}</Text>
-          <TouchableOpacity onPress={() => { Speech.stop(); onClose(); }} style={styles.slideshowClose}>
+          <TouchableOpacity onPress={handleClose} style={styles.slideshowClose}>
             <Text style={styles.slideshowCloseText}>✕</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.slideshowTitle} numberOfLines={1}>{tutorial.title}</Text>
+        <Text style={styles.slideshowTitle} numberOfLines={1}>{tutorial.display_name || tutorial.category}</Text>
 
         {/* Frame image */}
         <View style={styles.slideshowImageWrap}>
           {currentFrame?.image_url
-            ? <Image source={{ uri: currentFrame.image_url }} style={styles.slideshowImage} resizeMode="cover" />
+            ? <Image source={{ uri: currentFrame.image_url }} style={styles.slideshowImage} resizeMode="contain" />
             : (
               <View style={[styles.slideshowImage, styles.slideshowImagePlaceholder]}>
                 <Text style={{ fontSize: 64 }}>📖</Text>
@@ -226,14 +426,23 @@ function SlideshowModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; o
 
         {/* Text */}
         <View style={styles.slideshowText}>
-          {currentFrame?.caption && (
-            <Text style={styles.slideshowCaption}>{currentFrame.caption}</Text>
-          )}
-          {currentFrame?.tts_text && (
-            <Text style={styles.slideshowNarration}>{currentFrame.tts_text}</Text>
-          )}
+          {currentFrame?.caption && <Text style={styles.slideshowCaption}>{currentFrame.caption}</Text>}
+          {currentFrame?.tts_text && <Text style={styles.slideshowNarration}>{currentFrame.tts_text}</Text>}
           {speaking && <Text style={styles.speakingIndicator}>📢 Reading aloud…</Text>}
         </View>
+
+        {/* Auto-play toggle */}
+        <TouchableOpacity
+          style={[styles.autoPlayBtn, autoPlay && styles.autoPlayBtnActive]}
+          onPress={() => {
+            if (!autoPlay) { setIndex(0); setAutoPlay(true); }
+            else setAutoPlay(false);
+          }}
+        >
+          <Text style={[styles.autoPlayBtnText, autoPlay && { color: '#fff' }]}>
+            {autoPlay ? '⏸  Pause Auto Play' : '▶  Auto Play'}
+          </Text>
+        </TouchableOpacity>
 
         {/* Navigation */}
         <View style={styles.slideshowNav}>
@@ -245,19 +454,18 @@ function SlideshowModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; o
             <Text style={styles.navBtnText}>← Previous</Text>
           </TouchableOpacity>
 
-          {/* Dot indicators */}
           <View style={styles.dots}>
             {frames.map((_, i) => (
               <View key={i} style={[styles.dot, i === index && styles.dotActive]} />
             ))}
           </View>
 
-          {index < frames.length - 1 ? (
+          {!isLast ? (
             <TouchableOpacity style={styles.navBtn} onPress={goNext}>
               <Text style={styles.navBtnText}>Next →</Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity style={[styles.navBtn, styles.navBtnDone]} onPress={() => { Speech.stop(); onClose(); }}>
+            <TouchableOpacity style={[styles.navBtn, styles.navBtnDone]} onPress={handleClose}>
               <Text style={[styles.navBtnText, { color: '#fff' }]}>Done ✓</Text>
             </TouchableOpacity>
           )}
@@ -270,34 +478,101 @@ function SlideshowModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; o
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  categoryBar: { maxHeight: 56 },
-  categoryBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  categoryChip: {
-    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+  filterBar: {
+    paddingHorizontal: 20, paddingVertical: 12,
+    alignItems: 'flex-end',
   },
-  categoryChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  categoryChipText: { fontSize: 13, color: COLORS.textLight },
-  categoryChipTextActive: { color: '#fff', fontWeight: '600' },
-  list: { padding: 12, paddingBottom: 32 },
-  row: { gap: 12 },
-  card: {
-    flex: 1, backgroundColor: COLORS.surface, borderRadius: 16,
-    borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden', marginBottom: 12,
+  filterBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1.5, borderColor: COLORS.border,
+    borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8,
   },
-  thumbnail: { width: '100%', height: 110 },
-  thumbnailPlaceholder: { backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center' },
-  formatEmoji: { fontSize: 36 },
-  cardBody: { padding: 10 },
-  cardTitle: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
-  cardMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardCategory: { fontSize: 12, color: COLORS.secondary },
-  cardDuration: { fontSize: 11, color: COLORS.textLight },
+  filterBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.text },
+  filterBtnArrow: { fontSize: 12, color: COLORS.textLight },
+  sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
+  sheet: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    maxHeight: '65%',
+    paddingBottom: Platform.OS === 'android' ? 16 : 0,
+  },
+  sheetHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 20, paddingVertical: 16,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  sheetTitle: { fontSize: 17, fontWeight: '800', color: COLORS.text },
+  sheetDone: { fontSize: 16, color: COLORS.primary, fontWeight: '700' },
+  sheetOption: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 20, paddingVertical: 15,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  sheetOptionEmoji: { fontSize: 20 },
+  sheetOptionText: { flex: 1, fontSize: 16, color: COLORS.text, fontWeight: '600' },
+  sheetCheck: { fontSize: 18, fontWeight: '800' },
+  list: { padding: 20, paddingBottom: 48, gap: 28 },
 
-  emptyContainer: { alignItems: 'center', paddingTop: 60, gap: 10 },
-  emptyEmoji: { fontSize: 56 },
-  emptyText: { fontSize: 20, fontWeight: '700', color: COLORS.text },
-  emptyHint: { fontSize: 14, color: COLORS.textLight, textAlign: 'center', paddingHorizontal: 32 },
+  // Featured / Favourites section
+  featuredSection: { gap: 14 },
+  featuredHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 2 },
+  featuredHeaderEmoji: { fontSize: 32 },
+  featuredHeaderTitle: { fontSize: 22, fontWeight: '900', color: COLORS.text },
+  featuredHeaderSub: { fontSize: 13, color: COLORS.textLight, fontWeight: '500', marginTop: 1 },
+  featuredCard: {
+    borderRadius: 24, overflow: 'hidden',
+    backgroundColor: '#FFFBEB',
+    borderWidth: 2.5, borderColor: '#F59E0B',
+    shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28, shadowRadius: 16, elevation: 7,
+  },
+  featuredImgWrap: { position: 'relative' },
+  featuredImg: { width: '100%', aspectRatio: 1 },
+  featuredImgPlaceholder: { backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
+  featuredBadge: {
+    position: 'absolute', top: 14, left: 14,
+    backgroundColor: '#F59E0B', borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 5,
+    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 6, elevation: 3,
+  },
+  featuredBadgeText: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  featuredBody: { padding: 18, gap: 6 },
+  featuredTitle: { fontSize: 22, fontWeight: '900', color: '#1A1A2E', lineHeight: 28 },
+  featuredMeta: { fontSize: 14, color: '#92400E', fontWeight: '600' },
+  featuredPlayBtn: {
+    marginTop: 10, backgroundColor: '#7C3AED', borderRadius: 16,
+    paddingVertical: 14, alignItems: 'center',
+    shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45, shadowRadius: 14, elevation: 6,
+  },
+  featuredPlayBtnText: { color: '#fff', fontWeight: '900', fontSize: 17, letterSpacing: 0.3 },
+
+  section: { gap: 14 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  sectionEmoji: { fontSize: 26 },
+  sectionTitle: { fontSize: 22, fontWeight: '900', color: COLORS.text },
+  card: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    borderRadius: 22, padding: 14, borderLeftWidth: 6,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07, shadowRadius: 10, elevation: 3,
+  },
+  thumbWrap: { flexShrink: 0 },
+  thumb: { width: 72, height: 72, borderRadius: 16 },
+  thumbPlaceholder: { backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center' },
+  thumbEmoji: { fontSize: 30 },
+  info: { flex: 1, minWidth: 0 },
+  cardTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
+  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cardFormat: { fontSize: 13, fontWeight: '600', textTransform: 'capitalize' },
+  cardFrames: { fontSize: 13, color: COLORS.textLight },
+  arrow: { fontSize: 28, fontWeight: '900', flexShrink: 0 },
+
+  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 12 },
+  emptyEmoji: { fontSize: 72 },
+  emptyText: { fontSize: 24, fontWeight: '900', color: COLORS.text },
+  emptyHint: { fontSize: 16, color: COLORS.textLight, textAlign: 'center', paddingHorizontal: 32 },
 
   // Video modal (unchanged)
   modalContainer: { flex: 1, backgroundColor: '#000' },
@@ -308,29 +583,56 @@ const styles = StyleSheet.create({
   videoTitle: { fontSize: 20, fontWeight: '700', color: '#fff', marginBottom: 8 },
   videoDesc: { fontSize: 15, color: '#aaa', lineHeight: 22 },
 
-  // Slideshow modal
-  slideshowContainer: { flex: 1, backgroundColor: COLORS.background },
+  // Start screen
+  startContainer: { flex: 1, backgroundColor: '#0F0F1A', alignItems: 'center' },
+  startClose: { alignSelf: 'flex-end', padding: 20, paddingTop: 16 },
+  startCloseText: { fontSize: 22, color: 'rgba(255,255,255,0.6)' },
+  startImage: { width: '100%', flex: 1, maxHeight: 340 },
+  startImagePlaceholder: { backgroundColor: '#1E1E3A', justifyContent: 'center', alignItems: 'center' },
+  startInfo: { paddingHorizontal: 28, paddingTop: 24, alignSelf: 'stretch', gap: 6 },
+  startTitle: { fontSize: 24, fontWeight: '900', color: '#fff', lineHeight: 32 },
+  startMeta: { fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: '500' },
+  startBtn: {
+    marginTop: 32, marginHorizontal: 28, alignSelf: 'stretch',
+    borderRadius: 20, paddingVertical: 18, alignItems: 'center',
+    backgroundColor: '#7C3AED',
+    shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.55, shadowRadius: 20, elevation: 10,
+  },
+  startBtnText: { color: '#fff', fontWeight: '900', fontSize: 20, letterSpacing: 0.5 },
+  startManualBtn: { marginTop: 14, marginBottom: 24, paddingVertical: 10 },
+  startManualBtnText: { color: 'rgba(255,255,255,0.45)', fontSize: 14, fontWeight: '600' },
+
+  // Slideshow modal — dark theme
+  slideshowContainer: { flex: 1, backgroundColor: '#0F0F1A' },
   slideshowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
-  slideshowCounter: { fontSize: 14, fontWeight: '600', color: COLORS.textLight },
+  slideshowCounter: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.45)' },
   slideshowClose: { padding: 4 },
-  slideshowCloseText: { fontSize: 22, color: COLORS.textLight },
-  slideshowTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text, paddingHorizontal: 20, marginBottom: 12 },
-  slideshowImageWrap: { marginHorizontal: 20, borderRadius: 20, overflow: 'hidden', aspectRatio: 16 / 9 },
+  slideshowCloseText: { fontSize: 22, color: 'rgba(255,255,255,0.45)' },
+  slideshowTitle: { fontSize: 18, fontWeight: '800', color: '#fff', paddingHorizontal: 20, marginBottom: 12 },
+  slideshowImageWrap: { marginHorizontal: 20, borderRadius: 20, overflow: 'hidden', aspectRatio: 1, backgroundColor: '#000' },
   slideshowImage: { width: '100%', height: '100%' },
-  slideshowImagePlaceholder: { backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center' },
+  slideshowImagePlaceholder: { backgroundColor: '#1E1E3A', justifyContent: 'center', alignItems: 'center' },
   slideshowText: { flex: 1, paddingHorizontal: 20, paddingTop: 16, gap: 8 },
-  slideshowCaption: { fontSize: 26, fontWeight: '900', color: COLORS.text },
-  slideshowNarration: { fontSize: 17, color: COLORS.textLight, lineHeight: 26 },
-  speakingIndicator: { fontSize: 13, color: COLORS.primary, marginTop: 4 },
+  slideshowCaption: { fontSize: 26, fontWeight: '900', color: '#fff' },
+  slideshowNarration: { fontSize: 17, color: 'rgba(255,255,255,0.65)', lineHeight: 26 },
+  speakingIndicator: { fontSize: 13, color: '#A78BFA', marginTop: 4 },
+  autoPlayBtn: {
+    marginHorizontal: 20, marginBottom: 8, borderRadius: 14,
+    paddingVertical: 12, alignItems: 'center',
+    backgroundColor: 'rgba(124,58,237,0.2)', borderWidth: 1.5, borderColor: '#7C3AED',
+  },
+  autoPlayBtnActive: { backgroundColor: '#7C3AED' },
+  autoPlayBtnText: { fontWeight: '700', fontSize: 15, color: '#A78BFA' },
   slideshowNav: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingBottom: 24, paddingTop: 12,
   },
-  navBtn: { backgroundColor: COLORS.primaryLight, borderRadius: 14, paddingHorizontal: 20, paddingVertical: 12 },
+  navBtn: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 14, paddingHorizontal: 20, paddingVertical: 12 },
   navBtnHidden: { opacity: 0 },
-  navBtnDone: { backgroundColor: COLORS.primary },
-  navBtnText: { fontWeight: '700', color: COLORS.primary, fontSize: 15 },
+  navBtnDone: { backgroundColor: '#7C3AED' },
+  navBtnText: { fontWeight: '700', color: '#fff', fontSize: 15 },
   dots: { flexDirection: 'row', gap: 6 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.border },
-  dotActive: { backgroundColor: COLORS.primary, width: 20 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.2)' },
+  dotActive: { backgroundColor: '#7C3AED', width: 20 },
 });

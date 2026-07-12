@@ -12,6 +12,7 @@ import { COLORS } from '../../constants';
 import { UserStackParamList } from '../../navigation';
 import { ScheduleItem } from '../../types';
 import { refreshScheduleNotifications } from '../../lib/scheduleNotifications';
+import AvatarWithMood from '../../components/AvatarWithMood';
 
 function LogoutIcon() {
   const c = '#fff';
@@ -84,8 +85,7 @@ function formatTime(t: string): string {
 
 export default function UserHomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<UserStackParamList>>();
-  const { activeUser, signOut } = useAuth();
-  const [mood, setMood] = useState<string | null>(null);
+  const { activeUser, setActiveUser, signOut } = useAuth();
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [showUserCard, setShowUserCard] = useState(false);
   const [activityProgress, setActivityProgress] = useState<{ done: number; total: number } | null>(null);
@@ -136,9 +136,11 @@ export default function UserHomeScreen() {
     setShowUserCard(true);
   }
 
-  function selectMood(m: { emoji: string; label: string }) {
-    setMood(m.emoji);
+  async function selectMood(m: { emoji: string; label: string }) {
     setShowMoodPicker(false);
+    if (!activeUser) return;
+    setActiveUser({ ...activeUser, current_mood: m.emoji });
+    await supabase.from('user_profiles').update({ current_mood: m.emoji }).eq('id', activeUser.id);
   }
 
   function speakMood(label: string) {
@@ -153,19 +155,12 @@ export default function UserHomeScreen() {
           <Text style={styles.subGreeting}>What do you want to do today?</Text>
         </View>
         <TouchableOpacity style={styles.avatarBtn} onPress={openUserCard} activeOpacity={0.85}>
-          {activeUser?.photo_url
-            ? <Image source={{ uri: activeUser.photo_url }} style={styles.avatar} />
-            : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarText}>{activeUser?.name?.[0] ?? '?'}</Text>
-              </View>
-            )
-          }
-          {mood && (
-            <View style={styles.moodBadge}>
-              <Text style={styles.moodBadgeEmoji}>{mood}</Text>
-            </View>
-          )}
+          <AvatarWithMood
+            name={activeUser?.name ?? '?'}
+            photo={activeUser?.photo_url}
+            size={68}
+            mood={activeUser?.current_mood}
+          />
         </TouchableOpacity>
       </View>
 
@@ -253,7 +248,7 @@ export default function UserHomeScreen() {
             onPress={() => setShowMoodPicker(true)}
             activeOpacity={0.85}
           >
-            <Text style={styles.tileEmoji}>{mood ?? '😊'}</Text>
+            <Text style={styles.tileEmoji}>{activeUser?.current_mood ?? '😊'}</Text>
             <Text style={styles.tileTitle}>My Mood</Text>
             <Text style={styles.tileSub}>How are you{'\n'}feeling today?</Text>
           </TouchableOpacity>
@@ -283,14 +278,12 @@ export default function UserHomeScreen() {
             >
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
-            {activeUser?.photo_url
-              ? <Image source={{ uri: activeUser.photo_url }} style={styles.userCardAvatar} />
-              : (
-                <View style={styles.userCardAvatarPlaceholder}>
-                  <Text style={styles.userCardAvatarText}>{activeUser?.name?.[0] ?? '?'}</Text>
-                </View>
-              )
-            }
+            <AvatarWithMood
+              name={activeUser?.name ?? '?'}
+              photo={activeUser?.photo_url}
+              size={88}
+              mood={activeUser?.current_mood}
+            />
             <Text style={styles.userCardName}>Hi, {activeUser?.name}!</Text>
             <TouchableOpacity
               style={styles.logoutBtn}
@@ -321,7 +314,7 @@ export default function UserHomeScreen() {
               {MOODS.map(m => (
                 <TouchableOpacity
                   key={m.emoji}
-                  style={[styles.moodOption, mood === m.emoji && styles.moodOptionSelected]}
+                  style={[styles.moodOption, activeUser?.current_mood === m.emoji && styles.moodOptionSelected]}
                   onPress={() => selectMood(m)}
                   onLongPress={() => speakMood(m.label)}
                   delayLongPress={400}
@@ -380,44 +373,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderLeftWidth: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  scheduleTileUpcoming: { backgroundColor: '#6D28D9' },
-  scheduleTileNow:      { backgroundColor: '#059669' },
+  scheduleTileUpcoming: { backgroundColor: '#EDE9FE', borderLeftColor: '#7C3AED' },
+  scheduleTileNow:      { backgroundColor: '#D1FAE5', borderLeftColor: '#059669' },
   scheduleLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
   scheduleEmoji: { fontSize: 36 },
-  scheduleTitle: { fontSize: 17, fontWeight: '800', color: '#fff', marginBottom: 2 },
-  scheduleTime:  { fontSize: 12, color: 'rgba(255,255,255,0.8)' },
+  scheduleTitle: { fontSize: 17, fontWeight: '800', color: COLORS.text, marginBottom: 2 },
+  scheduleTime:  { fontSize: 12, color: COLORS.textLight },
   scheduleRight: { alignItems: 'flex-end', paddingLeft: 8 },
-  untilTxt: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.9)' },
-  nowBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
-  nowDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' },
-  nowBadgeTxt: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  untilTxt: { fontSize: 13, fontWeight: '700', color: '#7C3AED' },
+  nowBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#A7F3D0', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  nowDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#059669' },
+  nowBadgeTxt: { fontSize: 13, fontWeight: '800', color: '#065F46' },
 
   // Activities tile
   activitiesTile: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#DBEAFE',
+    borderLeftWidth: 5,
+    borderLeftColor: '#2563EB',
     borderRadius: 22,
     padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   actEmoji: { fontSize: 38 },
   activitiesInfo: { flex: 1, gap: 6 },
-  actTitle: { fontSize: 17, fontWeight: '800', color: '#fff' },
-  actSub:   { fontSize: 13, color: 'rgba(255,255,255,0.85)' },
-  actBarBg: { height: 8, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 4, overflow: 'hidden' },
-  actBarFill: { height: 8, backgroundColor: '#fff', borderRadius: 4 },
+  actTitle: { fontSize: 17, fontWeight: '800', color: COLORS.text },
+  actSub:   { fontSize: 13, color: '#1D4ED8' },
+  actBarBg: { height: 8, backgroundColor: '#BFDBFE', borderRadius: 4, overflow: 'hidden' },
+  actBarFill: { height: 8, backgroundColor: '#2563EB', borderRadius: 4 },
 
   // Section label
   sectionLabel: { fontSize: 20, fontWeight: '800', color: COLORS.text, paddingLeft: 4 },

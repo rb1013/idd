@@ -29,7 +29,10 @@ export default function TutorialsPage() {
   const [rejectNotes, setRejectNotes] = useState('');
   const [actionInProgress, setActionInProgress] = useState(false);
   const [reviewFrames, setReviewFrames] = useState<any[]>([]);
-  const [reviewFrameIndex, setReviewFrameIndex] = useState(0);
+
+  // Library preview
+  const [previewing, setPreviewing] = useState<Tutorial | null>(null);
+  const [previewFrames, setPreviewFrames] = useState<any[]>([]);
 
   useEffect(() => {
     fetchTutorials();
@@ -72,16 +75,33 @@ export default function TutorialsPage() {
     })));
   }
 
-  async function openReview(t: PendingTutorial) {
-    setReviewing(t);
-    setRejectNotes('');
-    setReviewFrameIndex(0);
+  async function openPreview(t: Tutorial) {
+    setPreviewing(t);
     const { data: frames } = await supabase
       .from('tutorial_frames')
       .select('*')
       .eq('tutorial_id', t.id)
       .order('order_index', { ascending: true });
-    setReviewFrames(frames ?? []);
+    const cacheBust = Date.now();
+    setPreviewFrames((frames ?? []).map((f: any) => ({
+      ...f,
+      image_url: f.image_url ? `${f.image_url.split('?')[0]}?t=${cacheBust}` : f.image_url,
+    })));
+  }
+
+  async function openReview(t: PendingTutorial) {
+    setReviewing(t);
+    setRejectNotes('');
+    const { data: frames } = await supabase
+      .from('tutorial_frames')
+      .select('*')
+      .eq('tutorial_id', t.id)
+      .order('order_index', { ascending: true });
+    const cacheBust = Date.now();
+    setReviewFrames((frames ?? []).map((f: any) => ({
+      ...f,
+      image_url: f.image_url ? `${f.image_url.split('?')[0]}?t=${cacheBust}` : f.image_url,
+    })));
   }
 
   async function approveTutorial(id: string) {
@@ -158,30 +178,52 @@ export default function TutorialsPage() {
       {/* ── LIBRARY TAB ── */}
       {tab === 'library' && (
         <>
-          {loading ? <p>Loading…</p> : (
-            <table style={styles.table}>
-              <thead>
-                <tr>{['Title', 'Category', 'Format', 'Source', 'Links', 'Date', 'Actions'].map(h => <th key={h} style={styles.th}>{h}</th>)}</tr>
-              </thead>
-              <tbody>
-                {tutorials.map(t => (
-                  <tr key={t.id} style={styles.tr}>
-                    <td style={styles.td}>{t.title}</td>
-                    <td style={styles.td}><span style={styles.badge}>{t.category}</span></td>
-                    <td style={styles.td}><span style={styles.fmtBadge}>{t.format}</span></td>
-                    <td style={styles.td}><span style={{ ...styles.badge, background: t.source === 'ai_generated' ? '#EBF8FF' : '#F0FFF4', color: t.source === 'ai_generated' ? '#3182CE' : '#2F855A' }}>{t.source === 'ai_generated' ? 'AI' : 'Admin'}</span></td>
-                    <td style={styles.td}>{t.link_count > 0 ? `🔗 ${t.link_count}` : '—'}</td>
-                    <td style={styles.td}>{new Date(t.created_at).toLocaleDateString()}</td>
-                    <td style={styles.td}>
-                      {t.video_url && <a href={t.video_url} target="_blank" style={styles.viewLink} rel="noreferrer">View</a>}
-                      <button style={styles.deleteBtn} onClick={() => deleteTutorial(t.id)}>Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {previewing ? (
+            <div style={styles.reviewPanel}>
+              <button style={styles.backBtn} onClick={() => setPreviewing(null)}>← Back to library</button>
+              <h2 style={styles.reviewTitle}>{previewing.display_name || previewing.title}</h2>
+              <div style={styles.reviewMeta}>
+                <MetaItem label="Format" value={previewing.format} />
+                <MetaItem label="Category" value={previewing.category} />
+                {(previewing as any).duration_seconds && <MetaItem label="Duration" value={`${(previewing as any).duration_seconds}s`} />}
+                {(previewing as any).comprehension_level && <MetaItem label="Level" value={(previewing as any).comprehension_level} />}
+              </div>
+              {previewFrames.length > 0
+                ? <FrameViewer frames={previewFrames} />
+                : <p style={styles.empty}>No frames available for this tutorial.</p>
+              }
+            </div>
+          ) : (
+            <>
+              {loading ? <p>Loading…</p> : (
+                <table style={styles.table}>
+                  <thead>
+                    <tr>{['Title', 'Category', 'Format', 'Source', 'Links', 'Date', 'Actions'].map(h => <th key={h} style={styles.th}>{h}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {tutorials.map(t => (
+                      <tr key={t.id} style={styles.tr}>
+                        <td style={styles.td}>{(t as any).display_name || t.title}</td>
+                        <td style={styles.td}><span style={styles.badge}>{t.category}</span></td>
+                        <td style={styles.td}><span style={styles.fmtBadge}>{t.format}</span></td>
+                        <td style={styles.td}><span style={{ ...styles.badge, background: (t as any).source === 'ai_generated' ? '#EBF8FF' : '#F0FFF4', color: (t as any).source === 'ai_generated' ? '#3182CE' : '#2F855A' }}>{(t as any).source === 'ai_generated' ? 'AI' : 'Admin'}</span></td>
+                        <td style={styles.td}>{t.link_count > 0 ? `🔗 ${t.link_count}` : '—'}</td>
+                        <td style={styles.td}>{new Date(t.created_at).toLocaleDateString()}</td>
+                        <td style={styles.td}>
+                          {(t as any).source === 'ai_generated'
+                            ? <a style={{ ...styles.viewLink, cursor: 'pointer' }} onClick={() => openPreview(t)}>View</a>
+                            : t.video_url && <a href={t.video_url} target="_blank" style={styles.viewLink} rel="noreferrer">View</a>
+                          }
+                          <button style={{ ...styles.deleteBtn, marginLeft: 8 }} onClick={() => deleteTutorial(t.id)}>Delete</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {!loading && tutorials.length === 0 && <p style={styles.empty}>No approved tutorials yet.</p>}
+            </>
           )}
-          {!loading && tutorials.length === 0 && <p style={styles.empty}>No approved tutorials yet.</p>}
         </>
       )}
 
@@ -192,7 +234,7 @@ export default function TutorialsPage() {
             /* Review panel */
             <div style={styles.reviewPanel}>
               <button style={styles.backBtn} onClick={() => setReviewing(null)}>← Back to queue</button>
-              <h2 style={styles.reviewTitle}>{reviewing.title}</h2>
+              <h2 style={styles.reviewTitle}>{reviewing.display_name || reviewing.title}</h2>
 
               <div style={styles.reviewMeta}>
                 <MetaItem label="Guardian" value={reviewing.guardian_name ?? 'Unknown'} />
@@ -211,28 +253,7 @@ export default function TutorialsPage() {
               )}
 
               {/* Frame viewer */}
-              {reviewFrames.length > 0 && (
-                <div style={styles.frameViewer}>
-                  <div style={styles.frameViewerHeader}>
-                    <span style={styles.frameCounter}>Frame {reviewFrameIndex + 1} of {reviewFrames.length}</span>
-                    <div style={styles.frameNavBtns}>
-                      <button style={styles.frameNavBtn} onClick={() => setReviewFrameIndex(i => Math.max(0, i - 1))} disabled={reviewFrameIndex === 0}>← Prev</button>
-                      <button style={styles.frameNavBtn} onClick={() => setReviewFrameIndex(i => Math.min(reviewFrames.length - 1, i + 1))} disabled={reviewFrameIndex === reviewFrames.length - 1}>Next →</button>
-                    </div>
-                  </div>
-                  {reviewFrames[reviewFrameIndex]?.image_url && (
-                    <img src={reviewFrames[reviewFrameIndex].image_url} alt={`Frame ${reviewFrameIndex + 1}`} style={styles.frameImg} />
-                  )}
-                  <div style={styles.frameTextBox}>
-                    {reviewFrames[reviewFrameIndex]?.caption && (
-                      <p style={styles.frameCaption}>{reviewFrames[reviewFrameIndex].caption}</p>
-                    )}
-                    {reviewFrames[reviewFrameIndex]?.tts_text && (
-                      <p style={styles.frameTts}>{reviewFrames[reviewFrameIndex].tts_text}</p>
-                    )}
-                  </div>
-                </div>
-              )}
+              {reviewFrames.length > 0 && <FrameViewer frames={reviewFrames} />}
 
               {/* Approve / Reject */}
               <div style={styles.reviewActions}>
@@ -241,10 +262,12 @@ export default function TutorialsPage() {
                   <textarea
                     style={styles.rejectTextarea}
                     value={rejectNotes}
-                    onChange={e => setRejectNotes(e.target.value)}
+                    onChange={e => setRejectNotes(e.target.value.slice(0, 250))}
                     placeholder="Explain what needs to change. You can reference specific frame numbers."
+                    maxLength={250}
                     rows={4}
                   />
+                  <div style={{ fontSize: 11, color: '#999', textAlign: 'right', marginTop: 2 }}>{rejectNotes.length}/250</div>
                 </div>
                 <div style={styles.reviewBtns}>
                   <button
@@ -276,7 +299,7 @@ export default function TutorialsPage() {
                   <tbody>
                     {pending.map(t => (
                       <tr key={t.id} style={styles.tr}>
-                        <td style={styles.td}>{t.title}</td>
+                        <td style={styles.td}>{(t as any).display_name || t.title}</td>
                         <td style={styles.td}>{t.guardian_name}</td>
                         <td style={styles.td}><span style={styles.fmtBadge}>{t.format}</span></td>
                         <td style={styles.td}>{t.duration_seconds ? `${t.duration_seconds}s` : '—'}</td>
@@ -327,6 +350,87 @@ export default function TutorialsPage() {
           </form>
         </div>
       )}
+    </div>
+  );
+}
+
+function FrameViewer({ frames }: { frames: any[] }) {
+  const [index, setIndex] = React.useState(0);
+  const [autoPlaying, setAutoPlaying] = React.useState(false);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const frame = frames[index];
+  const isLast = index === frames.length - 1;
+
+  function advance() {
+    setIndex(i => {
+      const next = i + 1;
+      if (next >= frames.length) { setAutoPlaying(false); return i; }
+      return next;
+    });
+  }
+
+  // When auto-play is on, advance after audio ends or after 4s (no audio)
+  React.useEffect(() => {
+    if (!autoPlaying) { if (timerRef.current) clearTimeout(timerRef.current); return; }
+    if (isLast) { setAutoPlaying(false); return; }
+
+    if (frame?.audio_url) {
+      // advance triggered by onEnded on the <audio> element
+    } else {
+      timerRef.current = setTimeout(advance, 4000);
+    }
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [autoPlaying, index]);
+
+  // Reset to frame 0 whenever frames prop changes (new tutorial opened)
+  React.useEffect(() => { setIndex(0); setAutoPlaying(false); }, [frames]);
+
+  function handleManualNav(next: number) {
+    setAutoPlaying(false);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setIndex(next);
+  }
+
+  return (
+    <div style={styles.frameViewer}>
+      <div style={styles.frameViewerHeader}>
+        <span style={styles.frameCounter}>Frame {index + 1} of {frames.length}</span>
+        <div style={styles.frameNavBtns}>
+          <button style={styles.frameNavBtn} onClick={() => handleManualNav(Math.max(0, index - 1))} disabled={index === 0}>← Prev</button>
+          <button
+            style={{ ...styles.frameNavBtn, background: autoPlaying ? '#FED7D7' : '#C6F6D5', color: autoPlaying ? '#C53030' : '#276749', minWidth: 110 }}
+            onClick={() => {
+              if (!autoPlaying) { setIndex(0); setAutoPlaying(true); }
+              else setAutoPlaying(false);
+            }}
+          >
+            {autoPlaying ? '⏸ Pause' : '▶ Auto Play'}
+          </button>
+          <button style={styles.frameNavBtn} onClick={() => handleManualNav(Math.min(frames.length - 1, index + 1))} disabled={isLast}>Next →</button>
+        </div>
+      </div>
+
+      {frame?.image_url && (
+        <img src={frame.image_url} alt={`Frame ${index + 1}`} style={styles.frameImg} />
+      )}
+
+      <div style={styles.frameTextBox}>
+        {frame?.caption && <p style={styles.frameCaption}>{frame.caption}</p>}
+        {frame?.tts_text && <p style={styles.frameTts}>{frame.tts_text}</p>}
+        {frame?.audio_url && (
+          <audio
+            key={frame.audio_url}
+            ref={audioRef}
+            src={frame.audio_url}
+            controls
+            autoPlay
+            style={styles.audioPlayer}
+            onEnded={() => { if (autoPlaying) advance(); }}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -403,7 +507,8 @@ const styles: Record<string, React.CSSProperties> = {
   frameImg: { width: '100%', maxHeight: 360, objectFit: 'contain', background: '#000' },
   frameTextBox: { padding: 16 },
   frameCaption: { fontSize: 20, fontWeight: 700, color: '#2D3748', marginBottom: 6 },
-  frameTts: { fontSize: 15, color: '#718096', lineHeight: 1.6 },
+  frameTts: { fontSize: 15, color: '#718096', lineHeight: 1.6, marginBottom: 12 },
+  audioPlayer: { width: '100%', marginTop: 8 },
 
   reviewActions: { borderTop: '1px solid #E2E8F0', paddingTop: 24 },
   rejectSection: { marginBottom: 16 },

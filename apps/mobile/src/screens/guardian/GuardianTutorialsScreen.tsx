@@ -28,7 +28,7 @@ const STATUS_LABELS: Record<TutorialStatus, string> = {
 };
 
 const FORMAT_EMOJI: Record<string, string> = {
-  video: '🎬', slideshow: '🖼', cards: '🃏',
+  video: '🎬', slideshow: '🖼',
 };
 
 type Filter = 'all' | TutorialStatus;
@@ -179,8 +179,8 @@ export default function GuardianTutorialsScreen() {
 
               {/* Info */}
               <View style={styles.cardInfo}>
-                <Text style={styles.cardTitle} numberOfLines={2}>{t.title}</Text>
-                <Text style={styles.cardSub}>{t.topic ?? t.category}</Text>
+                <Text style={styles.cardTitle} numberOfLines={2}>{t.display_name || t.category}</Text>
+                <Text style={styles.cardSub}>{t.category}</Text>
                 <View style={styles.cardMeta}>
                   <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[t.status as TutorialStatus].bg }]}>
                     <Text style={[styles.statusText, { color: STATUS_COLORS[t.status as TutorialStatus].text }]}>
@@ -191,7 +191,7 @@ export default function GuardianTutorialsScreen() {
                     <Text style={styles.metaText}>{t.duration_seconds}s</Text>
                   )}
                   {t.link_count > 0 && (
-                    <Text style={styles.metaText}>🔗 {t.link_count}</Text>
+                    <Text style={styles.metaText}>🔗 {t.link_count} {t.link_count === 1 ? 'User' : 'Users'}</Text>
                   )}
                 </View>
               </View>

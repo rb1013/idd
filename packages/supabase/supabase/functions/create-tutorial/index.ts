@@ -17,7 +17,7 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const {
-      guardian_id, title, target_skill, core_action, format,
+      guardian_id, title, display_name, target_skill, core_action, format,
       visual_style, image_style, pacing, tone, duration_seconds,
       comprehension_level, language, background_audio, category_id,
     } = body;
@@ -53,6 +53,7 @@ serve(async (req) => {
       .from('tutorials')
       .insert({
         title,
+        display_name: display_name ?? null,
         description: `${target_skill} — ${core_action}`,
         category: target_skill,
         category_id: category_id ?? null,
@@ -71,6 +72,7 @@ serve(async (req) => {
       .single();
 
     if (insertError) throw new Error(insertError.message);
+    console.log('Tutorial inserted:', tutorial.id);
 
     // Increment quota (upsert)
     await supabase
@@ -81,7 +83,10 @@ serve(async (req) => {
       );
 
     // Queue async generation job (DB Webhook will fire process-tutorial-job)
-    await supabase.from('tutorial_jobs').insert({ tutorial_id: tutorial.id });
+    console.log('Inserting tutorial_job for tutorial:', tutorial.id);
+    const { error: jobError } = await supabase.from('tutorial_jobs').insert({ tutorial_id: tutorial.id });
+    console.log('tutorial_jobs insert result — error:', jobError?.message ?? 'none');
+    if (jobError) throw new Error(`Failed to queue job: ${jobError.message}`);
 
     return new Response(
       JSON.stringify({ tutorial_id: tutorial.id }),
@@ -110,7 +115,7 @@ interface PromptParams {
 }
 
 function buildPrompt(p: PromptParams): string {
-  const frameCount = Math.max(3, Math.floor(p.duration_seconds / 5));
+  const frameCount = 3;
   const paceLabel = p.pacing < 0.5 ? 'slow and deliberate' : 'normal';
   const toneLabel = p.tone > 0.5 ? 'enthusiastic and encouraging' : 'calm and gentle';
 

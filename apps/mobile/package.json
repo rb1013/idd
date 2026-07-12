@@ -9,6 +9,7 @@
     "@supabase/supabase-js": "^2.107.0",
     "base64-arraybuffer": "^1.0.2",
     "expo": "~56.0.9",
+    "expo-audio": "~56.0.12",
     "expo-file-system": "~56.0.8",
     "expo-image-picker": "^56.0.16",
     "expo-location": "^56.0.16",

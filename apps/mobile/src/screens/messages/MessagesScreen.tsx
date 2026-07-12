@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  Image, ActivityIndicator, ScrollView,
+  ActivityIndicator, ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,12 +9,14 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 import { UserStackParamList } from '../../navigation';
+import AvatarWithMood from '../../components/AvatarWithMood';
 
 interface ConversationItem {
   conversation_id: string;
   friend_id: string;
   friend_name: string;
   friend_photo: string | null;
+  friend_mood?: string | null;
   last_message: string | null;
   last_message_at: string | null;
   unread_count: number;
@@ -47,7 +49,21 @@ export default function MessagesScreen() {
   const load = useCallback(async () => {
     if (!activeUser) return;
     const { data } = await supabase.rpc('get_user_conversations', { p_user_id: activeUser.id });
-    setConversations((data || []) as ConversationItem[]);
+    const items = (data || []) as ConversationItem[];
+
+    // Enrich with current_mood for each friend
+    const friendIds = items.map(c => c.friend_id).filter(Boolean);
+    if (friendIds.length > 0) {
+      const { data: moods } = await supabase
+        .from('user_profiles')
+        .select('id, current_mood')
+        .in('id', friendIds);
+      const moodMap: Record<string, string | null> = {};
+      (moods ?? []).forEach((r: any) => { moodMap[r.id] = r.current_mood ?? null; });
+      items.forEach(c => { c.friend_mood = moodMap[c.friend_id] ?? null; });
+    }
+
+    setConversations(items);
     setLoading(false);
   }, [activeUser]);
 
@@ -111,7 +127,7 @@ export default function MessagesScreen() {
               return (
                 <TouchableOpacity key={item.conversation_id} style={styles.bubble} onPress={() => openChat(item)} activeOpacity={0.8}>
                   <View style={[styles.bubbleRing, { borderColor: color }]}>
-                    <AvatarCircle name={item.friend_name} photo={item.friend_photo} size={84} />
+                    <AvatarWithMood name={item.friend_name} photo={item.friend_photo} size={84} mood={item.friend_mood} />
                     <View style={styles.unreadBadge}>
                       <Text style={styles.unreadBadgeText}>{item.unread_count > 9 ? '9+' : item.unread_count}</Text>
                     </View>
@@ -140,7 +156,7 @@ export default function MessagesScreen() {
                 onPress={() => openChat(item)}
                 activeOpacity={0.8}
               >
-                <AvatarCircle name={item.friend_name} photo={item.friend_photo} size={64} />
+                <AvatarWithMood name={item.friend_name} photo={item.friend_photo} size={64} mood={item.friend_mood} />
                 <View style={styles.recentInfo}>
                   <Text style={styles.recentName}>{item.friend_name}</Text>
                   <Text style={[styles.recentTime, { color }]}>{timeAgo(item.last_message_at)}</Text>
@@ -156,21 +172,6 @@ export default function MessagesScreen() {
   );
 }
 
-function AvatarCircle({ name, photo, size }: { name: string; photo: string | null; size: number }) {
-  const radius = size / 2;
-  if (photo) {
-    return <Image source={{ uri: photo }} style={{ width: size, height: size, borderRadius: radius }} />;
-  }
-  return (
-    <View style={{
-      width: size, height: size, borderRadius: radius,
-      backgroundColor: avatarColor(name),
-      justifyContent: 'center', alignItems: 'center',
-    }}>
-      <Text style={{ fontSize: size * 0.38, fontWeight: '800', color: '#fff' }}>{name[0]}</Text>
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },

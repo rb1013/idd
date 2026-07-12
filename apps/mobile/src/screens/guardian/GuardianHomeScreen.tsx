@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  SafeAreaView, Modal, Alert,
+  SafeAreaView, Modal, Alert, Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as Notifications from 'expo-notifications';
 import { useAuth } from '../../lib/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { COLORS } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 
@@ -31,6 +33,25 @@ export default function GuardianHomeScreen() {
   const navigation = useNavigation<Nav>();
   const { guardian, signOut } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
+
+  // Register push token once when guardian home loads
+  useEffect(() => {
+    if (!guardian) return;
+    registerPushToken(guardian.id);
+  }, [guardian?.id]);
+
+  async function registerPushToken(guardianId: string) {
+    if (Platform.OS === 'web') return;
+    try {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') return;
+      const token = (await Notifications.getExpoPushTokenAsync()).data;
+      if (!token) return;
+      await supabase.from('guardians').update({ expo_push_token: token }).eq('id', guardianId);
+    } catch {
+      // Push token registration requires EAS project setup — skip silently
+    }
+  }
 
   const firstName = guardian?.full_name?.split(' ')[0] ?? 'Guardian';
 
