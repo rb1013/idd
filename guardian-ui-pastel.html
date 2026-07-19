@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Guardian UI — Brand A · Bloom.</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #F0EDE8;
+    color: #1A1A1A;
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  h1 { text-align: center; font-size: 22px; font-weight: 700; color: #1A1A1A; margin-bottom: 6px; }
+  .page-sub { text-align: center; color: #888; font-size: 14px; margin-bottom: 48px; }
+
+  .phone {
+    width: 290px; height: 610px;
+    border-radius: 42px;
+    border: 7px solid #D8D4CF;
+    box-shadow: 0 0 0 1px #C8C4BF, 0 24px 60px rgba(0,0,0,0.15);
+    overflow: hidden; position: relative; flex-shrink: 0;
+  }
+  .phone-notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 88px; height: 22px; background: #D8D4CF;
+    border-radius: 0 0 14px 14px; z-index: 100;
+  }
+  .phone-screen { width: 100%; height: 100%; overflow: hidden; display: flex; flex-direction: column; }
+
+  /* ══════════════════════════════════════════
+     Brand A — Bloom. · Professional layout
+  ══════════════════════════════════════════ */
+  .p6 { background: #F5F7FA; }
+
+  .p6H {
+    background: #1E3350;
+    padding: 28px 18px 10px;
+  }
+  .p6BrandRow {
+    display: flex; justify-content: center; align-items: center;
+    gap: 9px; margin-bottom: 10px;
+  }
+  .p6AppIcon {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: #2D63A8;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .p6AppName { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .p6AppName em { color: #7ABAFF; font-style: normal; }
+
+  .p6H-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .p6Left { display: flex; align-items: center; gap: 10px; }
+  .p6Av {
+    width: 36px; height: 36px; border-radius: 18px;
+    background: #2D63A8; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: #fff;
+    border: 2px solid rgba(255,255,255,0.2);
+  }
+  .p6Name { color: #fff; font-size: 15px; font-weight: 600; }
+  .p6Role { color: rgba(255,255,255,0.45); font-size: 10px; font-weight: 500; margin-top: 1px; }
+  .p6Bell {
+    width: 32px; height: 32px; border-radius: 16px;
+    background: rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .p6StatRow { display: flex; background: rgba(255,255,255,0.07); border-radius: 10px; overflow: hidden; }
+  .p6Stat { flex: 1; padding: 6px 6px; text-align: center; }
+  .p6Stat + .p6Stat { border-left: 1px solid rgba(255,255,255,0.1); }
+  .p6StatNum { font-size: 16px; font-weight: 700; color: #fff; }
+  .p6StatLabel { font-size: 8px; color: rgba(255,255,255,0.45); font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 1px; }
+
+  .p6Body { flex: 1; padding: 14px 14px; overflow: hidden; }
+  .p6SecRow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; }
+  .p6SecTitle { font-size: 10px; font-weight: 700; color: #8A9BB0; text-transform: uppercase; letter-spacing: 1px; }
+  .p6SecAll { font-size: 11px; color: #2D63A8; font-weight: 600; }
+
+  .p6bActList {
+    display: flex; flex-direction: column;
+    background: #fff; border-radius: 12px; border: 1px solid #E4EAF2;
+    overflow: hidden; margin-bottom: 14px;
+  }
+  .p6bActRow { display: flex; align-items: center; gap: 12px; padding: 11px 13px; }
+  .p6bActRow + .p6bActRow { border-top: 1px solid #F0F4FA; }
+  .p6bActIconBox {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 17px;
+  }
+  .p6bActBody { flex: 1; }
+  .p6bActTitle { font-size: 12px; font-weight: 700; color: #1A2533; }
+  .p6bActSub { font-size: 9px; color: #8A9BB0; margin-top: 1px; }
+  .p6bActRight { display: flex; align-items: center; gap: 6px; }
+  .p6bActBadge { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 5px; }
+  .p6bActArr { color: #C8D6E8; font-size: 18px; line-height: 1; }
+
+  .p6UserScroll { display: flex; gap: 8px; overflow: hidden; }
+  .p6UserTile {
+    flex-shrink: 0; width: 74px; background: #fff;
+    border-radius: 12px; padding: 12px 6px; text-align: center;
+    border: 1px solid #E4EAF2;
+  }
+  .p6UTileAv {
+    width: 40px; height: 40px; border-radius: 20px; margin: 0 auto 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 700; color: #fff;
+  }
+  .p6UTileName { font-size: 9px; font-weight: 700; color: #1A2533; }
+  .p6UTileMeta { font-size: 8px; color: #AAA; margin-top: 2px; }
+  .p6UTileAdd {
+    width: 40px; height: 40px; border-radius: 20px; margin: 0 auto 7px;
+    border: 1.5px dashed #C8D6E8;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #2D63A8;
+  }
+</style>
+</head>
+<body>
+
+<h1>Bloom. — Guardian Home</h1>
+<p class="page-sub">Brand A · Professional layout · Final</p>
+
+<div class="phone">
+  <div class="phone-notch"></div>
+  <div class="phone-screen p6">
+    <div class="p6H">
+      <div class="p6BrandRow">
+        <div class="p6AppIcon">🌸</div>
+        <div class="p6AppName">Bloom<em>.</em></div>
+      </div>
+      <div class="p6H-top">
+        <div class="p6Left">
+          <div class="p6Av">S</div>
+          <div><div class="p6Name">Sarah</div><div class="p6Role">Guardian</div></div>
+        </div>
+        <div class="p6Bell">🔔</div>
+      </div>
+      <div class="p6StatRow">
+        <div class="p6Stat"><div class="p6StatNum">3</div><div class="p6StatLabel">Learners</div></div>
+        <div class="p6Stat"><div class="p6StatNum">12</div><div class="p6StatLabel">Tutorials</div></div>
+        <div class="p6Stat"><div class="p6StatNum">5</div><div class="p6StatLabel">Activities</div></div>
+      </div>
+    </div>
+
+    <div class="p6Body">
+      <div class="p6SecRow">
+        <div class="p6SecTitle">Quick Actions</div>
+        <div class="p6SecAll">See all</div>
+      </div>
+      <div class="p6bActList">
+        <div class="p6bActRow">
+          <div class="p6bActIconBox" style="background:#E8F0FB">📚</div>
+          <div class="p6bActBody"><div class="p6bActTitle">Tutorials</div><div class="p6bActSub">Manage learning content</div></div>
+          <div class="p6bActRight"><div class="p6bActBadge" style="background:#DAEAFF;color:#1E5CA8">12</div><div class="p6bActArr">›</div></div>
+        </div>
+        <div class="p6bActRow">
+          <div class="p6bActIconBox" style="background:#E6F7EF">✅</div>
+          <div class="p6bActBody"><div class="p6bActTitle">Activities</div><div class="p6bActSub">Daily checklist</div></div>
+          <div class="p6bActRight"><div class="p6bActBadge" style="background:#D4F5E2;color:#0A6635">5</div><div class="p6bActArr">›</div></div>
+        </div>
+        <div class="p6bActRow">
+          <div class="p6bActIconBox" style="background:#F0EBFF">📅</div>
+          <div class="p6bActBody"><div class="p6bActTitle">Schedule</div><div class="p6bActSub">Weekly planner</div></div>
+          <div class="p6bActRight"><div class="p6bActArr">›</div></div>
+        </div>
+        <div class="p6bActRow">
+          <div class="p6bActIconBox" style="background:#FDEEE8">💬</div>
+          <div class="p6bActBody"><div class="p6bActTitle">Messages</div><div class="p6bActSub">Inbox</div></div>
+          <div class="p6bActRight"><div class="p6bActBadge" style="background:#FFD8C8;color:#A83018">2</div><div class="p6bActArr">›</div></div>
+        </div>
+      </div>
+
+      <div class="p6SecRow">
+        <div class="p6SecTitle">Your Learners</div>
+        <div class="p6SecAll">See all</div>
+      </div>
+      <div class="p6UserScroll">
+        <div class="p6UserTile"><div class="p6UTileAv" style="background:#FF6B6B">R</div><div class="p6UTileName">Rahman</div><div class="p6UTileMeta">3 tutorials</div></div>
+        <div class="p6UserTile"><div class="p6UTileAv" style="background:#845EF7">S</div><div class="p6UTileName">Shahnaz</div><div class="p6UTileMeta">5 tutorials</div></div>
+        <div class="p6UserTile"><div class="p6UTileAv" style="background:#20C997">A</div><div class="p6UTileName">Aarav</div><div class="p6UTileMeta">1 tutorial</div></div>
+        <div class="p6UserTile"><div class="p6UTileAdd">+</div><div class="p6UTileName">Add New</div><div class="p6UTileMeta">&nbsp;</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

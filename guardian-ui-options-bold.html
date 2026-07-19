@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Guardian UI — Bold Variations</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0A0A0F;
+    color: #fff;
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+  }
+  h1 { text-align: center; font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .page-sub { text-align: center; color: #555; font-size: 14px; margin-bottom: 10px; }
+  .page-note { text-align: center; color: #F4C542; font-size: 13px; font-weight: 600; margin-bottom: 48px; }
+
+  .options-row {
+    display: flex; gap: 36px; justify-content: center;
+    align-items: flex-start; flex-wrap: wrap;
+  }
+  .option-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .option-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #555; text-transform: uppercase; }
+  .option-name { font-size: 20px; font-weight: 900; color: #fff; text-align: center; }
+  .option-accent { font-size: 12px; font-weight: 700; text-align: center; letter-spacing: 0.5px; }
+  .option-desc { font-size: 12px; color: #555; text-align: center; max-width: 230px; line-height: 1.6; }
+
+  .phone {
+    width: 290px; height: 610px;
+    border-radius: 42px;
+    border: 7px solid #1A1A24;
+    box-shadow: 0 0 0 1px #2A2A38, 0 32px 80px rgba(0,0,0,0.7);
+    overflow: hidden; position: relative; background: #fff; flex-shrink: 0;
+  }
+  .phone-notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 90px; height: 22px; background: #1A1A24;
+    border-radius: 0 0 14px 14px; z-index: 100;
+  }
+  .phone-screen { width: 100%; height: 100%; overflow: hidden; display: flex; flex-direction: column; }
+
+  /* ══════════════════════════════════════════════════
+     OPTION A — Navy + Amber  (curved header, stat pills)
+  ══════════════════════════════════════════════════ */
+  .aS { background: #F0F2F8; }
+
+  .aH {
+    background: linear-gradient(160deg, #0D1B3E 0%, #1A2F5A 100%);
+    padding: 30px 18px 48px;
+    border-radius: 0 0 32px 32px;
+  }
+  .aH-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+  .aLogo { font-size: 16px; font-weight: 900; color: #fff; letter-spacing: -0.3px; }
+  .aLogo em { color: #F4C542; font-style: normal; }
+  .aH-right { display: flex; gap: 8px; align-items: center; }
+  .aBtn {
+    width: 32px; height: 32px; border-radius: 16px;
+    background: rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .aAv {
+    width: 32px; height: 32px; border-radius: 16px;
+    background: #F4C542;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 900; color: #0D1B3E;
+  }
+  .aGreet { color: rgba(255,255,255,0.5); font-size: 11px; margin-bottom: 2px; }
+  .aName { color: #fff; font-size: 20px; font-weight: 900; }
+  .aName em { color: #F4C542; font-style: normal; }
+  .aPills { display: flex; gap: 8px; margin-top: 16px; }
+  .aPill {
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px; padding: 6px 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .aPill-num { font-size: 15px; font-weight: 900; color: #F4C542; }
+  .aPill-label { font-size: 10px; color: rgba(255,255,255,0.6); font-weight: 600; }
+
+  .aBody { padding: 0 16px; margin-top: -20px; flex: 1; overflow: hidden; }
+
+  .aSec { margin-bottom: 16px; }
+  .aSecHead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .aSecTitle { font-size: 13px; font-weight: 800; color: #0D1B3E; }
+  .aSecAll { font-size: 11px; color: #F4A800; font-weight: 700; }
+
+  .aUserRow {
+    background: #fff; border-radius: 14px; padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    margin-bottom: 8px;
+  }
+  .aUAv {
+    width: 40px; height: 40px; border-radius: 20px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 900; color: #fff;
+  }
+  .aUName { font-size: 13px; font-weight: 700; color: #0D1B3E; }
+  .aUMeta { font-size: 10px; color: #999; margin-top: 2px; }
+  .aURight { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .aUBadge {
+    background: #FEF3C7; color: #B45309;
+    font-size: 9px; font-weight: 800;
+    padding: 2px 7px; border-radius: 20px;
+  }
+  .aUArr { color: #CCC; font-size: 18px; }
+
+  .aGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .aCard {
+    background: #fff; border-radius: 14px; padding: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .aCardIcon {
+    width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .aCardTitle { font-size: 12px; font-weight: 800; color: #0D1B3E; }
+  .aCardSub { font-size: 10px; color: #999; margin-top: 2px; }
+
+  .aNav {
+    background: #0D1B3E; display: flex; padding: 10px 6px 6px;
+  }
+  .aNavItem { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .aNavIcon { font-size: 17px; }
+  .aNavLabel { font-size: 8px; color: rgba(255,255,255,0.3); font-weight: 700; letter-spacing: 0.3px; }
+  .aNavLabel.on { color: #F4C542; }
+  .aNavDot { width: 4px; height: 3px; border-radius: 2px; background: #F4C542; }
+
+  /* ══════════════════════════════════════════════════
+     OPTION B — Charcoal + Violet  (split hero, card stack)
+  ══════════════════════════════════════════════════ */
+  .bS { background: #FAFAFA; }
+
+  .bH {
+    background: #1C1828;
+    padding: 28px 18px 24px;
+  }
+  .bH-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .bGreetCol {}
+  .bHi { color: rgba(255,255,255,0.45); font-size: 12px; }
+  .bName { color: #fff; font-size: 21px; font-weight: 900; margin-top: 2px; }
+  .bH-av {
+    width: 44px; height: 44px; border-radius: 22px;
+    background: #7B5CF6;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 900; color: #fff;
+    box-shadow: 0 0 0 3px rgba(123,92,246,0.3);
+  }
+  .bStatsRow { display: flex; gap: 8px; }
+  .bStatCard {
+    flex: 1; background: rgba(255,255,255,0.07);
+    border-radius: 14px; padding: 12px 10px; text-align: center;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .bStatNum { font-size: 20px; font-weight: 900; color: #7B5CF6; }
+  .bStatLabel { font-size: 9px; color: rgba(255,255,255,0.4); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
+
+  .bBody { flex: 1; padding: 16px; overflow: hidden; }
+
+  .bSecRow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .bSecTitle { font-size: 13px; font-weight: 800; color: #1C1828; }
+  .bSecAll { font-size: 11px; color: #7B5CF6; font-weight: 700; }
+
+  .bActGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .bActCard {
+    border-radius: 16px; padding: 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    position: relative; overflow: hidden;
+  }
+  .bActIcon { font-size: 22px; }
+  .bActTitle { font-size: 12px; font-weight: 800; }
+  .bActSub { font-size: 10px; opacity: 0.7; }
+  .bActArrow {
+    position: absolute; bottom: 12px; right: 12px;
+    font-size: 16px; opacity: 0.5;
+  }
+
+  .bUserList { display: flex; flex-direction: column; gap: 7px; }
+  .bUserRow {
+    background: #fff; border-radius: 13px;
+    padding: 10px 12px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid #F0EEF8;
+  }
+  .bUAv {
+    width: 36px; height: 36px; border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 900; color: #fff; flex-shrink: 0;
+  }
+  .bUName { font-size: 12px; font-weight: 700; color: #1C1828; }
+  .bUMeta { font-size: 10px; color: #AAA; margin-top: 1px; }
+  .bUTag {
+    margin-left: auto; background: #EDE9FF;
+    color: #7B5CF6; font-size: 9px; font-weight: 800;
+    padding: 3px 8px; border-radius: 20px;
+  }
+
+  .bNav {
+    background: #fff; border-top: 1px solid #F0EEF5;
+    display: flex; padding: 8px 4px 4px;
+  }
+  .bNavItem { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .bNavPill {
+    width: 44px; height: 26px; border-radius: 13px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .bNavPill.on { background: #EDE9FF; }
+  .bNavLabel { font-size: 8px; font-weight: 700; color: #CCC; }
+  .bNavLabel.on { color: #7B5CF6; }
+
+  /* ══════════════════════════════════════════════════
+     OPTION C — Near-black + Teal  (minimal, spacious)
+  ══════════════════════════════════════════════════ */
+  .cS { background: #F5F7F7; }
+
+  .cH {
+    background: #111827;
+    padding: 28px 18px 26px;
+  }
+  .cH-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .cLogoMark {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: #0EA5A0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .cH-icons { display: flex; gap: 8px; }
+  .cIconBtn {
+    width: 32px; height: 32px; border-radius: 16px;
+    background: rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .cGreet { color: rgba(255,255,255,0.4); font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .cName { color: #fff; font-size: 22px; font-weight: 900; margin-top: 4px; }
+  .cSub { color: rgba(255,255,255,0.4); font-size: 12px; margin-top: 4px; }
+
+  .cStatBar {
+    display: flex; gap: 0;
+    margin-top: 20px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 14px; overflow: hidden;
+  }
+  .cStatItem { flex: 1; padding: 12px 8px; text-align: center; }
+  .cStatItem + .cStatItem { border-left: 1px solid rgba(255,255,255,0.08); }
+  .cStatNum { font-size: 20px; font-weight: 900; color: #0EA5A0; }
+  .cStatLabel { font-size: 9px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; margin-top: 2px; }
+
+  .cBody { flex: 1; padding: 16px; overflow: hidden; }
+
+  .cActRow { display: flex; gap: 8px; margin-bottom: 16px; }
+  .cActBtn {
+    flex: 1; background: #fff; border-radius: 16px;
+    padding: 14px 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  }
+  .cActIcon { font-size: 22px; }
+  .cActLabel { font-size: 10px; font-weight: 800; color: #111827; text-align: center; }
+  .cActCount {
+    background: #CCFBF1; color: #0F766E;
+    font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 20px;
+  }
+
+  .cSecHead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .cSecTitle { font-size: 13px; font-weight: 800; color: #111827; }
+  .cSecAll { font-size: 11px; color: #0EA5A0; font-weight: 700; }
+
+  .cUserList { display: flex; flex-direction: column; gap: 8px; }
+  .cUserCard {
+    background: #fff; border-radius: 16px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  .cUAv {
+    width: 42px; height: 42px; border-radius: 21px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 900; color: #fff; flex-shrink: 0;
+  }
+  .cUName { font-size: 13px; font-weight: 700; color: #111827; }
+  .cUMeta { font-size: 10px; color: #AAA; margin-top: 2px; }
+  .cURight { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .cUTut { font-size: 10px; font-weight: 700; color: #0EA5A0; }
+  .cUArr { font-size: 18px; color: #CCC; }
+
+  .cProgressBar {
+    height: 3px; background: #E5E7EB; border-radius: 2px; margin-top: 6px; overflow: hidden;
+  }
+  .cProgressFill { height: 100%; border-radius: 2px; background: #0EA5A0; }
+
+  .cNav {
+    background: #111827; display: flex; padding: 10px 8px 6px;
+  }
+  .cNavItem { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .cNavIcon { font-size: 17px; }
+  .cNavLabel { font-size: 8px; color: rgba(255,255,255,0.25); font-weight: 700; }
+  .cNavLabel.on { color: #0EA5A0; }
+  .cNavLine { width: 20px; height: 2px; border-radius: 1px; background: #0EA5A0; }
+
+  /* ══════════════════════════════════════════════════
+     OPTION D — Dark + Coral  (editorial, oversized type)
+  ══════════════════════════════════════════════════ */
+  .dS { background: #1A0A0A; }
+
+  .dH {
+    background: #1A0A0A;
+    padding: 28px 18px 20px;
+    border-bottom: 1px solid #2A1515;
+  }
+  .dH-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .dLogoRow { display: flex; align-items: center; gap: 8px; }
+  .dLogoIcon {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: #FF4757;
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .dLogoText { font-size: 16px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+  .dH-av {
+    width: 34px; height: 34px; border-radius: 17px; border: 2px solid #FF4757;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 900; color: #FF4757;
+    background: rgba(255,71,87,0.1);
+  }
+  .dBigGreet { color: rgba(255,255,255,0.3); font-size: 11px; text-transform: uppercase; letter-spacing: 2px; }
+  .dBigName { color: #fff; font-size: 28px; font-weight: 900; letter-spacing: -1px; line-height: 1; margin-top: 4px; }
+  .dBigName em { color: #FF4757; font-style: normal; }
+
+  .dStatsWrap {
+    display: flex; gap: 10px; margin-top: 20px;
+  }
+  .dStatBig {
+    flex: 1; border: 1px solid #2A1515;
+    border-radius: 14px; padding: 12px;
+  }
+  .dStatBigNum { font-size: 28px; font-weight: 900; color: #FF4757; line-height: 1; }
+  .dStatBigLabel { font-size: 9px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-top: 4px; }
+  .dStatSmall { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .dStatSmallItem { border: 1px solid #2A1515; border-radius: 14px; padding: 10px; }
+  .dStatSmallNum { font-size: 18px; font-weight: 900; color: #FF4757; }
+  .dStatSmallLabel { font-size: 9px; color: rgba(255,255,255,0.3); font-weight: 600; letter-spacing: 0.5px; }
+
+  .dBody { flex: 1; padding: 14px; overflow: hidden; }
+
+  .dSecHead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .dSecTitle { font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 2px; }
+  .dSecAll { font-size: 11px; color: #FF4757; font-weight: 700; }
+
+  .dUserList { display: flex; flex-direction: column; gap: 0; border: 1px solid #2A1515; border-radius: 16px; overflow: hidden; margin-bottom: 14px; }
+  .dUserRow {
+    background: #220F0F;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .dUserRow + .dUserRow { border-top: 1px solid #2A1515; }
+  .dUAv {
+    width: 36px; height: 36px; border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 900; color: #fff; flex-shrink: 0;
+  }
+  .dUName { font-size: 13px; font-weight: 700; color: #fff; }
+  .dUMeta { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 1px; }
+  .dUArr { margin-left: auto; color: rgba(255,255,255,0.2); font-size: 18px; }
+
+  .dActRow { display: flex; gap: 8px; }
+  .dActCard {
+    flex: 1; border: 1px solid #2A1515; background: #220F0F;
+    border-radius: 14px; padding: 14px 12px;
+  }
+  .dActIcon { font-size: 20px; margin-bottom: 8px; }
+  .dActTitle { font-size: 12px; font-weight: 800; color: #fff; }
+  .dActSub { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+
+  .dNav {
+    background: #110808; border-top: 1px solid #2A1515;
+    display: flex; padding: 10px 6px 6px;
+  }
+  .dNavItem { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .dNavIcon { font-size: 17px; }
+  .dNavLabel { font-size: 8px; color: rgba(255,255,255,0.2); font-weight: 700; }
+  .dNavLabel.on { color: #FF4757; }
+  .dNavDot { width: 4px; height: 3px; border-radius: 2px; background: #FF4757; }
+</style>
+</head>
+<body>
+
+<h1>Guardian UI — Bold Variations</h1>
+<p class="page-sub">All options keep the dark header + crisp card aesthetic of Option 3</p>
+<p class="page-note">Pick an accent colour and layout direction to implement</p>
+
+<div class="options-row">
+
+  <!-- ── A: Navy + Amber (refined) ─────────────────── -->
+  <div class="option-wrap">
+    <div class="option-label">Option A</div>
+    <div class="option-name">Navy · Amber</div>
+    <div class="option-accent" style="color:#F4C542">Deep navy header · Gold accents</div>
+    <div class="option-desc">Curved header, stat pills, compact user rows. Polished and premium.</div>
+
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-screen aS">
+        <div class="aH">
+          <div class="aH-top">
+            <div class="aLogo">Bloom<em>.</em></div>
+            <div class="aH-right">
+              <div class="aBtn">🔔</div>
+              <div class="aAv">S</div>
+            </div>
+          </div>
+          <div class="aGreet">Good morning,</div>
+          <div class="aName">Sarah <em>✦</em></div>
+          <div class="aPills">
+            <div class="aPill"><span class="aPill-num">3</span><span class="aPill-label">Learners</span></div>
+            <div class="aPill"><span class="aPill-num">12</span><span class="aPill-label">Tutorials</span></div>
+            <div class="aPill"><span class="aPill-num">5</span><span class="aPill-label">Activities</span></div>
+          </div>
+        </div>
+
+        <div class="aBody">
+          <div class="aSec" style="margin-top:16px">
+            <div class="aSecHead">
+              <div class="aSecTitle">Your Learners</div>
+              <div class="aSecAll">See all</div>
+            </div>
+            <div class="aUserRow">
+              <div class="aUAv" style="background:#FF6B6B">R</div>
+              <div><div class="aUName">Rahman B</div><div class="aUMeta">3 tutorials · Active today</div></div>
+              <div class="aURight"><div class="aUBadge">Active</div><div class="aUArr">›</div></div>
+            </div>
+            <div class="aUserRow">
+              <div class="aUAv" style="background:#845EF7">S</div>
+              <div><div class="aUName">Shahnaz K</div><div class="aUMeta">5 tutorials · 2h ago</div></div>
+              <div class="aURight"><div class="aUArr">›</div></div>
+            </div>
+            <div class="aUserRow">
+              <div class="aUAv" style="background:#20C997">A</div>
+              <div><div class="aUName">Aarav M</div><div class="aUMeta">1 tutorial · Yesterday</div></div>
+              <div class="aURight"><div class="aUArr">›</div></div>
+            </div>
+          </div>
+
+          <div class="aSec">
+            <div class="aSecHead">
+              <div class="aSecTitle">Quick Actions</div>
+            </div>
+            <div class="aGrid">
+              <div class="aCard">
+                <div class="aCardIcon" style="background:#FEF9E7">📚</div>
+                <div><div class="aCardTitle">Tutorials</div><div class="aCardSub">12 total</div></div>
+              </div>
+              <div class="aCard">
+                <div class="aCardIcon" style="background:#E8FFF5">✅</div>
+                <div><div class="aCardTitle">Activities</div><div class="aCardSub">Today</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="aNav">
+          <div class="aNavItem"><div class="aNavIcon">🏠</div><div class="aNavLabel on">Home</div><div class="aNavDot"></div></div>
+          <div class="aNavItem"><div class="aNavIcon">👥</div><div class="aNavLabel">Users</div></div>
+          <div class="aNavItem"><div class="aNavIcon">📚</div><div class="aNavLabel">Tutorials</div></div>
+          <div class="aNavItem"><div class="aNavIcon">✅</div><div class="aNavLabel">Tasks</div></div>
+          <div class="aNavItem"><div class="aNavIcon">👤</div><div class="aNavLabel">Account</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── B: Charcoal + Violet ──────────────────────── -->
+  <div class="option-wrap">
+    <div class="option-label">Option B</div>
+    <div class="option-name">Charcoal · Violet</div>
+    <div class="option-accent" style="color:#7B5CF6">Dark charcoal · Purple accents</div>
+    <div class="option-desc">Pill-style bottom nav, coloured action cards, avatar ring. Rich and distinctive.</div>
+
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-screen bS">
+        <div class="bH">
+          <div class="bH-top">
+            <div class="bGreetCol">
+              <div class="bHi">Hello,</div>
+              <div class="bName">Sarah 👋</div>
+            </div>
+            <div class="bH-av">S</div>
+          </div>
+          <div class="bStatsRow">
+            <div class="bStatCard"><div class="bStatNum">3</div><div class="bStatLabel">Learners</div></div>
+            <div class="bStatCard"><div class="bStatNum">12</div><div class="bStatLabel">Tutorials</div></div>
+            <div class="bStatCard"><div class="bStatNum">5</div><div class="bStatLabel">Activities</div></div>
+          </div>
+        </div>
+
+        <div class="bBody">
+          <div class="bActGrid" style="margin-bottom:14px">
+            <div class="bActCard" style="background:linear-gradient(135deg,#EDE9FF,#DDD6FE)">
+              <div class="bActIcon">📚</div>
+              <div class="bActTitle" style="color:#4C1D95">Tutorials</div>
+              <div class="bActSub" style="color:#6D28D9">12 available</div>
+              <div class="bActArrow">›</div>
+            </div>
+            <div class="bActCard" style="background:linear-gradient(135deg,#ECFDF5,#D1FAE5)">
+              <div class="bActIcon">✅</div>
+              <div class="bActTitle" style="color:#064E3B">Activities</div>
+              <div class="bActSub" style="color:#047857">Today's plan</div>
+              <div class="bActArrow">›</div>
+            </div>
+            <div class="bActCard" style="background:linear-gradient(135deg,#FFF7ED,#FED7AA)">
+              <div class="bActIcon">📅</div>
+              <div class="bActTitle" style="color:#7C2D12">Schedule</div>
+              <div class="bActSub" style="color:#C2410C">Weekly</div>
+              <div class="bActArrow">›</div>
+            </div>
+            <div class="bActCard" style="background:linear-gradient(135deg,#FDF2F8,#FBCFE8)">
+              <div class="bActIcon">💬</div>
+              <div class="bActTitle" style="color:#701A75">Messages</div>
+              <div class="bActSub" style="color:#A21CAF">2 new</div>
+              <div class="bActArrow">›</div>
+            </div>
+          </div>
+
+          <div class="bSecRow">
+            <div class="bSecTitle">Your Learners</div>
+            <div class="bSecAll">See all</div>
+          </div>
+          <div class="bUserList">
+            <div class="bUserRow">
+              <div class="bUAv" style="background:#FF6B6B">R</div>
+              <div><div class="bUName">Rahman B</div><div class="bUMeta">3 tutorials</div></div>
+              <div class="bUTag">Active</div>
+            </div>
+            <div class="bUserRow">
+              <div class="bUAv" style="background:#845EF7">S</div>
+              <div><div class="bUName">Shahnaz K</div><div class="bUMeta">5 tutorials</div></div>
+              <div class="bUTag">2h ago</div>
+            </div>
+            <div class="bUserRow">
+              <div class="bUAv" style="background:#20C997">A</div>
+              <div><div class="bUName">Aarav M</div><div class="bUMeta">1 tutorial</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bNav">
+          <div class="bNavItem"><div class="bNavPill on">🏠</div><div class="bNavLabel on">Home</div></div>
+          <div class="bNavItem"><div class="bNavPill">👥</div><div class="bNavLabel">Users</div></div>
+          <div class="bNavItem"><div class="bNavPill">📚</div><div class="bNavLabel">Learn</div></div>
+          <div class="bNavItem"><div class="bNavPill">✅</div><div class="bNavLabel">Tasks</div></div>
+          <div class="bNavItem"><div class="bNavPill">👤</div><div class="bNavLabel">Me</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── C: Near-black + Teal ──────────────────────── -->
+  <div class="option-wrap">
+    <div class="option-label">Option C</div>
+    <div class="option-name">Dark · Teal</div>
+    <div class="option-accent" style="color:#0EA5A0">Near-black · Teal accents</div>
+    <div class="option-desc">Minimal action buttons, progress bars per user, clean and spacious feel.</div>
+
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-screen cS">
+        <div class="cH">
+          <div class="cH-top">
+            <div class="cLogoMark">🌸</div>
+            <div class="cH-icons">
+              <div class="cIconBtn">🔔</div>
+              <div class="cIconBtn">👤</div>
+            </div>
+          </div>
+          <div class="cGreet">Good morning</div>
+          <div class="cName">Sarah</div>
+          <div class="cSub">3 learners · 5 tasks today</div>
+          <div class="cStatBar">
+            <div class="cStatItem"><div class="cStatNum">3</div><div class="cStatLabel">Learners</div></div>
+            <div class="cStatItem"><div class="cStatNum">12</div><div class="cStatLabel">Tutorials</div></div>
+            <div class="cStatItem"><div class="cStatNum">5</div><div class="cStatLabel">Activities</div></div>
+          </div>
+        </div>
+
+        <div class="cBody">
+          <div class="cActRow" style="margin-bottom:16px">
+            <div class="cActBtn">
+              <div class="cActIcon">📚</div>
+              <div class="cActLabel">Tutorials</div>
+              <div class="cActCount">12</div>
+            </div>
+            <div class="cActBtn">
+              <div class="cActIcon">✅</div>
+              <div class="cActLabel">Activities</div>
+              <div class="cActCount">5</div>
+            </div>
+            <div class="cActBtn">
+              <div class="cActIcon">📅</div>
+              <div class="cActLabel">Schedule</div>
+            </div>
+            <div class="cActBtn">
+              <div class="cActIcon">💬</div>
+              <div class="cActLabel">Messages</div>
+              <div class="cActCount">2</div>
+            </div>
+          </div>
+
+          <div class="cSecHead">
+            <div class="cSecTitle">Your Learners</div>
+            <div class="cSecAll">Manage</div>
+          </div>
+          <div class="cUserList">
+            <div class="cUserCard">
+              <div class="cUAv" style="background:#FF6B6B">R</div>
+              <div style="flex:1">
+                <div class="cUName">Rahman B</div>
+                <div class="cUMeta">3 of 5 tutorials done</div>
+                <div class="cProgressBar"><div class="cProgressFill" style="width:60%"></div></div>
+              </div>
+              <div class="cURight"><div class="cUArr">›</div></div>
+            </div>
+            <div class="cUserCard">
+              <div class="cUAv" style="background:#845EF7">S</div>
+              <div style="flex:1">
+                <div class="cUName">Shahnaz K</div>
+                <div class="cUMeta">5 of 6 tutorials done</div>
+                <div class="cProgressBar"><div class="cProgressFill" style="width:83%"></div></div>
+              </div>
+              <div class="cURight"><div class="cUArr">›</div></div>
+            </div>
+            <div class="cUserCard">
+              <div class="cUAv" style="background:#20C997">A</div>
+              <div style="flex:1">
+                <div class="cUName">Aarav M</div>
+                <div class="cUMeta">1 of 4 tutorials done</div>
+                <div class="cProgressBar"><div class="cProgressFill" style="width:25%"></div></div>
+              </div>
+              <div class="cURight"><div class="cUArr">›</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cNav">
+          <div class="cNavItem"><div class="cNavIcon">🏠</div><div class="cNavLabel on">Home</div><div class="cNavLine"></div></div>
+          <div class="cNavItem"><div class="cNavIcon">👥</div><div class="cNavLabel">Users</div></div>
+          <div class="cNavItem"><div class="cNavIcon">📚</div><div class="cNavLabel">Tutorials</div></div>
+          <div class="cNavItem"><div class="cNavIcon">✅</div><div class="cNavLabel">Tasks</div></div>
+          <div class="cNavItem"><div class="cNavIcon">👤</div><div class="cNavLabel">Account</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── D: Dark Coral (editorial) ─────────────────── -->
+  <div class="option-wrap">
+    <div class="option-label">Option D</div>
+    <div class="option-name">Dark · Coral</div>
+    <div class="option-accent" style="color:#FF4757">Full dark theme · Red-coral accents</div>
+    <div class="option-desc">Fully dark UI (no white), editorial oversized numbers, high contrast. Bold and striking.</div>
+
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-screen dS">
+        <div class="dH">
+          <div class="dH-top">
+            <div class="dLogoRow">
+              <div class="dLogoIcon">🌸</div>
+              <div class="dLogoText">Bloom</div>
+            </div>
+            <div class="dH-av">S</div>
+          </div>
+          <div class="dBigGreet">Good morning</div>
+          <div class="dBigName">Sarah <em>✦</em></div>
+          <div class="dStatsWrap">
+            <div class="dStatBig">
+              <div class="dStatBigNum">3</div>
+              <div class="dStatBigLabel">Learners</div>
+            </div>
+            <div class="dStatSmall">
+              <div class="dStatSmallItem">
+                <div class="dStatSmallNum">12</div>
+                <div class="dStatSmallLabel">Tutorials</div>
+              </div>
+              <div class="dStatSmallItem">
+                <div class="dStatSmallNum">5</div>
+                <div class="dStatSmallLabel">Activities</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dBody">
+          <div class="dSecHead" style="margin-bottom:10px">
+            <div class="dSecTitle">Learners</div>
+            <div class="dSecAll">See all</div>
+          </div>
+          <div class="dUserList">
+            <div class="dUserRow">
+              <div class="dUAv" style="background:#FF6B6B">R</div>
+              <div><div class="dUName">Rahman B</div><div class="dUMeta">3 tutorials · Active today</div></div>
+              <div class="dUArr">›</div>
+            </div>
+            <div class="dUserRow">
+              <div class="dUAv" style="background:#845EF7">S</div>
+              <div><div class="dUName">Shahnaz K</div><div class="dUMeta">5 tutorials · 2h ago</div></div>
+              <div class="dUArr">›</div>
+            </div>
+            <div class="dUserRow">
+              <div class="dUAv" style="background:#20C997">A</div>
+              <div><div class="dUName">Aarav M</div><div class="dUMeta">1 tutorial · Yesterday</div></div>
+              <div class="dUArr">›</div>
+            </div>
+          </div>
+
+          <div class="dSecHead" style="margin-top:14px;margin-bottom:10px">
+            <div class="dSecTitle">Quick Actions</div>
+          </div>
+          <div class="dActRow">
+            <div class="dActCard">
+              <div class="dActIcon">📚</div>
+              <div class="dActTitle">Tutorials</div>
+              <div class="dActSub">12 total</div>
+            </div>
+            <div class="dActCard">
+              <div class="dActIcon">✅</div>
+              <div class="dActTitle">Activities</div>
+              <div class="dActSub">Today</div>
+            </div>
+            <div class="dActCard">
+              <div class="dActIcon">📅</div>
+              <div class="dActTitle">Schedule</div>
+              <div class="dActSub">Week</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dNav">
+          <div class="dNavItem"><div class="dNavIcon">🏠</div><div class="dNavLabel on">Home</div><div class="dNavDot"></div></div>
+          <div class="dNavItem"><div class="dNavIcon">👥</div><div class="dNavLabel">Users</div></div>
+          <div class="dNavItem"><div class="dNavIcon">📚</div><div class="dNavLabel">Tutorials</div></div>
+          <div class="dNavItem"><div class="dNavIcon">✅</div><div class="dNavLabel">Tasks</div></div>
+          <div class="dNavItem"><div class="dNavIcon">👤</div><div class="dNavLabel">Account</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
