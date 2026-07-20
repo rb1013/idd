@@ -28,6 +28,15 @@ import TutorialLibraryScreen from '../screens/tutorials/TutorialLibraryScreen';
 import GuardianActivitiesScreen from '../screens/guardian/GuardianActivitiesScreen';
 import ScheduleScreen from '../screens/guardian/ScheduleScreen';
 import UserScheduleScreen from '../screens/guardian/UserScheduleScreen';
+import LearnerDiscoveryScreen from '../screens/guardian/LearnerDiscoveryScreen';
+import LearnerPublicProfileScreen from '../screens/guardian/LearnerPublicProfileScreen';
+import LearnerFriendRequestsScreen from '../screens/guardian/LearnerFriendRequestsScreen';
+import GuardianConnectionsScreen from '../screens/guardian/GuardianConnectionsScreen';
+import DiscussionsScreen from '../screens/guardian/DiscussionsScreen';
+import DiscussionDetailScreen from '../screens/guardian/DiscussionDetailScreen';
+import EventsScreen from '../screens/guardian/EventsScreen';
+import EventDetailScreen from '../screens/guardian/EventDetailScreen';
+import CreateEventScreen from '../screens/guardian/CreateEventScreen';
 
 // User screens
 import UserHomeScreen from '../screens/user/UserHomeScreen';
@@ -63,6 +72,15 @@ export type GuardianNavParamList = {
   CreateTutorial: undefined;
   TutorialPreview: { tutorialId: string };
   TutorialLibrary: { userId?: string };
+  LearnerDiscovery: undefined;
+  LearnerPublicProfile: { learnerId: string };
+  LearnerFriendRequests: undefined;
+  GuardianConnections: undefined;
+  Discussions: undefined;
+  DiscussionDetail: { postId: string };
+  Events: undefined;
+  EventDetail: { eventId: string };
+  CreateEvent: undefined;
 };
 
 export type UserStackParamList = {
@@ -135,7 +153,7 @@ function GuardianSettingsBtn() {
 const navStyles = StyleSheet.create({
   gearBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     justifyContent: 'center', alignItems: 'center',
     marginRight: 4,
   },
@@ -170,8 +188,8 @@ function GuardianTabs() {
   return (
     <GuardianNav.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: COLORS.surface },
-        headerTintColor: COLORS.text,
+        headerStyle: { backgroundColor: COLORS.bloomNavy },
+        headerTintColor: '#FFFFFF',
         headerBackTitle: '',
         headerShadowVisible: false,
         headerRight: () => <GuardianSettingsBtn />,
@@ -187,9 +205,18 @@ function GuardianTabs() {
       <GuardianNav.Screen name="UserSchedule"    component={UserScheduleScreen}          options={{ title: 'Schedule' }} />
       <GuardianNav.Screen name="CreateUser"      component={CreateUserScreen}            options={{ title: 'Create Profile' }} />
       <GuardianNav.Screen name="EditUser"        component={EditUserScreen}              options={{ title: 'Edit Profile' }} />
-      <GuardianNav.Screen name="CreateTutorial"  component={CreateTutorialScreen}        options={{ title: 'Create Tutorial' }} />
-      <GuardianNav.Screen name="TutorialPreview" component={TutorialPreviewScreen}       options={{ title: 'Preview Tutorial' }} />
-      <GuardianNav.Screen name="TutorialLibrary" component={TutorialLibraryScreen}       options={{ title: 'Tutorial Library' }} />
+      <GuardianNav.Screen name="CreateTutorial"      component={CreateTutorialScreen}        options={{ title: 'Create Tutorial' }} />
+      <GuardianNav.Screen name="TutorialPreview"    component={TutorialPreviewScreen}       options={{ title: 'Preview Tutorial' }} />
+      <GuardianNav.Screen name="TutorialLibrary"    component={TutorialLibraryScreen}       options={{ title: 'Tutorial Library' }} />
+      <GuardianNav.Screen name="LearnerDiscovery"   component={LearnerDiscoveryScreen}      options={{ title: 'Find Friends' }} />
+      <GuardianNav.Screen name="LearnerPublicProfile" component={LearnerPublicProfileScreen} options={{ title: 'Learner Profile' }} />
+      <GuardianNav.Screen name="LearnerFriendRequests" component={LearnerFriendRequestsScreen} options={{ title: 'Friend Requests' }} />
+      <GuardianNav.Screen name="GuardianConnections"  component={GuardianConnectionsScreen}   options={{ title: 'My Connections' }} />
+      <GuardianNav.Screen name="Discussions"         component={DiscussionsScreen}           options={{ title: 'Discussions' }} />
+      <GuardianNav.Screen name="DiscussionDetail"    component={DiscussionDetailScreen}      options={{ title: 'Discussion' }} />
+      <GuardianNav.Screen name="Events"              component={EventsScreen}                options={{ title: 'Events' }} />
+      <GuardianNav.Screen name="EventDetail"         component={EventDetailScreen}           options={{ title: 'Event' }} />
+      <GuardianNav.Screen name="CreateEvent"         component={CreateEventScreen}           options={{ title: 'Create Event' }} />
     </GuardianNav.Navigator>
   );
 }

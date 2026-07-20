@@ -214,7 +214,7 @@ export default function TutorialLibraryScreen() {
           value={search}
           onChangeText={setSearch}
           placeholder="Search tutorials…"
-          placeholderTextColor={COLORS.textLight}
+          placeholderTextColor={COLORS.bloomMuted}
           clearButtonMode="while-editing"
         />
       </View>
@@ -245,7 +245,7 @@ export default function TutorialLibraryScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>
+        <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>
       ) : (
         <FlatList
           data={filtered}
@@ -431,13 +431,13 @@ function FilterRow({ label, options, value, onSelect, labels }: {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: COLORS.bloomBody },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
 
   searchRow: { padding: 14, paddingBottom: 6 },
   searchInput: {
-    backgroundColor: COLORS.surface, borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.border,
-    paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, fontWeight: '500', color: COLORS.text,
+    backgroundColor: COLORS.bloomCard, borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+    paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, fontWeight: '500', color: COLORS.bloomText,
   },
 
   filterSection: { gap: 2 },
@@ -445,18 +445,18 @@ const styles = StyleSheet.create({
   filterRowContent: { paddingHorizontal: 12, paddingVertical: 6, gap: 8 },
   filterChip: {
     paddingHorizontal: 14, paddingVertical: 7, borderRadius: 18,
-    backgroundColor: COLORS.surface, borderWidth: 1.5, borderColor: COLORS.border,
+    backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
   },
-  filterChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  filterChipText: { fontSize: 13, fontWeight: '600', color: COLORS.textLight },
+  filterChipActive: { backgroundColor: COLORS.bloomNavy, borderColor: COLORS.bloomNavy },
+  filterChipText: { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted },
   filterChipTextActive: { color: '#fff', fontWeight: '700' },
 
   list: { padding: 12, paddingBottom: 32 },
   row: { gap: 12, marginBottom: 12 },
 
   card: {
-    flex: 1, backgroundColor: COLORS.surface, borderRadius: 18,
-    borderWidth: 1.5, borderColor: COLORS.border, overflow: 'hidden',
+    flex: 1, backgroundColor: COLORS.bloomCard, borderRadius: 18,
+    borderWidth: 1.5, borderColor: COLORS.bloomBorder, overflow: 'hidden',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
     shadowColor: '#F59E0B', shadowOpacity: 0.25, shadowRadius: 10, elevation: 5,
   },
   thumb: { width: '100%', height: 120 },
-  thumbPlaceholder: { backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center' },
+  thumbPlaceholder: { backgroundColor: '#DAEAFF', justifyContent: 'center', alignItems: 'center' },
   thumbEmoji: { fontSize: 44 },
 
   starBtn: {
@@ -478,52 +478,52 @@ const styles = StyleSheet.create({
   starBtnText: { fontSize: 15 },
 
   cardBody: { padding: 12, gap: 4 },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: COLORS.text, lineHeight: 20 },
+  cardTitle: { fontSize: 15, fontWeight: '800', color: COLORS.bloomText, lineHeight: 20 },
   cardMeta: { fontSize: 12, fontWeight: '500', color: COLORS.secondary, marginBottom: 2 },
   cardMetas: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
   cardMetaChip: {
-    fontSize: 11, fontWeight: '600', color: COLORS.textLight,
-    backgroundColor: '#F0F4F8', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3,
+    fontSize: 11, fontWeight: '600', color: COLORS.bloomMuted,
+    backgroundColor: COLORS.bloomBorder, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3,
     textTransform: 'capitalize',
   },
-  addBtn: { backgroundColor: COLORS.primaryLight, borderRadius: 10, paddingVertical: 9, alignItems: 'center', marginTop: 2 },
-  addBtnText: { fontSize: 13, fontWeight: '800', color: COLORS.primary },
+  addBtn: { backgroundColor: '#DAEAFF', borderRadius: 10, paddingVertical: 9, alignItems: 'center', marginTop: 2 },
+  addBtnText: { fontSize: 13, fontWeight: '800', color: COLORS.bloomAccent },
 
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
   emptyEmoji: { fontSize: 48 },
-  emptyText: { fontSize: 18, fontWeight: '700', color: COLORS.text },
-  emptyHint: { fontSize: 13, color: COLORS.textLight },
+  emptyText: { fontSize: 18, fontWeight: '700', color: COLORS.bloomText },
+  emptyHint: { fontSize: 13, color: COLORS.bloomMuted },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   pickerCard: {
-    backgroundColor: COLORS.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: COLORS.bloomCard, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 24, paddingBottom: 40, gap: 12,
   },
-  pickerTitle: { fontSize: 22, fontWeight: '800', color: COLORS.text },
-  pickerSub: { fontSize: 14, color: COLORS.textLight, marginBottom: 4 },
+  pickerTitle: { fontSize: 22, fontWeight: '800', color: COLORS.bloomText },
+  pickerSub: { fontSize: 14, color: COLORS.bloomMuted, marginBottom: 4 },
 
   userRow: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: COLORS.background, borderRadius: 16, padding: 16,
+    backgroundColor: COLORS.bloomBody, borderRadius: 16, padding: 16,
     borderWidth: 2, borderColor: 'transparent',
   },
-  userRowSelected: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
+  userRowSelected: { borderColor: COLORS.bloomAccent, backgroundColor: '#DAEAFF' },
   userRowFeatured: { borderColor: '#F59E0B', backgroundColor: '#FFFBEB' },
   userAvatar: { width: 50, height: 50, borderRadius: 25 },
-  userAvatarPlaceholder: { backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center' },
-  userAvatarText: { fontSize: 20, fontWeight: '800', color: COLORS.primary },
-  userName: { fontSize: 17, fontWeight: '700', color: COLORS.text },
-  featureLimitNote: { fontSize: 11, color: COLORS.textLight, marginTop: 2 },
+  userAvatarPlaceholder: { backgroundColor: '#DAEAFF', justifyContent: 'center', alignItems: 'center' },
+  userAvatarText: { fontSize: 20, fontWeight: '800', color: COLORS.bloomAccent },
+  userName: { fontSize: 17, fontWeight: '700', color: COLORS.bloomText },
+  featureLimitNote: { fontSize: 11, color: COLORS.bloomMuted, marginTop: 2 },
   featureStar: { fontSize: 22 },
 
   checkbox: {
-    width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: COLORS.border,
-    backgroundColor: COLORS.surface, justifyContent: 'center', alignItems: 'center',
+    width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: COLORS.bloomBorder,
+    backgroundColor: COLORS.bloomCard, justifyContent: 'center', alignItems: 'center',
   },
-  checkboxChecked: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  checkboxChecked: { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
   checkmark: { color: '#fff', fontSize: 14, fontWeight: '800' },
-  confirmBtn: { marginTop: 4, paddingVertical: 15, alignItems: 'center', backgroundColor: COLORS.primary, borderRadius: 16 },
+  confirmBtn: { marginTop: 4, paddingVertical: 15, alignItems: 'center', backgroundColor: COLORS.bloomNavy, borderRadius: 16 },
   confirmBtnText: { fontWeight: '800', fontSize: 15, color: '#fff' },
-  cancelBtn: { paddingVertical: 13, alignItems: 'center', backgroundColor: COLORS.border, borderRadius: 16 },
-  cancelBtnText: { fontWeight: '700', fontSize: 15, color: COLORS.text },
+  cancelBtn: { paddingVertical: 13, alignItems: 'center', backgroundColor: COLORS.bloomBorder, borderRadius: 16 },
+  cancelBtnText: { fontWeight: '700', fontSize: 15, color: COLORS.bloomText },
 });

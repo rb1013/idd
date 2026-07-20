@@ -216,7 +216,7 @@ export default function TutorialPreviewScreen() {
   }
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+    return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
   }
 
   if (!tutorial) {
@@ -230,7 +230,7 @@ export default function TutorialPreviewScreen() {
   if (tutorial.status === 'generating') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={COLORS.bloomAccent} />
         <Text style={styles.generatingText}>AI is creating your tutorial…</Text>
         <Text style={styles.generatingHint}>This usually takes 30–60 seconds</Text>
       </View>
@@ -416,7 +416,7 @@ export default function TutorialPreviewScreen() {
               value={editImagePrompt}
               onChangeText={(t) => setEditImagePrompt(t.slice(0, 60))}
               placeholder="Describe the image you want for this slide…"
-              placeholderTextColor={COLORS.textLight}
+              placeholderTextColor={COLORS.bloomMuted}
               maxLength={60}
               multiline
               textAlignVertical="top"
@@ -429,7 +429,7 @@ export default function TutorialPreviewScreen() {
               disabled={regeneratingImage}
             >
               {regeneratingImage
-                ? <ActivityIndicator color={COLORS.primary} size="small" />
+                ? <ActivityIndicator color={COLORS.bloomAccent} size="small" />
                 : <Text style={styles.regenBtnText}>🔄 Regenerate image</Text>
               }
             </TouchableOpacity>
@@ -440,7 +440,7 @@ export default function TutorialPreviewScreen() {
               value={editCaption}
               onChangeText={setEditCaption}
               placeholder="e.g. Tap the ball"
-              placeholderTextColor={COLORS.textLight}
+              placeholderTextColor={COLORS.bloomMuted}
               maxLength={40}
             />
 
@@ -450,7 +450,7 @@ export default function TutorialPreviewScreen() {
               value={editTts}
               onChangeText={setEditTts}
               placeholder="e.g. Use the inside of your foot to tap the ball forward."
-              placeholderTextColor={COLORS.textLight}
+              placeholderTextColor={COLORS.bloomMuted}
               multiline
               textAlignVertical="top"
             />
@@ -482,67 +482,67 @@ function MetaBadge({ text, color }: { text: string; color?: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: COLORS.bloomBody },
   content: { padding: 16, paddingBottom: 48 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 32 },
-  errorText: { fontSize: 16, color: COLORS.textLight },
-  generatingText: { fontSize: 18, fontWeight: '700', color: COLORS.text, textAlign: 'center' },
-  generatingHint: { fontSize: 14, color: COLORS.textLight, textAlign: 'center' },
+  errorText: { fontSize: 16, color: COLORS.bloomMuted },
+  generatingText: { fontSize: 18, fontWeight: '700', color: COLORS.bloomText, textAlign: 'center' },
+  generatingHint: { fontSize: 14, color: COLORS.bloomMuted, textAlign: 'center' },
 
   statusBanner: { borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 14, alignItems: 'center' },
   statusBannerText: { fontWeight: '800', fontSize: 15 },
 
   adminNotesCard: { backgroundColor: '#FFF5F5', borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.error, padding: 14, marginBottom: 12 },
   adminNotesLabel: { fontSize: 12, fontWeight: '700', color: COLORS.error, marginBottom: 4 },
-  adminNotesText: { fontSize: 14, color: COLORS.text, lineHeight: 20 },
+  adminNotesText: { fontSize: 14, color: COLORS.bloomText, lineHeight: 20 },
 
-  title: { fontSize: 22, fontWeight: '800', color: COLORS.text, marginBottom: 10 },
+  title: { fontSize: 22, fontWeight: '800', color: COLORS.bloomText, marginBottom: 10 },
   metaRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 20 },
   metaBadge: {
     paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10,
-    backgroundColor: COLORS.primaryLight, borderWidth: 1, borderColor: COLORS.primary,
+    backgroundColor: '#DAEAFF', borderWidth: 1, borderColor: COLORS.bloomAccent,
   },
-  metaBadgeText: { fontSize: 12, fontWeight: '600', color: COLORS.primary, textTransform: 'capitalize' },
+  metaBadgeText: { fontSize: 12, fontWeight: '600', color: COLORS.bloomAccent, textTransform: 'capitalize' },
 
-  frameContainer: { backgroundColor: COLORS.surface, borderRadius: 20, overflow: 'hidden', marginBottom: 20 },
+  frameContainer: { backgroundColor: COLORS.bloomCard, borderRadius: 20, overflow: 'hidden', marginBottom: 20 },
   frameHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14 },
-  frameCounter: { fontSize: 13, fontWeight: '600', color: COLORS.textLight },
+  frameCounter: { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted },
   frameHeaderActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   autoPlayBtn: {
-    backgroundColor: COLORS.primaryLight, borderRadius: 8,
-    paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: COLORS.primary,
+    backgroundColor: '#DAEAFF', borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: COLORS.bloomAccent,
   },
-  autoPlayBtnActive: { backgroundColor: COLORS.primary },
-  autoPlayBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
+  autoPlayBtnActive: { backgroundColor: COLORS.bloomAccent },
+  autoPlayBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomAccent },
   audioBtn: { backgroundColor: '#F0FDF4', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   audioBtnText: { fontSize: 16 },
-  editBtn: { backgroundColor: COLORS.primaryLight, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  editBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
+  editBtn: { backgroundColor: '#DAEAFF', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  editBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomAccent },
 
   frameImage: { width: '100%', aspectRatio: 1, backgroundColor: '#000' },
   image: { width: '100%', height: '100%' },
   imagePlaceholder: {
     width: '100%', height: '100%',
-    backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center', gap: 8,
+    backgroundColor: '#DAEAFF', justifyContent: 'center', alignItems: 'center', gap: 8,
   },
   imagePlaceholderEmoji: { fontSize: 48 },
-  imagePlaceholderText: { fontSize: 14, color: COLORS.textLight },
+  imagePlaceholderText: { fontSize: 14, color: COLORS.bloomMuted },
 
   frameText: { padding: 18, gap: 10 },
-  caption: { fontSize: 22, fontWeight: '800', color: COLORS.text },
-  narration: { fontSize: 16, color: COLORS.text, lineHeight: 24, opacity: 0.75 },
+  caption: { fontSize: 22, fontWeight: '800', color: COLORS.bloomText },
+  narration: { fontSize: 16, color: COLORS.bloomText, lineHeight: 24, opacity: 0.75 },
 
   frameNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 16 },
-  navBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: COLORS.primaryLight },
+  navBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: '#DAEAFF' },
   navBtnDisabled: { opacity: 0.3 },
-  navBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
+  navBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomAccent },
   frameDots: { flexDirection: 'row', gap: 6 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.border },
-  dotActive: { backgroundColor: COLORS.primary, width: 20 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.bloomBorder },
+  dotActive: { backgroundColor: COLORS.bloomAccent, width: 20 },
 
   actions: { gap: 12 },
   actionBtn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
-  actionBtnPrimary: { backgroundColor: COLORS.primary, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
+  actionBtnPrimary: { backgroundColor: COLORS.bloomNavy, shadowColor: COLORS.bloomNavy, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
   actionBtnWarning: { backgroundColor: COLORS.warning },
   actionBtnDisabled: { opacity: 0.5 },
   actionBtnTextPrimary: { color: '#fff', fontWeight: '800', fontSize: 15 },
@@ -550,36 +550,36 @@ const styles = StyleSheet.create({
   approvedText: { color: COLORS.success, fontWeight: '700', fontSize: 14 },
 
   // Frame editor modal
-  editorContainer: { flex: 1, backgroundColor: COLORS.background },
+  editorContainer: { flex: 1, backgroundColor: COLORS.bloomBody },
   editorHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 20, paddingTop: 56, paddingBottom: 16,
-    backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.bloomCard, borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
   },
-  editorTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text },
+  editorTitle: { fontSize: 18, fontWeight: '800', color: COLORS.bloomText },
   editorClose: { padding: 4 },
-  editorCloseText: { fontSize: 22, color: COLORS.textLight },
+  editorCloseText: { fontSize: 22, color: COLORS.bloomMuted },
   editorContent: { flex: 1, padding: 20 },
   editorImage: { width: '100%', height: 200, borderRadius: 16, marginBottom: 12 },
   regenBtn: {
     flexDirection: 'row', justifyContent: 'center',
-    backgroundColor: COLORS.primaryLight, borderRadius: 10, paddingVertical: 10, marginBottom: 6,
+    backgroundColor: '#DAEAFF', borderRadius: 10, paddingVertical: 10, marginBottom: 6,
   },
   regenBtnDisabled: { opacity: 0.5 },
-  regenBtnText: { color: COLORS.primary, fontWeight: '700', fontSize: 14 },
-  regenNote: { fontSize: 11, color: COLORS.textLight, textAlign: 'center', marginBottom: 20 },
-  charCount: { fontSize: 11, color: COLORS.textLight, textAlign: 'right', marginTop: 2 },
-  editorFieldLabel: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 6, marginTop: 16 },
+  regenBtnText: { color: COLORS.bloomAccent, fontWeight: '700', fontSize: 14 },
+  regenNote: { fontSize: 11, color: COLORS.bloomMuted, textAlign: 'center', marginBottom: 20 },
+  charCount: { fontSize: 11, color: COLORS.bloomMuted, textAlign: 'right', marginTop: 2 },
+  editorFieldLabel: { fontSize: 14, fontWeight: '600', color: COLORS.bloomText, marginBottom: 6, marginTop: 16 },
   editorInput: {
-    backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border,
-    paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: COLORS.text,
+    backgroundColor: COLORS.bloomCard, borderRadius: 12, borderWidth: 1, borderColor: COLORS.bloomBorder,
+    paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: COLORS.bloomText,
   },
   editorActions: {
     flexDirection: 'row', gap: 12, padding: 20, paddingBottom: 36,
-    backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border,
+    backgroundColor: COLORS.bloomCard, borderTopWidth: 1, borderTopColor: COLORS.bloomBorder,
   },
-  editorCancel: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: COLORS.border },
-  editorCancelText: { fontWeight: '700', color: COLORS.text },
-  editorSave: { flex: 2, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: COLORS.primary },
+  editorCancel: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: COLORS.bloomBorder },
+  editorCancelText: { fontWeight: '700', color: COLORS.bloomText },
+  editorSave: { flex: 2, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: COLORS.bloomNavy },
   editorSaveText: { fontWeight: '700', color: '#fff' },
 });

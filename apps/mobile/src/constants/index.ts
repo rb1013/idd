@@ -14,6 +14,16 @@ export const COLORS = {
   error: '#E53E3E',
   success: '#5CBB7A',
   warning: '#F5A623',
+
+  // Bloom guardian theme
+  bloomNavy: '#1E3350',
+  bloomAccent: '#2D63A8',
+  bloomDot: '#7ABAFF',
+  bloomBody: '#F5F7FA',
+  bloomCard: '#FFFFFF',
+  bloomBorder: '#E4EAF2',
+  bloomMuted: '#8A9BB0',
+  bloomText: '#1A2533',
 };
 
 export const DAYS_OF_WEEK = [

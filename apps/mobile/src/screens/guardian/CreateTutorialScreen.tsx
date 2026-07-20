@@ -183,7 +183,7 @@ export default function CreateTutorialScreen() {
             value={coreAction}
             onChangeText={t => setCoreAction(t.slice(0, 60))}
             placeholder="Describe what the user will learn to do…"
-            placeholderTextColor={COLORS.textLight}
+            placeholderTextColor={COLORS.bloomMuted}
             maxLength={60}
             returnKeyType="done"
           />
@@ -198,7 +198,7 @@ export default function CreateTutorialScreen() {
             value={displayName}
             onChangeText={t => setDisplayName(t.slice(0, 40))}
             placeholder="Give it a name your user will recognise…"
-            placeholderTextColor={COLORS.textLight}
+            placeholderTextColor={COLORS.bloomMuted}
             maxLength={40}
             returnKeyType="done"
           />
@@ -436,7 +436,7 @@ function Divider() {
   return <View style={styles.divider} />;
 }
 
-function SegRow({ options, value, onSelect, activeColor = COLORS.primary }: {
+function SegRow({ options, value, onSelect, activeColor = COLORS.bloomAccent }: {
   options: { key: string; label: string }[];
   value: string;
   onSelect: (v: string) => void;
@@ -470,7 +470,7 @@ function NextButton({ label, color, onPress }: { label: string; color: string; o
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F0F4F8' },
+  container: { flex: 1, backgroundColor: COLORS.bloomBody },
   content: { padding: 14, paddingBottom: 120, gap: 12 },
 
   quotaPill: {
@@ -478,12 +478,12 @@ const styles = StyleSheet.create({
     padding: 13, flexDirection: 'row',
     justifyContent: 'space-between', alignItems: 'center',
   },
-  quotaLabel: { fontSize: 14, fontWeight: '600', color: COLORS.text },
-  quotaCount: { fontSize: 14, fontWeight: '800', color: COLORS.primary },
+  quotaLabel: { fontSize: 14, fontWeight: '600', color: COLORS.bloomText },
+  quotaCount: { fontSize: 14, fontWeight: '800', color: COLORS.bloomAccent },
 
   // Section card
   sectionCard: {
-    backgroundColor: COLORS.surface, borderRadius: 20,
+    backgroundColor: COLORS.bloomCard, borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07, shadowRadius: 10, elevation: 3,
@@ -504,61 +504,61 @@ const styles = StyleSheet.create({
 
   // Field
   fieldBlock: { gap: 8, paddingVertical: 14 },
-  fieldLabel: { fontSize: 15, fontWeight: '700', color: COLORS.text },
-  fieldHint: { fontSize: 12, color: COLORS.textLight },
-  divider: { height: 1, backgroundColor: '#F0F4F8' },
+  fieldLabel: { fontSize: 15, fontWeight: '700', color: COLORS.bloomText },
+  fieldHint: { fontSize: 12, color: COLORS.bloomMuted },
+  divider: { height: 1, backgroundColor: COLORS.bloomBorder },
 
   // Input
   input: {
-    backgroundColor: '#F0F4F8', borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.border,
-    paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: COLORS.text,
+    backgroundColor: COLORS.bloomBody, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+    paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: COLORS.bloomText,
   },
-  charCount: { fontSize: 11, color: COLORS.textLight, alignSelf: 'flex-end' },
+  charCount: { fontSize: 11, color: COLORS.bloomMuted, alignSelf: 'flex-end' },
 
   // Chips
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20,
-    backgroundColor: '#F0F4F8', borderWidth: 1.5, borderColor: COLORS.border,
+    backgroundColor: COLORS.bloomBody, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
   },
-  chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  chipText: { fontSize: 13, fontWeight: '600', color: COLORS.text },
+  chipActive: { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
+  chipText: { fontSize: 13, fontWeight: '600', color: COLORS.bloomText },
   chipTextActive: { color: '#fff', fontWeight: '700' },
 
   // Format picker
   formatRow: { flexDirection: 'row', gap: 10 },
   formatOpt: {
-    flex: 1, borderRadius: 14, borderWidth: 2, borderColor: COLORS.border,
-    backgroundColor: '#F0F4F8', alignItems: 'center', paddingVertical: 14, gap: 6,
+    flex: 1, borderRadius: 14, borderWidth: 2, borderColor: COLORS.bloomBorder,
+    backgroundColor: COLORS.bloomBody, alignItems: 'center', paddingVertical: 14, gap: 6,
   },
-  formatOptActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
+  formatOptActive: { borderColor: COLORS.bloomAccent, backgroundColor: '#DAEAFF' },
   formatEmoji: { fontSize: 28 },
-  formatLabel: { fontSize: 13, fontWeight: '700', color: COLORS.textLight },
+  formatLabel: { fontSize: 13, fontWeight: '700', color: COLORS.bloomMuted },
   hint: { fontSize: 12, color: COLORS.warning, lineHeight: 17, marginTop: 6 },
 
   // Segment control
   segRow: {
-    flexDirection: 'row', backgroundColor: '#F0F4F8',
+    flexDirection: 'row', backgroundColor: COLORS.bloomBody,
     borderRadius: 12, padding: 3, gap: 3,
   },
   seg: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
   segActive: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.bloomCard,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1, shadowRadius: 2, elevation: 1,
   },
-  segText: { fontSize: 13, fontWeight: '600', color: COLORS.textLight },
-  segTextActive: { fontWeight: '800', color: COLORS.primary },
+  segText: { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted },
+  segTextActive: { fontWeight: '800', color: COLORS.bloomAccent },
 
   // Toggle (pacing / tone)
   toggleRow: { flexDirection: 'row', gap: 10 },
   toggleOpt: {
-    flex: 1, borderRadius: 14, borderWidth: 2, borderColor: COLORS.border,
-    backgroundColor: '#F0F4F8', alignItems: 'center', paddingVertical: 14, gap: 6,
+    flex: 1, borderRadius: 14, borderWidth: 2, borderColor: COLORS.bloomBorder,
+    backgroundColor: COLORS.bloomBody, alignItems: 'center', paddingVertical: 14, gap: 6,
   },
-  toggleOptActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
+  toggleOptActive: { borderColor: COLORS.bloomAccent, backgroundColor: '#DAEAFF' },
   toggleEmoji: { fontSize: 24 },
-  toggleLabel: { fontSize: 13, fontWeight: '700', color: COLORS.textLight },
+  toggleLabel: { fontSize: 13, fontWeight: '700', color: COLORS.bloomMuted },
 
   // Language scroll
   langScroll: { marginHorizontal: -16 },
@@ -572,21 +572,21 @@ const styles = StyleSheet.create({
 
   // Title preview
   previewPill: {
-    backgroundColor: COLORS.primaryLight, borderRadius: 14,
+    backgroundColor: '#DAEAFF', borderRadius: 14,
     padding: 14, gap: 4,
   },
-  previewPillLabel: { fontSize: 12, color: COLORS.primary, fontWeight: '600' },
-  previewPillText: { fontSize: 15, fontWeight: '700', color: COLORS.text },
-  previewPillSub: { fontSize: 11, color: COLORS.textLight, marginTop: 2 },
+  previewPillLabel: { fontSize: 12, color: COLORS.bloomAccent, fontWeight: '600' },
+  previewPillText: { fontSize: 15, fontWeight: '700', color: COLORS.bloomText },
+  previewPillSub: { fontSize: 11, color: COLORS.bloomMuted, marginTop: 2 },
 
   // Submit
   submitBtn: {
-    backgroundColor: COLORS.primary, borderRadius: 18,
+    backgroundColor: COLORS.bloomNavy, borderRadius: 18,
     paddingVertical: 17, alignItems: 'center',
-    shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 },
+    shadowColor: COLORS.bloomNavy, shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
   },
   submitBtnDisabled: { opacity: 0.5 },
   submitText: { color: '#fff', fontWeight: '800', fontSize: 17 },
-  footerNote: { fontSize: 12, color: COLORS.textLight, textAlign: 'center', lineHeight: 18 },
+  footerNote: { fontSize: 12, color: COLORS.bloomMuted, textAlign: 'center', lineHeight: 18 },
 });

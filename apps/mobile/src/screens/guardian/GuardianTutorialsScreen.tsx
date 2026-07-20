@@ -107,7 +107,7 @@ export default function GuardianTutorialsScreen() {
           <View style={styles.quotaTrack}>
             <View style={[styles.quotaFill, {
               width: `${Math.min((quota.used / quota.limit) * 100, 100)}%` as any,
-              backgroundColor: quota.used >= 10 ? COLORS.error : COLORS.primary,
+              backgroundColor: quota.used >= 10 ? COLORS.error : COLORS.bloomAccent,
             }]} />
           </View>
         </View>
@@ -154,7 +154,7 @@ export default function GuardianTutorialsScreen() {
       />
 
       {loading ? (
-        <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>
+        <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>
       ) : (
         <FlatList
           data={filtered}
@@ -222,72 +222,72 @@ export default function GuardianTutorialsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: COLORS.bloomBody },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
 
   quotaBar: {
     marginHorizontal: 16, marginTop: 16,
-    backgroundColor: COLORS.surface, borderRadius: 16,
+    backgroundColor: COLORS.bloomCard, borderRadius: 16,
     padding: 16, gap: 10,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
   quotaHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  quotaLabel: { fontSize: 14, fontWeight: '600', color: COLORS.text },
-  quotaCount: { fontSize: 14, fontWeight: '800', color: COLORS.primary },
-  quotaTrack: { height: 8, backgroundColor: '#F0F4F8', borderRadius: 4, overflow: 'hidden' },
+  quotaLabel: { fontSize: 14, fontWeight: '600', color: COLORS.bloomText },
+  quotaCount: { fontSize: 14, fontWeight: '800', color: COLORS.bloomAccent },
+  quotaTrack: { height: 8, backgroundColor: COLORS.bloomBorder, borderRadius: 4, overflow: 'hidden' },
   quotaFill: { height: '100%', borderRadius: 4 },
 
   actions: { flexDirection: 'row', gap: 12, marginHorizontal: 16, marginTop: 16 },
   btn: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center' },
   btnPrimary: {
-    backgroundColor: COLORS.primary,
-    shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 },
+    backgroundColor: COLORS.bloomNavy,
+    shadowColor: COLORS.bloomNavy, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35, shadowRadius: 8, elevation: 5,
   },
-  btnSecondary: { backgroundColor: COLORS.surface, borderWidth: 2, borderColor: COLORS.primary },
+  btnSecondary: { backgroundColor: COLORS.bloomCard, borderWidth: 2, borderColor: COLORS.bloomAccent },
   btnDisabled: { opacity: 0.45 },
   btnTextPrimary: { color: '#fff', fontWeight: '800', fontSize: 15 },
-  btnTextSecondary: { color: COLORS.primary, fontWeight: '800', fontSize: 15 },
+  btnTextSecondary: { color: COLORS.bloomAccent, fontWeight: '800', fontSize: 15 },
 
   filterBar: { maxHeight: 52, marginTop: 14 },
   filterBarContent: { paddingHorizontal: 16, gap: 8, alignItems: 'center' },
   filterChip: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: COLORS.surface, borderWidth: 1.5, borderColor: COLORS.border,
+    backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
   },
-  filterChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  filterChipText: { fontSize: 13, fontWeight: '600', color: COLORS.textLight },
+  filterChipActive: { backgroundColor: COLORS.bloomNavy, borderColor: COLORS.bloomNavy },
+  filterChipText: { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted },
   filterChipTextActive: { color: '#fff', fontWeight: '700' },
 
   list: { padding: 16, gap: 14 },
 
   card: {
-    backgroundColor: COLORS.surface, borderRadius: 18,
+    backgroundColor: COLORS.bloomCard, borderRadius: 18,
     flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07, shadowRadius: 10, elevation: 3,
   },
   thumb: {
     width: 80, height: 80, borderRadius: 14,
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: '#DAEAFF',
     justifyContent: 'center', alignItems: 'center',
     overflow: 'hidden', flexShrink: 0,
   },
   thumbImage: { width: 80, height: 80 },
   thumbEmoji: { fontSize: 36 },
   cardInfo: { flex: 1, minWidth: 0, gap: 4 },
-  cardTitle: { fontSize: 17, fontWeight: '800', color: COLORS.text, lineHeight: 22 },
-  cardSub: { fontSize: 13, color: COLORS.textLight, fontWeight: '500' },
+  cardTitle: { fontSize: 17, fontWeight: '800', color: COLORS.bloomText, lineHeight: 22 },
+  cardSub: { fontSize: 13, color: COLORS.bloomMuted, fontWeight: '500' },
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
   statusBadge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
   statusText: { fontSize: 12, fontWeight: '700' },
-  metaText: { fontSize: 13, color: COLORS.textLight, fontWeight: '500' },
+  metaText: { fontSize: 13, color: COLORS.bloomMuted, fontWeight: '500' },
   deleteBtn: { padding: 6 },
   deleteBtnText: { fontSize: 22 },
 
   empty: { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyEmoji: { fontSize: 72 },
-  emptyText: { fontSize: 22, fontWeight: '800', color: COLORS.text },
-  emptyHint: { fontSize: 15, color: COLORS.textLight },
+  emptyText: { fontSize: 22, fontWeight: '800', color: COLORS.bloomText },
+  emptyHint: { fontSize: 15, color: COLORS.bloomMuted },
 });

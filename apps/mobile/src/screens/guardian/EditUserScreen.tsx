@@ -79,7 +79,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ paddingHorizontal: 4 }}>
-          <Text style={{ color: COLORS.primary, fontSize: 16 }}>Cancel</Text>
+          <Text style={{ color: '#fff', fontSize: 16 }}>Cancel</Text>
         </TouchableOpacity>
       ),
     });
@@ -322,7 +322,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
   const photoSource = photoUri || existingPhotoUrl;
 
   if (initialLoading) {
-    return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+    return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
   }
 
   return (
@@ -419,7 +419,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
                   onChangeText={setHealthDesc}
                   multiline
                   maxLength={500}
-                  placeholderTextColor={COLORS.textLight}
+                  placeholderTextColor={COLORS.bloomMuted}
                 />
                 <Text style={styles.charCount}>{healthDesc.length}/500</Text>
               </>
@@ -434,7 +434,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
               Pin up to 3 friends — they will appear at the top of the Friends list.
             </Text>
             {friendsLoading
-              ? <ActivityIndicator color={COLORS.primary} style={{ marginTop: 32 }} />
+              ? <ActivityIndicator color={COLORS.bloomAccent} style={{ marginTop: 32 }} />
               : friendsForPin.length === 0
                 ? <Text style={styles.emptyHint}>No friends yet</Text>
                 : friendsForPin.map(item => (
@@ -500,7 +500,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
                           secureTextEntry
                           autoCapitalize="none"
                           autoCorrect={false}
-                          placeholderTextColor={COLORS.textLight}
+                          placeholderTextColor={COLORS.bloomMuted}
                         />
                         <Text style={[styles.biometricHint, { marginTop: 6 }]}>
                           Required so the app can sign in automatically after biometric verification.
@@ -588,7 +588,7 @@ function Field({ label, ...props }: { label: string } & React.ComponentProps<typ
   return (
     <>
       <Text style={styles.label}>{label}</Text>
-      <TextInput style={styles.input} placeholderTextColor={COLORS.textLight} {...props} />
+      <TextInput style={styles.input} placeholderTextColor={COLORS.bloomMuted} {...props} />
     </>
   );
 }
@@ -605,70 +605,70 @@ function Toggle({ label, value, onToggle }: { label: string; value: boolean; onT
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: COLORS.bloomBody },
   scroll: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bloomBody },
   stepIndicator: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: 16 },
-  stepDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.border },
-  stepDotActive: { backgroundColor: COLORS.primary },
+  stepDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.bloomBorder },
+  stepDotActive: { backgroundColor: COLORS.bloomAccent },
   inner: { padding: 24, paddingBottom: 48 },
-  sectionTitle: { fontSize: 24, fontWeight: '700', color: COLORS.text, marginBottom: 4 },
-  sectionSubtitle: { fontSize: 14, color: COLORS.textLight, marginBottom: 20 },
+  sectionTitle: { fontSize: 24, fontWeight: '700', color: COLORS.bloomText, marginBottom: 4 },
+  sectionSubtitle: { fontSize: 14, color: COLORS.bloomMuted, marginBottom: 20 },
   photoPicker: {
     width: 100, height: 100, borderRadius: 50,
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: '#DAEAFF',
     justifyContent: 'center', alignItems: 'center',
     alignSelf: 'center', marginBottom: 24,
   },
   photo: { width: 100, height: 100, borderRadius: 50 },
-  photoText: { color: COLORS.primary, fontSize: 13, textAlign: 'center' },
-  label: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 8, marginTop: 16 },
+  photoText: { color: COLORS.bloomAccent, fontSize: 13, textAlign: 'center' },
+  label: { fontSize: 14, fontWeight: '600', color: COLORS.bloomText, marginBottom: 8, marginTop: 16 },
   input: {
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
-    borderRadius: 12, padding: 14, fontSize: 16, color: COLORS.text, marginBottom: 4,
+    backgroundColor: COLORS.bloomCard, borderWidth: 1, borderColor: COLORS.bloomBorder,
+    borderRadius: 12, padding: 14, fontSize: 16, color: COLORS.bloomText, marginBottom: 4,
   },
   toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
-  toggleLabel: { fontSize: 16, color: COLORS.text },
-  toggle: { width: 52, height: 30, borderRadius: 15, backgroundColor: COLORS.border, justifyContent: 'center', padding: 2 },
-  toggleOn: { backgroundColor: COLORS.primary },
+  toggleLabel: { fontSize: 16, color: COLORS.bloomText },
+  toggle: { width: 52, height: 30, borderRadius: 15, backgroundColor: COLORS.bloomBorder, justifyContent: 'center', padding: 2 },
+  toggleOn: { backgroundColor: COLORS.bloomAccent },
   toggleThumb: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff' },
   toggleThumbOn: { alignSelf: 'flex-end' },
-  navRow: { flexDirection: 'row', gap: 12, padding: 16, paddingBottom: 32, backgroundColor: COLORS.background, borderTopWidth: 1, borderTopColor: COLORS.border },
-  charCount: { fontSize: 12, color: COLORS.textLight, textAlign: 'right', marginTop: 4 },
-  emptyHint: { color: COLORS.textLight, fontSize: 14, marginTop: 16, textAlign: 'center' },
+  navRow: { flexDirection: 'row', gap: 12, padding: 16, paddingBottom: 32, backgroundColor: COLORS.bloomBody, borderTopWidth: 1, borderTopColor: COLORS.bloomBorder },
+  charCount: { fontSize: 12, color: COLORS.bloomMuted, textAlign: 'right', marginTop: 4 },
+  emptyHint: { color: COLORS.bloomMuted, fontSize: 14, marginTop: 16, textAlign: 'center' },
   infoCard: {
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: '#EBF4FF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: COLORS.primary + '40',
+    borderColor: COLORS.bloomAccent + '40',
   },
-  infoText: { fontSize: 14, color: COLORS.text, lineHeight: 20 },
-  skipHint: { fontSize: 13, color: COLORS.textLight, marginTop: 24, textAlign: 'center', lineHeight: 18 },
+  infoText: { fontSize: 14, color: COLORS.bloomText, lineHeight: 20 },
+  skipHint: { fontSize: 13, color: COLORS.bloomMuted, marginTop: 24, textAlign: 'center', lineHeight: 18 },
   biometricCard: {
-    marginTop: 20, backgroundColor: COLORS.primaryLight, borderRadius: 14,
-    padding: 16, borderWidth: 1, borderColor: COLORS.primary + '40',
+    marginTop: 20, backgroundColor: '#EBF4FF', borderRadius: 14,
+    padding: 16, borderWidth: 1, borderColor: COLORS.bloomAccent + '40',
   },
-  biometricHint: { fontSize: 13, color: COLORS.text, lineHeight: 18, marginTop: 6 },
-  backBtn: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
-  backBtnText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
-  nextBtn: { flex: 2, backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center' },
+  biometricHint: { fontSize: 13, color: COLORS.bloomText, lineHeight: 18, marginTop: 6 },
+  backBtn: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.bloomBorder, alignItems: 'center' },
+  backBtnText: { color: COLORS.bloomText, fontSize: 16, fontWeight: '600' },
+  nextBtn: { flex: 2, backgroundColor: COLORS.bloomNavy, borderRadius: 12, padding: 16, alignItems: 'center' },
   nextBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 
   friendPinRow: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
   },
   friendPinAvatar: { width: 48, height: 48, borderRadius: 24 },
   friendPinAvatarPlaceholder: {
-    backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: '#DAEAFF', justifyContent: 'center', alignItems: 'center',
   },
-  friendPinInitial: { fontSize: 18, fontWeight: '700', color: COLORS.primary },
-  friendPinName: { flex: 1, fontSize: 16, fontWeight: '600', color: COLORS.text },
+  friendPinInitial: { fontSize: 18, fontWeight: '700', color: COLORS.bloomAccent },
+  friendPinName: { flex: 1, fontSize: 16, fontWeight: '600', color: COLORS.bloomText },
   pinToggle: {
     width: 44, height: 44, borderRadius: 12,
-    backgroundColor: COLORS.border,
+    backgroundColor: COLORS.bloomBorder,
     justifyContent: 'center', alignItems: 'center',
   },
   pinToggleActive: { backgroundColor: '#FDE8C0' },

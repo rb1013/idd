@@ -76,7 +76,7 @@ export default function LoginScreen({ navigation }: Props) {
   }
 
   if (!tilesLoaded) {
-    return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+    return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
   }
 
   // ── Tiles view ──────────────────────────────────────────────────────────────
@@ -89,7 +89,7 @@ export default function LoginScreen({ navigation }: Props) {
           <View style={styles.appIconWrap}>
             <Text style={styles.appIconEmoji}>🌸</Text>
           </View>
-          <Text style={styles.appName}>Bloom</Text>
+          <Text style={styles.appName}>Bloom<Text style={styles.appDot}>.</Text></Text>
           <Text style={styles.appTagline}>Learning made joyful</Text>
         </View>
 
@@ -214,14 +214,14 @@ export default function LoginScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
-  container: { flex: 1, backgroundColor: COLORS.background },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bloomBody },
+  container: { flex: 1, backgroundColor: COLORS.bloomBody },
 
   // ── Tiles ──
-  tilesContainer: { flexGrow: 1, backgroundColor: '#F4F2FF' },
+  tilesContainer: { flexGrow: 1, backgroundColor: COLORS.bloomBody },
 
   appHeader: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.bloomNavy,
     paddingTop: 72,
     paddingBottom: 44,
     alignItems: 'center',
@@ -230,53 +230,54 @@ const styles = StyleSheet.create({
   },
   appIconWrap: {
     width: 88, height: 88, borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: COLORS.bloomAccent,
     justifyContent: 'center', alignItems: 'center',
     marginBottom: 14,
   },
   appIconEmoji: { fontSize: 48 },
   appName: { fontSize: 38, fontWeight: '900', color: '#fff', letterSpacing: -1 },
-  appTagline: { fontSize: 15, color: 'rgba(255,255,255,0.75)', marginTop: 6, fontWeight: '500' },
+  appDot: { color: COLORS.bloomDot },
+  appTagline: { fontSize: 15, color: 'rgba(255,255,255,0.65)', marginTop: 6, fontWeight: '500' },
 
   sectionsWrap: { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 48 },
 
   section: { marginBottom: 28 },
   sectionLabel: {
-    fontSize: 11, fontWeight: '800', color: COLORS.textLight,
+    fontSize: 11, fontWeight: '800', color: COLORS.bloomMuted,
     letterSpacing: 1.8, marginBottom: 12,
   },
 
   // Guardian tile — horizontal card
   guardianTile: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: '#fff', borderRadius: 20, padding: 16,
+    backgroundColor: COLORS.bloomCard, borderRadius: 20, padding: 16,
     shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08, shadowRadius: 12, elevation: 4,
-    borderWidth: 1, borderColor: '#E2E8F0',
+    shadowOpacity: 0.07, shadowRadius: 12, elevation: 4,
+    borderWidth: 1, borderColor: COLORS.bloomBorder,
   },
   guardianAvatarWrap: { position: 'relative' },
   guardianAvatar: { width: 58, height: 58, borderRadius: 29 },
   guardianInfo: { flex: 1 },
-  guardianName: { fontSize: 17, fontWeight: '800', color: COLORS.text },
-  guardianSub: { fontSize: 13, color: COLORS.textLight, marginTop: 2, fontWeight: '500' },
+  guardianName: { fontSize: 17, fontWeight: '800', color: COLORS.bloomText },
+  guardianSub: { fontSize: 13, color: COLORS.bloomMuted, marginTop: 2, fontWeight: '500' },
   guardianBadge: {
     position: 'absolute', bottom: -2, right: -2,
     width: 24, height: 24, borderRadius: 12,
-    backgroundColor: '#64748B',
+    backgroundColor: COLORS.bloomAccent,
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 2, borderColor: '#fff',
   },
-  guardianChevron: { fontSize: 26, color: COLORS.textLight, fontWeight: '300' },
+  guardianChevron: { fontSize: 26, color: COLORS.bloomMuted, fontWeight: '300' },
 
   // User tiles — 2-column colorful grid
   tilesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
   userTile: {
     width: TILE_SIZE,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.bloomCard,
     borderRadius: 22,
     overflow: 'hidden',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 5,
   },
@@ -290,7 +291,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 2, borderColor: '#fff',
   },
-  userName: { fontSize: 15, fontWeight: '800', color: COLORS.text, textAlign: 'center' },
+  userName: { fontSize: 15, fontWeight: '800', color: COLORS.bloomText, textAlign: 'center' },
   userSub: { fontSize: 12, fontWeight: '700' },
 
   // Shared avatar helpers
@@ -301,18 +302,18 @@ const styles = StyleSheet.create({
   // ── Guardian form ──
   formInner: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   backRow: { marginBottom: 24 },
-  backText: { fontSize: 16, color: COLORS.primary, fontWeight: '600' },
-  title: { fontSize: 28, fontWeight: '900', color: COLORS.text, marginBottom: 8, textAlign: 'center' },
-  subtitle: { fontSize: 14, color: COLORS.textLight, marginBottom: 32, textAlign: 'center' },
+  backText: { fontSize: 16, color: COLORS.bloomAccent, fontWeight: '600' },
+  title: { fontSize: 28, fontWeight: '900', color: COLORS.bloomText, marginBottom: 8, textAlign: 'center' },
+  subtitle: { fontSize: 14, color: COLORS.bloomMuted, marginBottom: 32, textAlign: 'center' },
   input: {
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
-    borderRadius: 12, padding: 16, fontSize: 16, color: COLORS.text, marginBottom: 16,
+    backgroundColor: COLORS.bloomCard, borderWidth: 1, borderColor: COLORS.bloomBorder,
+    borderRadius: 12, padding: 16, fontSize: 16, color: COLORS.bloomText, marginBottom: 16,
   },
   button: {
-    backgroundColor: COLORS.primary, borderRadius: 12,
+    backgroundColor: COLORS.bloomNavy, borderRadius: 12,
     padding: 16, alignItems: 'center', marginBottom: 16,
   },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  link: { textAlign: 'center', color: COLORS.textLight, fontSize: 14 },
-  linkBold: { color: COLORS.primary, fontWeight: '600' },
+  link: { textAlign: 'center', color: COLORS.bloomMuted, fontSize: 14 },
+  linkBold: { color: COLORS.bloomAccent, fontWeight: '600' },
 });
