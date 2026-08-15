@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export default function LoginPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -34,6 +36,11 @@ export default function LoginPage() {
           <button style={styles.button} type="submit" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
+          <div style={styles.forgotRow}>
+            <button type="button" style={styles.forgotLink} onClick={() => navigate('/forgot-password')}>
+              Forgot password?
+            </button>
+          </div>
         </form>
       </div>
     </div>
@@ -48,6 +55,8 @@ const styles: Record<string, React.CSSProperties> = {
   field: { marginBottom: 16 },
   label: { display: 'block', fontSize: 14, fontWeight: 600, color: '#2D3748', marginBottom: 6 },
   input: { width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 15, boxSizing: 'border-box' as const },
-  error: { color: '#E53E3E', fontSize: 14, marginBottom: 12 },
+  forgotRow:  { textAlign: 'center' as const, marginTop: 16 },
+  forgotLink: { background: 'none', border: 'none', padding: 0, fontSize: 13, color: '#5B8DB8', cursor: 'pointer', fontWeight: 500 },
+  error:  { color: '#E53E3E', fontSize: 14, marginBottom: 12 },
   button: { width: '100%', padding: 14, background: '#5B8DB8', color: '#fff', border: 'none', borderRadius: 10, fontSize: 16, fontWeight: 600, cursor: 'pointer' },
 };

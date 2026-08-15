@@ -7,10 +7,15 @@ const NAV_ITEMS = [
   { to: '/tutorials', label: 'Tutorials' },
   { to: '/categories', label: 'Categories' },
   { to: '/users', label: 'Users' },
+  { to: '/situation-tags', label: 'Situation Tags' },
 ];
 
 export default function Layout() {
-  const { signOut } = useAuth();
+  const { signOut, adminEmail } = useAuth();
+
+  const initials = adminEmail
+    ? adminEmail.split('@')[0].slice(0, 2).toUpperCase()
+    : 'A';
 
   return (
     <div style={styles.shell}>
@@ -27,7 +32,13 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
-        <button style={styles.signOut} onClick={signOut}>Sign Out</button>
+        <div style={styles.userSection}>
+          <div style={styles.avatar}>{initials}</div>
+          <div style={styles.userInfo}>
+            <div style={styles.userEmail} title={adminEmail ?? ''}>{adminEmail ?? ''}</div>
+            <button style={styles.signOut} onClick={signOut}>Sign out</button>
+          </div>
+        </div>
       </aside>
       <main style={styles.main}>
         <Outlet />
@@ -49,9 +60,26 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 15, fontWeight: 500, borderLeft: '3px solid transparent',
   },
   navLinkActive: { color: '#5B8DB8', borderLeftColor: '#5B8DB8', background: '#EBF4FF' },
+  userSection: {
+    display: 'flex', alignItems: 'center', gap: 10,
+    padding: '16px 20px', borderTop: '1px solid #E2E8F0',
+  },
+  avatar: {
+    width: 36, height: 36, borderRadius: '50%',
+    background: '#5B8DB8', color: '#fff',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 13, fontWeight: 700, flexShrink: 0,
+  },
+  userInfo: { flex: 1, minWidth: 0 },
+  userEmail: {
+    fontSize: 12, color: '#2D3748', fontWeight: 500,
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const,
+    marginBottom: 2,
+  },
   signOut: {
-    margin: '0 16px', padding: 10, background: 'none', border: '1px solid #E2E8F0',
-    borderRadius: 8, color: '#718096', cursor: 'pointer', fontSize: 14,
+    background: 'none', border: 'none', padding: 0,
+    color: '#718096', cursor: 'pointer', fontSize: 12,
+    textAlign: 'left' as const,
   },
   main: { flex: 1, padding: 32, maxWidth: 1100 },
 };

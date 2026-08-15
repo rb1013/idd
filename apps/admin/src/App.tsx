@@ -7,10 +7,14 @@ import DashboardPage from './pages/DashboardPage';
 import TutorialsPage from './pages/TutorialsPage';
 import CategoriesPage from './pages/CategoriesPage';
 import UsersPage from './pages/UsersPage';
+import SituationTagsPage from './pages/SituationTagsPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
 function ProtectedRoutes() {
-  const { session, isAdmin, loading } = useAuth();
+  const { session, isAdmin, loading, needsPasswordReset } = useAuth();
   if (loading) return <div style={{ padding: 40 }}>Loading...</div>;
+  if (needsPasswordReset) return <ResetPasswordPage />;
   if (!session) return <Navigate to="/login" replace />;
   if (!isAdmin) return (
     <div style={{ padding: 40, textAlign: 'center' }}>
@@ -27,11 +31,13 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route element={<ProtectedRoutes />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/tutorials" element={<TutorialsPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/users" element={<UsersPage />} />
+            <Route path="/situation-tags" element={<SituationTagsPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

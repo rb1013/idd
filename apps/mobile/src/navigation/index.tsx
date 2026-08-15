@@ -37,6 +37,7 @@ import DiscussionDetailScreen from '../screens/guardian/DiscussionDetailScreen';
 import EventsScreen from '../screens/guardian/EventsScreen';
 import EventDetailScreen from '../screens/guardian/EventDetailScreen';
 import CreateEventScreen from '../screens/guardian/CreateEventScreen';
+import LearnerSelectScreen from '../screens/guardian/LearnerSelectScreen';
 
 // User screens
 import UserHomeScreen from '../screens/user/UserHomeScreen';
@@ -59,6 +60,7 @@ export type RootStackParamList = {
 };
 
 export type GuardianNavParamList = {
+  LearnerSelect: undefined;
   GuardianHome: undefined;
   Profiles: undefined;
   Notifications: undefined;
@@ -182,6 +184,32 @@ const navStyles = StyleSheet.create({
   itemText: { fontSize: 15, fontWeight: '600', color: '#111827' },
 });
 
+// ── Pending screen (session exists but no role yet) ──────────────────────
+
+function PendingScreen() {
+  const { signOut } = useAuth();
+  const [showSignOut, setShowSignOut] = useState(false);
+
+  React.useEffect(() => {
+    const t = setTimeout(() => setShowSignOut(true), 6000);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bloomBody, gap: 20 }}>
+      <ActivityIndicator size="large" color={COLORS.bloomAccent} />
+      {showSignOut && (
+        <TouchableOpacity
+          onPress={signOut}
+          style={{ paddingHorizontal: 24, paddingVertical: 10, borderRadius: 20, backgroundColor: '#FEF2F2', borderWidth: 1.5, borderColor: '#FECACA' }}
+        >
+          <Text style={{ fontSize: 14, fontWeight: '700', color: '#DC2626' }}>Sign out and try again</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
 // ── Guardian stack (replaces bottom tabs) ────────────────────────────────
 
 function GuardianTabs() {
@@ -195,12 +223,13 @@ function GuardianTabs() {
         headerRight: () => <GuardianSettingsBtn />,
       }}
     >
+      <GuardianNav.Screen name="LearnerSelect"   component={LearnerSelectScreen}         options={{ headerShown: false }} />
       <GuardianNav.Screen name="GuardianHome"    component={GuardianHomeScreen}          options={{ headerShown: false }} />
       <GuardianNav.Screen name="Profiles"        component={SelectUserScreen}            options={{ title: 'Profiles' }} />
       <GuardianNav.Screen name="Notifications"   component={GuardianNotificationsScreen} options={{ title: 'Notifications' }} />
       <GuardianNav.Screen name="Learning"        component={GuardianTutorialsScreen}     options={{ title: 'Learning' }} />
       <GuardianNav.Screen name="Activities"      component={GuardianActivitiesScreen}    options={{ title: 'Activities' }} />
-      <GuardianNav.Screen name="Account"         component={GuardianAccountScreen}       options={{ title: 'Account' }} />
+      <GuardianNav.Screen name="Account"         component={GuardianAccountScreen}       options={{ title: 'Account', headerRight: undefined }} />
       <GuardianNav.Screen name="Schedule"        component={ScheduleScreen}              options={{ title: 'Schedule' }} />
       <GuardianNav.Screen name="UserSchedule"    component={UserScheduleScreen}          options={{ title: 'Schedule' }} />
       <GuardianNav.Screen name="CreateUser"      component={CreateUserScreen}            options={{ title: 'Create Profile' }} />
@@ -211,9 +240,9 @@ function GuardianTabs() {
       <GuardianNav.Screen name="LearnerDiscovery"   component={LearnerDiscoveryScreen}      options={{ title: 'Find Friends' }} />
       <GuardianNav.Screen name="LearnerPublicProfile" component={LearnerPublicProfileScreen} options={{ title: 'Learner Profile' }} />
       <GuardianNav.Screen name="LearnerFriendRequests" component={LearnerFriendRequestsScreen} options={{ title: 'Friend Requests' }} />
-      <GuardianNav.Screen name="GuardianConnections"  component={GuardianConnectionsScreen}   options={{ title: 'My Connections' }} />
-      <GuardianNav.Screen name="Discussions"         component={DiscussionsScreen}           options={{ title: 'Discussions' }} />
-      <GuardianNav.Screen name="DiscussionDetail"    component={DiscussionDetailScreen}      options={{ title: 'Discussion' }} />
+      <GuardianNav.Screen name="GuardianConnections"  component={GuardianConnectionsScreen}   options={{ title: 'My Connections', headerRight: undefined }} />
+      <GuardianNav.Screen name="Discussions"         component={DiscussionsScreen}           options={{ title: 'Discussions', headerRight: undefined }} />
+      <GuardianNav.Screen name="DiscussionDetail"    component={DiscussionDetailScreen}      options={{ title: 'Discussion', headerRight: undefined }} />
       <GuardianNav.Screen name="Events"              component={EventsScreen}                options={{ title: 'Events' }} />
       <GuardianNav.Screen name="EventDetail"         component={EventDetailScreen}           options={{ title: 'Event' }} />
       <GuardianNav.Screen name="CreateEvent"         component={CreateEventScreen}           options={{ title: 'Create Event' }} />
@@ -274,7 +303,9 @@ export default function Navigation() {
           <Stack.Screen name="GuardianTabs" component={GuardianTabs} />
         ) : activeUser ? (
           <Stack.Screen name="UserHome" component={UserNavigator} />
-        ) : null}
+        ) : (
+          <Stack.Screen name="Pending" component={PendingScreen} />
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

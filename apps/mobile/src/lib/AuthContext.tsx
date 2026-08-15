@@ -11,6 +11,7 @@ interface AuthContextType {
   activeUser: UserProfile | null;
   loading: boolean;
   setActiveUser: (user: UserProfile | null) => void;
+  refreshGuardian: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -58,40 +59,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function fetchRole(userId: string) {
-    // Check if this auth user is a guardian
-    const { data: guardianData } = await supabase
-      .from('guardians')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    // Safety net: never stay in loading state longer than 10 seconds
+    const timeout = setTimeout(() => setLoading(false), 10000);
+    try {
+      const { data: guardianData } = await supabase
+        .from('guardians')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    if (guardianData) {
-      setGuardian(guardianData);
-      setActiveUser(null);
+      if (guardianData) {
+        setGuardian(guardianData);
+        setActiveUser(null);
+        saveGuardianProfile({ name: guardianData.full_name, photo_url: guardianData.photo_url ?? null });
+        return;
+      }
+
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('auth_user_id', userId)
+        .single();
+
+      if (profileData) {
+        setActiveUser(profileData);
+        setGuardian(null);
+        supabase.from('user_profiles')
+          .update({ last_seen_at: new Date().toISOString() })
+          .eq('id', profileData.id);
+      }
+    } finally {
+      clearTimeout(timeout);
       setLoading(false);
-      // Persist guardian profile so the login tile can show their name/photo on next launch
-      saveGuardianProfile({ name: guardianData.full_name, photo_url: guardianData.photo_url ?? null });
-      return;
     }
+  }
 
-    // Check if this auth user is a user profile
-    const { data: profileData } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('auth_user_id', userId)
-      .single();
-
-    if (profileData) {
-      setActiveUser(profileData);
-      setGuardian(null);
-      setLoading(false);
-      supabase.from('user_profiles')
-        .update({ last_seen_at: new Date().toISOString() })
-        .eq('id', profileData.id);
-      return;
+  async function refreshGuardian() {
+    if (!guardian) return;
+    const { data } = await supabase.from('guardians').select('*').eq('id', guardian.id).single();
+    if (data) {
+      setGuardian(data);
+      saveGuardianProfile({ name: data.full_name, photo_url: data.photo_url ?? null });
     }
-
-    setLoading(false);
   }
 
   async function signOut() {
@@ -99,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, guardian, activeUser, loading, setActiveUser, signOut }}>
+    <AuthContext.Provider value={{ session, guardian, activeUser, loading, setActiveUser, refreshGuardian, signOut }}>
       {children}
     </AuthContext.Provider>
   );

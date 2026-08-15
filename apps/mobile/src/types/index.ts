@@ -9,6 +9,10 @@ export interface Guardian {
   full_name: string;
   phone?: string;
   photo_url?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  situation_tags?: string[];
   created_at: string;
 }
 

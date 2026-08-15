@@ -99,8 +99,7 @@ export default function GuardianHomeScreen() {
     }
   }
 
-  const firstName = guardian?.full_name?.split(' ')[0] ?? 'Guardian';
-  const initial   = guardian?.full_name?.[0]?.toUpperCase() ?? 'G';
+  const initial = guardian?.full_name?.[0]?.toUpperCase() ?? 'G';
 
   return (
     <View style={s.root}>
@@ -124,14 +123,28 @@ export default function GuardianHomeScreen() {
             onPress={() => setShowMenu(true)}
             activeOpacity={0.75}
           >
-            <View style={s.avatarCircle}>
-              <Text style={s.avatarInitial}>{initial}</Text>
-            </View>
+            {guardian?.photo_url ? (
+              <Image source={{ uri: guardian.photo_url }} style={s.avatarCircle} />
+            ) : (
+              <View style={s.avatarCircle}>
+                <Text style={s.avatarInitial}>{initial}</Text>
+              </View>
+            )}
             <View>
-              <Text style={s.guardianName}>{firstName}</Text>
+              <Text style={s.guardianName}>{guardian?.full_name ?? 'Guardian'}</Text>
               <Text style={s.guardianRole}>Guardian  ▾</Text>
             </View>
           </TouchableOpacity>
+
+          {learners.length > 0 && (
+            <TouchableOpacity
+              style={s.backBtn}
+              onPress={() => navigation.navigate('LearnerSelect')}
+              activeOpacity={0.75}
+            >
+              <Text style={s.backBtnText}>‹ Back</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
       </SafeAreaView>
@@ -223,33 +236,35 @@ export default function GuardianHomeScreen() {
           </TouchableOpacity>
         </ScrollView>
 
-        <View style={[s.communityRow, { marginTop: 14 }]}>
-          <TouchableOpacity
-            style={s.communityTile}
-            onPress={() => navigation.navigate('LearnerDiscovery')}
-            activeOpacity={0.78}
-          >
-            <Text style={s.communityEmoji}>🔍</Text>
-            <View style={s.communityInfo}>
-              <Text style={s.communityLabel}>Find Friends</Text>
-              <Text style={s.communityHint}>Discover learners for your learner to connect with</Text>
-            </View>
-            <Text style={s.communityArr}>›</Text>
-          </TouchableOpacity>
+        {learners.length > 0 && (
+          <View style={[s.communityRow, { marginTop: 14 }]}>
+            <TouchableOpacity
+              style={s.communityTile}
+              onPress={() => navigation.navigate('LearnerDiscovery')}
+              activeOpacity={0.78}
+            >
+              <Text style={s.communityEmoji}>🔍</Text>
+              <View style={s.communityInfo}>
+                <Text style={s.communityLabel}>Find Friends</Text>
+                <Text style={s.communityHint}>Discover learners for your learner to connect with</Text>
+              </View>
+              <Text style={s.communityArr}>›</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={s.communityTile}
-            onPress={() => navigation.navigate('LearnerFriendRequests')}
-            activeOpacity={0.78}
-          >
-            <Text style={s.communityEmoji}>🤝</Text>
-            <View style={s.communityInfo}>
-              <Text style={s.communityLabel}>Friend Requests</Text>
-              <Text style={s.communityHint}>Accept or decline incoming connection requests</Text>
-            </View>
-            <Text style={s.communityArr}>›</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={s.communityTile}
+              onPress={() => navigation.navigate('LearnerFriendRequests')}
+              activeOpacity={0.78}
+            >
+              <Text style={s.communityEmoji}>🤝</Text>
+              <View style={s.communityInfo}>
+                <Text style={s.communityLabel}>Friend Requests</Text>
+                <Text style={s.communityHint}>Accept or decline incoming connection requests</Text>
+              </View>
+              <Text style={s.communityArr}>›</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
       </ScrollView>
 
@@ -323,10 +338,16 @@ const s = StyleSheet.create({
     backgroundColor: COLORS.bloomAccent,
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)',
+    overflow: 'hidden',
   },
   avatarInitial: { fontSize: 13, fontWeight: '700', color: '#fff' },
   guardianName:  { fontSize: 15, fontWeight: '600', color: '#fff' },
   guardianRole:  { fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 1 },
+  backBtn: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6,
+  },
+  backBtnText: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
   // Body
   body:        { flex: 1, backgroundColor: COLORS.bloomBody },
   bodyContent: { padding: 14, paddingBottom: 32 },
