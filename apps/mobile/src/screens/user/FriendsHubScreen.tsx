@@ -55,11 +55,6 @@ const emptyStyles = StyleSheet.create({
   speakBtnText: { fontSize: 15, fontWeight: '700', color: '#2563EB' },
 });
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  Music: '🎵', Sports: '⚽', Art: '🎨', Cooking: '🍳',
-  Movies: '🎬', Reading: '📚', Dancing: '💃', Gaming: '🎮',
-  Animals: '🐾', Nature: '🌿', Swimming: '🏊',
-};
 
 const AVATAR_COLORS = ['#4A90E2', '#5CBB7A', '#F5A623', '#9B59B6', '#E53E3E', '#1ABC9C'];
 function avatarColor(name: string): string {
@@ -73,6 +68,8 @@ function isOnline(lastSeenAt: string | null): boolean {
   return Date.now() - new Date(lastSeenAt).getTime() < 5 * 60 * 1000;
 }
 
+interface CategoryItem { name: string; emoji: string; }
+
 interface Friend {
   id: string;
   name: string;
@@ -80,8 +77,8 @@ interface Friend {
   last_seen_at: string | null;
   current_mood: string | null;
   is_pinned: boolean;
-  likes: string[];
-  dislikes: string[];
+  likes: CategoryItem[];
+  dislikes: CategoryItem[];
 }
 
 
@@ -112,24 +109,24 @@ export default function FriendsHubScreen() {
       const isRequester = f.requester_id === userId;
       const friend = isRequester ? f.addressee : f.requester;
       const isPinned = isRequester ? f.requester_pinned : f.addressee_pinned;
-      return { id: friend.id, name: friend.name, photo_url: friend.photo_url, last_seen_at: friend.last_seen_at, current_mood: friend.current_mood ?? null, is_pinned: isPinned, likes: [] as string[], dislikes: [] as string[] };
+      return { id: friend.id, name: friend.name, photo_url: friend.photo_url, last_seen_at: friend.last_seen_at, current_mood: friend.current_mood ?? null, is_pinned: isPinned, likes: [] as CategoryItem[], dislikes: [] as CategoryItem[] };
     });
 
     if (list.length > 0) {
       const friendIds = list.map((f: Friend) => f.id);
       const [{ data: likesData }, { data: dislikesData }] = await Promise.all([
-        supabase.from('user_likes').select('user_id, categories(name)').in('user_id', friendIds),
-        supabase.from('user_dislikes').select('user_id, categories(name)').in('user_id', friendIds),
+        supabase.from('user_likes').select('user_id, categories(name, emoji)').in('user_id', friendIds),
+        supabase.from('user_dislikes').select('user_id, categories(name, emoji)').in('user_id', friendIds),
       ]);
-      const likesByUser: Record<string, string[]> = {};
+      const likesByUser: Record<string, CategoryItem[]> = {};
       (likesData || []).forEach((row: any) => {
         if (!likesByUser[row.user_id]) likesByUser[row.user_id] = [];
-        if (row.categories?.name) likesByUser[row.user_id].push(row.categories.name);
+        if (row.categories?.name) likesByUser[row.user_id].push({ name: row.categories.name, emoji: row.categories.emoji || '⭐' });
       });
-      const dislikesByUser: Record<string, string[]> = {};
+      const dislikesByUser: Record<string, CategoryItem[]> = {};
       (dislikesData || []).forEach((row: any) => {
         if (!dislikesByUser[row.user_id]) dislikesByUser[row.user_id] = [];
-        if (row.categories?.name) dislikesByUser[row.user_id].push(row.categories.name);
+        if (row.categories?.name) dislikesByUser[row.user_id].push({ name: row.categories.name, emoji: row.categories.emoji || '🔸' });
       });
       list.forEach((f: Friend) => {
         f.likes = (likesByUser[f.id] || []).slice(0, 4);
@@ -152,8 +149,8 @@ export default function FriendsHubScreen() {
 
   function speakFriend(friend: Friend) {
     const parts: string[] = [friend.name];
-    if (friend.likes.length) parts.push(`Likes: ${friend.likes.join(', ')}`);
-    if (friend.dislikes.length) parts.push(`Dislikes: ${friend.dislikes.join(', ')}`);
+    if (friend.likes.length) parts.push(`Likes: ${friend.likes.map(l => l.name).join(', ')}`);
+    if (friend.dislikes.length) parts.push(`Dislikes: ${friend.dislikes.map(d => d.name).join(', ')}`);
     Speech.speak(parts.join('. '), { rate: 0.85, pitch: 1.0 });
   }
 
@@ -206,9 +203,7 @@ export default function FriendsHubScreen() {
                     <View style={styles.emojiRow}>
                       <Text style={styles.emojiLabel}>👍</Text>
                       {friend.likes.map(like => (
-                        <Text key={like} style={styles.likeEmoji}>
-                          {CATEGORY_EMOJI[like] ?? '⭐'}
-                        </Text>
+                        <Text key={like.name} style={styles.likeEmoji}>{like.emoji}</Text>
                       ))}
                     </View>
                   )}
@@ -216,9 +211,7 @@ export default function FriendsHubScreen() {
                     <View style={styles.emojiRow}>
                       <Text style={styles.emojiLabel}>👎</Text>
                       {friend.dislikes.map(dislike => (
-                        <Text key={dislike} style={styles.dislikeEmoji}>
-                          {CATEGORY_EMOJI[dislike] ?? '❌'}
-                        </Text>
+                        <Text key={dislike.name} style={styles.dislikeEmoji}>{dislike.emoji}</Text>
                       ))}
                     </View>
                   )}

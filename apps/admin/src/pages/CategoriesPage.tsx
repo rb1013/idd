@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 type CategoryType = 'like' | 'dislike' | 'ability';
-interface Category { id: string; name: string; type: CategoryType; }
+interface Category { id: string; name: string; type: CategoryType; emoji: string; }
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
+  const [emoji, setEmoji] = useState('');
   const [type, setType] = useState<CategoryType>('like');
   const [filter, setFilter] = useState<CategoryType | 'all'>('all');
 
@@ -22,9 +23,9 @@ export default function CategoriesPage() {
   async function addCategory(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    const { error } = await supabase.from('categories').insert({ name: name.trim(), type });
+    const { error } = await supabase.from('categories').insert({ name: name.trim(), type, emoji: emoji.trim() || null });
     if (error) alert(error.message);
-    else { setName(''); fetchCategories(); }
+    else { setName(''); setEmoji(''); fetchCategories(); }
   }
 
   async function deleteCategory(id: string) {
@@ -44,6 +45,13 @@ export default function CategoriesPage() {
       <form onSubmit={addCategory} style={styles.form}>
         <h3 style={styles.formTitle}>Add Category</h3>
         <div style={styles.row}>
+          <input
+            style={{ ...styles.input, width: 56, textAlign: 'center', fontSize: 20, flexShrink: 0 }}
+            placeholder="😊"
+            value={emoji}
+            onChange={e => setEmoji(e.target.value)}
+            maxLength={4}
+          />
           <input
             style={{ ...styles.input, flex: 1 }}
             placeholder="Category name"
@@ -76,6 +84,7 @@ export default function CategoriesPage() {
         <div style={styles.grid}>
           {filtered.map(c => (
             <div key={c.id} style={{ ...styles.chip, borderColor: typeColors[c.type] }}>
+              {c.emoji && <span style={{ fontSize: 18 }}>{c.emoji}</span>}
               <span style={styles.chipName}>{c.name}</span>
               <span style={{ ...styles.chipType, color: typeColors[c.type] }}>{c.type}</span>
               <button style={styles.deleteChip} onClick={() => deleteCategory(c.id)}>✕</button>
