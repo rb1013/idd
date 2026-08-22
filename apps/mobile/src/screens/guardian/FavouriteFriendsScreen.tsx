@@ -8,10 +8,16 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 
+const AVATAR_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#F59E0B', '#3B82F6', '#EC4899'];
+
 interface FriendForPin {
   friendshipId: string;
+  friendId: string;
   friendName: string;
   friendPhotoUrl: string | null;
+  friendAge: number;
+  friendCity: string;
+  friendRegion: string;
   isPinned: boolean;
   isRequester: boolean;
 }
@@ -42,8 +48,8 @@ export default function FavouriteFriendsScreen() {
       .from('friendships')
       .select(`
         id, requester_id, addressee_id, requester_pinned, addressee_pinned,
-        requester:user_profiles!friendships_requester_id_fkey(id, name, photo_url),
-        addressee:user_profiles!friendships_addressee_id_fkey(id, name, photo_url)
+        requester:user_profiles!friendships_requester_id_fkey(id, name, photo_url, age, city, region),
+        addressee:user_profiles!friendships_addressee_id_fkey(id, name, photo_url, age, city, region)
       `)
       .eq('status', 'accepted')
       .or(`requester_id.eq.${learner.id},addressee_id.eq.${learner.id}`);
@@ -54,8 +60,12 @@ export default function FavouriteFriendsScreen() {
         const friend = isRequester ? f.addressee : f.requester;
         return {
           friendshipId: f.id,
+          friendId: friend.id,
           friendName: friend.name,
           friendPhotoUrl: friend.photo_url,
+          friendAge: friend.age ?? 0,
+          friendCity: friend.city ?? '',
+          friendRegion: friend.region ?? '',
           isPinned: isRequester ? f.requester_pinned : f.addressee_pinned,
           isRequester,
         };
@@ -104,26 +114,39 @@ export default function FavouriteFriendsScreen() {
       <Text style={s.hint}>Pin up to 3 friends — they appear at the top of the learner's Friends list.</Text>
       <Text style={s.counter}>{pinned}/3 pinned</Text>
 
-      {friends.map(item => (
-        <TouchableOpacity
-          key={item.friendshipId}
-          style={s.row}
-          onPress={() => togglePin(item)}
-          activeOpacity={0.8}
-        >
-          {item.friendPhotoUrl ? (
-            <Image source={{ uri: item.friendPhotoUrl }} style={s.avatar} />
-          ) : (
-            <View style={[s.avatar, s.avatarPlaceholder]}>
-              <Text style={s.avatarInitial}>{item.friendName[0]?.toUpperCase()}</Text>
+      {friends.map((item, index) => {
+        const color = AVATAR_COLORS[index % AVATAR_COLORS.length];
+        return (
+          <View key={item.friendshipId} style={s.row}>
+            {/* Avatar */}
+            {item.friendPhotoUrl ? (
+              <Image source={{ uri: item.friendPhotoUrl }} style={s.avatar} />
+            ) : (
+              <View style={[s.avatar, { backgroundColor: color }]}>
+                <Text style={s.avatarInitial}>{item.friendName[0]?.toUpperCase()}</Text>
+              </View>
+            )}
+
+            {/* Info */}
+            <View style={s.rowInfo}>
+              <Text style={s.name} numberOfLines={1}>{item.friendName}</Text>
+              <Text style={s.meta} numberOfLines={1}>
+                {item.friendAge} yrs · {item.friendCity}{item.friendRegion ? `, ${item.friendRegion}` : ''}
+              </Text>
             </View>
-          )}
-          <Text style={s.name}>{item.friendName}</Text>
-          <View style={[s.pinBtn, item.isPinned && s.pinBtnActive]}>
-            <Text style={s.pinIcon}>{item.isPinned ? '⭐' : '☆'}</Text>
+
+            {/* Pin toggle */}
+            <TouchableOpacity
+              style={[s.pinBtn, item.isPinned && s.pinBtnActive]}
+              onPress={() => togglePin(item)}
+              activeOpacity={0.8}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={s.pinIcon}>{item.isPinned ? '⭐' : '☆'}</Text>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
-      ))}
+        );
+      })}
     </ScrollView>
   );
 }
@@ -140,17 +163,21 @@ const s = StyleSheet.create({
   counter: { fontSize: 13, fontWeight: '700', color: COLORS.bloomAccent, marginBottom: 16 },
 
   row: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: COLORS.bloomCard, borderRadius: 14, padding: 12, marginBottom: 8,
+    borderWidth: 1, borderColor: COLORS.bloomBorder,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
   },
-  avatar: { width: 48, height: 48, borderRadius: 24 },
-  avatarPlaceholder: { backgroundColor: '#DAEAFF', justifyContent: 'center', alignItems: 'center' },
-  avatarInitial: { fontSize: 18, fontWeight: '700', color: COLORS.bloomAccent },
-  name: { flex: 1, fontSize: 16, fontWeight: '600', color: COLORS.bloomText },
+  avatar: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
+  avatarInitial: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  rowInfo: { flex: 1, minWidth: 0, gap: 2 },
+  name: { fontSize: 14, fontWeight: '800', color: COLORS.bloomText },
+  meta: { fontSize: 11, color: COLORS.bloomMuted, fontWeight: '500' },
   pinBtn: {
     width: 44, height: 44, borderRadius: 12,
     backgroundColor: COLORS.bloomBorder,
-    justifyContent: 'center', alignItems: 'center',
+    justifyContent: 'center', alignItems: 'center', flexShrink: 0,
   },
   pinBtnActive: { backgroundColor: '#FDE8C0' },
   pinIcon: { fontSize: 22 },

@@ -8,6 +8,7 @@ import TutorialsPage from './pages/TutorialsPage';
 import CategoriesPage from './pages/CategoriesPage';
 import UsersPage from './pages/UsersPage';
 import SituationTagsPage from './pages/SituationTagsPage';
+import MedicalConditionsPage from './pages/MedicalConditionsPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
@@ -38,6 +39,7 @@ function App() {
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/situation-tags" element={<SituationTagsPage />} />
+            <Route path="/medical-conditions" element={<MedicalConditionsPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

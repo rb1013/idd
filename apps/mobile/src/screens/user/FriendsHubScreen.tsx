@@ -81,6 +81,7 @@ interface Friend {
   current_mood: string | null;
   is_pinned: boolean;
   likes: string[];
+  dislikes: string[];
 }
 
 
@@ -111,19 +112,29 @@ export default function FriendsHubScreen() {
       const isRequester = f.requester_id === userId;
       const friend = isRequester ? f.addressee : f.requester;
       const isPinned = isRequester ? f.requester_pinned : f.addressee_pinned;
-      return { id: friend.id, name: friend.name, photo_url: friend.photo_url, last_seen_at: friend.last_seen_at, current_mood: friend.current_mood ?? null, is_pinned: isPinned, likes: [] as string[] };
+      return { id: friend.id, name: friend.name, photo_url: friend.photo_url, last_seen_at: friend.last_seen_at, current_mood: friend.current_mood ?? null, is_pinned: isPinned, likes: [] as string[], dislikes: [] as string[] };
     });
 
     if (list.length > 0) {
       const friendIds = list.map((f: Friend) => f.id);
-      const { data: likesData } = await supabase
-        .from('user_likes').select('user_id, categories(name)').in('user_id', friendIds);
+      const [{ data: likesData }, { data: dislikesData }] = await Promise.all([
+        supabase.from('user_likes').select('user_id, categories(name)').in('user_id', friendIds),
+        supabase.from('user_dislikes').select('user_id, categories(name)').in('user_id', friendIds),
+      ]);
       const likesByUser: Record<string, string[]> = {};
       (likesData || []).forEach((row: any) => {
         if (!likesByUser[row.user_id]) likesByUser[row.user_id] = [];
         if (row.categories?.name) likesByUser[row.user_id].push(row.categories.name);
       });
-      list.forEach((f: Friend) => { f.likes = (likesByUser[f.id] || []).slice(0, 4); });
+      const dislikesByUser: Record<string, string[]> = {};
+      (dislikesData || []).forEach((row: any) => {
+        if (!dislikesByUser[row.user_id]) dislikesByUser[row.user_id] = [];
+        if (row.categories?.name) dislikesByUser[row.user_id].push(row.categories.name);
+      });
+      list.forEach((f: Friend) => {
+        f.likes = (likesByUser[f.id] || []).slice(0, 4);
+        f.dislikes = (dislikesByUser[f.id] || []).slice(0, 4);
+      });
     }
 
     setFriends(list);
@@ -140,8 +151,10 @@ export default function FriendsHubScreen() {
   }
 
   function speakFriend(friend: Friend) {
-    const text = friend.likes.length ? `${friend.name}. Likes: ${friend.likes.join(', ')}` : friend.name;
-    Speech.speak(text, { rate: 0.85, pitch: 1.0 });
+    const parts: string[] = [friend.name];
+    if (friend.likes.length) parts.push(`Likes: ${friend.likes.join(', ')}`);
+    if (friend.dislikes.length) parts.push(`Dislikes: ${friend.dislikes.join(', ')}`);
+    Speech.speak(parts.join('. '), { rate: 0.85, pitch: 1.0 });
   }
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
@@ -190,10 +203,21 @@ export default function FriendsHubScreen() {
                 <View style={styles.info}>
                   <Text style={styles.name}>{friend.name}</Text>
                   {friend.likes.length > 0 && (
-                    <View style={styles.likesRow}>
+                    <View style={styles.emojiRow}>
+                      <Text style={styles.emojiLabel}>👍</Text>
                       {friend.likes.map(like => (
                         <Text key={like} style={styles.likeEmoji}>
                           {CATEGORY_EMOJI[like] ?? '⭐'}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                  {friend.dislikes.length > 0 && (
+                    <View style={styles.emojiRow}>
+                      <Text style={styles.emojiLabel}>👎</Text>
+                      {friend.dislikes.map(dislike => (
+                        <Text key={dislike} style={styles.dislikeEmoji}>
+                          {CATEGORY_EMOJI[dislike] ?? '❌'}
                         </Text>
                       ))}
                     </View>
@@ -250,8 +274,10 @@ const styles = StyleSheet.create({
 
   info: { flex: 1, minWidth: 0 },
   name: { fontSize: 22, fontWeight: '900', color: COLORS.text },
-  likesRow: { flexDirection: 'row', gap: 4, marginTop: 6 },
+  emojiRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  emojiLabel: { fontSize: 16 },
   likeEmoji: { fontSize: 22 },
+  dislikeEmoji: { fontSize: 22, opacity: 0.7 },
 
   speakBtn: {
     width: 42, height: 42, borderRadius: 12,

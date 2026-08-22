@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { to: '/categories', label: 'Categories' },
   { to: '/users', label: 'Users' },
   { to: '/situation-tags', label: 'Situation Tags' },
+  { to: '/medical-conditions', label: 'Medical Conditions' },
 ];
 
 export default function Layout() {

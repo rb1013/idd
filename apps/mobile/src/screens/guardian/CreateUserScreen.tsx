@@ -14,11 +14,12 @@ import { COLORS, COMPREHENSION_LEVELS, GENDERS, LANGUAGES, US_STATES } from '../
 import DropdownPicker from '../../components/DropdownPicker';
 import { Category } from '../../types';
 import MultiSelectChips from '../../components/MultiSelectChips';
+import MultiSelectDropdown from '../../components/MultiSelectDropdown';
 import { GuardianNavParamList } from '../../navigation';
 
 type Props = { navigation: NativeStackNavigationProp<GuardianNavParamList, 'CreateUser'> };
 
-type Step = 'social' | 'interests' | 'location' | 'professional' | 'health';
+type Step = 'social' | 'interests' | 'location' | 'health';
 
 function generatePassword(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -31,13 +32,7 @@ export default function CreateUserScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
 
   useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={{ fontSize: 16, color: COLORS.textLight }}>Cancel</Text>
-        </TouchableOpacity>
-      ),
-    });
+    navigation.setOptions({ headerRight: undefined });
   }, [navigation]);
 
   // Social profile
@@ -61,12 +56,18 @@ export default function CreateUserScreen({ navigation }: Props) {
   const [selectedAbilities, setSelectedAbilities] = useState<string[]>([]);
   const [comprehension, setComprehension] = useState('easy');
 
-  // Health
-  const [willingToShare, setWillingToShare] = useState(false);
-  const [healthDesc, setHealthDesc] = useState('');
+  // Medical conditions
+  const [medicalConditionOptions, setMedicalConditionOptions] = useState<{ id: string; label: string }[]>([]);
+  const [selectedMedicalConditions, setSelectedMedicalConditions] = useState<string[]>([]);
 
   useEffect(() => {
-    supabase.from('categories').select('*').then(({ data }) => setCategories(data || []));
+    Promise.all([
+      supabase.from('categories').select('*'),
+      supabase.from('medical_conditions').select('id, label').order('label'),
+    ]).then(([catsRes, medRes]) => {
+      setCategories(catsRes.data || []);
+      setMedicalConditionOptions(medRes.data || []);
+    });
   }, []);
 
   const likeCategories = categories.filter(c => c.type === 'like');
@@ -149,6 +150,10 @@ export default function CreateUserScreen({ navigation }: Props) {
     const dislikesRows = dislikeIds.map(id => ({ user_id: userId, category_id: id }));
     const abilitiesRows = abilityIds.map(id => ({ user_id: userId, category_id: id }));
 
+    const medCondIds = selectedMedicalConditions
+      .map(label => medicalConditionOptions.find(c => c.label === label)?.id)
+      .filter(Boolean) as string[];
+
     const [, , , chatResult] = await Promise.all([
       likesRows.length && supabase.from('user_likes').insert(likesRows),
       dislikesRows.length && supabase.from('user_dislikes').insert(dislikesRows),
@@ -161,12 +166,14 @@ export default function CreateUserScreen({ navigation }: Props) {
         available_days: [],
         comprehension_level: comprehension,
       }),
-      supabase.from('health_info').insert({
-        user_id: userId,
-        willing_to_share: willingToShare,
-        description: willingToShare ? healthDesc : null,
-      }),
+      supabase.from('health_info').insert({ user_id: userId, willing_to_share: false, description: null }),
     ]);
+
+    if (medCondIds.length) {
+      await supabase.from('user_medical_conditions').insert(
+        medCondIds.map(id => ({ user_id: userId, medical_condition_id: id }))
+      );
+    }
 
     if (chatResult && 'error' in chatResult && chatResult.error) {
       Alert.alert('Chat prefs error', chatResult.error.message);
@@ -198,18 +205,23 @@ export default function CreateUserScreen({ navigation }: Props) {
     navigation.goBack();
   }
 
-  const steps: Step[] = ['social', 'interests', 'location', 'professional', 'health'];
+  const steps: Step[] = ['social', 'interests', 'location', 'health'];
   const stepIndex = steps.indexOf(step);
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {/* Step indicator */}
-      <View style={styles.stepIndicator}>
-        {steps.map((s, i) => (
-          <TouchableOpacity key={s} onPress={() => i < stepIndex && setStep(steps[i])}>
-            <View style={[styles.stepDot, i <= stepIndex && styles.stepDotActive]} />
-          </TouchableOpacity>
-        ))}
+      {/* Step indicator + Cancel */}
+      <View style={styles.stepRow}>
+        <View style={styles.stepIndicator}>
+          {steps.map((s, i) => (
+            <TouchableOpacity key={s} onPress={() => i < stepIndex && setStep(steps[i])}>
+              <View style={[styles.stepDot, i <= stepIndex && styles.stepDotActive]} />
+            </TouchableOpacity>
+          ))}
+        </View>
+        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.6} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Text style={styles.cancelLink}>Cancel</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -250,18 +262,50 @@ export default function CreateUserScreen({ navigation }: Props) {
 
         {step === 'interests' && (
           <View>
-            <Text style={styles.sectionTitle}>Interests</Text>
-            <Text style={styles.sectionSubtitle}>What does this person like and dislike?</Text>
+            <Text style={styles.sectionTitle}>More about Learner</Text>
+            <Text style={styles.sectionSubtitle}>Tell us more about this person</Text>
 
             {likeCategories.length === 0
               ? <Text style={styles.emptyHint}>Loading categories...</Text>
               : <>
-                  <Text style={styles.label}>Likes</Text>
-                  <MultiSelectChips options={likeCategories.map(c => c.name)} selected={selectedLikes} onToggle={setSelectedLikes} max={4} />
-                  <Text style={styles.label}>Dislikes</Text>
-                  <MultiSelectChips options={dislikeCategories.map(c => c.name)} selected={selectedDislikes} onToggle={setSelectedDislikes} max={4} />
+                  <MultiSelectDropdown
+                    label="Likes"
+                    options={likeCategories.map(c => c.name)}
+                    selected={selectedLikes}
+                    onToggle={setSelectedLikes}
+                    placeholder="Tap to select likes..."
+                  />
+                  <MultiSelectDropdown
+                    label="Dislikes"
+                    options={dislikeCategories.map(c => c.name)}
+                    selected={selectedDislikes}
+                    onToggle={setSelectedDislikes}
+                    placeholder="Tap to select dislikes..."
+                  />
+                  <MultiSelectDropdown
+                    label="What Can I Do?"
+                    options={abilityCategories.map(c => c.name)}
+                    selected={selectedAbilities}
+                    onToggle={setSelectedAbilities}
+                    placeholder="Tap to select abilities..."
+                  />
                 </>
             }
+
+            <MultiSelectDropdown
+              label="Languages"
+              options={LANGUAGES}
+              selected={languages}
+              onToggle={setLanguages}
+              placeholder="Tap to select languages..."
+            />
+
+            <DropdownPicker
+              label="Comprehension Level"
+              value={COMPREHENSION_LEVELS.find(c => c.value === comprehension)?.label ?? 'Easy'}
+              options={COMPREHENSION_LEVELS.map(c => c.label)}
+              onSelect={(v) => setComprehension(COMPREHENSION_LEVELS.find(c => c.label === v)?.value ?? 'easy')}
+            />
           </View>
         )}
 
@@ -290,43 +334,31 @@ export default function CreateUserScreen({ navigation }: Props) {
           </View>
         )}
 
-        {step === 'professional' && (
-          <View>
-            <Text style={styles.sectionTitle}>What Can I Do?</Text>
-            <Text style={styles.sectionSubtitle}>Select all activities this person can do</Text>
-            <MultiSelectChips options={abilityCategories.map(c => c.name)} selected={selectedAbilities} onToggle={setSelectedAbilities} />
-
-            <Text style={styles.label}>Languages</Text>
-            <MultiSelectChips options={LANGUAGES} selected={languages} onToggle={setLanguages} />
-
-            <Text style={styles.label}>Comprehension Level</Text>
-            <MultiSelectChips
-              options={COMPREHENSION_LEVELS.map(c => c.label)}
-              selected={[COMPREHENSION_LEVELS.find(c => c.value === comprehension)?.label ?? 'Easy']}
-              onToggle={(v) => setComprehension(COMPREHENSION_LEVELS.find(c => c.label === v[0])?.value ?? 'easy')}
-              single
-            />
-          </View>
-        )}
-
         {step === 'health' && (
           <View>
-            <Text style={styles.sectionTitle}>Health Information</Text>
-            <Toggle label="Willing to share health info" value={willingToShare} onToggle={() => setWillingToShare(!willingToShare)} />
-            {willingToShare && (
-              <>
-                <TextInput
-                  style={[styles.input, { height: 120, textAlignVertical: 'top' }]}
-                  placeholder="Brief description of health situation..."
-                  value={healthDesc}
-                  onChangeText={setHealthDesc}
-                  multiline
-                  maxLength={500}
-                  placeholderTextColor={COLORS.textLight}
-                />
-                <Text style={styles.charCount}>{healthDesc.length}/500</Text>
-              </>
+            <Text style={styles.sectionTitle}>Medical Condition</Text>
+            <Text style={styles.sectionSubtitle}>Select all that apply to this learner</Text>
+
+            {medicalConditionOptions.length === 0 ? (
+              <Text style={styles.emptyHint}>No medical conditions have been added by the admin yet.</Text>
+            ) : (
+              <MultiSelectDropdown
+                label="Select conditions"
+                options={medicalConditionOptions.map(c => c.label)}
+                selected={selectedMedicalConditions}
+                onToggle={setSelectedMedicalConditions}
+                placeholder="Tap to select..."
+              />
             )}
+
+            <View style={styles.disclaimer}>
+              <Text style={styles.disclaimerText}>
+                ⚠️  This information will <Text style={styles.disclaimerBold}>not</Text> be displayed on the learner's profile. It will only be used for finding compatible friends.{'\n\n'}
+                If you do not find your learner's medical condition in the list, please contact the admin at{' '}
+                <Text style={styles.disclaimerEmail}>reyaansh.bansal@gmail.com</Text>
+                . The admin will add it and let you know when it is available in this dropdown.
+              </Text>
+            </View>
           </View>
         )}
 
@@ -379,7 +411,9 @@ function Toggle({ label, value, onToggle }: { label: string; value: boolean; onT
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { flex: 1 },
-  stepIndicator: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: 16 },
+  stepRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
+  stepIndicator: { flex: 1, flexDirection: 'row', justifyContent: 'center', gap: 8 },
+  cancelLink: { fontSize: 14, color: COLORS.textLight, fontWeight: '500' },
   stepDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.border },
   stepDotActive: { backgroundColor: COLORS.primary },
   inner: { padding: 24, paddingBottom: 48 },
@@ -423,4 +457,12 @@ const styles = StyleSheet.create({
   backBtnText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   nextBtn: { flex: 2, backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center' },
   nextBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+
+  disclaimer: {
+    marginTop: 20, backgroundColor: '#FFF8E1', borderRadius: 12,
+    borderWidth: 1.5, borderColor: '#F6C90E', padding: 16,
+  },
+  disclaimerText: { fontSize: 13, color: '#6D5700', lineHeight: 20 },
+  disclaimerBold: { fontWeight: '800' },
+  disclaimerEmail: { fontWeight: '700', color: COLORS.primary },
 });

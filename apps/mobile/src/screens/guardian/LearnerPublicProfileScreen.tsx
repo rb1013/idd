@@ -28,6 +28,7 @@ interface LearnerProfile {
   likes: string[];
   dislikes: string[];
   abilities: string[];
+  languages: string[];
   comprehension_level: string | null;
   open_to_online_chat: boolean;
   connectionStatus: ConnectionStatus;
@@ -55,7 +56,7 @@ export default function LearnerPublicProfileScreen() {
       { data: abilities },
       { data: chat },
     ] = await Promise.all([
-      supabase.from('user_profiles').select('id, name, age, photo_url, city, region, country').eq('id', learnerId).single(),
+      supabase.from('user_profiles').select('id, name, age, photo_url, city, region, country, languages').eq('id', learnerId).single(),
       supabase.from('user_profiles').select('id').eq('guardian_id', guardianId),
       supabase.from('user_likes').select('categories(name)').eq('user_id', learnerId),
       supabase.from('user_dislikes').select('categories(name)').eq('user_id', learnerId),
@@ -97,6 +98,7 @@ export default function LearnerPublicProfileScreen() {
       likes: (likes ?? []).map((r: any) => r.categories?.name).filter(Boolean),
       dislikes: (dislikes ?? []).map((r: any) => r.categories?.name).filter(Boolean),
       abilities: (abilities ?? []).map((r: any) => r.categories?.name).filter(Boolean),
+      languages: p.languages ?? [],
       comprehension_level: chat?.comprehension_level ?? null,
       open_to_online_chat: chat?.open_to_online_chat ?? false,
       connectionStatus,
@@ -167,7 +169,43 @@ export default function LearnerPublicProfileScreen() {
         )}
       </View>
 
-      {/* Connect action */}
+      {/* Interests */}
+      <Section title="Likes">
+        {profile.likes.length > 0
+          ? <View style={s.chips}>{profile.likes.map(l => <Chip key={l} label={l} color="#D4F0DE" textColor="#065F46" />)}</View>
+          : <Text style={s.emptyChip}>None added</Text>
+        }
+      </Section>
+
+      <Section title="Dislikes">
+        {profile.dislikes.length > 0
+          ? <View style={s.chips}>{profile.dislikes.map(l => <Chip key={l} label={l} color="#FEE2E2" textColor="#991B1B" />)}</View>
+          : <Text style={s.emptyChip}>None added</Text>
+        }
+      </Section>
+
+      <Section title="What I Can Do">
+        {profile.abilities.length > 0
+          ? <View style={s.chips}>{profile.abilities.map(l => <Chip key={l} label={l} color="#DAEAFF" textColor={COLORS.bloomAccent} />)}</View>
+          : <Text style={s.emptyChip}>None added</Text>
+        }
+      </Section>
+
+      <Section title="Languages">
+        {profile.languages.length > 0
+          ? <View style={s.chips}>{profile.languages.map(l => <Chip key={l} label={l} color="#F3E8FF" textColor="#6B21A8" />)}</View>
+          : <Text style={s.emptyChip}>None added</Text>
+        }
+      </Section>
+
+      <Section title="Comprehension Level">
+        {profile.comprehension_level
+          ? <View style={s.chips}><Chip label={profile.comprehension_level} color="#DAEAFF" textColor={COLORS.bloomAccent} /></View>
+          : <Text style={s.emptyChip}>Not set</Text>
+        }
+      </Section>
+
+      {/* Connect action — pinned to bottom */}
       <View style={s.actionCard}>
         {profile.connectionStatus === 'accepted' && (
           <View style={s.statusRow}>
@@ -200,38 +238,13 @@ export default function LearnerPublicProfileScreen() {
               disabled={sending}
             >
               {sending
-                ? <ActivityIndicator color="#fff" />
+                ? <ActivityIndicator color={COLORS.bloomAccent} />
                 : <Text style={s.connectBtnText}>Send Friend Request</Text>
               }
             </TouchableOpacity>
           </>
         )}
       </View>
-
-      {/* Interests */}
-      {profile.likes.length > 0 && (
-        <Section title="Likes">
-          <View style={s.chips}>
-            {profile.likes.map(l => <Chip key={l} label={l} color="#D4F0DE" textColor="#065F46" />)}
-          </View>
-        </Section>
-      )}
-
-      {profile.dislikes.length > 0 && (
-        <Section title="Dislikes">
-          <View style={s.chips}>
-            {profile.dislikes.map(l => <Chip key={l} label={l} color="#FEE2E2" textColor="#991B1B" />)}
-          </View>
-        </Section>
-      )}
-
-      {profile.abilities.length > 0 && (
-        <Section title="What I Can Do">
-          <View style={s.chips}>
-            {profile.abilities.map(l => <Chip key={l} label={l} color="#DAEAFF" textColor={COLORS.bloomAccent} />)}
-          </View>
-        </Section>
-      )}
     </ScrollView>
   );
 }
@@ -282,7 +295,7 @@ const s = StyleSheet.create({
   statusText: { fontSize: 14, color: COLORS.bloomText, fontWeight: '600', flex: 1 },
   connectHint: { fontSize: 13, color: COLORS.bloomMuted, lineHeight: 18 },
   connectBtn: {
-    backgroundColor: COLORS.bloomNavy, borderRadius: 12,
+    backgroundColor: COLORS.bloomAccent, borderRadius: 12,
     paddingVertical: 14, alignItems: 'center',
   },
   connectBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
@@ -295,4 +308,5 @@ const s = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
   chipText: { fontSize: 13, fontWeight: '700' },
+  emptyChip: { fontSize: 13, color: COLORS.bloomMuted, fontStyle: 'italic' },
 });

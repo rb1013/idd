@@ -230,7 +230,7 @@ export default function LearnerFriendRequestsScreen() {
                   <Text style={s.acceptBtnText}>✓ Accept</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.declineBtn} onPress={() => decline(req)}>
-                  <Text style={s.declineBtnText}>✕</Text>
+                  <Text style={s.declineBtnText}>Decline</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -313,10 +313,10 @@ const s = StyleSheet.create({
   },
   acceptBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   declineBtn: {
-    backgroundColor: COLORS.bloomBorder, borderRadius: 10,
+    backgroundColor: '#FEE2E2', borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 7,
   },
-  declineBtnText: { color: COLORS.bloomMuted, fontWeight: '700', fontSize: 13 },
+  declineBtnText: { color: '#DC2626', fontWeight: '700', fontSize: 13 },
   cancelBtn: {
     backgroundColor: COLORS.bloomBorder, borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 7,
