@@ -1,0 +1,1023 @@
+<title>Bloom — Feature Document</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+
+<style>
+  :root {
+    --navy:    #1E3350;
+    --accent:  #2D63A8;
+    --sky:     #7ABAFF;
+    --bg:      #F5F7FA;
+    --surface: #FFFFFF;
+    --border:  #E4EAF2;
+    --text:    #1A2533;
+    --muted:   #8A9BB0;
+    --g-color: #2D63A8;
+    --l-color: #3B8A60;
+    --a-color: #7C4DBC;
+    --g-bg:    #EEF4FF;
+    --l-bg:    #EDFAF3;
+    --a-bg:    #F3EDFF;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --navy:    #7ABAFF;
+      --accent:  #5A9AE0;
+      --sky:     #A8D4FF;
+      --bg:      #0D1828;
+      --surface: #162035;
+      --border:  #243352;
+      --text:    #E4ECF7;
+      --muted:   #7ABAFF;
+      --g-color: #5A9AE0;
+      --l-color: #4DB87A;
+      --a-color: #A87DE0;
+      --g-bg:    #0F2040;
+      --l-bg:    #0F2A1E;
+      --a-bg:    #1E1040;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --navy:    #7ABAFF;
+    --accent:  #5A9AE0;
+    --sky:     #A8D4FF;
+    --bg:      #0D1828;
+    --surface: #162035;
+    --border:  #243352;
+    --text:    #E4ECF7;
+    --muted:   #7ABAFF;
+    --g-color: #5A9AE0;
+    --l-color: #4DB87A;
+    --a-color: #A87DE0;
+    --g-bg:    #0F2040;
+    --l-bg:    #0F2A1E;
+    --a-bg:    #1E1040;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Source Sans 3', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ── Layout ─────────────────────────────────────── */
+  .shell {
+    display: flex;
+    min-height: 100vh;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+
+  aside {
+    width: 220px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 40px 0 40px;
+    scrollbar-width: none;
+  }
+  aside::-webkit-scrollbar { display: none; }
+
+  .side-logo {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    margin-bottom: 32px;
+    padding-right: 16px;
+  }
+  .side-logo span { color: var(--sky); }
+
+  nav a {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 5px 12px 5px 0;
+    border-left: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    line-height: 1.4;
+  }
+  nav a:hover { color: var(--accent); border-left-color: var(--accent); padding-left: 8px; }
+
+  .nav-section {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    margin: 20px 0 6px;
+    opacity: 0.7;
+  }
+
+  main {
+    flex: 1;
+    min-width: 0;
+    padding: 40px 0 80px 40px;
+    border-left: 1px solid var(--border);
+  }
+
+  /* ── Hero ────────────────────────────────────────── */
+  .hero {
+    margin-bottom: 56px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  .hero h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 52px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.05;
+    letter-spacing: -1.5px;
+    text-wrap: balance;
+    margin-bottom: 10px;
+  }
+  .hero h1 .dot { color: var(--sky); }
+  .hero-sub {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 560px;
+    margin-bottom: 28px;
+  }
+  .hero-meta {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .meta-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--sky);
+    flex-shrink: 0;
+  }
+
+  /* ── Sections ────────────────────────────────────── */
+  .section { margin-bottom: 64px; }
+
+  .section-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  h2 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    text-wrap: balance;
+    margin-bottom: 14px;
+  }
+
+  h3 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    margin-top: 36px;
+    margin-bottom: 10px;
+    text-wrap: balance;
+  }
+
+  h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 24px;
+    margin-bottom: 8px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  p { margin-bottom: 14px; color: var(--text); max-width: 680px; }
+
+  /* ── Role badges ─────────────────────────────────── */
+  .role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+    vertical-align: middle;
+    margin-left: 8px;
+    letter-spacing: 0.5px;
+  }
+  .badge-g { background: var(--g-bg); color: var(--g-color); }
+  .badge-l { background: var(--l-bg); color: var(--l-color); }
+  .badge-a { background: var(--a-bg); color: var(--a-color); }
+
+  .role-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 36px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Feature cards ───────────────────────────────── */
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+
+  .feature-card-title {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .feature-card p {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 0;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  /* ── Flow diagrams ───────────────────────────────── */
+  .flow-wrap { margin: 24px 0; overflow-x: auto; }
+
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: nowrap;
+    min-width: max-content;
+    padding: 4px 0;
+  }
+
+  .flow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .flow-box {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1.5px solid transparent;
+  }
+
+  .flow-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  .fbox-g { background: var(--g-bg); color: var(--g-color); border-color: var(--g-color); }
+  .fbox-l { background: var(--l-bg); color: var(--l-color); border-color: var(--l-color); }
+  .fbox-n { background: var(--surface); color: var(--text); border-color: var(--border); }
+
+  .flow-arrow {
+    font-size: 18px;
+    color: var(--border);
+    padding: 0 6px;
+    margin-bottom: 18px;
+    flex-shrink: 0;
+  }
+
+  /* ── Tables ──────────────────────────────────────── */
+  .table-wrap { overflow-x: auto; margin: 20px 0; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    min-width: 520px;
+  }
+
+  thead th {
+    background: var(--surface);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--text);
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) td { background: var(--bg); }
+
+  .td-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+  }
+
+  /* ── Capability pills ────────────────────────────── */
+  .cap-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0;
+  }
+
+  .cap-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cap-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ── Divider ─────────────────────────────────────── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 48px 0;
+  }
+
+  /* ── Responsive ──────────────────────────────────── */
+  @media (max-width: 768px) {
+    .shell { flex-direction: column; padding: 0; }
+    aside {
+      width: 100%;
+      height: auto;
+      position: static;
+      padding: 24px 20px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .side-logo { margin-bottom: 0; }
+    .nav-section { display: none; }
+    nav { display: flex; flex-wrap: wrap; gap: 4px; }
+    nav a { padding: 4px 10px; border: 1px solid var(--border); border-radius: 20px; border-left: 1px solid var(--border); font-size: 12px; }
+    nav a:hover { padding-left: 10px; }
+    main { padding: 28px 20px 60px; border-left: none; border-top: none; }
+    .card-grid { grid-template-columns: 1fr; }
+    h2 { font-size: 26px; }
+    .hero h1 { font-size: 38px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside>
+    <div class="side-logo">Bloom<span>.</span></div>
+    <nav>
+      <div class="nav-section">Overview</div>
+      <a href="#overview">App Overview</a>
+      <a href="#arch">Architecture</a>
+
+      <div class="nav-section">Guardian</div>
+      <a href="#g-onboarding">Onboarding</a>
+      <a href="#g-home">Home & Dashboard</a>
+      <a href="#g-learners">Learner Profiles</a>
+      <a href="#g-learning">Tutorials</a>
+      <a href="#g-activities">Activities</a>
+      <a href="#g-schedule">Schedule</a>
+      <a href="#g-community">Community</a>
+      <a href="#g-account">Account</a>
+      <a href="#g-flow">Guardian Flow</a>
+
+      <div class="nav-section">Learner</div>
+      <a href="#l-home">Home</a>
+      <a href="#l-friends">Friends & Messages</a>
+      <a href="#l-learning">Learning</a>
+      <a href="#l-activities">Activities</a>
+      <a href="#l-profile">Profile</a>
+      <a href="#l-flow">Learner Flow</a>
+
+      <div class="nav-section">Admin</div>
+      <a href="#admin">Admin Portal</a>
+
+      <div class="nav-section">Platform</div>
+      <a href="#capabilities">Capabilities</a>
+      <a href="#data">Data Model</a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-eyebrow">Feature Document · v1.0</div>
+      <h1>Bloom<span class="dot">.</span></h1>
+      <p class="hero-sub">A learning platform for people with Intellectual and Developmental Disabilities — pairing guardians with the tools to teach, and learners with a joyful space to grow.</p>
+      <div class="hero-meta">
+        <div class="meta-item"><div class="meta-dot"></div>React Native / Expo SDK 56</div>
+        <div class="meta-item"><div class="meta-dot"></div>Supabase backend</div>
+        <div class="meta-item"><div class="meta-dot"></div>Two roles: Guardian + Learner</div>
+        <div class="meta-item"><div class="meta-dot"></div>React admin portal</div>
+      </div>
+    </section>
+
+    <!-- Overview -->
+    <section class="section" id="overview">
+      <div class="section-eyebrow">Overview</div>
+      <h2>What Bloom does</h2>
+      <p>Bloom serves two distinct audiences who each have their own interface within a single mobile app. <strong>Guardians</strong> (caregivers, parents, support workers) create and manage learner profiles, assign AI-generated tutorials, schedule activities, and connect with other guardians. <strong>Learners</strong> (IDD individuals) experience a simplified, accessible interface to learn from tutorials, chat with friends, complete daily activities, and express their mood.</p>
+      <p>A third interface — the <strong>Admin Portal</strong> (web app) — lets platform administrators moderate AI-generated tutorials, manage categories and situation tags, and monitor platform usage.</p>
+
+      <div class="card-grid">
+        <div class="feature-card">
+          <div class="feature-card-title">Guardian <span class="role-badge badge-g">Guardian</span></div>
+          <p>Full management interface: creates learner accounts, generates and assigns tutorials, sets daily activities, manages schedule, and builds connections with other caregivers.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">Learner <span class="role-badge badge-l">Learner</span></div>
+          <p>Simplified, AAC-friendly interface optimised for accessibility: biometric login, mood check-in, friends & chat with a symbol board, tutorial playback, and activity checklist.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">Admin <span class="role-badge badge-a">Admin</span></div>
+          <p>Web portal for tutorial moderation, category and situation tag management, user oversight, and platform statistics.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">AI Engine</div>
+          <p>Guardian-triggered tutorial generation via Supabase Edge Functions. Produces slideshow frames with AI images, captions, narration text, and synthesised audio. 10 tutorials/month per guardian.</p>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- Architecture -->
+    <section class="section" id="arch">
+      <div class="section-eyebrow">Architecture</div>
+      <h2>How the app is structured</h2>
+
+      <p>The app uses a single root navigator that inspects auth state on every launch and routes to the correct interface. There is no shared screen between roles — each has its own complete stack.</p>
+
+      <div class="flow-wrap">
+        <div class="flow">
+          <div class="flow-step">
+            <div class="flow-box fbox-n">App Launch</div>
+            <div class="flow-label">root</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-box fbox-n">Check session</div>
+            <div class="flow-label">AuthContext</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-box fbox-g">Guardian Stack</div>
+            <div class="flow-label">guardians table</div>
+          </div>
+          <div class="flow-arrow" style="opacity:0.3">·</div>
+          <div class="flow-step">
+            <div class="flow-box fbox-l">Learner Stack</div>
+            <div class="flow-label">user_profiles table</div>
+          </div>
+          <div class="flow-arrow" style="opacity:0.3">·</div>
+          <div class="flow-step">
+            <div class="flow-box fbox-n">Login Screen</div>
+            <div class="flow-label">no session</div>
+          </div>
+        </div>
+      </div>
+
+      <p>The <code style="font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--accent)">guardians.id</code> and <code style="font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--accent)">user_profiles.auth_user_id</code> tie Supabase Auth identities to the correct role. When a session exists but neither table has a matching row, a Pending screen holds the state (with a "Sign out and try again" escape after 6 seconds).</p>
+    </section>
+
+    <hr class="divider">
+
+    <!-- ─── GUARDIAN ─────────────────────────────── -->
+    <section class="section" id="g-onboarding">
+      <div class="section-eyebrow">Guardian</div>
+      <h2>Onboarding <span class="role-badge badge-g">Guardian</span></h2>
+
+      <h3>Login</h3>
+      <p>The app always opens to the Guardian Login screen — there is no auto-redirect based on prior state. Guardians enter email and password. A "Forgot password?" link navigates to the Forgot Password page, which sends a Supabase recovery email. The recovery link opens a dedicated Reset Password page.</p>
+
+      <h3>Registration</h3>
+      <p>New guardians complete a single-page form:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Full name</td><td>Text</td><td>Required</td></tr>
+            <tr><td>Email</td><td>Email</td><td>Required, becomes login credential</td></tr>
+            <tr><td>Phone</td><td>Phone</td><td>Optional</td></tr>
+            <tr><td>Password</td><td>Password (×2)</td><td>Min 6 characters</td></tr>
+            <tr><td>Country</td><td>Read-only</td><td>Fixed to USA</td></tr>
+            <tr><td>State</td><td>Bottom-sheet picker</td><td>All 50 states</td></tr>
+            <tr><td>City</td><td>Text</td><td>Free text</td></tr>
+            <tr><td>Situation tags</td><td>Multi-select</td><td>Loaded from admin-managed <span class="td-mono">situation_tag_options</span>; describes the learner's situation (e.g. Autism, AAC user, Non-verbal)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>After registration, the guardian is taken directly to the Guardian Home screen (or LearnerSelect if they have already added learners on a subsequent visit).</p>
+    </section>
+
+    <section class="section" id="g-home">
+      <h2>Home & Dashboard <span class="role-badge badge-g">Guardian</span></h2>
+
+      <h3>Learner Select Screen</h3>
+      <p>When a guardian has one or more learners, the first screen shown after login is the Learner Select screen. It displays a guardian card (photo, full name, email) and learner tiles below it. Tapping the guardian card navigates to Guardian Home. Tapping a learner tile triggers biometric authentication (Face ID / Touch ID) to switch into that learner's session. If a guardian has no learners yet, this screen is skipped and they go directly to Guardian Home.</p>
+
+      <h3>Guardian Home</h3>
+      <p>The central dashboard organises access to all guardian features. It shows:</p>
+      <ul style="margin:10px 0 14px 20px;color:var(--text);">
+        <li style="margin-bottom:6px"><strong>For You</strong> — six action tiles: Tutorials (with unreviewed count badge), Activities (preset count badge), Schedule, Connections, Discussions, Events</li>
+        <li style="margin-bottom:6px"><strong>Your Learners</strong> — horizontal scroll of learner avatars with name and assigned tutorial count; plus an "Add New" tile</li>
+        <li style="margin-bottom:6px"><strong>Community</strong> — "Find Friends" (learner discovery) and "Friend Requests" tiles</li>
+      </ul>
+      <p>The guardian's avatar appears in the header and opens an account dropdown (Account, Sign Out). A back button appears when learners exist, returning to the Learner Select screen.</p>
+    </section>
+
+    <section class="section" id="g-learners">
+      <h2>Learner Profiles <span class="role-badge badge-g">Guardian</span></h2>
+
+      <h3>Create Learner Profile</h3>
+      <p>A multi-step form walks the guardian through building a complete learner profile across 7 steps:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Step</th><th>Fields</th></tr></thead>
+          <tbody>
+            <tr><td>Social</td><td>Name, age, gender, languages, email, photo (image picker → Supabase Storage)</td></tr>
+            <tr><td>Interests</td><td>Likes + Dislikes (multi-select from shared categories)</td></tr>
+            <tr><td>Location</td><td>City, region/state, country</td></tr>
+            <tr><td>Professional</td><td>Abilities (multi-select)</td></tr>
+            <tr><td>Chat</td><td>Open to chat/Zoom/voice toggles; available days; comprehension level</td></tr>
+            <tr><td>Health</td><td>Willing to share toggle; description text</td></tr>
+            <tr><td>Account</td><td>Password + confirm; optional biometric (Face ID / Touch ID) enrolment</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Edit Learner Profile</h3>
+      <p>Same multi-step form, pre-populated with existing data. Accessible from Guardian Home (tap a learner avatar) or the Profiles screen.</p>
+    </section>
+
+    <section class="section" id="g-learning">
+      <h2>Tutorials <span class="role-badge badge-g">Guardian</span></h2>
+
+      <h3>My Tutorials (Guardian view)</h3>
+      <p>Lists all tutorials created by this guardian with a status filter bar: All / Review Needed / Pending / Approved / Rejected. Each card shows thumbnail, title, category, format, comprehension level, status badge, and a monthly quota pill.</p>
+
+      <h3>Create Tutorial</h3>
+      <p>A 3-section accordion form for AI-powered tutorial generation:</p>
+
+      <div class="card-grid">
+        <div class="feature-card">
+          <div class="feature-card-title">What to Teach</div>
+          <p>Target skill (chip grid), core action (text, max 60 chars), display name for learner, format (slideshow / video), duration.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">Look & Feel</div>
+          <p>Visual style, image style, pacing (Slow / Normal), tone (Calm / Enthusiastic).</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">Context</div>
+          <p>Comprehension level, language, background audio.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">Quota</div>
+          <p>10 tutorials per guardian per month. Remaining credits shown as a pill on the form.</p>
+        </div>
+      </div>
+
+      <p>On submit, a Supabase Edge Function generates frames with AI images, captions, narration text, and audio. The tutorial is created in "generating" status and polled every 4 seconds until frames are ready.</p>
+
+      <h3>Preview & Edit</h3>
+      <p>The guardian reviews each frame: image, caption, narration text, audio playback. They can edit any frame's image prompt (triggering AI regeneration), caption, and narration text. When satisfied, they submit for admin review. If rejected by admin, they can revise and resubmit.</p>
+
+      <h3>Tutorial Library</h3>
+      <p>A searchable grid of all admin-approved tutorials from all guardians. Filter by skill, comprehension level, and format. Guardians can assign any tutorial to their learners and mark up to 3 per learner as "Favourites" (surfaced prominently in the learner's Tutorials screen).</p>
+    </section>
+
+    <section class="section" id="g-activities">
+      <h2>Activities <span class="role-badge badge-g">Guardian</span></h2>
+
+      <h3>Setup</h3>
+      <p>A preset-based activity system. The guardian selects up to 7 daily activities from a preset grid (e.g., Brush Teeth, Morning Stretches, Read a Book). Selected presets automatically appear in every learner's daily checklist. Saved via an RPC call; changes take effect the next day.</p>
+
+      <h3>Report</h3>
+      <p>A 7-day completion report per learner. Each day shows emoji pips for each activity (coloured = done, dimmed = not done), a mini progress bar, and a fraction count. Gives guardians a quick view of consistency over the past week.</p>
+    </section>
+
+    <section class="section" id="g-schedule">
+      <h2>Schedule <span class="role-badge badge-g">Guardian</span></h2>
+
+      <h3>Weekly Recurring Classes</h3>
+      <p>The guardian picks a learner, then sets recurring class templates per day of the week. Each template has: title, emoji (with keyword-based suggestions), start and end time (30-min intervals, 6 AM–9 PM), and valid-from / valid-until dates. Classes appear as tiles on the learner's home screen when they are happening (or imminent).</p>
+
+      <h3>One-off Events</h3>
+      <p>The guardian can add a one-time class on a specific date, or cancel a recurring class on a specific date without removing the template.</p>
+
+      <h3>Learner Experience</h3>
+      <p>On the learner's Home screen, today's next scheduled class appears as a prominent tile with a countdown ("In 45 mins") or a pulsing "Now" badge. Local push notifications are scheduled each time the learner's home screen gains focus.</p>
+    </section>
+
+    <section class="section" id="g-community">
+      <h2>Community <span class="role-badge badge-g">Guardian</span></h2>
+
+      <h3>Connections</h3>
+      <p>A guardian-to-guardian networking screen. Shows all other guardians with their name, their learner's details, comprehension level badge, and situation tags. Filterable by location, tags, learner age, and comprehension level. Guardians can send, accept, or decline connection requests.</p>
+
+      <h3>Learner Discovery</h3>
+      <p>Guardians browse other learners (not in their own care) and initiate friendship requests on behalf of their learners. Filters for age range, comprehension level, and name/city search. Tapping a learner opens their public profile. Accepting a learner friendship also auto-creates a guardian-to-guardian connection.</p>
+
+      <h3>Friend Requests</h3>
+      <p>All pending learner friendship requests (incoming and outgoing) managed in one place. Guardians accept or decline incoming requests; can cancel outgoing ones.</p>
+
+      <h3>Discussions</h3>
+      <p>A guardian-only community forum. Guardians create posts (title + body) and reply to threads. Posts show author, timestamp, and reply count.</p>
+
+      <h3>Events</h3>
+      <p>Guardians create and RSVP to community events. Each event has a name, description, date, time, and venue. Three RSVP states: Going / Interested / Not Going. Event cards show a date-tag widget and going count.</p>
+
+      <h3>Notifications</h3>
+      <p>A notifications inbox for friend requests, messages, and profile changes. Unread count badge. Friend request notifications have inline Accept / Reject buttons. All notifications mark as read on tap.</p>
+    </section>
+
+    <section class="section" id="g-account">
+      <h2>Account Settings <span class="role-badge badge-g">Guardian</span></h2>
+
+      <p>The guardian can edit: profile photo (image picker → Supabase Storage), full name, phone number, location (city + state), and situation tags. Each field section has a view mode and an inline edit mode with Save / Cancel. Changes are reflected immediately in the app via a context refresh.</p>
+    </section>
+
+    <section class="section" id="g-flow">
+      <h2>Guardian Flow <span class="role-badge badge-g">Guardian</span></h2>
+
+      <h4>First-time registration</h4>
+      <div class="flow-wrap">
+        <div class="flow">
+          <div class="flow-step"><div class="flow-box fbox-g">Login Screen</div><div class="flow-label">entry</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-g">Register</div><div class="flow-label">create account</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-g">Guardian Home</div><div class="flow-label">no learners yet</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-g">Create Learner</div><div class="flow-label">7-step form</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-g">Learner Select</div><div class="flow-label">next login</div></div>
+        </div>
+      </div>
+
+      <h4>Returning guardian with learners</h4>
+      <div class="flow-wrap">
+        <div class="flow">
+          <div class="flow-step"><div class="flow-box fbox-g">Login</div><div class="flow-label">email + password</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-g">Learner Select</div><div class="flow-label">pick who's joining</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-g">Learner unlocks</div><div class="flow-label">biometric</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-l">Learner Home</div><div class="flow-label">learner session</div></div>
+        </div>
+      </div>
+
+      <h4>Tutorial creation flow</h4>
+      <div class="flow-wrap">
+        <div class="flow">
+          <div class="flow-step"><div class="flow-box fbox-g">Guardian Home</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-g">Tutorials</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-g">Create Tutorial</div><div class="flow-label">AI generates</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-g">Preview & Edit</div><div class="flow-label">frame by frame</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-a">Admin Review</div><div class="flow-label">pending → approved</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-l">Library</div><div class="flow-label">assign to learner</div></div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- ─── LEARNER ─────────────────────────────── -->
+    <section class="section" id="l-home">
+      <div class="section-eyebrow">Learner</div>
+      <h2>Home <span class="role-badge badge-l">Learner</span></h2>
+
+      <p>The learner home screen is designed for accessibility and clarity. It shows a personalised greeting, a large mood emoji badge (tappable to open a mood picker), and a grid of four feature tiles: <strong>Friends</strong>, <strong>Messages</strong>, <strong>My Mood</strong>, and <strong>Learn</strong>.</p>
+
+      <p>Two contextual tiles appear at the top of the grid when relevant:</p>
+      <ul style="margin:10px 0 14px 20px;color:var(--text);">
+        <li style="margin-bottom:6px"><strong>Schedule tile</strong> — shows the next class with title, emoji, time, and a countdown or pulsing "Now" badge. Only shown when a class is scheduled today.</li>
+        <li style="margin-bottom:6px"><strong>Activities tile</strong> — shows "X of Y done" with a progress bar. Only shown when activities have been set by the guardian.</li>
+      </ul>
+
+      <h3>Mood Check-in</h3>
+      <p>The learner taps the mood badge to open a four-option mood picker: Happy, Sad, Angry, Tired. Each mood has a large emoji. Long-pressing any mood speaks its name aloud. The selected mood is saved to the learner's profile and displayed as a badge on their avatar throughout the app.</p>
+    </section>
+
+    <section class="section" id="l-friends">
+      <h2>Friends & Messages <span class="role-badge badge-l">Learner</span></h2>
+
+      <h3>Friends Hub</h3>
+      <p>Shows the learner's accepted friends in three sections: Favourites (pinned), Online Now, and All Friends. Each card shows the friend's avatar with a mood badge, an online status dot (green if seen within 5 minutes), name, and interest emojis. A speaker button reads out the friend's name and interests aloud. Tapping a friend opens a 1:1 chat.</p>
+
+      <h3>Friend Discovery</h3>
+      <p>Controlled by guardians — learners cannot send friend requests themselves. A guardian-managed screen (Learner Discovery) handles all connection initiation on the learner's behalf.</p>
+
+      <h3>1:1 Chat</h3>
+      <p>A real-time chat screen with a custom header (friend's photo, online status, speaker button). Features include:</p>
+      <ul style="margin:10px 0 14px 20px;color:var(--text);">
+        <li style="margin-bottom:6px">Text messaging with speech-to-text support</li>
+        <li style="margin-bottom:6px">Read-aloud for any received message (speaker button per bubble)</li>
+        <li style="margin-bottom:6px"><strong>AAC Communication Board</strong> — a grid of 80+ downloadable symbol images (cached after first load). Tapping a symbol speaks it aloud and sends the image as a message</li>
+        <li style="margin-bottom:6px">Realtime delivery via Supabase Postgres Changes subscription</li>
+      </ul>
+    </section>
+
+    <section class="section" id="l-learning">
+      <h2>Learning <span class="role-badge badge-l">Learner</span></h2>
+
+      <h3>Tutorials Screen</h3>
+      <p>Shows tutorials assigned by the guardian, grouped by category. A "⭐ Your Favourites" section at the top features up to 3 guardian-starred tutorials. A category filter dropdown lets the learner browse by skill area.</p>
+
+      <h3>Slideshow Player</h3>
+      <p>Each tutorial frame shows an AI-generated image, caption, and narration text. Playback options:</p>
+      <ul style="margin:10px 0 14px 20px;color:var(--text);">
+        <li style="margin-bottom:6px"><strong>Auto-play</strong> — advances frames automatically using stored audio (if available) or device TTS; a 3-second timer advances if neither is available</li>
+        <li style="margin-bottom:6px"><strong>Manual browse</strong> — Previous / Next buttons and dot position indicators</li>
+        <li style="margin-bottom:6px">TTS narration reads the frame text aloud with a "reading" indicator</li>
+        <li style="margin-bottom:6px">A "Done ✓" button appears on the last frame</li>
+      </ul>
+
+      <h3>Video Player</h3>
+      <p>Full-screen dark player using native video controls for video-format tutorials (admin-uploaded content).</p>
+    </section>
+
+    <section class="section" id="l-activities">
+      <h2>Activities <span class="role-badge badge-l">Learner</span></h2>
+
+      <p>A daily checklist set by the guardian. A progress card at the top shows today's date, "X of Y done", and a green progress bar. When all activities are complete, a "🌟 Amazing job today!" banner is shown. Each activity card displays a large emoji, the activity name, and a circular checkbox. Tapping an item toggles completion — completed items move to the bottom.</p>
+    </section>
+
+    <section class="section" id="l-profile">
+      <h2>Profile <span class="role-badge badge-l">Learner</span></h2>
+
+      <p>The learner's public-facing profile: avatar with mood badge, name, age, gender, location, languages; chip sections for Likes, Dislikes, and What I Can Do; chat preferences (available for chat/Zoom/voice, available days, comprehension level); and health information (only shown if the learner has consented to share). Editing opens the guardian-managed Edit Profile flow.</p>
+    </section>
+
+    <section class="section" id="l-flow">
+      <h2>Learner Flow <span class="role-badge badge-l">Learner</span></h2>
+
+      <h4>Daily use</h4>
+      <div class="flow-wrap">
+        <div class="flow">
+          <div class="flow-step"><div class="flow-box fbox-g">Learner Select</div><div class="flow-label">guardian's phone</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-l">Biometric</div><div class="flow-label">Face / Touch ID</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-l">Learner Home</div><div class="flow-label">mood + tiles</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-l">Activities</div><div class="flow-label">checklist</div></div>
+        </div>
+      </div>
+
+      <h4>Chatting with a friend</h4>
+      <div class="flow-wrap">
+        <div class="flow">
+          <div class="flow-step"><div class="flow-box fbox-l">Friends Hub</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-l">Tap friend</div><div class="flow-label">opens chat</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-l">1:1 Chat</div><div class="flow-label">text or AAC board</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-l">Message sent</div><div class="flow-label">realtime</div></div>
+        </div>
+      </div>
+
+      <h4>First-time account setup (learner)</h4>
+      <div class="flow-wrap">
+        <div class="flow">
+          <div class="flow-step"><div class="flow-box fbox-g">Guardian creates profile</div><div class="flow-label">with learner's email</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-l">Learner Register screen</div><div class="flow-label">enters email + password</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-l">Profile linked</div><div class="flow-label">auth_user_id written</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-box fbox-l">Learner Home</div></div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- ─── ADMIN ─────────────────────────────── -->
+    <section class="section" id="admin">
+      <div class="section-eyebrow">Admin Portal</div>
+      <h2>Admin Portal <span class="role-badge badge-a">Admin</span></h2>
+      <p>A React web app (Vite) with its own Supabase auth. Only users in the <span class="td-mono" style="font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--accent)">admins</span> table can access it.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Page</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Dashboard</strong></td>
+              <td>4 stat cards: Guardians, User Profiles, Tutorials, Pending Connections</td>
+            </tr>
+            <tr>
+              <td><strong>Tutorials — Library</strong></td>
+              <td>Grid of all approved tutorials. Click to preview frame-by-frame.</td>
+            </tr>
+            <tr>
+              <td><strong>Tutorials — Moderation</strong></td>
+              <td>FIFO queue of pending tutorials. Admin reviews each frame, then Approves or Rejects with optional notes that appear in the guardian's preview screen.</td>
+            </tr>
+            <tr>
+              <td><strong>Tutorials — Upload</strong></td>
+              <td>Admin can manually upload video tutorial files with title, description, and category, bypassing AI generation.</td>
+            </tr>
+            <tr>
+              <td><strong>Users</strong></td>
+              <td>Searchable table of all learner profiles: name, age, gender, city, guardian info, join date.</td>
+            </tr>
+            <tr>
+              <td><strong>Categories</strong></td>
+              <td>Add / delete interest categories (Like, Dislike, Ability types) used in learner profiles.</td>
+            </tr>
+            <tr>
+              <td><strong>Situation Tags</strong></td>
+              <td>Add / delete situation tag options that appear in guardian registration and account settings.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Auth flows</h3>
+      <p>Login page includes a "Forgot password?" link to the Forgot Password page. The recovery email links back to the admin portal and shows a dedicated Reset Password form (detected via the <span style="font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--accent)">PASSWORD_RECOVERY</span> event from Supabase Auth — the admin is not logged into the dashboard until they set a new password).</p>
+    </section>
+
+    <hr class="divider">
+
+    <!-- ─── PLATFORM CAPABILITIES ─────────────── -->
+    <section class="section" id="capabilities">
+      <div class="section-eyebrow">Platform</div>
+      <h2>Cross-Cutting Capabilities</h2>
+
+      <div class="cap-grid">
+        <div class="cap-pill"><span class="cap-icon">🗣️</span>Text-to-Speech (TTS)</div>
+        <div class="cap-pill"><span class="cap-icon">🫆</span>Biometric Login</div>
+        <div class="cap-pill"><span class="cap-icon">🤖</span>AI Tutorial Generation</div>
+        <div class="cap-pill"><span class="cap-icon">⚡</span>Realtime Chat</div>
+        <div class="cap-pill"><span class="cap-icon">🔔</span>Push Notifications</div>
+        <div class="cap-pill"><span class="cap-icon">📅</span>Scheduled Notifications</div>
+        <div class="cap-pill"><span class="cap-icon">🟢</span>Online Presence</div>
+        <div class="cap-pill"><span class="cap-icon">🖼️</span>AAC Symbol Board</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Capability</th><th>How it works</th><th>Where used</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Text-to-Speech</strong></td>
+              <td>expo-speech; also stored audio via expo-audio for AI-generated narration</td>
+              <td>Tutorial playback, chat read-aloud, friend cards, mood picker</td>
+            </tr>
+            <tr>
+              <td><strong>Biometric Login</strong></td>
+              <td>Credentials stored in SecureStore; expo-local-authentication prompts Face ID / Touch ID</td>
+              <td>Learner Select screen — switching learner sessions</td>
+            </tr>
+            <tr>
+              <td><strong>AI Generation</strong></td>
+              <td>Supabase Edge Function <span class="td-mono">create-tutorial</span>; per-frame regeneration via <span class="td-mono">regenerate-frame</span></td>
+              <td>Tutorial creation flow; frame editing</td>
+            </tr>
+            <tr>
+              <td><strong>Realtime Chat</strong></td>
+              <td>Supabase Postgres Changes subscription on <span class="td-mono">messages</span> table</td>
+              <td>1:1 chat screen</td>
+            </tr>
+            <tr>
+              <td><strong>Push Notifications</strong></td>
+              <td>Expo push tokens stored on guardian records; server-side dispatch</td>
+              <td>Friend requests, messages, profile changes</td>
+            </tr>
+            <tr>
+              <td><strong>Scheduled Notifications</strong></td>
+              <td>Local notifications rescheduled on every home screen focus</td>
+              <td>Class schedule reminders for learners</td>
+            </tr>
+            <tr>
+              <td><strong>Online Presence</strong></td>
+              <td><span class="td-mono">last_seen_at</span> updated on app foreground; within 5 min = online</td>
+              <td>Friends hub, chat headers</td>
+            </tr>
+            <tr>
+              <td><strong>AAC Board</strong></td>
+              <td>Symbol images downloaded and cached locally on first open</td>
+              <td>Chat screen communication board</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="data">
+      <h2>Key Data Model</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td class="td-mono">guardians</td><td>Guardian accounts — name, email, phone, location, situation_tags[], photo_url, expo_push_token</td></tr>
+            <tr><td class="td-mono">user_profiles</td><td>Learner profiles — name, age, gender, languages, photo_url, location, guardian_id, auth_user_id, current_mood</td></tr>
+            <tr><td class="td-mono">categories</td><td>Shared interest/ability category pool (type: like / dislike / ability)</td></tr>
+            <tr><td class="td-mono">user_likes / user_dislikes / user_abilities</td><td>Learner ↔ category many-to-many joins</td></tr>
+            <tr><td class="td-mono">friendships</td><td>Learner-to-learner connections (pending / accepted / rejected / blocked); guardian-mediated</td></tr>
+            <tr><td class="td-mono">conversations + messages</td><td>1:1 chat threads and messages; read tracking via participant timestamps</td></tr>
+            <tr><td class="td-mono">tutorials + tutorial_frames</td><td>Tutorial metadata and individual slideshow frames (image, caption, narration, audio)</td></tr>
+            <tr><td class="td-mono">user_tutorials</td><td>Learner ↔ tutorial assignments; is_featured flag for up to 3 favourites per learner</td></tr>
+            <tr><td class="td-mono">guardian_tutorial_quota</td><td>Monthly tutorial generation count per guardian (limit: 10/month)</td></tr>
+            <tr><td class="td-mono">guardian_activity_presets</td><td>Daily activity presets selected by each guardian (max 7)</td></tr>
+            <tr><td class="td-mono">user_activity_logs</td><td>Per-learner daily completion records; auto-deleted after 7 days</td></tr>
+            <tr><td class="td-mono">schedule_templates</td><td>Recurring weekly class definitions per learner</td></tr>
+            <tr><td class="td-mono">schedule_events</td><td>One-off class additions or cancellations for specific dates</td></tr>
+            <tr><td class="td-mono">guardian_connections</td><td>Guardian-to-guardian network connections</td></tr>
+            <tr><td class="td-mono">discussion_posts + discussion_replies</td><td>Guardian community forum</td></tr>
+            <tr><td class="td-mono">events + event_participants</td><td>Guardian-organised community events; RSVP states</td></tr>
+            <tr><td class="td-mono">situation_tag_options</td><td>Admin-managed list of selectable situation tags for guardian profiles</td></tr>
+            <tr><td class="td-mono">admins</td><td>Admin portal accounts</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
