@@ -15,4 +15,9 @@ CREATE POLICY "public_read_situation_tags"
 -- Only admins can write (same pattern as categories/tutorials)
 CREATE POLICY "admin_write_situation_tags"
   ON situation_tag_options FOR ALL
-  USING (is_admin());
+  USING (is_admin())
+  WITH CHECK (is_admin());
+
+-- Grant table access to Supabase roles (RLS policies filter rows, grants allow access)
+GRANT SELECT ON situation_tag_options TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON situation_tag_options TO authenticated;

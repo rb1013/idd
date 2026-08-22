@@ -180,7 +180,26 @@ export default function GuardianActivitiesScreen() {
     if (reportLoading) {
       return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
     }
-    if (reportRows.length === 0) {
+
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const last7Dates = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return d.toISOString().slice(0, 10);
+    });
+
+    const summaries = buildReport(reportRows, selectedKeys);
+
+    // Group by user, then fill in missing dates so today always appears
+    const byUser = new Map<string, UserDaySummary[]>();
+    summaries.forEach(s => {
+      if (!byUser.has(s.userId)) byUser.set(s.userId, []);
+      byUser.get(s.userId)!.push(s);
+    });
+
+    // If no rows at all, seed one placeholder so the date grid still renders
+    // (guardian can still see the empty grid even before any completions)
+    if (byUser.size === 0) {
       return (
         <View style={styles.center}>
           <Text style={styles.emptyEmoji}>📊</Text>
@@ -190,13 +209,17 @@ export default function GuardianActivitiesScreen() {
       );
     }
 
-    const summaries = buildReport(reportRows, selectedKeys);
-
-    // Group by user
-    const byUser = new Map<string, UserDaySummary[]>();
-    summaries.forEach(s => {
-      if (!byUser.has(s.userId)) byUser.set(s.userId, []);
-      byUser.get(s.userId)!.push(s);
+    // Ensure all 7 dates exist for each user (fill empties), newest first
+    byUser.forEach((days, userId) => {
+      const existing = new Set(days.map(d => d.logDate));
+      const userName = days[0].userName;
+      last7Dates.forEach(date => {
+        if (!existing.has(date)) {
+          days.push({ userId, userName, logDate: date, completedKeys: new Set(), totalKeys: selectedKeys });
+        }
+      });
+      days.sort((a, b) => b.logDate.localeCompare(a.logDate));
+      byUser.set(userId, days);
     });
 
     return (
@@ -204,8 +227,6 @@ export default function GuardianActivitiesScreen() {
         <Text style={styles.reportHint}>Last 7 days · Data auto-deleted after 7 days</Text>
         {Array.from(byUser.entries()).map(([userId, days]) => {
           const userName = days[0].userName;
-          const today = days.find(d => d.logDate === new Date().toISOString().slice(0, 10));
-          const todayDone = today ? today.completedKeys.size : 0;
           const totalActs = selectedKeys.length;
 
           return (
@@ -217,16 +238,18 @@ export default function GuardianActivitiesScreen() {
                 </View>
                 <View style={styles.reportUserInfo}>
                   <Text style={styles.reportUserName}>{userName}</Text>
-                  <Text style={styles.reportUserSub}>Today: {todayDone}/{totalActs} done</Text>
                 </View>
               </View>
 
-              {/* 7-day rows */}
+              {/* 7-day rows — today always first */}
               {days.map(day => {
+                const isToday = day.logDate === todayIso;
                 const pct = totalActs > 0 ? day.completedKeys.size / totalActs : 0;
                 return (
-                  <View key={day.logDate} style={styles.reportDayRow}>
-                    <Text style={styles.reportDayLabel}>{shortDate(day.logDate)}</Text>
+                  <View key={day.logDate} style={[styles.reportDayRow, isToday && styles.reportDayRowToday]}>
+                    <Text style={[styles.reportDayLabel, isToday && styles.reportDayLabelToday]}>
+                      {isToday ? 'Today' : shortDate(day.logDate)}
+                    </Text>
                     <View style={styles.reportDayPips}>
                       {selectedKeys.map(key => {
                         const preset = PRESET_MAP[key];
@@ -270,7 +293,7 @@ export default function GuardianActivitiesScreen() {
           style={[styles.tabBtn, tab === 'setup' && styles.tabBtnActive]}
           onPress={() => switchTab('setup')}
         >
-          <Text style={[styles.tabLabel, tab === 'setup' && styles.tabLabelActive]}>⚙️  Setup</Text>
+          <Text style={[styles.tabLabel, tab === 'setup' && styles.tabLabelActive]}>✅  Activities</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tabBtn, tab === 'report' && styles.tabBtnActive]}
@@ -366,7 +389,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8,
     borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 8,
   },
+  reportDayRowToday: { backgroundColor: '#EFF6FF', borderRadius: 10, paddingHorizontal: 6, marginHorizontal: -6 },
   reportDayLabel: { fontSize: 11, fontWeight: '700', color: COLORS.textLight, width: 68 },
+  reportDayLabelToday: { color: '#2563EB' },
   reportDayPips: { flexDirection: 'row', gap: 3, flex: 1 },
   pip: {
     width: 26, height: 26, borderRadius: 8,

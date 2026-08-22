@@ -12,6 +12,7 @@
     "expo-audio": "~56.0.12",
     "expo-file-system": "~56.0.8",
     "expo-image-picker": "^56.0.16",
+    "expo-linear-gradient": "~56.0.4",
     "expo-local-authentication": "~56.0.4",
     "expo-location": "^56.0.16",
     "expo-notifications": "~56.0.19",

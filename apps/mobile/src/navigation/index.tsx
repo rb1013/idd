@@ -7,12 +7,12 @@ import {
   Modal, StyleSheet, Alert,
 } from 'react-native';
 import { useAuth } from '../lib/AuthContext';
+import { supabase } from '../lib/supabase';
 import { COLORS } from '../constants';
 
 // Auth screens
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
-import UserRegisterScreen from '../screens/auth/UserRegisterScreen';
 
 // Guardian screens
 import GuardianHomeScreen from '../screens/guardian/GuardianHomeScreen';
@@ -38,12 +38,13 @@ import EventsScreen from '../screens/guardian/EventsScreen';
 import EventDetailScreen from '../screens/guardian/EventDetailScreen';
 import CreateEventScreen from '../screens/guardian/CreateEventScreen';
 import LearnerSelectScreen from '../screens/guardian/LearnerSelectScreen';
+import FavouriteFriendsScreen from '../screens/guardian/FavouriteFriendsScreen';
 
 // User screens
 import UserHomeScreen from '../screens/user/UserHomeScreen';
 import FriendsHubScreen from '../screens/user/FriendsHubScreen';
 import DiscoveryScreen from '../screens/discovery/DiscoveryScreen';
-import MessagesScreen from '../screens/messages/MessagesScreen';
+// import MessagesScreen from '../screens/messages/MessagesScreen'; // Messages tile removed
 import ChatScreen from '../screens/chat/ChatScreen';
 import TutorialsScreen from '../screens/tutorials/TutorialsScreen';
 import ProfileScreen from '../screens/user/ProfileScreen';
@@ -54,7 +55,6 @@ import ActivitiesScreen from '../screens/user/ActivitiesScreen';
 export type RootStackParamList = {
   Login: undefined;
   GuardianRegister: undefined;
-  UserRegister: undefined;
   GuardianTabs: undefined;
   UserHome: undefined;
 };
@@ -83,13 +83,14 @@ export type GuardianNavParamList = {
   Events: undefined;
   EventDetail: { eventId: string };
   CreateEvent: undefined;
+  FavouriteFriends: undefined;
 };
 
 export type UserStackParamList = {
   Home: undefined;
   FriendsHub: undefined;
   Discovery: undefined;
-  Messages: undefined;
+  // Messages: undefined; // Messages tile removed
   Tutorials: undefined;
   Profile: undefined;
   Activities: undefined;
@@ -109,6 +110,13 @@ function GuardianSettingsBtn() {
   const navigation = useNavigation<NativeStackNavigationProp<GuardianNavParamList>>();
   const { guardian, signOut } = useAuth();
   const [visible, setVisible] = useState(false);
+  const [hasLearner, setHasLearner] = useState(false);
+
+  React.useEffect(() => {
+    if (!guardian) return;
+    supabase.from('user_profiles').select('id', { count: 'exact', head: true }).eq('guardian_id', guardian.id)
+      .then(({ count }) => setHasLearner((count ?? 0) > 0));
+  }, [guardian]);
 
   function handleSignOut() {
     setVisible(false);
@@ -135,11 +143,15 @@ function GuardianSettingsBtn() {
             </TouchableOpacity>
             <View style={navStyles.divider} />
 
-            <TouchableOpacity style={navStyles.item} onPress={() => { setVisible(false); navigation.navigate('CreateUser'); }}>
-              <Text style={navStyles.itemIcon}>➕</Text>
-              <Text style={navStyles.itemText}>Create New Profile</Text>
-            </TouchableOpacity>
-            <View style={navStyles.divider} />
+            {!hasLearner && (
+              <>
+                <TouchableOpacity style={navStyles.item} onPress={() => { setVisible(false); navigation.navigate('CreateUser'); }}>
+                  <Text style={navStyles.itemIcon}>➕</Text>
+                  <Text style={navStyles.itemText}>Create New Profile</Text>
+                </TouchableOpacity>
+                <View style={navStyles.divider} />
+              </>
+            )}
 
             <TouchableOpacity style={[navStyles.item, { paddingBottom: 4 }]} onPress={handleSignOut}>
               <Text style={navStyles.itemIcon}>🚪</Text>
@@ -228,8 +240,8 @@ function GuardianTabs() {
       <GuardianNav.Screen name="Profiles"        component={SelectUserScreen}            options={{ title: 'Profiles' }} />
       <GuardianNav.Screen name="Notifications"   component={GuardianNotificationsScreen} options={{ title: 'Notifications' }} />
       <GuardianNav.Screen name="Learning"        component={GuardianTutorialsScreen}     options={{ title: 'Learning' }} />
-      <GuardianNav.Screen name="Activities"      component={GuardianActivitiesScreen}    options={{ title: 'Activities' }} />
-      <GuardianNav.Screen name="Account"         component={GuardianAccountScreen}       options={{ title: 'Account', headerRight: undefined }} />
+      <GuardianNav.Screen name="Activities"      component={GuardianActivitiesScreen}    options={{ title: 'Activities', headerRight: undefined }} />
+      <GuardianNav.Screen name="Account"         component={GuardianAccountScreen}       options={{ title: 'Account', headerRight: undefined, headerBackTitle: '' }} />
       <GuardianNav.Screen name="Schedule"        component={ScheduleScreen}              options={{ title: 'Schedule' }} />
       <GuardianNav.Screen name="UserSchedule"    component={UserScheduleScreen}          options={{ title: 'Schedule' }} />
       <GuardianNav.Screen name="CreateUser"      component={CreateUserScreen}            options={{ title: 'Create Profile' }} />
@@ -237,8 +249,8 @@ function GuardianTabs() {
       <GuardianNav.Screen name="CreateTutorial"      component={CreateTutorialScreen}        options={{ title: 'Create Tutorial' }} />
       <GuardianNav.Screen name="TutorialPreview"    component={TutorialPreviewScreen}       options={{ title: 'Preview Tutorial' }} />
       <GuardianNav.Screen name="TutorialLibrary"    component={TutorialLibraryScreen}       options={{ title: 'Tutorial Library' }} />
-      <GuardianNav.Screen name="LearnerDiscovery"   component={LearnerDiscoveryScreen}      options={{ title: 'Find Friends' }} />
-      <GuardianNav.Screen name="LearnerPublicProfile" component={LearnerPublicProfileScreen} options={{ title: 'Learner Profile' }} />
+      <GuardianNav.Screen name="LearnerDiscovery"   component={LearnerDiscoveryScreen}      options={{ title: 'Find Friends', headerRight: undefined }} />
+      <GuardianNav.Screen name="LearnerPublicProfile" component={LearnerPublicProfileScreen} options={{ title: 'Learner Profile', headerRight: undefined }} />
       <GuardianNav.Screen name="LearnerFriendRequests" component={LearnerFriendRequestsScreen} options={{ title: 'Friend Requests' }} />
       <GuardianNav.Screen name="GuardianConnections"  component={GuardianConnectionsScreen}   options={{ title: 'My Connections', headerRight: undefined }} />
       <GuardianNav.Screen name="Discussions"         component={DiscussionsScreen}           options={{ title: 'Discussions', headerRight: undefined }} />
@@ -246,6 +258,7 @@ function GuardianTabs() {
       <GuardianNav.Screen name="Events"              component={EventsScreen}                options={{ title: 'Events' }} />
       <GuardianNav.Screen name="EventDetail"         component={EventDetailScreen}           options={{ title: 'Event' }} />
       <GuardianNav.Screen name="CreateEvent"         component={CreateEventScreen}           options={{ title: 'Create Event' }} />
+      <GuardianNav.Screen name="FavouriteFriends"   component={FavouriteFriendsScreen}      options={{ title: 'Favourite Friends', headerRight: undefined }} />
     </GuardianNav.Navigator>
   );
 }
@@ -265,7 +278,7 @@ function UserNavigator() {
       <UserStack.Screen name="Home"       component={UserHomeScreen}    options={{ headerShown: false }} />
       <UserStack.Screen name="FriendsHub" component={FriendsHubScreen}  options={{ title: '🤝  My Friends' }} />
       <UserStack.Screen name="Discovery"  component={DiscoveryScreen}   options={{ title: '🔍  Find Friends' }} />
-      <UserStack.Screen name="Messages"   component={MessagesScreen}    options={{ title: '💬  Messages', headerBackTitle: '' }} />
+      {/* <UserStack.Screen name="Messages" component={MessagesScreen} options={{ title: '💬  Messages', headerBackTitle: '' }} /> */}{/* Messages tile removed */}
       <UserStack.Screen name="Activities" component={ActivitiesScreen}  options={{ title: '✅  Today\'s Activities' }} />
       <UserStack.Screen name="Tutorials"  component={TutorialsScreen}   options={{ title: '📚  Learn' }} />
       <UserStack.Screen name="Profile"    component={ProfileScreen}     options={{ title: 'My Profile' }} />
@@ -296,8 +309,6 @@ export default function Navigation() {
             <Stack.Screen name="Login"           component={LoginScreen} />
             <Stack.Screen name="GuardianRegister" component={RegisterScreen}
               options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Guardian Registration' }} />
-            <Stack.Screen name="UserRegister"    component={UserRegisterScreen}
-              options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'User Registration' }} />
           </>
         ) : guardian ? (
           <Stack.Screen name="GuardianTabs" component={GuardianTabs} />

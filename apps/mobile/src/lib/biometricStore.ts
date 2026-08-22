@@ -2,6 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 
 const GUARDIAN_KEY = 'guardian_profile';
+const GUARDIAN_CREDS_KEY = 'guardian_credentials';
 const USER_INDEX_KEY = 'biometric_user_ids';
 const userKey = (id: string) => `biometric_user_${id}`;
 
@@ -27,6 +28,26 @@ export async function saveGuardianProfile(profile: GuardianProfile) {
 export async function loadGuardianProfile(): Promise<GuardianProfile | null> {
   const raw = await SecureStore.getItemAsync(GUARDIAN_KEY);
   return raw ? JSON.parse(raw) : null;
+}
+
+// ── Guardian credentials (for re-auth after learner session switch) ───────────
+
+export interface GuardianCredentials {
+  email: string;
+  password: string;
+}
+
+export async function saveGuardianCredentials(creds: GuardianCredentials) {
+  await SecureStore.setItemAsync(GUARDIAN_CREDS_KEY, JSON.stringify(creds));
+}
+
+export async function loadGuardianCredentials(): Promise<GuardianCredentials | null> {
+  const raw = await SecureStore.getItemAsync(GUARDIAN_CREDS_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+export async function clearGuardianCredentials() {
+  await SecureStore.deleteItemAsync(GUARDIAN_CREDS_KEY);
 }
 
 // ── IDD user index ────────────────────────────────────────────────────────────

@@ -2,13 +2,18 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
-  ScrollView, Modal, FlatList,
+  ScrollView, Modal, FlatList, Image,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 import { supabase } from '../../lib/supabase';
 import { COLORS } from '../../constants';
 import { US_STATES } from '../../constants/usStates';
 
 export default function RegisterScreen() {
+  const insets = useSafeAreaInsets();
   const [fullName, setFullName]   = useState('');
   const [email, setEmail]         = useState('');
   const [phone, setPhone]         = useState('');
@@ -22,6 +27,9 @@ export default function RegisterScreen() {
   const [selectedTags, setSelectedTags]       = useState<string[]>([]);
   const [showTagPicker, setShowTagPicker]     = useState(false);
 
+  const [pin, setPin]           = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -36,10 +44,33 @@ export default function RegisterScreen() {
     );
   }
 
+  async function pickPhoto() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled) setPhotoUri(result.assets[0].uri);
+  }
+
+  async function uploadPhoto(uri: string, userId: string): Promise<string | null> {
+    const ext = (uri.split('.').pop() || 'jpg').toLowerCase();
+    const fileName = `guardian-${userId}-${Date.now()}.${ext}`;
+    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+    const { data, error } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, decode(base64), { contentType: `image/${ext}`, upsert: true });
+    if (error || !data) return null;
+    return supabase.storage.from('avatars').getPublicUrl(data.path).data.publicUrl;
+  }
+
   async function handleRegister() {
     if (!fullName || !email || !password) { Alert.alert('Please fill in all required fields'); return; }
     if (password !== confirm)             { Alert.alert('Passwords do not match'); return; }
     if (password.length < 6)             { Alert.alert('Password must be at least 6 characters'); return; }
+    if (pin.length !== 6)                { Alert.alert('Please create a 6-digit PIN'); return; }
+    if (pin !== confirmPin)              { Alert.alert('PINs do not match'); return; }
 
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({ email, password });
@@ -61,6 +92,13 @@ export default function RegisterScreen() {
         setLoading(false);
         return;
       }
+      if (photoUri) {
+        const publicUrl = await uploadPhoto(photoUri, data.user.id);
+        if (publicUrl) {
+          await supabase.from('guardians').update({ photo_url: publicUrl }).eq('id', data.user.id);
+        }
+      }
+      await supabase.rpc('set_guardian_pin', { pin_input: pin });
       await supabase.auth.refreshSession();
     }
     setLoading(false);
@@ -68,9 +106,26 @@ export default function RegisterScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.inner, { paddingBottom: Math.max(insets.bottom + 24, 48) }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Guardian Registration</Text>
+        <Text style={styles.subtitle}>Set up your Ray account</Text>
+
+        {/* Profile photo */}
+        <TouchableOpacity style={styles.photoPicker} onPress={pickPhoto} activeOpacity={0.8}>
+          {photoUri ? (
+            <Image source={{ uri: photoUri }} style={styles.photoPreview} />
+          ) : (
+            <View style={styles.photoPlaceholder}>
+              <Text style={styles.photoPlaceholderEmoji}>📷</Text>
+              <Text style={styles.photoPlaceholderText}>Add photo</Text>
+            </View>
+          )}
+          {photoUri && (
+            <View style={styles.photoEditBadge}>
+              <Text style={styles.photoEditEmoji}>✏️</Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         <Text style={styles.label}>Full Name *</Text>
         <TextInput
@@ -165,6 +220,36 @@ export default function RegisterScreen() {
           </View>
         )}
 
+        {/* PIN setup */}
+        <View style={styles.pinSection}>
+          <Text style={styles.pinSectionTitle}>🔐  Guardian PIN</Text>
+          <Text style={styles.pinSectionHint}>
+            You'll use this 6-digit PIN to access Guardian mode from the Ray home screen.
+          </Text>
+          <Text style={styles.label}>PIN *</Text>
+          <TextInput
+            style={styles.input}
+            value={pin}
+            onChangeText={(v) => setPin(v.replace(/[^0-9]/g, '').slice(0, 6))}
+            placeholder="6 digits"
+            keyboardType="number-pad"
+            maxLength={6}
+            secureTextEntry
+            placeholderTextColor={COLORS.textLight}
+          />
+          <Text style={styles.label}>Confirm PIN *</Text>
+          <TextInput
+            style={styles.input}
+            value={confirmPin}
+            onChangeText={(v) => setConfirmPin(v.replace(/[^0-9]/g, '').slice(0, 6))}
+            placeholder="Repeat PIN"
+            keyboardType="number-pad"
+            maxLength={6}
+            secureTextEntry
+            placeholderTextColor={COLORS.textLight}
+          />
+        </View>
+
         <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Create Account</Text>}
         </TouchableOpacity>
@@ -244,11 +329,35 @@ export default function RegisterScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  inner:     { padding: 24, paddingBottom: 48 },
+  inner:     { padding: 24 },
   title:     { fontSize: 28, fontWeight: '700', color: COLORS.text, marginBottom: 4, marginTop: 16 },
   subtitle:  { fontSize: 16, color: COLORS.textLight, marginBottom: 24 },
   label:     { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 6 },
   sublabel:  { fontSize: 12, color: COLORS.textLight, marginBottom: 8, marginTop: -2 },
+
+  photoPicker: {
+    alignSelf: 'center', marginBottom: 28, position: 'relative',
+  },
+  photoPreview: {
+    width: 100, height: 100, borderRadius: 50,
+    borderWidth: 3, borderColor: COLORS.primary,
+  },
+  photoPlaceholder: {
+    width: 100, height: 100, borderRadius: 50,
+    backgroundColor: COLORS.surface, borderWidth: 2,
+    borderColor: COLORS.border, borderStyle: 'dashed',
+    justifyContent: 'center', alignItems: 'center', gap: 4,
+  },
+  photoPlaceholderEmoji: { fontSize: 28 },
+  photoPlaceholderText: { fontSize: 12, color: COLORS.textLight, fontWeight: '600' },
+  photoEditBadge: {
+    position: 'absolute', bottom: 2, right: 2,
+    backgroundColor: COLORS.primary,
+    width: 28, height: 28, borderRadius: 14,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: '#fff',
+  },
+  photoEditEmoji: { fontSize: 13 },
 
   input: {
     backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
@@ -274,6 +383,14 @@ const styles = StyleSheet.create({
   },
   chipText: { fontSize: 13, color: COLORS.primary, fontWeight: '600' },
   chipX:    { fontSize: 11, color: COLORS.primary, fontWeight: '700' },
+
+  pinSection: {
+    backgroundColor: '#EEF4FF', borderRadius: 16,
+    padding: 18, marginTop: 8, marginBottom: 8,
+    borderWidth: 1.5, borderColor: COLORS.primary + '30',
+  },
+  pinSectionTitle: { fontSize: 15, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
+  pinSectionHint:  { fontSize: 13, color: COLORS.textLight, lineHeight: 18, marginBottom: 12 },
 
   button: {
     backgroundColor: COLORS.primary, borderRadius: 12,

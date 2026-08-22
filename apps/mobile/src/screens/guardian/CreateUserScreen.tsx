@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform,
@@ -9,8 +9,8 @@ import { decode } from 'base64-arraybuffer';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { saveBiometricUser, isBiometricSupported, isBiometricAvailable, promptBiometric } from '../../lib/biometricStore';
-import { COLORS, DAYS_OF_WEEK, COMPREHENSION_LEVELS, GENDERS, LANGUAGES, US_STATES } from '../../constants';
+import { saveBiometricUser } from '../../lib/biometricStore';
+import { COLORS, COMPREHENSION_LEVELS, GENDERS, LANGUAGES, US_STATES } from '../../constants';
 import DropdownPicker from '../../components/DropdownPicker';
 import { Category } from '../../types';
 import MultiSelectChips from '../../components/MultiSelectChips';
@@ -18,7 +18,12 @@ import { GuardianNavParamList } from '../../navigation';
 
 type Props = { navigation: NativeStackNavigationProp<GuardianNavParamList, 'CreateUser'> };
 
-type Step = 'social' | 'interests' | 'location' | 'professional' | 'chat' | 'health' | 'account';
+type Step = 'social' | 'interests' | 'location' | 'professional' | 'health';
+
+function generatePassword(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  return Array.from({ length: 20 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
 
 export default function CreateUserScreen({ navigation }: Props) {
   const { guardian } = useAuth();
@@ -39,8 +44,11 @@ export default function CreateUserScreen({ navigation }: Props) {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('');
+  const [username, setUsername] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [languages, setLanguages] = useState<string[]>([]);
-  const [email, setEmail] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [city, setCity] = useState('');
   const [region, setRegion] = useState('');
@@ -51,49 +59,42 @@ export default function CreateUserScreen({ navigation }: Props) {
 
   // Professional
   const [selectedAbilities, setSelectedAbilities] = useState<string[]>([]);
-
-  // Chat preferences
-  const [openToChat, setOpenToChat] = useState(true);
-  const [openToZoom, setOpenToZoom] = useState(false);
-  const [openToVoice, setOpenToVoice] = useState(false);
-  const [availableDays, setAvailableDays] = useState<string[]>([]);
   const [comprehension, setComprehension] = useState('easy');
 
   // Health
   const [willingToShare, setWillingToShare] = useState(false);
   const [healthDesc, setHealthDesc] = useState('');
 
-  // Account setup
-  const [accountPassword, setAccountPassword] = useState('');
-  const [accountConfirmPassword, setAccountConfirmPassword] = useState('');
-  const [enableBiometric, setEnableBiometric] = useState(false);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
-
-  useEffect(() => {
-    isBiometricSupported().then(setBiometricAvailable);
-  }, []);
-
   useEffect(() => {
     supabase.from('categories').select('*').then(({ data }) => setCategories(data || []));
   }, []);
 
-  async function handleBiometricToggle() {
-    if (enableBiometric) {
-      setEnableBiometric(false);
-      return;
-    }
-    const available = await isBiometricAvailable();
-    if (!available) {
-      Alert.alert('Biometrics not set up', 'Please set up Face ID or fingerprint on this device first, then try again.');
-      return;
-    }
-    const passed = await promptBiometric('Confirm to enable biometric login');
-    if (passed) setEnableBiometric(true);
-  }
-
   const likeCategories = categories.filter(c => c.type === 'like');
   const dislikeCategories = categories.filter(c => c.type === 'dislike');
   const abilityCategories = categories.filter(c => c.type === 'ability');
+
+  async function checkUsernameAvailable(val: string): Promise<boolean> {
+    const trimmed = val.trim().toLowerCase();
+    if (!trimmed) { setUsernameError(''); setCheckingUsername(false); return false; }
+    setCheckingUsername(true);
+    const { data } = await supabase.from('user_profiles').select('id').eq('username', trimmed).limit(1);
+    setCheckingUsername(false);
+    const taken = !!(data && data.length > 0);
+    if (taken) setUsernameError('Username already taken');
+    else setUsernameError('');
+    return !taken;
+  }
+
+  function handleUsernameChange(val: string) {
+    setUsername(val);
+    setUsernameError('');
+    if (usernameTimer.current) clearTimeout(usernameTimer.current);
+    if (val.trim()) {
+      usernameTimer.current = setTimeout(() => checkUsernameAvailable(val), 600);
+    } else {
+      setCheckingUsername(false);
+    }
+  }
 
   async function pickPhoto() {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
@@ -102,12 +103,12 @@ export default function CreateUserScreen({ navigation }: Props) {
 
   async function handleSubmit() {
     if (!name || !age || !gender || !city || !region) { Alert.alert('Please fill in all required fields'); return; }
-    if (email && accountPassword && accountPassword !== accountConfirmPassword) {
-      Alert.alert('Passwords do not match'); return;
-    }
-    if (email && accountPassword && accountPassword.length < 6) {
-      Alert.alert('Password must be at least 6 characters'); return;
-    }
+    if (!username.trim()) { Alert.alert('Please enter a username'); return; }
+
+    // Always do a fresh check at submit time in case the debounce hasn't fired yet
+    const available = await checkUsernameAvailable(username);
+    if (!available) { Alert.alert('Username not available', 'Please choose a different username.'); return; }
+
     setLoading(true);
 
     let photo_url: string | null = null;
@@ -126,35 +127,38 @@ export default function CreateUserScreen({ navigation }: Props) {
       }
     }
 
+    const trimmedUsername = username.trim().toLowerCase();
+    const fabricatedEmail = `${trimmedUsername}@bloom.app`;
+    const generatedPassword = generatePassword();
+
     const { data: userProfile, error } = await supabase.from('user_profiles').insert({
       guardian_id: guardian!.id,
       name, age: parseInt(age), gender, languages, photo_url, city, region, country,
-      email: email.toLowerCase().trim() || null,
+      username: trimmedUsername,
     }).select().single();
 
     if (error) { Alert.alert('Error creating profile', error.message); setLoading(false); return; }
 
     const userId = userProfile.id;
 
-    // Map selected names back to category UUIDs
-    const likeIds = selectedLikes.map(name => likeCategories.find(c => c.name === name)?.id).filter(Boolean) as string[];
-    const dislikeIds = selectedDislikes.map(name => dislikeCategories.find(c => c.name === name)?.id).filter(Boolean) as string[];
-    const abilityIds = selectedAbilities.map(name => abilityCategories.find(c => c.name === name)?.id).filter(Boolean) as string[];
+    const likeIds = selectedLikes.map(n => likeCategories.find(c => c.name === n)?.id).filter(Boolean) as string[];
+    const dislikeIds = selectedDislikes.map(n => dislikeCategories.find(c => c.name === n)?.id).filter(Boolean) as string[];
+    const abilityIds = selectedAbilities.map(n => abilityCategories.find(c => c.name === n)?.id).filter(Boolean) as string[];
 
     const likesRows = likeIds.map(id => ({ user_id: userId, category_id: id }));
     const dislikesRows = dislikeIds.map(id => ({ user_id: userId, category_id: id }));
     const abilitiesRows = abilityIds.map(id => ({ user_id: userId, category_id: id }));
 
-    const [, , , chatResult, healthResult] = await Promise.all([
+    const [, , , chatResult] = await Promise.all([
       likesRows.length && supabase.from('user_likes').insert(likesRows),
       dislikesRows.length && supabase.from('user_dislikes').insert(dislikesRows),
       abilitiesRows.length && supabase.from('user_abilities').insert(abilitiesRows),
       supabase.from('chat_preferences').insert({
         user_id: userId,
-        open_to_online_chat: openToChat,
-        open_to_zoom: openToZoom,
-        open_to_voice_chat: openToVoice,
-        available_days: availableDays,
+        open_to_online_chat: true,
+        open_to_zoom: false,
+        open_to_voice_chat: false,
+        available_days: [],
         comprehension_level: comprehension,
       }),
       supabase.from('health_info').insert({
@@ -163,42 +167,38 @@ export default function CreateUserScreen({ navigation }: Props) {
         description: willingToShare ? healthDesc : null,
       }),
     ]);
+
     if (chatResult && 'error' in chatResult && chatResult.error) {
       Alert.alert('Chat prefs error', chatResult.error.message);
     }
 
-    // Create login account if email + password provided
-    if (email && accountPassword) {
-      const { data: { session } } = await supabase.auth.getSession();
-      const { error: fnError } = await supabase.functions.invoke('create-user-account', {
-        body: { email: email.toLowerCase().trim(), password: accountPassword, profile_id: userId },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
-      if (fnError) {
-        let detail = fnError.message;
-        try { detail = (fnError as any).context ? await (fnError as any).context.json().then((b: any) => b.error) : fnError.message; } catch {}
-        Alert.alert('Account setup failed', detail);
-        setLoading(false);
-        return;
-      }
-
-      // Save biometric credentials if enabled
-      if (enableBiometric) {
-        await saveBiometricUser({
-          id: userId,
-          name,
-          photo_url: photo_url ?? null,
-          email: email.toLowerCase().trim(),
-          password: accountPassword,
-        });
-      }
+    const { data: { session } } = await supabase.auth.getSession();
+    const { error: fnError } = await supabase.functions.invoke('create-user-account', {
+      body: { email: fabricatedEmail, password: generatedPassword, profile_id: userId },
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+    });
+    if (fnError) {
+      let detail = fnError.message;
+      try { detail = (fnError as any).context ? await (fnError as any).context.json().then((b: any) => b.error) : fnError.message; } catch {}
+      Alert.alert('Account setup failed', detail);
+      setLoading(false);
+      return;
     }
+
+    // Auto-save credentials so learner tile is biometric-ready immediately
+    await saveBiometricUser({
+      id: userId,
+      name,
+      photo_url: photo_url ?? null,
+      email: fabricatedEmail,
+      password: generatedPassword,
+    });
 
     setLoading(false);
     navigation.goBack();
   }
 
-  const steps: Step[] = ['social', 'interests', 'location', 'professional', 'chat', 'health', 'account'];
+  const steps: Step[] = ['social', 'interests', 'location', 'professional', 'health'];
   const stepIndex = steps.indexOf(step);
 
   return (
@@ -227,12 +227,24 @@ export default function CreateUserScreen({ navigation }: Props) {
             <Field label="Name *" value={name} onChangeText={setName} placeholder="First name" />
             <Field label="Age *" value={age} onChangeText={setAge} placeholder="e.g. 18" keyboardType="numeric" />
 
-            <Text style={styles.label}>Gender *</Text>
+            <Text style={styles.label}>Gender<Text style={styles.required}> *</Text></Text>
             <MultiSelectChips options={GENDERS} selected={gender ? [gender] : []} onToggle={(v) => setGender(v[0] || '')} single />
 
-            <Text style={styles.label}>Languages</Text>
-            <MultiSelectChips options={LANGUAGES} selected={languages} onToggle={setLanguages} />
-
+            <Text style={styles.label}>Username<Text style={styles.required}> *</Text></Text>
+            <Text style={styles.usernameHint}>Select a username. Learner will set up biometrics when they first sign in on their device.</Text>
+            <TextInput
+              style={[styles.input, usernameError ? styles.inputError : null]}
+              value={username}
+              onChangeText={handleUsernameChange}
+              onBlur={() => { if (usernameTimer.current) clearTimeout(usernameTimer.current); checkUsernameAvailable(username); }}
+              placeholder="e.g. alex123"
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholderTextColor={COLORS.textLight}
+            />
+            {checkingUsername && <Text style={styles.checkingText}>Checking availability...</Text>}
+            {!checkingUsername && usernameError ? <Text style={styles.errorText}>{usernameError}</Text> : null}
+            {!checkingUsername && !usernameError && username.trim() ? <Text style={styles.availableText}>Username available</Text> : null}
           </View>
         )}
 
@@ -283,19 +295,9 @@ export default function CreateUserScreen({ navigation }: Props) {
             <Text style={styles.sectionTitle}>What Can I Do?</Text>
             <Text style={styles.sectionSubtitle}>Select all activities this person can do</Text>
             <MultiSelectChips options={abilityCategories.map(c => c.name)} selected={selectedAbilities} onToggle={setSelectedAbilities} />
-          </View>
-        )}
 
-        {step === 'chat' && (
-          <View>
-            <Text style={styles.sectionTitle}>Chat Preferences</Text>
-
-            <Toggle label="Open to online chat" value={openToChat} onToggle={() => setOpenToChat(!openToChat)} />
-            <Toggle label="Open to Zoom" value={openToZoom} onToggle={() => setOpenToZoom(!openToZoom)} />
-            <Toggle label="Open to voice chat" value={openToVoice} onToggle={() => setOpenToVoice(!openToVoice)} />
-
-            <Text style={styles.label}>Available Days</Text>
-            <MultiSelectChips options={DAYS_OF_WEEK} selected={availableDays} onToggle={setAvailableDays} />
+            <Text style={styles.label}>Languages</Text>
+            <MultiSelectChips options={LANGUAGES} selected={languages} onToggle={setLanguages} />
 
             <Text style={styles.label}>Comprehension Level</Text>
             <MultiSelectChips
@@ -328,62 +330,6 @@ export default function CreateUserScreen({ navigation }: Props) {
           </View>
         )}
 
-        {step === 'account' && (
-          <View>
-            <Text style={styles.sectionTitle}>Login Account</Text>
-            <Text style={styles.sectionSubtitle}>Optional — set up login credentials so this person can sign in to the app</Text>
-
-            <View style={styles.infoCard}>
-              <Text style={styles.infoText}>
-                Once created, this person can log in with these credentials on the User login screen.
-              </Text>
-            </View>
-
-            <Field
-              label="Login Email"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="e.g. alex@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <Field
-              label="Password"
-              value={accountPassword}
-              onChangeText={setAccountPassword}
-              placeholder="At least 6 characters"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <Field
-              label="Confirm Password"
-              value={accountConfirmPassword}
-              onChangeText={setAccountConfirmPassword}
-              placeholder="Re-enter password"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            {email && accountPassword && biometricAvailable && (
-              <View style={styles.biometricCard}>
-                <Toggle
-                  label="Enable biometric login on this device"
-                  value={enableBiometric}
-                  onToggle={handleBiometricToggle}
-                />
-                <Text style={styles.biometricHint}>
-                  When enabled, {name || 'this user'} will appear as a tile on the login screen and can be unlocked using face or fingerprint recognition.
-                </Text>
-              </View>
-            )}
-
-            <Text style={styles.skipHint}>Leave blank to skip account setup — you can do this later from Edit Profile.</Text>
-          </View>
-        )}
-
       </ScrollView>
 
       <View style={styles.navRow}>
@@ -407,9 +353,13 @@ export default function CreateUserScreen({ navigation }: Props) {
 }
 
 function Field({ label, ...props }: { label: string } & React.ComponentProps<typeof TextInput>) {
+  const isRequired = label.endsWith(' *');
+  const baseLabel = isRequired ? label.slice(0, -2) : label;
   return (
     <>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label}>
+        {baseLabel}{isRequired && <Text style={styles.required}> *</Text>}
+      </Text>
       <TextInput style={styles.input} placeholderTextColor={COLORS.textLight} {...props} />
     </>
   );
@@ -444,6 +394,8 @@ const styles = StyleSheet.create({
   photo: { width: 100, height: 100, borderRadius: 50 },
   photoText: { color: COLORS.primary, fontSize: 13, textAlign: 'center' },
   label: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 8, marginTop: 16 },
+  required: { color: COLORS.error, fontWeight: '700' },
+  usernameHint: { fontSize: 13, color: COLORS.textLight, lineHeight: 18, marginBottom: 8 },
   input: {
     backgroundColor: COLORS.surface,
     borderWidth: 1,
@@ -454,6 +406,10 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 4,
   },
+  inputError: { borderColor: COLORS.error },
+  errorText: { fontSize: 13, color: COLORS.error, marginTop: 2, marginBottom: 4 },
+  checkingText: { fontSize: 13, color: COLORS.textLight, marginTop: 2, marginBottom: 4 },
+  availableText: { fontSize: 13, color: COLORS.success, marginTop: 2, marginBottom: 4 },
   toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
   toggleLabel: { fontSize: 16, color: COLORS.text },
   toggle: { width: 52, height: 30, borderRadius: 15, backgroundColor: COLORS.border, justifyContent: 'center', padding: 2 },
@@ -463,21 +419,6 @@ const styles = StyleSheet.create({
   navRow: { flexDirection: 'row', gap: 12, padding: 16, paddingBottom: 32, backgroundColor: COLORS.background, borderTopWidth: 1, borderTopColor: COLORS.border },
   charCount: { fontSize: 12, color: COLORS.textLight, textAlign: 'right', marginTop: 4 },
   emptyHint: { color: COLORS.textLight, fontSize: 14, marginTop: 16, textAlign: 'center' },
-  infoCard: {
-    backgroundColor: COLORS.primaryLight,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: COLORS.primary + '40',
-  },
-  infoText: { fontSize: 14, color: COLORS.text, lineHeight: 20 },
-  skipHint: { fontSize: 13, color: COLORS.textLight, marginTop: 24, textAlign: 'center', lineHeight: 18 },
-  biometricCard: {
-    marginTop: 20, backgroundColor: COLORS.primaryLight, borderRadius: 14,
-    padding: 16, borderWidth: 1, borderColor: COLORS.primary + '40',
-  },
-  biometricHint: { fontSize: 13, color: COLORS.text, lineHeight: 18, marginTop: 6 },
   backBtn: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
   backBtnText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   nextBtn: { flex: 2, backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center' },

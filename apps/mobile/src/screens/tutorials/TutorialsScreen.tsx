@@ -40,6 +40,35 @@ interface TutorialWithFrames extends Tutorial {
   is_featured?: boolean;
 }
 
+const NO_TUTORIALS_MSG = "No tutorials yet! Ask your Guardian to add learning videos for you!";
+
+function NoTutorialsState() {
+  const spokenRef = useRef(false);
+  useFocusEffect(useCallback(() => {
+    if (!spokenRef.current) {
+      spokenRef.current = true;
+      const t = setTimeout(() => Speech.speak(NO_TUTORIALS_MSG, { rate: 0.8, pitch: 1.1 }), 600);
+      return () => { clearTimeout(t); Speech.stop(); };
+    }
+    return () => { Speech.stop(); };
+  }, []));
+
+  return (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyEmoji}>📚</Text>
+      <Text style={styles.emptyText}>No tutorials yet!</Text>
+      <Text style={styles.emptyHint}>Ask your Guardian to add learning videos for you</Text>
+      <TouchableOpacity
+        style={styles.emptySpeakBtn}
+        onPress={() => Speech.speak(NO_TUTORIALS_MSG, { rate: 0.8, pitch: 1.1 })}
+        activeOpacity={0.75}
+      >
+        <Text style={styles.emptySpeakBtnText}>🔊  Hear this again</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function TutorialsScreen() {
   const { activeUser } = useAuth();
   const [tutorials, setTutorials] = useState<TutorialWithFrames[]>([]);
@@ -111,19 +140,13 @@ export default function TutorialsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Category dropdown */}
+      {/* Category dropdown — commented out, re-enable when needed
       <View style={styles.filterBar}>
-        <TouchableOpacity
-          style={styles.filterBtn}
-          onPress={() => setCategoryOpen(true)}
-          activeOpacity={0.75}
-        >
+        <TouchableOpacity style={styles.filterBtn} onPress={() => setCategoryOpen(true)} activeOpacity={0.75}>
           <Text style={styles.filterBtnText}>{activeLabel}</Text>
           <Text style={styles.filterBtnArrow}>▾</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Bottom-sheet modal for category selection */}
       <Modal visible={categoryOpen} transparent animationType="slide" onRequestClose={() => setCategoryOpen(false)}>
         <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => setCategoryOpen(false)}>
           <SafeAreaView style={styles.sheet}>
@@ -134,16 +157,13 @@ export default function TutorialsScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView>
-              {categories.map(cat => {
-                const isActive = cat === 'All' ? !selectedCategory : selectedCategory === cat;
-                const color = cat === 'All' ? COLORS.primary : categoryColor(cat);
+              {categories.filter(cat => cat !== 'All').map(cat => {
+                const isActive = selectedCategory === cat;
+                const color = categoryColor(cat);
                 return (
-                  <TouchableOpacity
-                    key={cat}
-                    style={[styles.sheetOption, isActive && { backgroundColor: color + '18' }]}
-                    onPress={() => { setSelectedCategory(cat === 'All' ? null : cat); setCategoryOpen(false); }}
-                  >
-                    {cat !== 'All' && <Text style={styles.sheetOptionEmoji}>{categoryEmoji(cat)}</Text>}
+                  <TouchableOpacity key={cat} style={[styles.sheetOption, isActive && { backgroundColor: color + '18' }]}
+                    onPress={() => { setSelectedCategory(cat); setCategoryOpen(false); }}>
+                    <Text style={styles.sheetOptionEmoji}>{categoryEmoji(cat)}</Text>
                     <Text style={[styles.sheetOptionText, isActive && { color, fontWeight: '800' }]}>{cat}</Text>
                     {isActive && <Text style={[styles.sheetCheck, { color }]}>✓</Text>}
                   </TouchableOpacity>
@@ -153,13 +173,10 @@ export default function TutorialsScreen() {
           </SafeAreaView>
         </TouchableOpacity>
       </Modal>
+      */}
 
       {tutorials.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyEmoji}>📚</Text>
-          <Text style={styles.emptyText}>No tutorials yet</Text>
-          <Text style={styles.emptyHint}>Ask your Guardian to add learning videos for you</Text>
-        </View>
+        <NoTutorialsState />
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
           {/* ⭐ Featured / Favourites section */}
@@ -573,6 +590,12 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 72 },
   emptyText: { fontSize: 24, fontWeight: '900', color: COLORS.text },
   emptyHint: { fontSize: 16, color: COLORS.textLight, textAlign: 'center', paddingHorizontal: 32 },
+  emptySpeakBtn: {
+    marginTop: 8, paddingHorizontal: 24, paddingVertical: 12,
+    borderRadius: 20, backgroundColor: '#EFF6FF',
+    borderWidth: 1.5, borderColor: '#BFDBFE',
+  },
+  emptySpeakBtnText: { fontSize: 15, fontWeight: '700', color: '#2563EB' },
 
   // Video modal (unchanged)
   modalContainer: { flex: 1, backgroundColor: '#000' },

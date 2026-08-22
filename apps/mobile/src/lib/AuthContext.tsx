@@ -23,21 +23,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const activeUserRef = useRef<UserProfile | null>(null);
+  const currentUserIdRef = useRef<string | null>(null);
   activeUserRef.current = activeUser;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchRole(session.user.id);
-      else setLoading(false);
+      if (session) {
+        currentUserIdRef.current = session.user.id;
+        fetchRole(session.user.id);
+      } else {
+        setLoading(false);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
-        setLoading(true);
+        if (session.user.id !== currentUserIdRef.current) setLoading(true);
+        currentUserIdRef.current = session.user.id;
         fetchRole(session.user.id);
       } else {
+        currentUserIdRef.current = null;
         setGuardian(null);
         setActiveUser(null);
         setLoading(false);

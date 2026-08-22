@@ -37,7 +37,7 @@ export const COMPREHENSION_LEVELS = [
   { value: 'fluent', label: 'Fluent' },
 ];
 
-export const GENDERS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
+export const GENDERS = ['Male', 'Female', 'Prefer not to say'];
 
 export const LANGUAGES = [
   'English', 'Spanish', 'French', 'German', 'Mandarin',

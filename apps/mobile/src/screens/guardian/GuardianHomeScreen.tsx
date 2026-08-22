@@ -4,6 +4,7 @@ import {
   ScrollView, StatusBar, Image, Platform, Modal, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Notifications from 'expo-notifications';
@@ -108,21 +109,17 @@ export default function GuardianHomeScreen() {
 
         {/* Brand row */}
         <View style={s.brandRow}>
-          <View style={s.appIcon}>
-            <Text style={s.appIconEmoji}>🌸</Text>
-          </View>
+          <LinearGradient colors={['#5BC8F5', '#FFB830']} style={s.appIcon}>
+            <Text style={s.appIconEmoji}>☀️</Text>
+          </LinearGradient>
           <Text style={s.appName}>
-            Bloom<Text style={s.appDot}>.</Text>
+            Ray<Text style={s.appDot}>.</Text>
           </Text>
         </View>
 
         {/* Guardian row */}
         <View style={s.guardianRow}>
-          <TouchableOpacity
-            style={s.guardianLeft}
-            onPress={() => setShowMenu(true)}
-            activeOpacity={0.75}
-          >
+          <View style={s.guardianLeft}>
             {guardian?.photo_url ? (
               <Image source={{ uri: guardian.photo_url }} style={s.avatarCircle} />
             ) : (
@@ -132,19 +129,16 @@ export default function GuardianHomeScreen() {
             )}
             <View>
               <Text style={s.guardianName}>{guardian?.full_name ?? 'Guardian'}</Text>
-              <Text style={s.guardianRole}>Guardian  ▾</Text>
             </View>
-          </TouchableOpacity>
+          </View>
 
-          {learners.length > 0 && (
-            <TouchableOpacity
-              style={s.backBtn}
-              onPress={() => navigation.navigate('LearnerSelect')}
-              activeOpacity={0.75}
-            >
-              <Text style={s.backBtnText}>‹ Back</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <TouchableOpacity onPress={() => setShowMenu(true)} activeOpacity={0.75} style={s.hamburgerBtn}>
+              <View style={s.hamburgerLine} />
+              <View style={s.hamburgerLine} />
+              <View style={s.hamburgerLine} />
             </TouchableOpacity>
-          )}
+          </View>
         </View>
 
       </SafeAreaView>
@@ -190,81 +184,80 @@ export default function GuardianHomeScreen() {
               })}
             </View>
           ))}
+
         </View>
 
-        {/* ── YOUR LEARNERS ── */}
+        {/* ── YOUR LEARNER ── */}
         <View style={[s.pillRow, { marginTop: 24 }]}>
           <View style={[s.pill, s.pillLearner]}>
-            <Text style={s.pillText}>🎓  YOUR LEARNERS</Text>
+            <Text style={s.pillText}>🎓  YOUR LEARNER</Text>
           </View>
           <View style={s.pillLine} />
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.learnersScroll}
-        >
-          {learners.map((l, i) => (
+        <View style={s.learnerCenter}>
+          {learners.length > 0 ? (
             <TouchableOpacity
-              key={l.id}
               style={s.learnerTile}
-              onPress={() => navigation.navigate('EditUser', { userId: l.id })}
+              onPress={() => navigation.navigate('EditUser', { userId: learners[0].id })}
               activeOpacity={0.8}
             >
-              {l.photo_url ? (
-                <Image source={{ uri: l.photo_url }} style={s.learnerAvatar} />
+              {learners[0].photo_url ? (
+                <Image source={{ uri: learners[0].photo_url }} style={s.learnerAvatar} />
               ) : (
-                <View style={[s.learnerAvatar, { backgroundColor: AVATAR_COLORS[i % AVATAR_COLORS.length] }]}>
-                  <Text style={s.learnerInitial}>{l.name[0]?.toUpperCase()}</Text>
+                <View style={[s.learnerAvatar, { backgroundColor: AVATAR_COLORS[0] }]}>
+                  <Text style={s.learnerInitial}>{learners[0].name[0]?.toUpperCase()}</Text>
                 </View>
               )}
-              <Text style={s.learnerName} numberOfLines={1}>{l.name.split(' ')[0]}</Text>
-              <Text style={s.learnerMeta}>{l.tutorialCount} tutorial{l.tutorialCount !== 1 ? 's' : ''}</Text>
+              <Text style={s.learnerName} numberOfLines={1}>{learners[0].name.split(' ')[0]}</Text>
+              <Text style={s.learnerMeta}>{learners[0].tutorialCount} tutorial{learners[0].tutorialCount !== 1 ? 's' : ''}</Text>
             </TouchableOpacity>
-          ))}
-          <TouchableOpacity
-            style={s.learnerTile}
-            onPress={() => navigation.navigate('CreateUser')}
-            activeOpacity={0.8}
-          >
-            <View style={s.addAvatar}>
-              <Text style={s.addIcon}>+</Text>
-            </View>
-            <Text style={s.learnerName}>Add New</Text>
-            <Text style={s.learnerMeta}> </Text>
-          </TouchableOpacity>
-        </ScrollView>
+          ) : (
+            <TouchableOpacity
+              style={s.learnerTile}
+              onPress={() => navigation.navigate('CreateUser')}
+              activeOpacity={0.8}
+            >
+              <View style={s.addAvatar}>
+                <Text style={s.addIcon}>+</Text>
+              </View>
+              <Text style={s.addNewLabel}>Add New</Text>
+              <Text style={s.learnerMeta}> </Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {learners.length > 0 && (
-          <View style={[s.communityRow, { marginTop: 14 }]}>
+          <View style={s.learnerActionGrid}>
             <TouchableOpacity
-              style={s.communityTile}
+              style={s.actionTile}
               onPress={() => navigation.navigate('LearnerDiscovery')}
               activeOpacity={0.78}
             >
-              <Text style={s.communityEmoji}>🔍</Text>
-              <View style={s.communityInfo}>
-                <Text style={s.communityLabel}>Find Friends</Text>
-                <Text style={s.communityHint}>Discover learners for your learner to connect with</Text>
-              </View>
-              <Text style={s.communityArr}>›</Text>
+              <Text style={s.actionEmoji}>🔍</Text>
+              <Text style={s.actionLabel}>Find{'\n'}Friends</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={s.communityTile}
+              style={s.actionTile}
               onPress={() => navigation.navigate('LearnerFriendRequests')}
               activeOpacity={0.78}
             >
-              <Text style={s.communityEmoji}>🤝</Text>
-              <View style={s.communityInfo}>
-                <Text style={s.communityLabel}>Friend Requests</Text>
-                <Text style={s.communityHint}>Accept or decline incoming connection requests</Text>
-              </View>
-              <Text style={s.communityArr}>›</Text>
+              <Text style={s.actionEmoji}>🤝</Text>
+              <Text style={s.actionLabel}>Friend{'\n'}Requests</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={s.actionTile}
+              onPress={() => navigation.navigate('FavouriteFriends')}
+              activeOpacity={0.78}
+            >
+              <Text style={s.actionEmoji}>⭐</Text>
+              <Text style={s.actionLabel}>Favourite{'\n'}Friends</Text>
             </TouchableOpacity>
           </View>
         )}
+
 
       </ScrollView>
 
@@ -281,6 +274,18 @@ export default function GuardianHomeScreen() {
                 <Text style={s.menuEmail}>{guardian?.email}</Text>
               </View>
             </View>
+
+            <View style={s.menuDivider} />
+
+            <TouchableOpacity
+              style={s.menuItem}
+              onPress={() => { setShowMenu(false); navigation.navigate('LearnerSelect'); }}
+              activeOpacity={0.7}
+            >
+              <Text style={s.menuItemIcon}>🏠</Text>
+              <Text style={s.menuItemText}>Home</Text>
+              <Text style={s.menuItemArr}>›</Text>
+            </TouchableOpacity>
 
             <View style={s.menuDivider} />
 
@@ -320,7 +325,6 @@ const s = StyleSheet.create({
   },
   appIcon: {
     width: 30, height: 30, borderRadius: 8,
-    backgroundColor: COLORS.bloomAccent,
     justifyContent: 'center', alignItems: 'center',
   },
   appIconEmoji: { fontSize: 16 },
@@ -342,12 +346,8 @@ const s = StyleSheet.create({
   },
   avatarInitial: { fontSize: 13, fontWeight: '700', color: '#fff' },
   guardianName:  { fontSize: 15, fontWeight: '600', color: '#fff' },
-  guardianRole:  { fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 1 },
-  backBtn: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6,
-  },
-  backBtnText: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
+  hamburgerBtn:  { padding: 6, gap: 5, alignItems: 'flex-end', justifyContent: 'center' },
+  hamburgerLine: { width: 22, height: 2, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.85)' },
   // Body
   body:        { flex: 1, backgroundColor: COLORS.bloomBody },
   bodyContent: { padding: 14, paddingBottom: 32 },
@@ -380,41 +380,30 @@ const s = StyleSheet.create({
   actionBadge:     { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
   actionBadgeText: { fontSize: 9, fontWeight: '800' },
 
-  // Learner tiles
-  learnersScroll: { gap: 8, paddingBottom: 4 },
+  // Learner tile (single, centered)
+  learnerCenter: { alignItems: 'center', paddingVertical: 8 },
+  learnerActionGrid: { flexDirection: 'row', gap: 8, marginTop: 12 },
   learnerTile: {
-    width: 74, backgroundColor: COLORS.bloomCard,
-    borderRadius: 12, padding: 12, paddingHorizontal: 6,
+    width: 120, backgroundColor: COLORS.bloomCard,
+    borderRadius: 20, padding: 20,
     alignItems: 'center', borderWidth: 1, borderColor: COLORS.bloomBorder,
-  },
-  learnerAvatar: {
-    width: 40, height: 40, borderRadius: 20,
-    marginBottom: 7, justifyContent: 'center', alignItems: 'center',
-  },
-  learnerInitial: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  learnerName:    { fontSize: 9, fontWeight: '700', color: COLORS.bloomText, textAlign: 'center' },
-  learnerMeta:    { fontSize: 8, color: '#AAA', marginTop: 2, textAlign: 'center' },
-  addAvatar: {
-    width: 40, height: 40, borderRadius: 20, marginBottom: 7,
-    borderWidth: 1.5, borderColor: '#C8D6E8', borderStyle: 'dashed',
-    justifyContent: 'center', alignItems: 'center',
-  },
-  addIcon: { fontSize: 18, color: COLORS.bloomAccent, lineHeight: 22 },
-
-  // Community section
-  communityRow: { gap: 8 },
-  communityTile: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: COLORS.bloomCard, borderRadius: 16, padding: 16,
-    borderWidth: 1.5, borderColor: '#CAD4E0',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
-  communityEmoji: { fontSize: 28 },
-  communityInfo:  { flex: 1, gap: 2 },
-  communityLabel: { fontSize: 15, fontWeight: '800', color: COLORS.bloomText },
-  communityHint:  { fontSize: 12, color: COLORS.bloomMuted, lineHeight: 16 },
-  communityArr:   { fontSize: 20, color: '#C8D6E8', fontWeight: '300' },
+  learnerAvatar: {
+    width: 68, height: 68, borderRadius: 34,
+    marginBottom: 10, justifyContent: 'center', alignItems: 'center',
+  },
+  learnerInitial: { fontSize: 26, fontWeight: '700', color: '#fff' },
+  learnerName:    { fontSize: 14, fontWeight: '800', color: COLORS.bloomText, textAlign: 'center' },
+  addNewLabel:    { fontSize: 14, fontWeight: '700', color: COLORS.bloomText, textAlign: 'center' },
+  learnerMeta:    { fontSize: 11, color: '#AAA', marginTop: 4, textAlign: 'center' },
+  addAvatar: {
+    width: 68, height: 68, borderRadius: 34, marginBottom: 10,
+    borderWidth: 1.5, borderColor: '#C8D6E8', borderStyle: 'dashed',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  addIcon: { fontSize: 28, color: COLORS.bloomAccent, lineHeight: 34 },
 
   // Avatar dropdown menu
   menuOverlay: {

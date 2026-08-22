@@ -1,9 +1,10 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   ScrollView, ActivityIndicator,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import * as Speech from 'expo-speech';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
@@ -15,6 +16,50 @@ interface ActivityItem {
   sort_order: number;
   completed: boolean;
 }
+
+const NO_ACTIVITIES_MSG = "No activities yet! Ask your guardian to add some fun activities for you!";
+
+function NoActivitiesState() {
+  const spokenRef = useRef(false);
+  useFocusEffect(useCallback(() => {
+    if (!spokenRef.current) {
+      spokenRef.current = true;
+      const t = setTimeout(() => Speech.speak(NO_ACTIVITIES_MSG, { rate: 0.8, pitch: 1.1 }), 600);
+      return () => { clearTimeout(t); Speech.stop(); };
+    }
+    return () => { Speech.stop(); };
+  }, []));
+
+  return (
+    <View style={noActStyles.container}>
+      <Text style={noActStyles.emoji}>😊</Text>
+      <Text style={noActStyles.title}>No activities yet!</Text>
+      <Text style={noActStyles.hint}>Ask your guardian to add some fun activities for you!</Text>
+      <TouchableOpacity
+        style={noActStyles.speakBtn}
+        onPress={() => Speech.speak(NO_ACTIVITIES_MSG, { rate: 0.8, pitch: 1.1 })}
+        activeOpacity={0.75}
+      >
+        <Text style={noActStyles.speakIcon}>🔊</Text>
+        <Text style={noActStyles.speakText}>Hear this again</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const noActStyles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, gap: 14, backgroundColor: COLORS.background },
+  emoji:    { fontSize: 80 },
+  title:    { fontSize: 24, fontWeight: '900', color: COLORS.text, textAlign: 'center' },
+  hint:     { fontSize: 16, color: COLORS.textLight, textAlign: 'center', lineHeight: 24 },
+  speakBtn: {
+    marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 22, paddingVertical: 12, borderRadius: 24,
+    backgroundColor: '#EFF6FF', borderWidth: 1.5, borderColor: '#BFDBFE',
+  },
+  speakIcon: { fontSize: 18 },
+  speakText: { fontSize: 15, fontWeight: '700', color: '#2563EB' },
+});
 
 function todayLabel(): string {
   return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -58,13 +103,7 @@ export default function ActivitiesScreen() {
   }
 
   if (activities.length === 0) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.emptyEmoji}>📋</Text>
-        <Text style={styles.emptyTitle}>No activities yet</Text>
-        <Text style={styles.emptyHint}>Your guardian hasn't set up any activities</Text>
-      </View>
-    );
+    return <NoActivitiesState />;
   }
 
   const done  = activities.filter(a => a.completed).length;

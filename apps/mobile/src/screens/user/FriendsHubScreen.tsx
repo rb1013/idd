@@ -1,16 +1,59 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Alert,
 } from 'react-native';
 import * as Speech from 'expo-speech';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 import { UserStackParamList } from '../../navigation';
 import AvatarWithMood from '../../components/AvatarWithMood';
+
+const EMPTY_MESSAGE = 'No friends added yet. Ask your guardian to add friends for you!';
+
+function NoFriendsEmptyState() {
+  const spokenRef = useRef(false);
+
+  useFocusEffect(useCallback(() => {
+    if (!spokenRef.current) {
+      spokenRef.current = true;
+      const t = setTimeout(() => Speech.speak(EMPTY_MESSAGE, { rate: 0.8, pitch: 1.1 }), 600);
+      return () => { clearTimeout(t); Speech.stop(); };
+    }
+    return () => { Speech.stop(); };
+  }, []));
+
+  return (
+    <View style={emptyStyles.container}>
+      <Text style={emptyStyles.emoji}>😊</Text>
+      <Text style={emptyStyles.message}>No friends added yet.</Text>
+      <Text style={emptyStyles.hint}>Ask your guardian to add friends for you!</Text>
+      <TouchableOpacity
+        style={emptyStyles.speakBtn}
+        onPress={() => Speech.speak(EMPTY_MESSAGE, { rate: 0.8, pitch: 1.1 })}
+        activeOpacity={0.75}
+      >
+        <Text style={emptyStyles.speakBtnText}>🔊  Hear this again</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const emptyStyles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, gap: 12 },
+  emoji:     { fontSize: 72 },
+  message:   { fontSize: 22, fontWeight: '800', color: COLORS.text, textAlign: 'center' },
+  hint:      { fontSize: 16, color: COLORS.textLight, textAlign: 'center', lineHeight: 24 },
+  speakBtn:  {
+    marginTop: 16, paddingHorizontal: 24, paddingVertical: 12,
+    borderRadius: 20, backgroundColor: '#EFF6FF',
+    borderWidth: 1.5, borderColor: '#BFDBFE',
+  },
+  speakBtnText: { fontSize: 15, fontWeight: '700', color: '#2563EB' },
+});
 
 const CATEGORY_EMOJI: Record<string, string> = {
   Music: '🎵', Sports: '⚽', Art: '🎨', Cooking: '🍳',
@@ -104,13 +147,7 @@ export default function FriendsHubScreen() {
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   if (friends.length === 0) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.emptyEmoji}>🤝</Text>
-        <Text style={styles.emptyText}>No friends yet!</Text>
-        <Text style={styles.emptyHint}>Go to Discovery to find people to connect with</Text>
-      </View>
-    );
+    return <NoFriendsEmptyState />;
   }
 
   const sort = (list: Friend[]) => [...list].sort((a, b) => a.name.localeCompare(b.name));

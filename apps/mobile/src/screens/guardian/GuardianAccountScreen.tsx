@@ -217,7 +217,7 @@ export default function GuardianAccountScreen() {
             <Text style={styles.infoLabel}>Name</Text>
             <View style={styles.phoneViewRight}>
               <Text style={styles.infoValue}>{name || '—'}</Text>
-              <Text style={styles.editLink}>Edit</Text>
+              <Text style={styles.editLink}>✏️</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -255,7 +255,7 @@ export default function GuardianAccountScreen() {
             <Text style={styles.infoLabel}>Phone</Text>
             <View style={styles.phoneViewRight}>
               <Text style={styles.infoValue}>{phone || '—'}</Text>
-              <Text style={styles.editLink}>Edit</Text>
+              <Text style={styles.editLink}>✏️</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -308,7 +308,7 @@ export default function GuardianAccountScreen() {
               <Text style={styles.infoLabel}>State</Text>
               <View style={styles.phoneViewRight}>
                 <Text style={styles.infoValue}>{state || '—'}</Text>
-                <Text style={styles.editLink}>Edit</Text>
+                <Text style={styles.editLink}>✏️</Text>
               </View>
             </TouchableOpacity>
             <View style={styles.divider} />
@@ -316,7 +316,7 @@ export default function GuardianAccountScreen() {
               <Text style={styles.infoLabel}>City</Text>
               <View style={styles.phoneViewRight}>
                 <Text style={styles.infoValue}>{city || '—'}</Text>
-                <Text style={styles.editLink}>Edit</Text>
+                <Text style={styles.editLink}>✏️</Text>
               </View>
             </TouchableOpacity>
           </>
@@ -328,11 +328,8 @@ export default function GuardianAccountScreen() {
       <View style={styles.card}>
         {editingTags ? (
           <>
-            <TouchableOpacity style={[styles.infoRow, { paddingBottom: 8 }]} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>
-              <Text style={styles.infoLabel}>Select tags</Text>
-              <Text style={[styles.infoValue, { color: COLORS.primary }]}>
-                {selectedTags.length === 0 ? 'None' : `${selectedTags.length} selected`} ▾
-              </Text>
+            <TouchableOpacity style={styles.updateTagsLink} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>
+              <Text style={styles.updateTagsLinkText}>Select more</Text>
             </TouchableOpacity>
             {selectedTags.length > 0 && (
               <View style={styles.tagChipRow}>
@@ -371,7 +368,7 @@ export default function GuardianAccountScreen() {
                 </View>
               )}
             </View>
-            <Text style={styles.editLink}>Edit</Text>
+            <Text style={styles.editLink}>✏️</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -513,7 +510,7 @@ const styles = StyleSheet.create({
   infoValue: { fontSize: 15, color: COLORS.text, fontWeight: '500' },
 
   phoneViewRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  editLink: { fontSize: 14, color: COLORS.primary, fontWeight: '600' },
+  editLink: { fontSize: 16 },
 
   phoneEditRow: { padding: 16, gap: 10 },
   phoneInput: {
@@ -538,6 +535,10 @@ const styles = StyleSheet.create({
   toggleThumbOn: { alignSelf: 'flex-end' },
   signOutBtn: { marginTop: 32, padding: 16, alignItems: 'center' },
   signOutText: { color: COLORS.textLight, fontSize: 15 },
+
+  updateTagsLink: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', gap: 2, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
+  updateTagsLinkText: { fontSize: 14, fontWeight: '600', color: COLORS.primary },
+  updateTagsChevron: { fontSize: 22, fontWeight: '700', color: COLORS.primary, lineHeight: 22 },
 
   pickerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

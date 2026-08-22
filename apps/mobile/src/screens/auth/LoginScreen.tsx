@@ -3,8 +3,10 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
+import { saveGuardianCredentials } from '../../lib/biometricStore';
 import { COLORS } from '../../constants';
 import { RootStackParamList } from '../../navigation';
 
@@ -20,7 +22,8 @@ export default function LoginScreen({ navigation }: Props) {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) Alert.alert('Login failed', error.message);
+    if (error) { Alert.alert('Login failed', error.message); return; }
+    await saveGuardianCredentials({ email, password });
   }
 
   return (
@@ -32,15 +35,17 @@ export default function LoginScreen({ navigation }: Props) {
       >
         {/* Branded header */}
         <View style={s.header}>
-          <View style={s.appIcon}><Text style={s.appIconEmoji}>🌸</Text></View>
-          <Text style={s.appName}>Bloom<Text style={s.appDot}>.</Text></Text>
-          <Text style={s.tagline}>Learning made joyful</Text>
+          <LinearGradient colors={['#5BC8F5', '#FFB830']} style={s.appIcon}>
+            <Text style={s.appIconEmoji}>☀️</Text>
+          </LinearGradient>
+          <Text style={s.appName}>Ray<Text style={s.appDot}>.</Text></Text>
+          <Text style={s.tagline}>Guiding light for every day</Text>
         </View>
 
         {/* Form */}
         <View style={s.form}>
-          <Text style={s.title}>Guardian Sign In</Text>
-          <Text style={s.subtitle}>Sign in to manage your learners</Text>
+          <Text style={s.title}>Welcome back</Text>
+          <Text style={s.subtitle}>Sign in to your Ray account</Text>
 
           <TextInput
             style={s.input}
@@ -83,7 +88,7 @@ export default function LoginScreen({ navigation }: Props) {
             onPress={() => navigation.navigate('GuardianRegister')}
             activeOpacity={0.85}
           >
-            <Text style={s.registerHint}>Create a free guardian account to get started</Text>
+            <Text style={s.registerHint}>Create your free account to get started</Text>
             <Text style={s.registerBtn}>Create Account →</Text>
           </TouchableOpacity>
         </View>
@@ -104,7 +109,6 @@ const s = StyleSheet.create({
   },
   appIcon: {
     width: 88, height: 88, borderRadius: 26,
-    backgroundColor: COLORS.bloomAccent,
     justifyContent: 'center', alignItems: 'center', marginBottom: 14,
   },
   appIconEmoji: { fontSize: 48 },
