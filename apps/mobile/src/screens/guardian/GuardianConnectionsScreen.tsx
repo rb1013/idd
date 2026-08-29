@@ -1,7 +1,7 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  TextInput, ActivityIndicator, Alert, Modal, ScrollView, Dimensions,
+  TextInput, ActivityIndicator, Alert, Modal, ScrollView, Dimensions, Image,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
@@ -12,7 +12,8 @@ const { height: SCREEN_H } = Dimensions.get('window');
 
 const AVATAR_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#F59E0B', '#3B82F6', '#EC4899'];
 
-const AGE_GROUPS = ['Under 10', '10–14', '15–18', '19–25', '26–35', '36+'];
+const AGE_GROUPS    = ['Under 10', '10–14', '15–18', '19–25', '26–35', '36+'];
+const GENDER_OPTIONS = ['Male', 'Female'];
 
 function getAgeGroup(age: number): string {
   if (age < 10)  return 'Under 10';
@@ -23,29 +24,24 @@ function getAgeGroup(age: number): string {
   return '36+';
 }
 
-const SITUATION_TAGS = [
-  'Non-verbal', 'Minimally verbal', 'AAC user',
-  'First-year guardian', 'Experienced guardian',
-  'Autism', 'Down syndrome', 'Cerebral palsy',
-  'Works independently', 'Needs full support',
-  'School-age', 'Transitioning to adult services',
-];
-
 function toggle<T>(arr: T[], val: T): T[] {
   return arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
 }
 
 type Status = 'none' | 'pending_sent' | 'pending_received' | 'accepted';
+type Tab = 'connected' | 'find';
 
 interface GuardianResult {
   guardianId: string;
   guardianName: string;
   guardianEmail: string;
-  region: string;
+  photoUrl: string;
+  city: string;
   situationTags: string[];
   learnerName: string;
   learnerRegion: string;
   learnerAge: number;
+  learnerGender: string;
   status: Status;
   connectionId: string | null;
 }
@@ -96,9 +92,20 @@ function SheetSection({ id, emoji, title, options, selected, onToggle, openId, s
 export default function GuardianConnectionsScreen() {
   const { guardian } = useAuth();
 
-  const [results, setResults]     = useState<GuardianResult[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [sending, setSending]     = useState<string | null>(null);
+  const [activeTab, setActiveTab]           = useState<Tab>('connected');
+  const [peekGuardian, setPeekGuardian]     = useState<GuardianResult | null>(null);
+  const [hoveredDisconnect, setHoveredDisconnect] = useState<string | null>(null);
+  const [situationTagOptions, setSituationTagOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    supabase.from('situation_tag_options').select('label').order('label').then(({ data }) => {
+      if (data) setSituationTagOptions(data.map((r: any) => r.label));
+    });
+  }, []);
+
+  const [results, setResults]       = useState<GuardianResult[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [sending, setSending]       = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
 
   // Search
@@ -108,13 +115,15 @@ export default function GuardianConnectionsScreen() {
   // Applied filters
   const [filterAgeGroups, setFilterAgeGroups] = useState<string[]>([]);
   const [filterTags,      setFilterTags]      = useState<string[]>([]);
+  const [filterGenders,   setFilterGenders]   = useState<string[]>([]);
 
-  // Draft filters (edited in sheet)
+  // Draft filters
   const [draftAgeGroups, setDraftAgeGroups] = useState<string[]>([]);
   const [draftTags,      setDraftTags]      = useState<string[]>([]);
+  const [draftGenders,   setDraftGenders]   = useState<string[]>([]);
 
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [openSec,   setOpenSec]   = useState<string | null>('situation');
+  const [openSec,   setOpenSec]   = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -127,7 +136,7 @@ export default function GuardianConnectionsScreen() {
 
     const { data: guardians } = await supabase
       .from('guardians')
-      .select('id, full_name, email, region, situation_tags')
+      .select('id, full_name, email, photo_url, city, state, situation_tags')
       .neq('id', myId);
 
     if (!guardians || guardians.length === 0) { setLoading(false); return; }
@@ -137,7 +146,7 @@ export default function GuardianConnectionsScreen() {
     const [{ data: learners }, { data: connections }] = await Promise.all([
       supabase
         .from('user_profiles')
-        .select('id, name, age, region, guardian_id')
+        .select('id, name, age, gender, region, guardian_id')
         .in('guardian_id', otherIds),
       supabase
         .from('guardian_connections')
@@ -165,11 +174,13 @@ export default function GuardianConnectionsScreen() {
         guardianId: g.id,
         guardianName: g.full_name ?? 'Unknown',
         guardianEmail: g.email ?? '',
-        region: g.region ?? '',
+        photoUrl: g.photo_url ?? '',
+        city: [g.city, g.state].filter(Boolean).join(', '),
         situationTags: g.situation_tags ?? [],
         learnerName: l?.name ?? '',
         learnerRegion: l?.region ?? '',
         learnerAge: l?.age ?? 0,
+        learnerGender: l?.gender ?? '',
         status,
         connectionId,
       };
@@ -225,55 +236,147 @@ export default function GuardianConnectionsScreen() {
     ]);
   }
 
+  async function disconnect(item: GuardianResult) {
+    if (!item.connectionId) return;
+    Alert.alert('Disconnect', `Remove connection with ${item.guardianName}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Disconnect', style: 'destructive', onPress: async () => {
+          setProcessing(item.guardianId);
+          await supabase.from('guardian_connections').delete().eq('id', item.connectionId!);
+          setResults(prev => prev.map(r =>
+            r.guardianId === item.guardianId ? { ...r, status: 'none', connectionId: null } : r
+          ));
+          setProcessing(null);
+        },
+      },
+    ]);
+  }
+
   function openSheet() {
     setDraftAgeGroups([...filterAgeGroups]);
     setDraftTags([...filterTags]);
-    setOpenSec('situation');
+    setDraftGenders([...filterGenders]);
+    setOpenSec(null);
     setSheetOpen(true);
   }
 
   function applySheet() {
     setFilterAgeGroups([...draftAgeGroups]);
     setFilterTags([...draftTags]);
+    setFilterGenders([...draftGenders]);
     setSheetOpen(false);
   }
 
   function clearSheet() {
     setDraftAgeGroups([]);
     setDraftTags([]);
+    setDraftGenders([]);
   }
 
-  const totalActive = filterAgeGroups.length + filterTags.length;
+  const totalActive = filterAgeGroups.length + filterTags.length + filterGenders.length;
 
-  const filtered = useMemo(() => {
+  const connected = useMemo(() =>
+    results.filter(r => r.status === 'accepted'),
+  [results]);
+
+  const pendingReceived = useMemo(() =>
+    results.filter(r => r.status === 'pending_received'),
+  [results]);
+
+  const discovered = useMemo(() => {
     return results.filter(r => {
-      const matchName = !searchName || r.guardianName.toLowerCase().includes(searchName.toLowerCase());
-      const matchCity = !searchCity || r.region.toLowerCase().includes(searchCity.toLowerCase());
-      const matchAge  = filterAgeGroups.length === 0 || filterAgeGroups.includes(getAgeGroup(r.learnerAge));
-      const matchTags = filterTags.length === 0 || filterTags.every(t => r.situationTags.includes(t));
-      return matchName && matchCity && matchAge && matchTags;
+      if (r.status === 'accepted' || r.status === 'pending_received' || r.status === 'pending_sent') return false;
+      const matchName   = !searchName || r.guardianName.toLowerCase().includes(searchName.toLowerCase());
+      const matchCity   = !searchCity || r.city.toLowerCase().includes(searchCity.toLowerCase());
+      const matchAge    = filterAgeGroups.length === 0 || filterAgeGroups.includes(getAgeGroup(r.learnerAge));
+      const matchTags   = filterTags.length === 0 || filterTags.some(t => r.situationTags.includes(t));
+      const matchGender = filterGenders.length === 0 || filterGenders.includes(r.learnerGender);
+      return matchName && matchCity && matchAge && matchTags && matchGender;
     });
-  }, [results, searchName, searchCity, filterAgeGroups, filterTags]);
+  }, [results, searchName, searchCity, filterAgeGroups, filterTags, filterGenders]);
 
-  function renderCard(item: GuardianResult) {
-    const color = AVATAR_COLORS[item.guardianName.charCodeAt(0) % AVATAR_COLORS.length];
-    const isProcessing = processing === item.guardianId;
-    const isSending    = sending === item.guardianId;
+  // ── Card renderers ──────────────────────────────────────────────────────────
 
+  function avatarColor(name: string) {
+    return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+  }
+
+  function renderConnectedCard(item: GuardianResult) {
     return (
-      <View key={item.guardianId} style={s.card}>
-        <View style={[s.avatar, { backgroundColor: color }]}>
+      <TouchableOpacity key={item.guardianId} style={s.card} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+        <View style={[s.avatar, { backgroundColor: avatarColor(item.guardianName) }]}>
           <Text style={s.avatarInitial}>{item.guardianName[0]?.toUpperCase()}</Text>
         </View>
         <View style={s.info}>
           <Text style={s.guardianName}>{item.guardianName}</Text>
-          <Text style={s.meta}>
-            {item.learnerName ? `${item.learnerName}, ${item.learnerAge} yrs` : ''}
-            {item.learnerRegion ? `  ·  ${item.learnerRegion}` : ''}
-          </Text>
-          {item.situationTags.length > 0 && (
-            <Text style={s.tags} numberOfLines={1}>{item.situationTags.join(' · ')}</Text>
+          {item.city ? <Text style={s.meta}>{item.city}</Text> : null}
+        </View>
+        <View style={s.actions}>
+          {processing === item.guardianId ? (
+            <ActivityIndicator color={COLORS.bloomAccent} />
+          ) : (
+            <View style={s.disconnectWrap}>
+              {hoveredDisconnect === item.guardianId && (
+                <Text style={s.disconnectLabel}>Delete Connection</Text>
+              )}
+              <TouchableOpacity
+                style={s.disconnectBtn}
+                onPress={(e) => { e.stopPropagation(); disconnect(item); }}
+                onPressIn={() => setHoveredDisconnect(item.guardianId)}
+                onPressOut={() => setHoveredDisconnect(null)}
+                activeOpacity={0.7}
+              >
+                <Text style={s.disconnectIcon}>🗑️</Text>
+              </TouchableOpacity>
+            </View>
           )}
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  function renderPendingCard(item: GuardianResult) {
+    const isProcessing = processing === item.guardianId;
+    return (
+      <TouchableOpacity key={item.guardianId} style={[s.card, s.pendingCard]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+        <View style={[s.avatar, { backgroundColor: avatarColor(item.guardianName) }]}>
+          <Text style={s.avatarInitial}>{item.guardianName[0]?.toUpperCase()}</Text>
+        </View>
+        <View style={s.info}>
+          <Text style={s.guardianName}>{item.guardianName}</Text>
+          {item.city ? <Text style={s.meta}>{item.city}</Text> : null}
+          <Text style={s.pendingLabel}>Wants to connect with you</Text>
+        </View>
+        <View style={s.actions}>
+          {isProcessing ? (
+            <ActivityIndicator color={COLORS.bloomAccent} />
+          ) : (
+            <>
+              <TouchableOpacity style={s.acceptBtn} onPress={() => accept(item)}>
+                <Text style={s.acceptText}>✓</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.declineBtn} onPress={() => decline(item)}>
+                <Text style={s.declineText}>✕</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  function renderDiscoverCard(item: GuardianResult) {
+    const isProcessing = processing === item.guardianId;
+    const isSending    = sending === item.guardianId;
+    return (
+      <TouchableOpacity key={item.guardianId} style={s.card} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+        <View style={[s.avatar, { backgroundColor: avatarColor(item.guardianName) }]}>
+          <Text style={s.avatarInitial}>{item.guardianName[0]?.toUpperCase()}</Text>
+        </View>
+        <View style={s.info}>
+          <Text style={s.guardianName}>{item.guardianName}</Text>
+          {item.city ? <Text style={s.meta}>{item.city}</Text> : null}
         </View>
         <View style={s.actions}>
           {isProcessing || isSending ? (
@@ -292,72 +395,217 @@ export default function GuardianConnectionsScreen() {
               </TouchableOpacity>
             </>
           ) : (
-            <TouchableOpacity style={s.connectBtn} onPress={() => sendRequest(item)}>
+            <TouchableOpacity style={s.connectBtn} onPress={(e) => { e.stopPropagation(); sendRequest(item); }}>
               <Text style={s.connectText}>Connect</Text>
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </TouchableOpacity>
     );
   }
 
+  // ── Render ──────────────────────────────────────────────────────────────────
+
   return (
     <View style={s.container}>
-      {/* Search row */}
-      <View style={s.searchRow}>
-        <TextInput
-          style={s.searchInput}
-          value={searchName}
-          onChangeText={setSearchName}
-          placeholder="Guardian name…"
-          placeholderTextColor={COLORS.bloomMuted}
-          clearButtonMode="while-editing"
-        />
-        <TextInput
-          style={s.searchInput}
-          value={searchCity}
-          onChangeText={setSearchCity}
-          placeholder="Guardian city or region…"
-          placeholderTextColor={COLORS.bloomMuted}
-          clearButtonMode="while-editing"
-        />
-      </View>
-
-      {/* Filter button */}
-      <View style={s.filterRow}>
-        <TouchableOpacity style={[s.filterBtn, totalActive > 0 && s.filterBtnActive]} onPress={openSheet} activeOpacity={0.8}>
-          <Text style={[s.filterBtnTxt, totalActive > 0 && s.filterBtnTxtActive]}>
-            {totalActive > 0 ? `Filters  ·  ${totalActive}` : 'Filters'}
+      {/* Tab bar */}
+      <View style={s.tabBar}>
+        <TouchableOpacity
+          style={[s.tab, activeTab === 'connected' && s.tabActive]}
+          onPress={() => setActiveTab('connected')}
+          activeOpacity={0.8}
+        >
+          <Text style={[s.tabTxt, activeTab === 'connected' && s.tabTxtActive]}>
+            My Connections
+            {connected.length > 0 ? `  ${connected.length}` : ''}
           </Text>
-          <Text style={[s.filterBtnIcon, totalActive > 0 && s.filterBtnTxtActive]}>⊟</Text>
+          {pendingReceived.length > 0 && activeTab !== 'connected' && (
+            <View style={s.tabDot} />
+          )}
         </TouchableOpacity>
-        <Text style={s.resultCount}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</Text>
+        <TouchableOpacity
+          style={[s.tab, activeTab === 'find' && s.tabActive]}
+          onPress={() => setActiveTab('find')}
+          activeOpacity={0.8}
+        >
+          <Text style={[s.tabTxt, activeTab === 'find' && s.tabTxtActive]}>Find Guardians</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Results list */}
       {loading ? (
         <View style={s.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>
-      ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={r => r.guardianId}
-          contentContainerStyle={s.list}
-          renderItem={({ item }) => renderCard(item)}
-          ListEmptyComponent={
+      ) : activeTab === 'connected' ? (
+        /* ── Connected tab ─────────────────────────────────────────── */
+        <ScrollView contentContainerStyle={s.list}>
+          {pendingReceived.length === 0 && connected.length === 0 ? (
             <View style={s.empty}>
-              <Text style={s.emptyEmoji}>🔍</Text>
-              <Text style={s.emptyText}>No guardians found</Text>
-              <Text style={s.emptyHint}>Try adjusting your filters</Text>
+              <Text style={s.emptyEmoji}>🤝</Text>
+              <Text style={s.emptyText}>No connections yet</Text>
+              <Text style={s.emptyHint}>
+                Connect with other guardians who share similar experiences — filter by your learner's situation, age, or location to find the right people.
+              </Text>
+              <TouchableOpacity style={s.emptyBtn} onPress={() => setActiveTab('find')} activeOpacity={0.8}>
+                <Text style={s.emptyBtnTxt}>Find Guardians</Text>
+              </TouchableOpacity>
             </View>
-          }
-        />
+          ) : (
+            <>
+              {pendingReceived.length > 0 && (
+                <>
+                  <Text style={s.sectionHeader}>Pending requests  ·  {pendingReceived.length}</Text>
+                  {pendingReceived.map(item => renderPendingCard(item))}
+                </>
+              )}
+              {connected.length > 0 && (
+                <>
+                  <Text style={[s.sectionHeader, pendingReceived.length > 0 && { marginTop: 20 }]}>
+                    Connected  ·  {connected.length}
+                  </Text>
+                  {connected.map(item => renderConnectedCard(item))}
+                </>
+              )}
+            </>
+          )}
+        </ScrollView>
+      ) : (
+        /* ── Find tab ──────────────────────────────────────────────── */
+        <>
+          <View style={s.searchRow}>
+            <TextInput
+              style={s.searchInput}
+              value={searchName}
+              onChangeText={setSearchName}
+              placeholder="Guardian name…"
+              placeholderTextColor={COLORS.bloomMuted}
+              clearButtonMode="while-editing"
+            />
+            <TextInput
+              style={s.searchInput}
+              value={searchCity}
+              onChangeText={setSearchCity}
+              placeholder="Guardian city or state…"
+              placeholderTextColor={COLORS.bloomMuted}
+              clearButtonMode="while-editing"
+            />
+          </View>
+
+          <View style={s.filterRow}>
+            <TouchableOpacity style={[s.filterBtn, totalActive > 0 && s.filterBtnActive]} onPress={openSheet} activeOpacity={0.8}>
+              <Text style={[s.filterBtnTxt, totalActive > 0 && s.filterBtnTxtActive]}>
+                {totalActive > 0 ? `Filters  ·  ${totalActive}` : 'Filters'}
+              </Text>
+              <Text style={[s.filterBtnIcon, totalActive > 0 && s.filterBtnTxtActive]}>⊟</Text>
+            </TouchableOpacity>
+            <Text style={s.resultCount}>{discovered.length} result{discovered.length !== 1 ? 's' : ''}</Text>
+          </View>
+
+          <FlatList
+            data={discovered}
+            keyExtractor={r => r.guardianId}
+            contentContainerStyle={s.list}
+            renderItem={({ item }) => renderDiscoverCard(item)}
+            ListEmptyComponent={
+              <View style={s.empty}>
+                <Text style={s.emptyEmoji}>🔍</Text>
+                <Text style={s.emptyText}>No guardians found</Text>
+                <Text style={s.emptyHint}>Try adjusting your filters</Text>
+              </View>
+            }
+          />
+        </>
       )}
+
+      {/* Quick look */}
+      <Modal visible={!!peekGuardian} transparent animationType="slide" onRequestClose={() => setPeekGuardian(null)}>
+        <TouchableOpacity style={s.sheetBackdrop} activeOpacity={1} onPress={() => setPeekGuardian(null)}>
+          {peekGuardian && (
+            <View style={s.sheet} onStartShouldSetResponder={() => true}>
+              {/* Handle */}
+              <View style={s.peekHandle} />
+
+              {/* Guardian header */}
+              <View style={s.peekHeader}>
+                {peekGuardian.photoUrl ? (
+                  <Image source={{ uri: peekGuardian.photoUrl }} style={s.peekPhoto} />
+                ) : (
+                  <View style={[s.peekPhoto, s.peekPhotoFallback, { backgroundColor: avatarColor(peekGuardian.guardianName) }]}>
+                    <Text style={s.peekInitial}>{peekGuardian.guardianName[0]?.toUpperCase()}</Text>
+                  </View>
+                )}
+                <View style={s.peekHeaderInfo}>
+                  <Text style={s.peekName}>{peekGuardian.guardianName}</Text>
+                  {peekGuardian.city ? (
+                    <Text style={s.peekCity}>📍 {peekGuardian.city}</Text>
+                  ) : null}
+                </View>
+              </View>
+
+              {/* Learner section */}
+              {peekGuardian.learnerName ? (
+                <View style={s.peekSection}>
+                  <Text style={s.peekSectionLabel}>Learner</Text>
+                  <View style={s.peekLearnerRow}>
+                    <View style={s.peekLearnerDetail}>
+                      <Text style={s.peekLearnerName}>{peekGuardian.learnerName}</Text>
+                      <Text style={s.peekLearnerMeta}>
+                        {[
+                          peekGuardian.learnerAge ? `${peekGuardian.learnerAge} yrs` : null,
+                          peekGuardian.learnerGender || null,
+                        ].filter(Boolean).join('  ·  ')}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ) : null}
+
+              {/* Situation tags */}
+              {peekGuardian.situationTags.length > 0 ? (
+                <View style={s.peekSection}>
+                  <Text style={s.peekSectionLabel}>Situation</Text>
+                  <View style={s.peekTagWrap}>
+                    {peekGuardian.situationTags.map(tag => (
+                      <View key={tag} style={s.peekTag}>
+                        <Text style={s.peekTagTxt}>{tag}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+
+              {/* Action */}
+              <View style={s.peekActions}>
+                {peekGuardian.status === 'accepted' ? (
+                  <View style={[s.sheetApply, { backgroundColor: '#065F46' }]}>
+                    <Text style={s.sheetApplyTxt}>✓ Connected</Text>
+                  </View>
+                ) : peekGuardian.status === 'pending_sent' ? (
+                  <View style={[s.sheetApply, { backgroundColor: COLORS.bloomMuted }]}>
+                    <Text style={s.sheetApplyTxt}>Request Sent</Text>
+                  </View>
+                ) : peekGuardian.status === 'pending_received' ? (
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <TouchableOpacity style={[s.sheetApply, { flex: 1 }]} onPress={() => { accept(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
+                      <Text style={s.sheetApplyTxt}>✓ Accept</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[s.sheetApply, { flex: 1, backgroundColor: '#FEE2E2' }]} onPress={() => { decline(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
+                      <Text style={[s.sheetApplyTxt, { color: '#B91C1C' }]}>✕ Decline</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity style={s.sheetApply} onPress={() => { sendRequest(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
+                    <Text style={s.sheetApplyTxt}>Connect</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          )}
+        </TouchableOpacity>
+      </Modal>
 
       {/* Filter sheet */}
       <Modal visible={sheetOpen} transparent animationType="slide" onRequestClose={() => setSheetOpen(false)}>
         <TouchableOpacity style={s.sheetBackdrop} activeOpacity={1} onPress={() => setSheetOpen(false)}>
           <View style={s.sheet} onStartShouldSetResponder={() => true}>
-            {/* Sheet header */}
             <View style={s.sheetHdr}>
               <TouchableOpacity onPress={clearSheet} activeOpacity={0.7}>
                 <Text style={s.sheetClear}>Clear all</Text>
@@ -371,7 +619,7 @@ export default function GuardianConnectionsScreen() {
             <ScrollView style={s.sheetBody} showsVerticalScrollIndicator={false}>
               <SheetSection
                 id="situation" emoji="🎯" title="Situation"
-                options={SITUATION_TAGS} selected={draftTags}
+                options={situationTagOptions} selected={draftTags}
                 onToggle={v => setDraftTags(t => toggle(t, v))}
                 openId={openSec} setOpenId={setOpenSec}
               />
@@ -379,6 +627,12 @@ export default function GuardianConnectionsScreen() {
                 id="age" emoji="👤" title="Learner age"
                 options={AGE_GROUPS} selected={draftAgeGroups}
                 onToggle={v => setDraftAgeGroups(g => toggle(g, v))}
+                openId={openSec} setOpenId={setOpenSec}
+              />
+              <SheetSection
+                id="gender" emoji="⚧" title="Learner gender"
+                options={GENDER_OPTIONS} selected={draftGenders}
+                onToggle={v => setDraftGenders(g => toggle(g, v))}
                 openId={openSec} setOpenId={setOpenSec}
               />
             </ScrollView>
@@ -396,6 +650,32 @@ export default function GuardianConnectionsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bloomBody },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 40 },
+
+  // Tab bar
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.bloomCard,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.bloomBorder,
+  },
+  tab: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 14, gap: 6,
+    borderBottomWidth: 2, borderBottomColor: 'transparent',
+  },
+  tabActive: { borderBottomColor: COLORS.bloomNavy },
+  tabTxt:    { fontSize: 14, fontWeight: '600', color: COLORS.bloomMuted },
+  tabTxtActive: { color: COLORS.bloomNavy, fontWeight: '800' },
+  tabDot: {
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: '#EF4444', marginLeft: 2,
+  },
+
+  sectionHeader: {
+    fontSize: 12, fontWeight: '700', color: COLORS.bloomMuted,
+    textTransform: 'uppercase', letterSpacing: 0.6,
+    marginBottom: 8, marginTop: 4,
+  },
 
   searchRow:   { padding: 14, gap: 8 },
   searchInput: {
@@ -421,29 +701,38 @@ const s = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
+  pendingCard: { borderColor: '#FDE68A', borderWidth: 1.5 },
+
   avatar:        { width: 52, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   avatarInitial: { fontSize: 20, fontWeight: '800', color: '#fff' },
   info:          { flex: 1, minWidth: 0, gap: 3 },
   guardianName:  { fontSize: 15, fontWeight: '800', color: COLORS.bloomText },
   meta:          { fontSize: 12, color: COLORS.bloomMuted },
   tags:          { fontSize: 11, color: COLORS.bloomMuted, marginTop: 1 },
+  pendingLabel:  { fontSize: 12, fontWeight: '600', color: '#B45309', marginTop: 2 },
   actions:       { alignItems: 'center', gap: 6 },
 
   connectBtn:     { backgroundColor: COLORS.bloomNavy, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
   connectText:    { color: '#fff', fontWeight: '700', fontSize: 13 },
   connectedBadge: { backgroundColor: '#D4F0DE', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
   connectedText:  { fontSize: 12, fontWeight: '700', color: '#065F46' },
+  disconnectWrap:  { alignItems: 'flex-end', gap: 4 },
+  disconnectLabel: { fontSize: 10, fontWeight: '700', color: '#B91C1C', textAlign: 'right' },
+  disconnectBtn:   { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
+  disconnectIcon:  { fontSize: 18 },
   pendingBadge:   { backgroundColor: COLORS.bloomBorder, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
   pendingText:    { fontSize: 12, fontWeight: '600', color: COLORS.bloomMuted },
   acceptBtn:      { backgroundColor: COLORS.bloomNavy, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
   acceptText:     { color: '#fff', fontWeight: '700', fontSize: 12 },
-  declineBtn:     { backgroundColor: COLORS.bloomBorder, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  declineText:    { color: COLORS.bloomMuted, fontWeight: '700', fontSize: 12 },
+  declineBtn:     { backgroundColor: '#FEE2E2', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
+  declineText:    { color: '#B91C1C', fontWeight: '700', fontSize: 12 },
 
   empty:      { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyEmoji: { fontSize: 56 },
   emptyText:  { fontSize: 20, fontWeight: '800', color: COLORS.bloomText },
-  emptyHint:  { fontSize: 14, color: COLORS.bloomMuted },
+  emptyHint:  { fontSize: 14, color: COLORS.bloomMuted, textAlign: 'center', paddingHorizontal: 32 },
+  emptyBtn:   { backgroundColor: COLORS.bloomNavy, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 },
+  emptyBtnTxt: { color: '#fff', fontWeight: '700', fontSize: 15 },
 
   // Filter sheet
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
@@ -485,4 +774,42 @@ const s = StyleSheet.create({
     borderRadius: 14, paddingVertical: 15, alignItems: 'center',
   },
   sheetApplyTxt: { fontSize: 16, fontWeight: '800', color: '#fff' },
+
+  // Quick look
+  peekHandle: {
+    width: 40, height: 4, borderRadius: 2,
+    backgroundColor: COLORS.bloomBorder,
+    alignSelf: 'center', marginTop: 12, marginBottom: 4,
+  },
+  peekHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 16,
+    paddingHorizontal: 20, paddingVertical: 16,
+    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+  },
+  peekPhoto:        { width: 72, height: 72, borderRadius: 36 },
+  peekPhotoFallback: { justifyContent: 'center', alignItems: 'center' },
+  peekInitial:      { fontSize: 28, fontWeight: '800', color: '#fff' },
+  peekHeaderInfo:   { flex: 1, gap: 4 },
+  peekName:         { fontSize: 20, fontWeight: '800', color: COLORS.bloomText },
+  peekCity:         { fontSize: 13, color: COLORS.bloomMuted, fontWeight: '500' },
+
+  peekSection:      { paddingHorizontal: 20, paddingTop: 16, gap: 8 },
+  peekSectionLabel: {
+    fontSize: 11, fontWeight: '700', color: COLORS.bloomMuted,
+    textTransform: 'uppercase', letterSpacing: 0.7,
+  },
+  peekLearnerRow:    { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  peekLearnerDetail: { gap: 2 },
+  peekLearnerName:   { fontSize: 16, fontWeight: '700', color: COLORS.bloomText },
+  peekLearnerMeta:   { fontSize: 13, color: COLORS.bloomMuted },
+
+  peekTagWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  peekTag: {
+    backgroundColor: COLORS.bloomBody, borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 5,
+    borderWidth: 1, borderColor: COLORS.bloomBorder,
+  },
+  peekTagTxt: { fontSize: 12, fontWeight: '600', color: COLORS.bloomText },
+
+  peekActions: { paddingHorizontal: 16, paddingBottom: 8 },
 });

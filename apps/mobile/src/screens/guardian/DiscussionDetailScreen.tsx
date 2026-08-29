@@ -3,6 +3,8 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useFocusEffect, useRoute, RouteProp } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
@@ -32,6 +34,8 @@ export default function DiscussionDetailScreen() {
   const route   = useRoute<Route>();
   const { postId } = route.params;
   const { guardian } = useAuth();
+  const insets     = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
 
   const [post, setPost]         = useState<Post | null>(null);
   const [replies, setReplies]   = useState<Reply[]>([]);
@@ -88,7 +92,7 @@ export default function DiscussionDetailScreen() {
     <KeyboardAvoidingView
       style={s.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={90}
+      keyboardVerticalOffset={headerHeight}
     >
       <FlatList
         ref={listRef}
@@ -134,14 +138,16 @@ export default function DiscussionDetailScreen() {
         }}
       />
 
-      <View style={s.replyBar}>
+      <View style={s.replyBar(insets.bottom)}>
         <TextInput
           style={s.replyInput}
           value={replyText}
           onChangeText={setReplyText}
           placeholder="Write a reply…"
           placeholderTextColor={COLORS.bloomMuted}
-          multiline
+          returnKeyType="send"
+          submitBehavior="submit"
+          onSubmitEditing={submitReply}
           maxLength={500}
         />
         <TouchableOpacity
@@ -197,12 +203,12 @@ const s = StyleSheet.create({
   noReplies:     { alignItems: 'center', paddingTop: 24 },
   noRepliesText: { fontSize: 14, color: COLORS.bloomMuted, fontStyle: 'italic' },
 
-  replyBar: {
+  replyBar: (bottomInset: number) => ({
     flexDirection: 'row', alignItems: 'flex-end', gap: 10,
-    padding: 12, paddingBottom: Platform.OS === 'ios' ? 24 : 12,
+    padding: 12, paddingBottom: Math.max(bottomInset + 8, 16),
     backgroundColor: COLORS.bloomCard,
     borderTopWidth: 1, borderTopColor: COLORS.bloomBorder,
-  },
+  }),
   replyInput: {
     flex: 1, backgroundColor: COLORS.bloomBody, borderRadius: 20,
     borderWidth: 1.5, borderColor: COLORS.bloomBorder,
