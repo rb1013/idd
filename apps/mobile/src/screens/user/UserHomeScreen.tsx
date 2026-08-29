@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   actProgress:    { fontSize: 15, fontWeight: '800', color: '#fff', marginTop: 4 },
 
   // Section label
-  sectionLabel: { fontSize: 20, fontWeight: '800', color: COLORS.text, paddingLeft: 4 },
+  sectionLabel: { fontSize: 20, fontWeight: '800', color: COLORS.text, paddingLeft: 4, marginTop: 10 },
 
   // Feature grid
   grid: {

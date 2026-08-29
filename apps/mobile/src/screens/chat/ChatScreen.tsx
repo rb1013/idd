@@ -4,9 +4,11 @@ import {
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
   Alert, Image,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Speech from 'expo-speech';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
@@ -25,6 +27,8 @@ function avatarColor(name: string) {
 
 export default function ChatScreen() {
   const { activeUser } = useAuth();
+  const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const navigation = useNavigation<NativeStackNavigationProp<UserStackParamList>>();
   const route = useRoute<Route>();
   const { conversationId, participantName, participantPhoto } = route.params;
@@ -43,7 +47,6 @@ export default function ChatScreen() {
   // Custom header: friend photo centred, tap speaks name
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerBackTitle: '',
       headerTitleAlign: 'center',
       headerTitle: () => (
         <TouchableOpacity
@@ -63,10 +66,7 @@ export default function ChatScreen() {
             <Text style={styles.headerSpeaker}>📢</Text>
           </View>
           <Text style={styles.headerName}>{participantName}</Text>
-          {isOnline
-            ? <Text style={styles.headerOnline}>● Online</Text>
-            : <Text style={styles.headerHint}>Tap to hear</Text>
-          }
+          {isOnline && <Text style={styles.headerOnline}>● Online</Text>}
         </TouchableOpacity>
       ),
     });
@@ -157,8 +157,8 @@ export default function ChatScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={90}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={headerHeight}
     >
       {/* Messages list */}
       <FlatList
@@ -166,6 +166,7 @@ export default function ChatScreen() {
         data={messages}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
+        keyboardShouldPersistTaps="handled"
         renderItem={({ item }) => {
           const isMine = item.sender_id === activeUser!.id;
           const timeLabel = new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -208,27 +209,25 @@ export default function ChatScreen() {
       />
 
       {/* Bottom controls */}
-      <View style={styles.bottom}>
-
-        {/* Communication Board — prominent button */}
-        <TouchableOpacity
-          style={styles.boardBtn}
-          onPress={() => setBoardVisible(true)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.boardBtnIcon}>🗣️</Text>
-          <Text style={styles.boardBtnLabel}>Communication Board</Text>
-        </TouchableOpacity>
-
-        {/* Text input */}
+      <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom + 8, 16) }]}>
         <View style={styles.inputRow}>
+          <TouchableOpacity
+            style={styles.boardBtn}
+            onPress={() => setBoardVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.boardBtnIcon}>🗣️</Text>
+          </TouchableOpacity>
+
           <TextInput
             style={styles.input}
             value={text}
             onChangeText={setText}
             placeholder="Type a message…"
             placeholderTextColor={COLORS.textLight}
-            multiline
+            returnKeyType="send"
+            onSubmitEditing={() => sendMessage(text, true)}
+            submitBehavior="submit"
             maxLength={500}
           />
           <TouchableOpacity
@@ -239,7 +238,6 @@ export default function ChatScreen() {
             <Text style={styles.sendBtnIcon}>➤</Text>
           </TouchableOpacity>
         </View>
-
       </View>
 
       <CommunicationBoard
@@ -256,7 +254,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // Header
-  headerTitle: { flexDirection: 'column', alignItems: 'center', gap: 2 },
+  headerTitle: { flexDirection: 'column', alignItems: 'center', gap: 2, marginTop: 28, paddingBottom: 10 },
   headerPhotoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   headerPhoto: { width: 50, height: 50, borderRadius: 25, borderWidth: 2.5, borderColor: COLORS.primary },
   headerPhotoPlaceholder: {
@@ -305,29 +303,27 @@ const styles = StyleSheet.create({
   bottom: {
     backgroundColor: COLORS.surface,
     borderTopWidth: 1, borderTopColor: COLORS.border,
-    paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 24 : 14,
+    paddingTop: 10,
     paddingHorizontal: 12,
-    gap: 10,
+    paddingBottom: 8,
   },
 
   // Symbol bubbles
   bubbleSymbol: { padding: 6, backgroundColor: 'transparent' },
   symbolBubbleImg: { width: 80, height: 80 },
 
-  // Communication Board button — prominent
+  // Communication Board — compact inline icon
   boardBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 10, backgroundColor: '#8B5CF6',
-    borderRadius: 20, paddingVertical: 16,
-    shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.4, shadowRadius: 14, elevation: 8,
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: '#EDE9FE',
+    justifyContent: 'center', alignItems: 'center',
+    flexShrink: 0,
   },
-  boardBtnIcon: { fontSize: 28 },
-  boardBtnLabel: { fontSize: 18, fontWeight: '900', color: '#fff', letterSpacing: 0.3 },
+  boardBtnIcon: { fontSize: 22 },
 
   // Input
   inputRow: {
-    flexDirection: 'row', alignItems: 'flex-end', gap: 10,
+    flexDirection: 'row', alignItems: 'flex-end', gap: 8,
   },
   input: {
     flex: 1, backgroundColor: '#EEF2FF',

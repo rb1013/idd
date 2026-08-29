@@ -10,6 +10,25 @@ export interface AACSymbol {
   localUri: string;  // local file URI — used for board rendering, works offline
 }
 
+export interface PhraseSymbol {
+  emoji: string;
+  label: string;   // shown under the emoji
+  phrase: string;  // text sent as the message
+}
+
+export const PHRASE_SYMBOLS: PhraseSymbol[] = [
+  { emoji: '👋', label: 'Hello!',          phrase: 'Hello! 👋'           },
+  { emoji: '🌅', label: 'Good morning',    phrase: 'Good morning! 🌅'    },
+  { emoji: '🌙', label: 'Good night',      phrase: 'Good night! 🌙'      },
+  { emoji: '🙂', label: 'How are you?',    phrase: 'How are you? 🙂'     },
+  { emoji: '😊', label: "I'm fine!",       phrase: "I'm fine! 😊"        },
+  { emoji: '🤝', label: 'Nice to meet',    phrase: 'Nice to meet you! 🤝' },
+  { emoji: '🎉', label: "That's great!",   phrase: "That's great! 🎉"    },
+  { emoji: '🥺', label: 'I miss you',      phrase: 'I miss you 🥺'       },
+  { emoji: '❤️', label: 'I love you',      phrase: 'I love you ❤️'       },
+  { emoji: '😂', label: 'So funny!',       phrase: 'That is so funny! 😂' },
+];
+
 const SYMBOL_DEFINITIONS = [
   { keyword: 'hello',     name: 'Hello'     },
   { keyword: 'goodbye',   name: 'Goodbye'   },

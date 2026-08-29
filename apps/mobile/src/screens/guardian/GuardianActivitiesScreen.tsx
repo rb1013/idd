@@ -9,7 +9,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 import { ACTIVITY_PRESETS, PRESET_MAP } from '../../lib/activityPresets';
 
-const MAX_ACTIVITIES = 7;
+const MAX_ACTIVITIES = 10;
 
 // ── Report helpers ────────────────────────────────────────────────────────────
 
@@ -247,9 +247,17 @@ export default function GuardianActivitiesScreen() {
                 const pct = totalActs > 0 ? day.completedKeys.size / totalActs : 0;
                 return (
                   <View key={day.logDate} style={[styles.reportDayRow, isToday && styles.reportDayRowToday]}>
-                    <Text style={[styles.reportDayLabel, isToday && styles.reportDayLabelToday]}>
-                      {isToday ? 'Today' : shortDate(day.logDate)}
-                    </Text>
+                    {/* Line 1: date + bar + count */}
+                    <View style={styles.reportDayTopRow}>
+                      <Text style={[styles.reportDayLabel, isToday && styles.reportDayLabelToday]}>
+                        {isToday ? 'Today' : shortDate(day.logDate)}
+                      </Text>
+                      <View style={styles.reportMiniBarBg}>
+                        <View style={[styles.reportMiniBar, { width: `${pct * 100}%` }]} />
+                      </View>
+                      <Text style={styles.reportDayCount}>{day.completedKeys.size}/{totalActs}</Text>
+                    </View>
+                    {/* Line 2: activity pips (wrappable) */}
                     <View style={styles.reportDayPips}>
                       {selectedKeys.map(key => {
                         const preset = PRESET_MAP[key];
@@ -260,7 +268,7 @@ export default function GuardianActivitiesScreen() {
                             style={[
                               styles.pip,
                               done
-                                ? { backgroundColor: preset?.bgColor ?? '#eee' }
+                                ? { backgroundColor: preset?.bgColor ?? '#D4F5E2', borderColor: preset?.color ?? '#5CBB7A', borderWidth: 2 }
                                 : styles.pipEmpty,
                             ]}
                           >
@@ -271,10 +279,6 @@ export default function GuardianActivitiesScreen() {
                         );
                       })}
                     </View>
-                    <View style={styles.reportMiniBarBg}>
-                      <View style={[styles.reportMiniBar, { width: `${pct * 100}%` }]} />
-                    </View>
-                    <Text style={styles.reportDayCount}>{day.completedKeys.size}/{totalActs}</Text>
                   </View>
                 );
               })}
@@ -386,21 +390,21 @@ const styles = StyleSheet.create({
   reportUserSub: { fontSize: 12, color: COLORS.textLight, marginTop: 2 },
 
   reportDayRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 8,
+    borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 10, gap: 8,
   },
-  reportDayRowToday: { backgroundColor: '#EFF6FF', borderRadius: 10, paddingHorizontal: 6, marginHorizontal: -6 },
-  reportDayLabel: { fontSize: 11, fontWeight: '700', color: COLORS.textLight, width: 68 },
+  reportDayRowToday: { backgroundColor: '#EFF6FF', borderRadius: 12, paddingHorizontal: 8, marginHorizontal: -8, paddingBottom: 8 },
+  reportDayTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  reportDayLabel: { fontSize: 12, fontWeight: '700', color: COLORS.textLight, width: 80 },
   reportDayLabelToday: { color: '#2563EB' },
-  reportDayPips: { flexDirection: 'row', gap: 3, flex: 1 },
+  reportDayPips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   pip: {
-    width: 26, height: 26, borderRadius: 8,
+    width: 34, height: 34, borderRadius: 10,
     justifyContent: 'center', alignItems: 'center',
   },
-  pipEmpty: { backgroundColor: '#F0F4F8' },
-  pipEmoji: { fontSize: 14 },
-  pipEmojiDim: { opacity: 0.3 },
-  reportMiniBarBg: { width: 36, height: 6, backgroundColor: COLORS.border, borderRadius: 3, overflow: 'hidden' },
-  reportMiniBar: { height: 6, borderRadius: 3, backgroundColor: '#5CBB7A' },
-  reportDayCount: { fontSize: 11, fontWeight: '700', color: COLORS.textLight, width: 24, textAlign: 'right' },
+  pipEmpty: { backgroundColor: '#F0F4F8', borderWidth: 2, borderColor: '#E5EAF0' },
+  pipEmoji: { fontSize: 18 },
+  pipEmojiDim: { opacity: 0.2 },
+  reportMiniBarBg: { flex: 1, height: 7, backgroundColor: COLORS.border, borderRadius: 4, overflow: 'hidden' },
+  reportMiniBar: { height: 7, borderRadius: 4, backgroundColor: '#5CBB7A' },
+  reportDayCount: { fontSize: 12, fontWeight: '800', color: COLORS.text, width: 28, textAlign: 'right' },
 });

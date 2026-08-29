@@ -25,12 +25,10 @@ const ACTIONS: {
   badgeBg: string | null; badgeText: string | null;
   screen: keyof GuardianNavParamList; statKey: keyof Stats | null;
 }[] = [
-  { label: 'Tutorials',     emoji: '📚', badgeBg: '#DAEAFF', badgeText: '#1E5CA8', screen: 'Learning',     statKey: 'tutorials'  },
-  { label: 'Activities',    emoji: '✅', badgeBg: '#D4F5E2', badgeText: '#0A6635', screen: 'Activities',   statKey: 'activities' },
-  { label: 'Schedule',      emoji: '📅', badgeBg: null,      badgeText: null,      screen: 'Schedule',          statKey: null         },
-  { label: 'Connections',   emoji: '👥', badgeBg: null,      badgeText: null,      screen: 'GuardianConnections', statKey: null         },
-  { label: 'Discussions',   emoji: '💬', badgeBg: null,      badgeText: null,      screen: 'Discussions',         statKey: null         },
-  { label: 'Events',        emoji: '🎉', badgeBg: null,      badgeText: null,      screen: 'Events',              statKey: null         },
+  { label: 'Tutorials',   emoji: '📚', badgeBg: '#DAEAFF', badgeText: '#1E5CA8', screen: 'Learning',           statKey: 'tutorials' },
+  { label: 'Connections', emoji: '👥', badgeBg: null,      badgeText: null,      screen: 'GuardianConnections', statKey: null        },
+  { label: 'Discussions', emoji: '💬', badgeBg: null,      badgeText: null,      screen: 'Discussions',         statKey: null        },
+  { label: 'Events',      emoji: '🎉', badgeBg: null,      badgeText: null,      screen: 'Events',              statKey: null        },
 ];
 
 export default function GuardianHomeScreen() {
@@ -159,7 +157,7 @@ export default function GuardianHomeScreen() {
 
         <View style={s.actionGrid}>
           {ACTIONS.reduce<typeof ACTIONS[]>((rows, a, i) => {
-            if (i % 3 === 0) rows.push([a]); else rows[rows.length - 1].push(a);
+            if (i % 2 === 0) rows.push([a]); else rows[rows.length - 1].push(a);
             return rows;
           }, []).map((row, ri) => (
             <View key={ri} style={s.actionGridRow}>
@@ -228,34 +226,61 @@ export default function GuardianHomeScreen() {
         </View>
 
         {learners.length > 0 && (
-          <View style={s.learnerActionGrid}>
-            <TouchableOpacity
-              style={s.actionTile}
-              onPress={() => navigation.navigate('LearnerDiscovery')}
-              activeOpacity={0.78}
-            >
-              <Text style={s.actionEmoji}>🔍</Text>
-              <Text style={s.actionLabel}>Find{'\n'}Friends</Text>
-            </TouchableOpacity>
+          <>
+            <View style={s.learnerActionGrid}>
+              <TouchableOpacity
+                style={s.actionTile}
+                onPress={() => navigation.navigate('LearnerDiscovery')}
+                activeOpacity={0.78}
+              >
+                <Text style={s.actionEmoji}>🔍</Text>
+                <Text style={s.actionLabel}>Find{'\n'}Friends</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={s.actionTile}
-              onPress={() => navigation.navigate('LearnerFriendRequests')}
-              activeOpacity={0.78}
-            >
-              <Text style={s.actionEmoji}>🤝</Text>
-              <Text style={s.actionLabel}>Friend{'\n'}Requests</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={s.actionTile}
+                onPress={() => navigation.navigate('LearnerFriendRequests')}
+                activeOpacity={0.78}
+              >
+                <Text style={s.actionEmoji}>🤝</Text>
+                <Text style={s.actionLabel}>Friend{'\n'}Requests</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={s.actionTile}
-              onPress={() => navigation.navigate('FavouriteFriends')}
-              activeOpacity={0.78}
-            >
-              <Text style={s.actionEmoji}>⭐</Text>
-              <Text style={s.actionLabel}>Favourite{'\n'}Friends</Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={s.actionTile}
+                onPress={() => navigation.navigate('FavouriteFriends')}
+                activeOpacity={0.78}
+              >
+                <Text style={s.actionEmoji}>⭐</Text>
+                <Text style={s.actionLabel}>Manage{'\n'}Friends</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={[s.learnerActionGrid, { marginTop: 8 }]}>
+              <TouchableOpacity
+                style={s.actionTile}
+                onPress={() => navigation.navigate('Activities')}
+                activeOpacity={0.78}
+              >
+                <Text style={s.actionEmoji}>✅</Text>
+                <Text style={s.actionLabel}>Activities</Text>
+                {stats.activities > 0 && (
+                  <View style={[s.actionBadge, { backgroundColor: '#D4F5E2' }]}>
+                    <Text style={[s.actionBadgeText, { color: '#0A6635' }]}>{stats.activities}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={s.actionTile}
+                onPress={() => navigation.navigate('Schedule')}
+                activeOpacity={0.78}
+              >
+                <Text style={s.actionEmoji}>📅</Text>
+                <Text style={s.actionLabel}>Schedule</Text>
+              </TouchableOpacity>
+            </View>
+          </>
         )}
 
 

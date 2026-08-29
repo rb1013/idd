@@ -1,0 +1,788 @@
+<title>Ray Color Concept</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Inter:wght@400;500;600&display=swap">
+
+<style>
+/* ── Tokens ───────────────────────────────────────── */
+:root {
+  --sky:        #5BC8F5;
+  --sky-deep:   #3AADE0;
+  --sky-pale:   #E6F6FD;
+  --sun:        #FFB830;
+  --sun-warm:   #F5A623;
+  --amber:      #E8930A;
+  --glow:       #FFF8E1;
+  --navy:       #1A3248;
+  --navy-mid:   #2C4A65;
+  --muted:      #7A9BBF;
+  --white:      #FFFFFF;
+  --page:       #EEF8FF;
+  --card:       #FFFFFF;
+  --border:     rgba(91,200,245,0.22);
+  --ray-grad:   linear-gradient(160deg, #5BC8F5 0%, #7FD4F7 25%, #FFD060 65%, #FFB830 100%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page:   #0C1B28;
+    --card:   #152230;
+    --border: rgba(91,200,245,0.1);
+    --muted:  #5A7A9A;
+    --sky-pale: #152230;
+    --glow:   #1A2818;
+  }
+}
+:root[data-theme="dark"] {
+  --page:   #0C1B28;
+  --card:   #152230;
+  --border: rgba(91,200,245,0.1);
+  --muted:  #5A7A9A;
+  --sky-pale: #152230;
+  --glow:   #1A2818;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--page);
+  color: var(--navy);
+  overflow-x: hidden;
+}
+
+/* ── Hero ─────────────────────────────────────────── */
+.hero {
+  background: var(--ray-grad);
+  padding: 72px 24px 88px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 55% at 50% 62%, rgba(255,255,255,0.18) 0%, transparent 100%);
+  pointer-events: none;
+}
+.hero-icon-wrap {
+  width: 128px;
+  height: 128px;
+  margin: 0 auto 22px;
+  background: linear-gradient(155deg, #5BC8F5 0%, #80D5F7 30%, #FFD870 65%, #FFB830 100%);
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 40px rgba(255,184,48,0.45), 0 0 0 3px rgba(255,255,255,0.25);
+  position: relative;
+  z-index: 1;
+}
+.sun-svg { width: 88px; height: 88px; }
+.hero-title {
+  font-family: 'Nunito', sans-serif;
+  font-size: 56px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -2px;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.12);
+}
+.hero-dot { color: rgba(255,255,255,0.6); }
+.hero-tagline {
+  font-size: 15px;
+  color: rgba(255,255,255,0.8);
+  margin-top: 8px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  position: relative;
+  z-index: 1;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 20px;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.95);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Wave ─────────────────────────────────────────── */
+.wave { display: block; margin-top: -2px; }
+
+/* ── Section wrapper ──────────────────────────────── */
+.section {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 52px 28px;
+}
+.eyebrow {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.section-title {
+  font-family: 'Nunito', sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--navy);
+  margin-bottom: 28px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .section-title { color: #D8EAF8; } }
+:root[data-theme="dark"] .section-title { color: #D8EAF8; }
+
+/* ── Palette ──────────────────────────────────────── */
+.palette-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.swatch-dot {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  transition: transform 0.2s;
+}
+.swatch-dot:hover { transform: scale(1.08); }
+.swatch-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.4px;
+}
+.swatch-hex { font-size: 10px; color: var(--muted); opacity: 0.65; font-variant-numeric: tabular-nums; }
+
+/* ── Phones ──────────────────────────────────────── */
+.phones-outer {
+  padding: 0 0 64px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.phones-inner {
+  display: flex;
+  gap: 28px;
+  padding: 8px 28px 16px;
+  width: max-content;
+}
+.phone-col { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.phone-label {
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.phone-frame {
+  width: 258px;
+  background: #0A1520;
+  border-radius: 44px;
+  padding: 13px;
+  box-shadow:
+    0 32px 72px rgba(0,0,0,0.28),
+    0 0 0 1px rgba(255,255,255,0.07),
+    inset 0 0 0 1px rgba(255,255,255,0.04);
+  position: relative;
+}
+.phone-island {
+  width: 76px;
+  height: 24px;
+  background: #0A1520;
+  border-radius: 12px;
+  margin: 0 auto 7px;
+}
+.phone-screen {
+  border-radius: 32px;
+  overflow: hidden;
+  background: var(--page);
+  height: 514px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Screen 1 — Welcome ===== */
+.sc1-head {
+  background: var(--ray-grad);
+  padding: 22px 18px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  position: relative;
+}
+.sc1-head::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 50% 70%, rgba(255,255,255,0.15) 0%, transparent 100%);
+  pointer-events: none;
+}
+.sc1-icon {
+  width: 46px; height: 46px;
+  background: linear-gradient(155deg,#5BC8F5,#FFB830);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  box-shadow: 0 4px 14px rgba(255,184,48,0.4);
+  position: relative; z-index: 1;
+}
+.sc1-wordmark {
+  font-family: 'Nunito', sans-serif;
+  font-size: 24px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.5px;
+  position: relative; z-index: 1;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.12);
+}
+.sc1-sub { font-size: 10px; color: rgba(255,255,255,0.72); font-weight: 500; position: relative; z-index: 1; }
+
+.sc1-body {
+  flex: 1;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  background: #F2F9FF;
+  overflow: hidden;
+}
+.sc1-tile {
+  background: #fff;
+  border-radius: 18px;
+  padding: 13px 14px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  box-shadow: 0 2px 10px rgba(26,50,72,0.07);
+  border: 1px solid rgba(91,200,245,0.18);
+  overflow: hidden;
+  position: relative;
+}
+.sc1-bar { width: 5px; border-radius: 3px; align-self: stretch; flex-shrink: 0; }
+.sc1-avatar {
+  width: 44px; height: 44px; border-radius: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Nunito', sans-serif; font-size: 18px; font-weight: 900; color: #fff;
+  flex-shrink: 0;
+}
+.sc1-info { flex: 1; min-width: 0; }
+.sc1-tname { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; color: #1A3248; }
+.sc1-tsub  { font-size: 10px; font-weight: 600; color: #7A9BBF; margin-top: 2px; }
+.sc1-badge {
+  width: 28px; height: 28px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.sc1-signout {
+  font-size: 10px; font-weight: 700; color: #C0392B;
+  text-align: center; padding: 10px; background: #F2F9FF;
+}
+
+/* ===== Screen 2 — Home ===== */
+.sc2-head {
+  background: linear-gradient(135deg, #5BC8F5 0%, #3AADE0 100%);
+  padding: 18px 16px 20px;
+  flex-shrink: 0;
+}
+.sc2-greeting { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.7); letter-spacing: 1px; text-transform: uppercase; }
+.sc2-name { font-family: 'Nunito', sans-serif; font-size: 20px; font-weight: 900; color: #fff; margin-top: 2px; }
+.sc2-mood {
+  margin-top: 10px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 16px;
+  padding: 5px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.92);
+}
+
+.sc2-body {
+  flex: 1;
+  padding: 14px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #F2F9FF;
+  overflow: hidden;
+}
+.sc2-shdr { font-size: 9px; font-weight: 800; color: #7A9BBF; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 4px; }
+.sc2-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 11px 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 1px 6px rgba(26,50,72,0.07);
+  border: 1px solid rgba(91,200,245,0.15);
+}
+.sc2-cicon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.sc2-ctitle { font-family: 'Nunito', sans-serif; font-size: 12px; font-weight: 800; color: #1A3248; }
+.sc2-csub   { font-size: 9px; color: #7A9BBF; margin-top: 1px; }
+
+.sc2-nav {
+  background: #fff;
+  border-top: 1px solid rgba(91,200,245,0.2);
+  padding: 8px 4px 5px;
+  display: flex;
+  justify-content: space-around;
+  flex-shrink: 0;
+}
+.sc2-ni {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 8px; font-weight: 600; color: #7A9BBF;
+}
+.sc2-ni.on { color: #3AADE0; }
+.sc2-ni-icon { font-size: 18px; }
+
+/* ===== Screen 3 — Friends ===== */
+.sc3-head {
+  background: linear-gradient(135deg, #FFB830 0%, #E8930A 100%);
+  padding: 18px 16px 20px;
+  flex-shrink: 0;
+}
+.sc3-title { font-family: 'Nunito', sans-serif; font-size: 19px; font-weight: 900; color: #fff; }
+.sc3-sub   { font-size: 10px; color: rgba(255,255,255,0.78); margin-top: 2px; }
+
+.sc3-body {
+  flex: 1;
+  padding: 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #FFF8EE;
+  overflow: hidden;
+}
+.sc3-shdr {
+  font-size: 9px; font-weight: 900; color: #C07820;
+  letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 2px;
+}
+.sc3-friend {
+  border-radius: 14px;
+  padding: 9px 11px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+.sc3-avatar {
+  width: 38px; height: 38px; border-radius: 19px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 900; color: #fff;
+  flex-shrink: 0;
+}
+.sc3-fname { font-family: 'Nunito', sans-serif; font-size: 12px; font-weight: 800; color: #1A3248; }
+.sc3-emojis { font-size: 13px; margin-top: 2px; }
+
+.sc3-nav {
+  background: #fff;
+  border-top: 1px solid rgba(232,147,10,0.18);
+  padding: 8px 4px 5px;
+  display: flex;
+  justify-content: space-around;
+  flex-shrink: 0;
+}
+.sc3-ni {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 8px; font-weight: 600; color: #7A9BBF;
+}
+.sc3-ni.on { color: #E8930A; }
+.sc3-ni-icon { font-size: 18px; }
+
+/* ===== Design highlight cards ===== */
+.highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.hcard {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 26px;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 12px rgba(26,50,72,0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.hcard:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(26,50,72,0.1); }
+.hcard-icon { font-size: 30px; margin-bottom: 14px; }
+.hcard-title {
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px; font-weight: 900;
+  color: var(--navy); margin-bottom: 7px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hcard-title { color: #D8EAF8; } }
+:root[data-theme="dark"] .hcard-title { color: #D8EAF8; }
+.hcard-desc { font-size: 13px; color: var(--muted); line-height: 1.65; }
+.hcard-pill {
+  display: inline-flex;
+  margin-top: 14px;
+  background: var(--sky-pale);
+  color: var(--sky-deep);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ── Footer ────────────────────────────────────────── */
+.footer {
+  background: var(--navy);
+  padding: 40px 28px;
+  text-align: center;
+}
+.footer-icon { font-size: 32px; margin-bottom: 10px; }
+.footer-text { font-family: 'Nunito', sans-serif; font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+.footer-text span { color: rgba(255,255,255,0.4); }
+.footer-sub { font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 6px; }
+</style>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-icon-wrap">
+    <!-- Sun SVG -->
+    <svg class="sun-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="sg" cx="48%" cy="42%" r="56%">
+          <stop offset="0%" stop-color="#FFE866"/>
+          <stop offset="55%" stop-color="#FFB830"/>
+          <stop offset="100%" stop-color="#E8930A"/>
+        </radialGradient>
+        <radialGradient id="gg" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="rgba(255,224,80,0.38)"/>
+          <stop offset="100%" stop-color="rgba(255,184,48,0)"/>
+        </radialGradient>
+        <linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FFE060"/>
+          <stop offset="100%" stop-color="#F59A10"/>
+        </linearGradient>
+        <filter id="sf">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="1.5"/>
+          <feOffset dy="2"/>
+          <feComponentTransfer><feFuncA type="linear" slope="0.25"/></feComponentTransfer>
+          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- Outer glow -->
+      <circle cx="50" cy="50" r="48" fill="url(#gg)"/>
+      <!-- Rays -->
+      <g transform="translate(50,50)" filter="url(#sf)">
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(0)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(22.5)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(45)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(67.5)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(90)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(112.5)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(135)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(157.5)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(180)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(202.5)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(225)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(247.5)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(270)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(292.5)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(315)"/>
+        <rect x="-3" y="-46" width="6" height="14" rx="3" fill="url(#rg)" transform="rotate(337.5)"/>
+      </g>
+      <!-- Sun body -->
+      <circle cx="50" cy="50" r="25" fill="url(#sg)"/>
+      <!-- Specular -->
+      <ellipse cx="43" cy="41" rx="8" ry="5.5" fill="rgba(255,255,255,0.32)" transform="rotate(-22,43,41)"/>
+    </svg>
+  </div>
+  <h1 class="hero-title">Ray<span class="hero-dot">.</span></h1>
+  <p class="hero-tagline">Guiding light for every day</p>
+  <div class="hero-badge">✦ New Color Concept</div>
+</section>
+
+<!-- wave -->
+<svg class="wave" viewBox="0 0 1440 52" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="display:block;margin-top:-1px;">
+  <path d="M0 52 Q360 0 720 26 Q1080 52 1440 12 L1440 0 L0 0Z" fill="#FFB830" opacity="0.12"/>
+  <path d="M0 52 Q360 12 720 36 Q1080 60 1440 28 L1440 52Z" fill="var(--page)"/>
+</svg>
+
+<!-- ── Palette ─────────────────────────────────────────────────── -->
+<div class="section" style="padding-bottom:0">
+  <p class="eyebrow">Color System</p>
+  <h2 class="section-title">Drawn from the icon</h2>
+  <div class="palette-row">
+    <div class="swatch">
+      <div class="swatch-dot" style="background:#5BC8F5"></div>
+      <div class="swatch-name">Sky</div>
+      <div class="swatch-hex">#5BC8F5</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-dot" style="background:#3AADE0"></div>
+      <div class="swatch-name">Sky Deep</div>
+      <div class="swatch-hex">#3AADE0</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-dot" style="background:#FFB830"></div>
+      <div class="swatch-name">Sun</div>
+      <div class="swatch-hex">#FFB830</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-dot" style="background:#E8930A"></div>
+      <div class="swatch-name">Amber</div>
+      <div class="swatch-hex">#E8930A</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-dot" style="background:#FFF8E1; border:1.5px solid rgba(0,0,0,0.06)"></div>
+      <div class="swatch-name">Glow</div>
+      <div class="swatch-hex">#FFF8E1</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-dot" style="background:#1A3248"></div>
+      <div class="swatch-name">Navy</div>
+      <div class="swatch-hex">#1A3248</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Screen mockups ─────────────────────────────────────────── -->
+<div class="section" style="padding-bottom:16px">
+  <p class="eyebrow">Screen Concepts</p>
+  <h2 class="section-title">Key screens reimagined</h2>
+</div>
+
+<div class="phones-outer">
+  <div class="phones-inner">
+
+    <!-- ── Phone 1: Welcome ── -->
+    <div class="phone-col">
+      <div class="phone-label">Welcome</div>
+      <div class="phone-frame">
+        <div class="phone-island"></div>
+        <div class="phone-screen">
+          <!-- header -->
+          <div class="sc1-head">
+            <div class="sc1-icon">☀️</div>
+            <div class="sc1-wordmark">Ray<span style="color:rgba(255,255,255,0.55)">.</span></div>
+            <div class="sc1-sub">Guiding light for every day</div>
+          </div>
+          <!-- tiles -->
+          <div class="sc1-body">
+            <div style="font-size:9px;font-weight:800;color:#7A9BBF;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:2px">Who's using Ray?</div>
+
+            <!-- Guardian tile -->
+            <div class="sc1-tile">
+              <div class="sc1-bar" style="background:#1A3248"></div>
+              <div class="sc1-avatar" style="background:linear-gradient(135deg,#3AADE0,#1A3248)">A</div>
+              <div class="sc1-info">
+                <div class="sc1-tname">Avantika</div>
+                <div class="sc1-tsub">Guardian · Enter PIN →</div>
+              </div>
+              <div class="sc1-badge" style="background:#EEF8FF">🤓</div>
+            </div>
+
+            <!-- Learner tile 1 -->
+            <div class="sc1-tile">
+              <div class="sc1-bar" style="background:#5BC8F5"></div>
+              <div class="sc1-avatar" style="background:linear-gradient(135deg,#5BC8F5,#3AADE0)">R</div>
+              <div class="sc1-info">
+                <div class="sc1-tname">Romeo</div>
+                <div class="sc1-tsub" style="color:#3AADE0">Tap to unlock 🫆</div>
+              </div>
+              <div class="sc1-badge" style="background:#E6F6FD">🫆</div>
+            </div>
+
+            <!-- Learner tile 2 -->
+            <div class="sc1-tile">
+              <div class="sc1-bar" style="background:#FFB830"></div>
+              <div class="sc1-avatar" style="background:linear-gradient(135deg,#FFD060,#E8930A)">A</div>
+              <div class="sc1-info">
+                <div class="sc1-tname">Ash</div>
+                <div class="sc1-tsub" style="color:#E8930A">Tap to unlock 🫆</div>
+              </div>
+              <div class="sc1-badge" style="background:#FFF8E1">🫆</div>
+            </div>
+          </div>
+          <div class="sc1-signout">Sign out</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Phone 2: User Home ── -->
+    <div class="phone-col">
+      <div class="phone-label">Home</div>
+      <div class="phone-frame">
+        <div class="phone-island"></div>
+        <div class="phone-screen">
+          <div class="sc2-head">
+            <div class="sc2-greeting">Good morning</div>
+            <div class="sc2-name">Romeo ☀️</div>
+            <div class="sc2-mood">😊 &nbsp;<span class="sc2-mood-text">Feeling happy today!</span></div>
+          </div>
+          <div class="sc2-body">
+            <div class="sc2-shdr">Today's Plan</div>
+            <div class="sc2-card">
+              <div class="sc2-cicon" style="background:#E6F6FD">📋</div>
+              <div>
+                <div class="sc2-ctitle">Activities</div>
+                <div class="sc2-csub">3 tasks · 1 done</div>
+              </div>
+              <div style="margin-left:auto;font-size:10px;font-weight:700;color:#3AADE0">View →</div>
+            </div>
+            <div class="sc2-card">
+              <div class="sc2-cicon" style="background:#FFF8E1">🎓</div>
+              <div>
+                <div class="sc2-ctitle">Tutorials</div>
+                <div class="sc2-csub">2 ready for you</div>
+              </div>
+              <div style="margin-left:auto;font-size:10px;font-weight:700;color:#E8930A">View →</div>
+            </div>
+
+            <div class="sc2-shdr" style="margin-top:4px">My World</div>
+            <div class="sc2-card">
+              <div class="sc2-cicon" style="background:#FFF0F0">🤝</div>
+              <div>
+                <div class="sc2-ctitle">Friends</div>
+                <div class="sc2-csub">Ash is online now 🟢</div>
+              </div>
+              <div style="margin-left:auto;font-size:10px;font-weight:700;color:#5BC8F5">View →</div>
+            </div>
+            <div class="sc2-card">
+              <div class="sc2-cicon" style="background:#F0FFF5">💬</div>
+              <div>
+                <div class="sc2-ctitle">Messages</div>
+                <div class="sc2-csub">1 unread message</div>
+              </div>
+              <div style="margin-left:auto;background:#E8930A;color:#fff;font-size:9px;font-weight:800;border-radius:10px;padding:2px 7px">1</div>
+            </div>
+          </div>
+          <div class="sc2-nav">
+            <div class="sc2-ni on"><div class="sc2-ni-icon">🏠</div>Home</div>
+            <div class="sc2-ni"><div class="sc2-ni-icon">🤝</div>Friends</div>
+            <div class="sc2-ni"><div class="sc2-ni-icon">💬</div>Chat</div>
+            <div class="sc2-ni"><div class="sc2-ni-icon">🎓</div>Learn</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Phone 3: Friends ── -->
+    <div class="phone-col">
+      <div class="phone-label">My Friends</div>
+      <div class="phone-frame">
+        <div class="phone-island"></div>
+        <div class="phone-screen">
+          <div class="sc3-head">
+            <div class="sc3-title">🤝 My Friends</div>
+            <div class="sc3-sub">2 friends · 1 online</div>
+          </div>
+          <div class="sc3-body">
+            <div class="sc3-shdr">⭐ Favourites</div>
+            <div class="sc3-friend" style="background:#FFF8E1;border-left-color:#FFB830">
+              <div class="sc3-avatar" style="background:linear-gradient(135deg,#5BC8F5,#3AADE0)">A</div>
+              <div>
+                <div class="sc3-fname">Ash</div>
+                <div class="sc3-emojis">👍 🎵 🎨 &nbsp; 👎 🔊</div>
+              </div>
+              <div style="margin-left:auto;font-size:18px">›</div>
+            </div>
+
+            <div class="sc3-shdr" style="margin-top:6px">👥 All Friends</div>
+            <div class="sc3-friend" style="background:#FFF0F5;border-left-color:#F06595">
+              <div class="sc3-avatar" style="background:linear-gradient(135deg,#F06595,#C0395A)">R</div>
+              <div>
+                <div class="sc3-fname">Romeo</div>
+                <div class="sc3-emojis">👍 📚 🎮 &nbsp; 👎 👥</div>
+              </div>
+              <div style="margin-left:auto;font-size:18px">›</div>
+            </div>
+
+            <!-- speak button hint -->
+            <div style="margin-top:auto;background:#fff;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:8px;box-shadow:0 1px 6px rgba(26,50,72,0.07);border:1px solid rgba(91,200,245,0.15)">
+              <div style="font-size:20px">📢</div>
+              <div style="font-size:10px;font-weight:600;color:#7A9BBF;flex:1">Tap 📢 to hear about a friend</div>
+            </div>
+          </div>
+          <div class="sc3-nav">
+            <div class="sc3-ni"><div class="sc3-ni-icon">🏠</div>Home</div>
+            <div class="sc3-ni on"><div class="sc3-ni-icon">🤝</div>Friends</div>
+            <div class="sc3-ni"><div class="sc3-ni-icon">💬</div>Chat</div>
+            <div class="sc3-ni"><div class="sc3-ni-icon">🎓</div>Learn</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Design highlights ──────────────────────────────────────── -->
+<div class="section">
+  <p class="eyebrow">Design Rationale</p>
+  <h2 class="section-title">What the new palette does</h2>
+  <div class="highlights-grid">
+    <div class="hcard">
+      <div class="hcard-icon">🌅</div>
+      <div class="hcard-title">Sky → Gold gradient</div>
+      <div class="hcard-desc">Every header flows from sky blue at the top to warm golden yellow at the bottom — matching the icon's exact colour story and giving each screen a visual anchor to the brand.</div>
+      <div class="hcard-pill">Consistent identity</div>
+    </div>
+    <div class="hcard">
+      <div class="hcard-icon">🎨</div>
+      <div class="hcard-title">Functional colour coding</div>
+      <div class="hcard-desc">Sky blue signals navigation and social features. Amber/gold signals learning and achievements. Navy anchors chrome. Each zone is scannable at a glance — important for IDD users.</div>
+      <div class="hcard-pill">Accessible clarity</div>
+    </div>
+    <div class="hcard">
+      <div class="hcard-icon">☁️</div>
+      <div class="hcard-title">Warm page ground</div>
+      <div class="hcard-desc">The page background shifts from cool #EEF8FF (sky-tinted white) to warm #FFF8EE (glow-tinted) depending on the screen's primary colour — the screens feel like they belong to one world.</div>
+      <div class="hcard-pill">Tonal cohesion</div>
+    </div>
+    <div class="hcard">
+      <div class="hcard-icon">🔵</div>
+      <div class="hcard-title">Navy stays structural</div>
+      <div class="hcard-desc">The deep navy (#1A3248) is reserved for phone bezels, text, and the guardian tile — quiet anchors that keep the bright palette from feeling ungrounded or childish.</div>
+      <div class="hcard-pill">Visual hierarchy</div>
+    </div>
+    <div class="hcard">
+      <div class="hcard-icon">✨</div>
+      <div class="hcard-title">Cards glow, not grey</div>
+      <div class="hcard-desc">Card backgrounds use sky-border tinting on white (#FFF) so they feel luminous rather than flat. The border colour shifts between screens to stay in the header's hue family.</div>
+      <div class="hcard-pill">Depth & warmth</div>
+    </div>
+    <div class="hcard">
+      <div class="hcard-icon">🦯</div>
+      <div class="hcard-title">High contrast preserved</div>
+      <div class="hcard-desc">Navy on white and white on the gradient all pass WCAG AA. The sun gradient is decorative — text never sits on mid-gradient without a white or navy backing.</div>
+      <div class="hcard-pill">Accessibility first</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Footer ─────────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="footer-icon">☀️</div>
+  <div class="footer-text">Ray<span>.</span></div>
+  <div class="footer-sub">Color concept — no code was changed</div>
+</footer>

@@ -235,13 +235,13 @@ function GuardianTabs() {
         headerRight: () => <GuardianSettingsBtn />,
       }}
     >
-      <GuardianNav.Screen name="LearnerSelect"   component={LearnerSelectScreen}         options={{ headerShown: false }} />
-      <GuardianNav.Screen name="GuardianHome"    component={GuardianHomeScreen}          options={{ headerShown: false }} />
+      <GuardianNav.Screen name="LearnerSelect"   component={LearnerSelectScreen}         options={{ headerShown: false, headerBackTitle: '' }} />
+      <GuardianNav.Screen name="GuardianHome"    component={GuardianHomeScreen}          options={{ headerShown: false, headerBackTitle: '' }} />
       <GuardianNav.Screen name="Profiles"        component={SelectUserScreen}            options={{ title: 'Profiles' }} />
       <GuardianNav.Screen name="Notifications"   component={GuardianNotificationsScreen} options={{ title: 'Notifications' }} />
       <GuardianNav.Screen name="Learning"        component={GuardianTutorialsScreen}     options={{ title: 'Learning' }} />
       <GuardianNav.Screen name="Activities"      component={GuardianActivitiesScreen}    options={{ title: 'Activities', headerRight: undefined }} />
-      <GuardianNav.Screen name="Account"         component={GuardianAccountScreen}       options={{ title: 'Account', headerRight: undefined, headerBackTitle: '' }} />
+      <GuardianNav.Screen name="Account"         component={GuardianAccountScreen}       options={{ title: 'Account', headerRight: undefined }} />
       <GuardianNav.Screen name="Schedule"        component={ScheduleScreen}              options={{ title: 'Schedule' }} />
       <GuardianNav.Screen name="UserSchedule"    component={UserScheduleScreen}          options={{ title: 'Schedule' }} />
       <GuardianNav.Screen name="CreateUser"      component={CreateUserScreen}            options={{ title: 'Create Profile' }} />
@@ -258,7 +258,7 @@ function GuardianTabs() {
       <GuardianNav.Screen name="Events"              component={EventsScreen}                options={{ title: 'Events' }} />
       <GuardianNav.Screen name="EventDetail"         component={EventDetailScreen}           options={{ title: 'Event' }} />
       <GuardianNav.Screen name="CreateEvent"         component={CreateEventScreen}           options={{ title: 'Create Event' }} />
-      <GuardianNav.Screen name="FavouriteFriends"   component={FavouriteFriendsScreen}      options={{ title: 'Favourite Friends', headerRight: undefined }} />
+      <GuardianNav.Screen name="FavouriteFriends"   component={FavouriteFriendsScreen}      options={{ title: 'Manage Friends', headerRight: undefined }} />
     </GuardianNav.Navigator>
   );
 }
@@ -271,18 +271,18 @@ function UserNavigator() {
       screenOptions={{
         headerStyle: { backgroundColor: COLORS.background },
         headerTintColor: COLORS.text,
-        headerBackTitle: ' ',
+        headerBackTitle: '',
         headerShadowVisible: false,
       }}
     >
-      <UserStack.Screen name="Home"       component={UserHomeScreen}    options={{ headerShown: false }} />
-      <UserStack.Screen name="FriendsHub" component={FriendsHubScreen}  options={{ title: '🤝  My Friends' }} />
+      <UserStack.Screen name="Home"       component={UserHomeScreen}    options={{ headerShown: false, headerBackTitle: '' }} />
+      <UserStack.Screen name="FriendsHub" component={FriendsHubScreen}  options={{ title: '🤝  My Friends', headerBackTitle: '' }} />
       <UserStack.Screen name="Discovery"  component={DiscoveryScreen}   options={{ title: '🔍  Find Friends' }} />
       {/* <UserStack.Screen name="Messages" component={MessagesScreen} options={{ title: '💬  Messages', headerBackTitle: '' }} /> */}{/* Messages tile removed */}
       <UserStack.Screen name="Activities" component={ActivitiesScreen}  options={{ title: '✅  Today\'s Activities' }} />
       <UserStack.Screen name="Tutorials"  component={TutorialsScreen}   options={{ title: '📚  Learn' }} />
       <UserStack.Screen name="Profile"    component={ProfileScreen}     options={{ title: 'My Profile' }} />
-      <UserStack.Screen name="Chat"       component={ChatScreen}        options={{ headerBackTitle: '' }} />
+      <UserStack.Screen name="Chat"       component={ChatScreen} />
       <UserStack.Screen name="EditUser"   component={EditUserScreen}    options={{ title: 'Edit Profile' }} />
     </UserStack.Navigator>
   );

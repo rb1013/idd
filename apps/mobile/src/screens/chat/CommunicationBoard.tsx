@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
   Modal, View, Text, StyleSheet, TouchableOpacity,
-  Image, ActivityIndicator, FlatList,
+  Image, ActivityIndicator, FlatList, ScrollView,
 } from 'react-native';
 import * as Speech from 'expo-speech';
-import { loadAACSymbols, AACSymbol } from '../../lib/aacSymbols';
+import { loadAACSymbols, AACSymbol, PHRASE_SYMBOLS, PhraseSymbol } from '../../lib/aacSymbols';
 import { COLORS } from '../../constants';
 
 interface Props {
@@ -34,39 +34,58 @@ export default function CommunicationBoard({ visible, onClose, onSend }: Props) 
           <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.75}>
             <Text style={styles.closeBtnText}>✕</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Communication Board</Text>
-
-          {loading ? (
-            <View style={styles.loadingWrap}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.loadingText}>Downloading symbols…{'\n'}This only happens once.</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={symbols}
-              numColumns={5}
-              keyExtractor={item => item.keyword}
-              scrollEnabled={false}
-              contentContainerStyle={styles.grid}
-              renderItem={({ item }) => (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Introductory phrases */}
+            <Text style={styles.sectionLabel}>Say hello 👋</Text>
+            <View style={styles.phraseGrid}>
+              {PHRASE_SYMBOLS.map(p => (
                 <TouchableOpacity
-                  style={styles.cell}
-                  onPressIn={() => Speech.speak(item.name, { rate: 0.85, pitch: 1.0 })}
-                  onPress={() => { onSend(item.imageUrl); onClose(); }}
+                  key={p.phrase}
+                  style={styles.phraseCell}
+                  onPressIn={() => Speech.speak(p.label, { rate: 0.85, pitch: 1.0 })}
+                  onPress={() => { onSend(p.phrase); onClose(); }}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.imgWrap}>
-                    <Image
-                      source={{ uri: item.localUri }}
-                      style={styles.symbolImg}
-                      resizeMode="contain"
-                    />
-                  </View>
-                  <Text style={styles.symbolName} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.phraseEmoji}>{p.emoji}</Text>
+                  <Text style={styles.phraseLabel} numberOfLines={1}>{p.label}</Text>
                 </TouchableOpacity>
-              )}
-            />
-          )}
+              ))}
+            </View>
+
+            {/* Picture symbols */}
+            <Text style={styles.sectionLabel}>Symbols 🖼️</Text>
+            {loading ? (
+              <View style={styles.loadingWrap}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text style={styles.loadingText}>Downloading symbols…{'\n'}This only happens once.</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={symbols}
+                numColumns={5}
+                keyExtractor={item => item.keyword}
+                scrollEnabled={false}
+                contentContainerStyle={styles.grid}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.cell}
+                    onPressIn={() => Speech.speak(item.name, { rate: 0.85, pitch: 1.0 })}
+                    onPress={() => { onSend(item.imageUrl); onClose(); }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.imgWrap}>
+                      <Image
+                        source={{ uri: item.localUri }}
+                        style={styles.symbolImg}
+                        resizeMode="contain"
+                      />
+                    </View>
+                    <Text style={styles.symbolName} numberOfLines={1}>{item.name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </ScrollView>
         </View>
       </TouchableOpacity>
     </Modal>
@@ -100,6 +119,21 @@ const styles = StyleSheet.create({
     fontSize: 17, fontWeight: '800', color: COLORS.text,
     textAlign: 'center', marginBottom: 16,
   },
+  sectionLabel: {
+    fontSize: 13, fontWeight: '700', color: COLORS.textLight,
+    textTransform: 'uppercase', letterSpacing: 0.8,
+    marginTop: 12, marginBottom: 8, marginLeft: 4,
+  },
+  phraseGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 8,
+  },
+  phraseCell: {
+    width: '18%', alignItems: 'center', gap: 4,
+    backgroundColor: '#F3F0FF', borderRadius: 14, paddingVertical: 10,
+  },
+  phraseEmoji: { fontSize: 28 },
+  phraseLabel: { fontSize: 10, fontWeight: '600', color: COLORS.text, textAlign: 'center' },
+
   loadingWrap: {
     height: 160, justifyContent: 'center', alignItems: 'center', gap: 16,
   },

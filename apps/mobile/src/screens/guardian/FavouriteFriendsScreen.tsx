@@ -26,6 +26,7 @@ export default function FavouriteFriendsScreen() {
   const { guardian } = useAuth();
   const [friends, setFriends] = useState<FriendForPin[]>([]);
   const [loading, setLoading] = useState(true);
+  const [removeTooltip, setRemoveTooltip] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -75,10 +76,35 @@ export default function FavouriteFriendsScreen() {
     setLoading(false);
   }
 
+  async function removeFriend(item: FriendForPin) {
+    Alert.alert(
+      'Remove friend',
+      `Remove ${item.friendName} from your learner's friends list?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await supabase
+              .from('friendships')
+              .delete()
+              .eq('id', item.friendshipId);
+            if (error) {
+              Alert.alert('Error', error.message);
+            } else {
+              setFriends(prev => prev.filter(f => f.friendshipId !== item.friendshipId));
+            }
+          },
+        },
+      ],
+    );
+  }
+
   async function togglePin(item: FriendForPin) {
     const pinnedCount = friends.filter(f => f.isPinned).length;
-    if (!item.isPinned && pinnedCount >= 3) {
-      Alert.alert('Max 3 favourites', 'Unpin a friend first before adding another.');
+    if (!item.isPinned && pinnedCount >= 5) {
+      Alert.alert('Max 5 favourites', 'Unpin a friend first before adding another.');
       return;
     }
     const column = item.isRequester ? 'requester_pinned' : 'addressee_pinned';
@@ -111,39 +137,60 @@ export default function FavouriteFriendsScreen() {
 
   return (
     <ScrollView style={s.container} contentContainerStyle={s.content}>
-      <Text style={s.hint}>Pin up to 3 friends — they appear at the top of the learner's Friends list.</Text>
-      <Text style={s.counter}>{pinned}/3 pinned</Text>
+      <Text style={s.hint}>Pin up to 5 favourites — they appear at the top of the learner's Friends list.</Text>
+      <Text style={s.counter}>{pinned}/5 pinned</Text>
 
       {friends.map((item, index) => {
         const color = AVATAR_COLORS[index % AVATAR_COLORS.length];
+        const showTooltip = removeTooltip === item.friendshipId;
         return (
-          <View key={item.friendshipId} style={s.row}>
-            {/* Avatar */}
-            {item.friendPhotoUrl ? (
-              <Image source={{ uri: item.friendPhotoUrl }} style={s.avatar} />
-            ) : (
-              <View style={[s.avatar, { backgroundColor: color }]}>
-                <Text style={s.avatarInitial}>{item.friendName[0]?.toUpperCase()}</Text>
-              </View>
-            )}
+          <View key={item.friendshipId} style={s.rowWrap}>
+            <View style={s.row}>
+              {/* Avatar */}
+              {item.friendPhotoUrl ? (
+                <Image source={{ uri: item.friendPhotoUrl }} style={s.avatar} />
+              ) : (
+                <View style={[s.avatar, { backgroundColor: color }]}>
+                  <Text style={s.avatarInitial}>{item.friendName[0]?.toUpperCase()}</Text>
+                </View>
+              )}
 
-            {/* Info */}
-            <View style={s.rowInfo}>
-              <Text style={s.name} numberOfLines={1}>{item.friendName}</Text>
-              <Text style={s.meta} numberOfLines={1}>
-                {item.friendAge} yrs · {item.friendCity}{item.friendRegion ? `, ${item.friendRegion}` : ''}
-              </Text>
+              {/* Info */}
+              <View style={s.rowInfo}>
+                <Text style={s.name} numberOfLines={1}>{item.friendName}</Text>
+                <Text style={s.meta} numberOfLines={1}>
+                  {item.friendAge} yrs · {item.friendCity}{item.friendRegion ? `, ${item.friendRegion}` : ''}
+                </Text>
+              </View>
+
+              {/* Pin toggle */}
+              <TouchableOpacity
+                style={[s.pinBtn, item.isPinned && s.pinBtnActive]}
+                onPress={() => togglePin(item)}
+                activeOpacity={0.8}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={s.pinIcon}>{item.isPinned ? '⭐' : '☆'}</Text>
+              </TouchableOpacity>
+
+              {/* Remove */}
+              <TouchableOpacity
+                style={[s.removeBtn, showTooltip && s.removeBtnActive]}
+                onPress={() => removeFriend(item)}
+                onPressIn={() => setRemoveTooltip(item.friendshipId)}
+                onPressOut={() => setRemoveTooltip(null)}
+                activeOpacity={0.8}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={s.removeIcon}>✕</Text>
+              </TouchableOpacity>
             </View>
 
-            {/* Pin toggle */}
-            <TouchableOpacity
-              style={[s.pinBtn, item.isPinned && s.pinBtnActive]}
-              onPress={() => togglePin(item)}
-              activeOpacity={0.8}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text style={s.pinIcon}>{item.isPinned ? '⭐' : '☆'}</Text>
-            </TouchableOpacity>
+            {showTooltip && (
+              <View style={s.tooltip}>
+                <Text style={s.tooltipText}>Remove {item.friendName} from friends list</Text>
+              </View>
+            )}
           </View>
         );
       })}
@@ -164,7 +211,7 @@ const s = StyleSheet.create({
 
   row: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: COLORS.bloomCard, borderRadius: 14, padding: 12, marginBottom: 8,
+    backgroundColor: COLORS.bloomCard, borderRadius: 14, padding: 12,
     borderWidth: 1, borderColor: COLORS.bloomBorder,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
@@ -181,4 +228,22 @@ const s = StyleSheet.create({
   },
   pinBtnActive: { backgroundColor: '#FDE8C0' },
   pinIcon: { fontSize: 22 },
+  rowWrap: { marginBottom: 8 },
+  removeBtn: {
+    width: 44, height: 44, borderRadius: 12,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center', alignItems: 'center', flexShrink: 0,
+  },
+  removeBtnActive: { backgroundColor: '#FECACA' },
+  removeIcon: { fontSize: 16, fontWeight: '700', color: '#DC2626' },
+  tooltip: {
+    backgroundColor: '#1E3350',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginTop: 4,
+    alignSelf: 'flex-end',
+    marginRight: 2,
+  },
+  tooltipText: { fontSize: 12, color: '#fff', fontWeight: '600' },
 });
