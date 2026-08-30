@@ -216,9 +216,6 @@ export default function LearnerFriendRequestsScreen() {
           {req.requesterGuardianName && (
             <Text style={s.guardianNote}>Guardian: {req.requesterGuardianName}</Text>
           )}
-          <Text style={s.forLearner}>
-            {req.direction === 'incoming' ? `For ${req.myLearnerName}` : `From ${req.myLearnerName}`}
-          </Text>
         </View>
 
         {/* Actions */}

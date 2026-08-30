@@ -71,3 +71,13 @@ export const US_STATES = [
   'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont',
   'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming',
 ];
+
+export function calcAge(dob: string | null | undefined): number | null {
+  if (!dob) return null;
+  const birth = new Date(dob + 'T12:00:00');
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}

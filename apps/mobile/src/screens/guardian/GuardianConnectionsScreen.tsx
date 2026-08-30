@@ -6,7 +6,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
+import { COLORS, calcAge } from '../../constants';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -15,7 +15,9 @@ const AVATAR_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#F59E0B', '#3B82F6', '#
 const AGE_GROUPS    = ['Under 10', '10–14', '15–18', '19–25', '26–35', '36+'];
 const GENDER_OPTIONS = ['Male', 'Female'];
 
-function getAgeGroup(age: number): string {
+function getAgeGroup(dob: string | null): string | null {
+  const age = calcAge(dob);
+  if (age === null) return null;
   if (age < 10)  return 'Under 10';
   if (age <= 14) return '10–14';
   if (age <= 18) return '15–18';
@@ -40,7 +42,7 @@ interface GuardianResult {
   situationTags: string[];
   learnerName: string;
   learnerRegion: string;
-  learnerAge: number;
+  learnerDob: string | null;
   learnerGender: string;
   status: Status;
   connectionId: string | null;
@@ -146,7 +148,7 @@ export default function GuardianConnectionsScreen() {
     const [{ data: learners }, { data: connections }] = await Promise.all([
       supabase
         .from('user_profiles')
-        .select('id, name, age, gender, region, guardian_id')
+        .select('id, name, date_of_birth, gender, region, guardian_id')
         .in('guardian_id', otherIds),
       supabase
         .from('guardian_connections')
@@ -179,7 +181,7 @@ export default function GuardianConnectionsScreen() {
         situationTags: g.situation_tags ?? [],
         learnerName: l?.name ?? '',
         learnerRegion: l?.region ?? '',
-        learnerAge: l?.age ?? 0,
+        learnerDob: l?.date_of_birth ?? null,
         learnerGender: l?.gender ?? '',
         status,
         connectionId,
@@ -289,7 +291,7 @@ export default function GuardianConnectionsScreen() {
       if (r.status === 'accepted' || r.status === 'pending_received' || r.status === 'pending_sent') return false;
       const matchName   = !searchName || r.guardianName.toLowerCase().includes(searchName.toLowerCase());
       const matchCity   = !searchCity || r.city.toLowerCase().includes(searchCity.toLowerCase());
-      const matchAge    = filterAgeGroups.length === 0 || filterAgeGroups.includes(getAgeGroup(r.learnerAge));
+      const matchAge    = filterAgeGroups.length === 0 || filterAgeGroups.includes(getAgeGroup(r.learnerDob) ?? '');
       const matchTags   = filterTags.length === 0 || filterTags.some(t => r.situationTags.includes(t));
       const matchGender = filterGenders.length === 0 || filterGenders.includes(r.learnerGender);
       return matchName && matchCity && matchAge && matchTags && matchGender;
@@ -549,7 +551,7 @@ export default function GuardianConnectionsScreen() {
                       <Text style={s.peekLearnerName}>{peekGuardian.learnerName}</Text>
                       <Text style={s.peekLearnerMeta}>
                         {[
-                          peekGuardian.learnerAge ? `${peekGuardian.learnerAge} yrs` : null,
+                          peekGuardian.learnerDob ? `${calcAge(peekGuardian.learnerDob) ?? '—'} yrs` : null,
                           peekGuardian.learnerGender || null,
                         ].filter(Boolean).join('  ·  ')}
                       </Text>

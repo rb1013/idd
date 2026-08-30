@@ -9,6 +9,7 @@ import CategoriesPage from './pages/CategoriesPage';
 import UsersPage from './pages/UsersPage';
 import SituationTagsPage from './pages/SituationTagsPage';
 import MedicalConditionsPage from './pages/MedicalConditionsPage';
+import EventCategoriesPage from './pages/EventCategoriesPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
@@ -40,6 +41,7 @@ function App() {
             <Route path="/users" element={<UsersPage />} />
             <Route path="/situation-tags" element={<SituationTagsPage />} />
             <Route path="/medical-conditions" element={<MedicalConditionsPage />} />
+            <Route path="/event-categories" element={<EventCategoriesPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

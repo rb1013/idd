@@ -1,8 +1,9 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform,
+  ScrollView, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform, Modal,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
@@ -37,7 +38,9 @@ export default function CreateUserScreen({ navigation }: Props) {
 
   // Social profile
   const [name, setName] = useState('');
-  const [age, setAge] = useState('');
+  const [dob, setDob] = useState<Date | null>(null);
+  const [showDobPicker, setShowDobPicker] = useState(false);
+  const [tempDob, setTempDob] = useState(new Date());
   const [gender, setGender] = useState('');
   const [username, setUsername] = useState('');
   const [usernameError, setUsernameError] = useState('');
@@ -103,7 +106,7 @@ export default function CreateUserScreen({ navigation }: Props) {
   }
 
   async function handleSubmit() {
-    if (!name || !age || !gender || !city || !region) { Alert.alert('Please fill in all required fields'); return; }
+    if (!name || !dob || !gender || !city || !region) { Alert.alert('Please fill in all required fields'); return; }
     if (!username.trim()) { Alert.alert('Please enter a username'); return; }
 
     // Always do a fresh check at submit time in case the debounce hasn't fired yet
@@ -134,7 +137,7 @@ export default function CreateUserScreen({ navigation }: Props) {
 
     const { data: userProfile, error } = await supabase.from('user_profiles').insert({
       guardian_id: guardian!.id,
-      name, age: parseInt(age), gender, languages, photo_url, city, region, country,
+      name, date_of_birth: formatDobForDb(dob!), gender, languages, photo_url, city, region, country,
       username: trimmedUsername,
     }).select().single();
 
@@ -237,10 +240,20 @@ export default function CreateUserScreen({ navigation }: Props) {
             </TouchableOpacity>
 
             <Field label="Name *" value={name} onChangeText={setName} placeholder="First name" />
-            <Field label="Age *" value={age} onChangeText={setAge} placeholder="e.g. 18" keyboardType="numeric" />
+            <Text style={styles.label}>Date of Birth<Text style={styles.required}> *</Text></Text>
+            <TouchableOpacity
+              style={styles.pickerBtn}
+              onPress={() => { setTempDob(dob ?? new Date(2005, 0, 1)); setShowDobPicker(true); }}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.pickerBtnTxt, !dob && { color: COLORS.textLight }]}>
+                {dob ? dob.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Select date of birth…'}
+              </Text>
+              <Text style={{ fontSize: 18 }}>📅</Text>
+            </TouchableOpacity>
 
             <Text style={styles.label}>Gender<Text style={styles.required}> *</Text></Text>
-            <MultiSelectChips options={GENDERS} selected={gender ? [gender] : []} onToggle={(v) => setGender(v[0] || '')} single />
+            <MultiSelectChips options={GENDERS.filter(g => g !== 'Prefer not to say')} selected={gender ? [gender] : []} onToggle={(v) => setGender(v[0] || '')} single />
 
             <Text style={styles.label}>Username<Text style={styles.required}> *</Text></Text>
             <Text style={styles.usernameHint}>Select a username. Learner will set up biometrics when they first sign in on their device.</Text>
@@ -380,8 +393,39 @@ export default function CreateUserScreen({ navigation }: Props) {
           </TouchableOpacity>
         )}
       </View>
+
+      <Modal visible={showDobPicker} transparent animationType="slide" onRequestClose={() => setShowDobPicker(false)}>
+        <TouchableOpacity style={styles.sheetBackdrop} activeOpacity={1} onPress={() => setShowDobPicker(false)}>
+          <View style={styles.sheet} onStartShouldSetResponder={() => true}>
+            <View style={styles.sheetHdr}>
+              <TouchableOpacity onPress={() => setShowDobPicker(false)}>
+                <Text style={styles.sheetCancel}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.sheetTitle}>Date of Birth</Text>
+              <TouchableOpacity onPress={() => { setDob(tempDob); setShowDobPicker(false); }}>
+                <Text style={styles.sheetDone}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            <DateTimePicker
+              value={tempDob}
+              mode="date"
+              display="spinner"
+              maximumDate={new Date()}
+              onChange={(_, d) => { if (d) setTempDob(d); }}
+              style={{ height: 220 }}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </KeyboardAvoidingView>
   );
+}
+
+function formatDobForDb(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
 }
 
 function Field({ label, ...props }: { label: string } & React.ComponentProps<typeof TextInput>) {
@@ -465,4 +509,20 @@ const styles = StyleSheet.create({
   disclaimerText: { fontSize: 13, color: '#6D5700', lineHeight: 20 },
   disclaimerBold: { fontWeight: '800' },
   disclaimerEmail: { fontWeight: '700', color: COLORS.primary },
+
+  pickerBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, marginBottom: 4,
+  },
+  pickerBtnTxt: { fontSize: 16, color: COLORS.text, flex: 1 },
+  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 32 },
+  sheetHdr: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  sheetTitle:  { fontSize: 16, fontWeight: '800', color: COLORS.text },
+  sheetCancel: { fontSize: 15, color: COLORS.textLight },
+  sheetDone:   { fontSize: 15, fontWeight: '700', color: COLORS.primary },
 });

@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
+import { COLORS, calcAge } from '../../constants';
 import { UserWithDetails } from '../../types';
 
 export default function DiscoveryScreen() {
@@ -147,7 +147,7 @@ export default function DiscoveryScreen() {
               }
               <View style={styles.info}>
                 <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.meta}>{item.age} yrs • {item.city}</Text>
+                <Text style={styles.meta}>{calcAge(item.date_of_birth) ?? item.age ?? '—'} yrs • {item.city}</Text>
                 {item.languages?.length > 0 && (
                   <Text style={styles.lang}>{item.languages.join(', ')}</Text>
                 )}

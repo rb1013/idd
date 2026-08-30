@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
+import { COLORS, calcAge } from '../../constants';
 import { UserStackParamList } from '../../navigation';
 import AvatarWithMood from '../../components/AvatarWithMood';
 
@@ -117,7 +117,7 @@ export default function ProfileScreen() {
             badgeSize={32}
           />
           <Text style={styles.name}>{activeUser!.name}</Text>
-          <Text style={styles.meta}>{activeUser!.age} yrs • {activeUser!.gender}</Text>
+          <Text style={styles.meta}>{calcAge(activeUser!.date_of_birth) ?? activeUser!.age ?? '—'} yrs • {activeUser!.gender}</Text>
           {locationParts ? <Text style={styles.metaLocation}>{locationParts}</Text> : null}
           {activeUser!.languages?.length > 0 && (
             <Text style={styles.metaLanguages}>{activeUser!.languages.join(', ')}</Text>

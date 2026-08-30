@@ -8,7 +8,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS, COMPREHENSION_LEVELS } from '../../constants';
+import { COLORS, COMPREHENSION_LEVELS, calcAge } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
@@ -18,7 +18,9 @@ const { width, height: SCREEN_H } = Dimensions.get('window');
 const AVATAR_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#F59E0B', '#3B82F6', '#EC4899'];
 const AGE_GROUPS   = ['Under 10', '10–14', '15–18', '19–25', '26–35', '36+'];
 
-function getAgeGroup(age: number): string {
+function getAgeGroup(dob: string | null): string | null {
+  const age = calcAge(dob);
+  if (age === null) return null;
   if (age < 10)  return 'Under 10';
   if (age <= 14) return '10–14';
   if (age <= 18) return '15–18';
@@ -34,7 +36,7 @@ function toggle<T>(arr: T[], val: T): T[] {
 interface LearnerResult {
   id: string;
   name: string;
-  age: number;
+  date_of_birth: string | null;
   photo_url: string | null;
   city: string;
   region: string;
@@ -152,7 +154,7 @@ export default function LearnerDiscoveryScreen() {
 
     const { data: profiles } = await supabase
       .from('user_profiles')
-      .select('id, name, age, photo_url, city, region')
+      .select('id, name, date_of_birth, photo_url, city, region')
       .neq('guardian_id', guardianId)
       .order('name');
     if (!profiles) { setLoading(false); return; }
@@ -233,7 +235,7 @@ export default function LearnerDiscoveryScreen() {
     }
 
     const results: LearnerResult[] = profiles.map((p: any) => ({
-      id: p.id, name: p.name, age: p.age, photo_url: p.photo_url,
+      id: p.id, name: p.name, date_of_birth: p.date_of_birth ?? null, photo_url: p.photo_url,
       city: p.city, region: p.region,
       comprehension_level: levelMap[p.id] ?? null,
       likes:             (likesMap[p.id]     ?? []).slice(0, 5),
@@ -336,7 +338,7 @@ export default function LearnerDiscoveryScreen() {
     return list.filter(l => {
       if (searchName && !l.name.toLowerCase().includes(searchName.toLowerCase())) return false;
       if (searchCity && !l.city.toLowerCase().includes(searchCity.toLowerCase()))  return false;
-      if (ages.length > 0 && !ages.includes(getAgeGroup(l.age))) return false;
+      if (ages.length > 0 && !ages.includes(getAgeGroup(l.date_of_birth) ?? '')) return false;
       if (levels.length > 0 && !levels.some(fl => fl.toLowerCase() === l.comprehension_level)) return false;
       if (likes.length > 0 && !l.likes.some(lk => likes.includes(lk))) return false;
       if (dislikes.length > 0 && !l.dislikes.some(d => dislikes.includes(d))) return false;
@@ -442,7 +444,7 @@ export default function LearnerDiscoveryScreen() {
                 <View style={s.rowInfo}>
                   <Text style={s.rowName} numberOfLines={1}>{l.name}</Text>
                   <Text style={s.rowMeta} numberOfLines={1}>
-                    {l.age} yrs · {l.city}{l.region ? `, ${l.region}` : ''}
+                    {calcAge(l.date_of_birth) ?? '—'} yrs · {l.city}{l.region ? `, ${l.region}` : ''}
                   </Text>
                 </View>
 

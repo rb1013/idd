@@ -58,12 +58,12 @@ export default function EventDetailScreen() {
     const [{ data: e }, { data: participants }] = await Promise.all([
       supabase
         .from('events')
-        .select('id, name, description, event_date, event_time, venue, guardian_id, guardians(full_name)')
+        .select('id, name, description, event_date, event_time, venue, guardian_id, guardians!events_guardian_id_fkey(full_name)')
         .eq('id', eventId)
         .single(),
       supabase
         .from('event_participants')
-        .select('guardian_id, rsvp, guardians(full_name)')
+        .select('guardian_id, rsvp, guardians!event_participants_guardian_id_fkey(full_name)')
         .eq('event_id', eventId),
     ]);
 
@@ -151,28 +151,30 @@ export default function EventDetailScreen() {
         )}
       </View>
 
-      {/* RSVP */}
-      <View style={s.card}>
-        <Text style={s.sectionTitle}>Your RSVP</Text>
-        <View style={s.rsvpRow}>
-          {RSVP_OPTIONS.map(opt => {
-            const active = myRsvp === opt.value;
-            return (
-              <TouchableOpacity
-                key={opt.value}
-                style={[s.rsvpBtn, active && { backgroundColor: opt.activeBg, borderColor: opt.activeBg }]}
-                onPress={() => rsvp(opt.value)}
-                disabled={rsvping}
-                activeOpacity={0.8}
-              >
-                <Text style={[s.rsvpBtnText, active && { color: opt.activeColor, fontWeight: '800' }]}>
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+      {/* RSVP — hidden for the event organiser */}
+      {!isOrganiser && (
+        <View style={s.card}>
+          <Text style={s.sectionTitle}>Your RSVP</Text>
+          <View style={s.rsvpRow}>
+            {RSVP_OPTIONS.map(opt => {
+              const active = myRsvp === opt.value;
+              return (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[s.rsvpBtn, active && { backgroundColor: opt.activeBg, borderColor: opt.activeBg }]}
+                  onPress={() => rsvp(opt.value)}
+                  disabled={rsvping}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[s.rsvpBtnText, active && { color: opt.activeColor, fontWeight: '800' }]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Attendees */}
       {(going.length > 0 || interested.length > 0) && (

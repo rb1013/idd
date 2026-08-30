@@ -37,6 +37,7 @@ import DiscussionDetailScreen from '../screens/guardian/DiscussionDetailScreen';
 import EventsScreen from '../screens/guardian/EventsScreen';
 import EventDetailScreen from '../screens/guardian/EventDetailScreen';
 import CreateEventScreen from '../screens/guardian/CreateEventScreen';
+import EditEventScreen from '../screens/guardian/EditEventScreen';
 import LearnerSelectScreen from '../screens/guardian/LearnerSelectScreen';
 import FavouriteFriendsScreen from '../screens/guardian/FavouriteFriendsScreen';
 
@@ -83,6 +84,7 @@ export type GuardianNavParamList = {
   Events: undefined;
   EventDetail: { eventId: string };
   CreateEvent: undefined;
+  EditEvent: { eventId: string };
   FavouriteFriends: undefined;
 };
 
@@ -239,7 +241,7 @@ function GuardianTabs() {
       <GuardianNav.Screen name="GuardianHome"    component={GuardianHomeScreen}          options={{ headerShown: false, headerBackTitle: '' }} />
       <GuardianNav.Screen name="Profiles"        component={SelectUserScreen}            options={{ title: 'Profiles' }} />
       <GuardianNav.Screen name="Notifications"   component={GuardianNotificationsScreen} options={{ title: 'Notifications' }} />
-      <GuardianNav.Screen name="Learning"        component={GuardianTutorialsScreen}     options={{ title: 'Learning' }} />
+      <GuardianNav.Screen name="Learning"        component={GuardianTutorialsScreen}     options={{ title: 'Learning', headerRight: undefined }} />
       <GuardianNav.Screen name="Activities"      component={GuardianActivitiesScreen}    options={{ title: 'Activities', headerRight: undefined }} />
       <GuardianNav.Screen name="Account"         component={GuardianAccountScreen}       options={{ title: 'Account', headerRight: undefined }} />
       <GuardianNav.Screen name="Schedule"        component={ScheduleScreen}              options={{ title: 'Schedule' }} />
@@ -255,9 +257,10 @@ function GuardianTabs() {
       <GuardianNav.Screen name="GuardianConnections"  component={GuardianConnectionsScreen}   options={{ title: 'My Connections', headerRight: undefined }} />
       <GuardianNav.Screen name="Discussions"         component={DiscussionsScreen}           options={{ title: 'Discussions', headerRight: undefined }} />
       <GuardianNav.Screen name="DiscussionDetail"    component={DiscussionDetailScreen}      options={{ title: 'Discussion', headerRight: undefined }} />
-      <GuardianNav.Screen name="Events"              component={EventsScreen}                options={{ title: 'Events' }} />
+      <GuardianNav.Screen name="Events"              component={EventsScreen}                options={{ title: 'Events', headerRight: undefined }} />
       <GuardianNav.Screen name="EventDetail"         component={EventDetailScreen}           options={{ title: 'Event' }} />
       <GuardianNav.Screen name="CreateEvent"         component={CreateEventScreen}           options={{ title: 'Create Event' }} />
+      <GuardianNav.Screen name="EditEvent"           component={EditEventScreen}             options={{ title: 'Edit Event' }} />
       <GuardianNav.Screen name="FavouriteFriends"   component={FavouriteFriendsScreen}      options={{ title: 'Manage Friends', headerRight: undefined }} />
     </GuardianNav.Navigator>
   );

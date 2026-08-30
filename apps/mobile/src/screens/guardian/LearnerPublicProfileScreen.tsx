@@ -7,7 +7,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
+import { COLORS, calcAge } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 
 type Nav   = NativeStackNavigationProp<GuardianNavParamList>;
@@ -20,7 +20,7 @@ type ConnectionStatus = 'none' | 'pending_sent' | 'pending_received' | 'accepted
 interface LearnerProfile {
   id: string;
   name: string;
-  age: number;
+  date_of_birth: string | null;
   photo_url: string | null;
   city: string;
   region: string;
@@ -56,7 +56,7 @@ export default function LearnerPublicProfileScreen() {
       { data: abilities },
       { data: chat },
     ] = await Promise.all([
-      supabase.from('user_profiles').select('id, name, age, photo_url, city, region, country, languages').eq('id', learnerId).single(),
+      supabase.from('user_profiles').select('id, name, date_of_birth, photo_url, city, region, country, languages').eq('id', learnerId).single(),
       supabase.from('user_profiles').select('id').eq('guardian_id', guardianId),
       supabase.from('user_likes').select('categories(name)').eq('user_id', learnerId),
       supabase.from('user_dislikes').select('categories(name)').eq('user_id', learnerId),
@@ -90,7 +90,7 @@ export default function LearnerPublicProfileScreen() {
     setProfile({
       id: p.id,
       name: p.name,
-      age: p.age,
+      date_of_birth: p.date_of_birth ?? null,
       photo_url: p.photo_url,
       city: p.city,
       region: p.region,
@@ -160,50 +160,18 @@ export default function LearnerPublicProfileScreen() {
         )}
         <Text style={s.name}>{profile.name}</Text>
         <Text style={s.subMeta}>
-          {profile.age} years old · {profile.city}, {profile.region}
+          {calcAge(profile.date_of_birth) ?? '—'} years old · {profile.city}, {profile.region}
         </Text>
-        {profile.comprehension_level && (
-          <View style={s.levelBadge}>
-            <Text style={s.levelBadgeText}>{profile.comprehension_level} level</Text>
-          </View>
-        )}
       </View>
 
-      {/* Interests */}
-      <Section title="Likes">
-        {profile.likes.length > 0
-          ? <View style={s.chips}>{profile.likes.map(l => <Chip key={l} label={l} color="#D4F0DE" textColor="#065F46" />)}</View>
-          : <Text style={s.emptyChip}>None added</Text>
-        }
-      </Section>
-
-      <Section title="Dislikes">
-        {profile.dislikes.length > 0
-          ? <View style={s.chips}>{profile.dislikes.map(l => <Chip key={l} label={l} color="#FEE2E2" textColor="#991B1B" />)}</View>
-          : <Text style={s.emptyChip}>None added</Text>
-        }
-      </Section>
-
-      <Section title="What I Can Do">
-        {profile.abilities.length > 0
-          ? <View style={s.chips}>{profile.abilities.map(l => <Chip key={l} label={l} color="#DAEAFF" textColor={COLORS.bloomAccent} />)}</View>
-          : <Text style={s.emptyChip}>None added</Text>
-        }
-      </Section>
-
-      <Section title="Languages">
-        {profile.languages.length > 0
-          ? <View style={s.chips}>{profile.languages.map(l => <Chip key={l} label={l} color="#F3E8FF" textColor="#6B21A8" />)}</View>
-          : <Text style={s.emptyChip}>None added</Text>
-        }
-      </Section>
-
-      <Section title="Comprehension Level">
-        {profile.comprehension_level
-          ? <View style={s.chips}><Chip label={profile.comprehension_level} color="#DAEAFF" textColor={COLORS.bloomAccent} /></View>
-          : <Text style={s.emptyChip}>Not set</Text>
-        }
-      </Section>
+      {/* About */}
+      <View style={s.section}>
+        <InfoRow label="Likes"               value={profile.likes.join(', ')}        fallback="None added" />
+        <InfoRow label="Dislikes"            value={profile.dislikes.join(', ')}     fallback="None added" />
+        <InfoRow label="What I Can Do"       value={profile.abilities.join(', ')}    fallback="None added" />
+        <InfoRow label="Languages"           value={profile.languages.join(', ')}    fallback="Not set" />
+        <InfoRow label="Comprehension Level" value={profile.comprehension_level}     fallback="Not set" />
+      </View>
 
       {/* Connect action — pinned to bottom */}
       <View style={s.actionCard}>
@@ -249,19 +217,13 @@ export default function LearnerPublicProfileScreen() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function InfoRow({ label, value, fallback }: { label: string; value: string | null | undefined; fallback: string }) {
   return (
-    <View style={s.section}>
-      <Text style={s.sectionTitle}>{title}</Text>
-      {children}
-    </View>
-  );
-}
-
-function Chip({ label, color, textColor }: { label: string; color: string; textColor: string }) {
-  return (
-    <View style={[s.chip, { backgroundColor: color }]}>
-      <Text style={[s.chipText, { color: textColor }]}>{label}</Text>
+    <View style={s.infoRow}>
+      <Text style={s.infoLabel}>{label}</Text>
+      <Text style={[s.infoValue, !value && s.infoEmpty]} numberOfLines={2}>
+        {value || fallback}
+      </Text>
     </View>
   );
 }
@@ -283,8 +245,18 @@ const s = StyleSheet.create({
   avatarInitial: { fontSize: 36, fontWeight: '900', color: '#fff' },
   name: { fontSize: 24, fontWeight: '900', color: COLORS.bloomText },
   subMeta: { fontSize: 14, color: COLORS.bloomMuted, fontWeight: '500' },
-  levelBadge: { backgroundColor: '#DAEAFF', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5, marginTop: 4 },
-  levelBadgeText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomAccent, textTransform: 'capitalize' },
+
+  section: {
+    backgroundColor: COLORS.bloomCard, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8,
+    borderWidth: 1, borderColor: COLORS.bloomBorder,
+  },
+  infoRow: {
+    flexDirection: 'row', alignItems: 'flex-start',
+    paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+  },
+  infoLabel: { fontSize: 13, fontWeight: '700', color: COLORS.bloomMuted, width: 140, marginRight: 12 },
+  infoValue:  { fontSize: 13, color: COLORS.bloomText, flex: 1, fontWeight: '500', textTransform: 'capitalize' },
+  infoEmpty:  { color: COLORS.bloomMuted, fontStyle: 'italic', textTransform: 'none' },
 
   actionCard: {
     backgroundColor: COLORS.bloomCard, borderRadius: 16, padding: 16, gap: 12,
@@ -299,14 +271,4 @@ const s = StyleSheet.create({
     paddingVertical: 14, alignItems: 'center',
   },
   connectBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-
-  section: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 16, padding: 16, gap: 12,
-    borderWidth: 1, borderColor: COLORS.bloomBorder,
-  },
-  sectionTitle: { fontSize: 13, fontWeight: '900', color: COLORS.bloomText, letterSpacing: 0.5 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
-  chipText: { fontSize: 13, fontWeight: '700' },
-  emptyChip: { fontSize: 13, color: COLORS.bloomMuted, fontStyle: 'italic' },
 });

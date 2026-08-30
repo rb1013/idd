@@ -3,10 +3,12 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Image, ActivityIndicator, Alert,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { GuardianNavParamList } from '../../navigation';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
+import { COLORS, calcAge } from '../../constants';
 
 const AVATAR_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#F59E0B', '#3B82F6', '#EC4899'];
 
@@ -15,7 +17,7 @@ interface FriendForPin {
   friendId: string;
   friendName: string;
   friendPhotoUrl: string | null;
-  friendAge: number;
+  friendDob: string | null;
   friendCity: string;
   friendRegion: string;
   isPinned: boolean;
@@ -24,6 +26,7 @@ interface FriendForPin {
 
 export default function FavouriteFriendsScreen() {
   const { guardian } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<GuardianNavParamList>>();
   const [friends, setFriends] = useState<FriendForPin[]>([]);
   const [loading, setLoading] = useState(true);
   const [removeTooltip, setRemoveTooltip] = useState<string | null>(null);
@@ -49,8 +52,8 @@ export default function FavouriteFriendsScreen() {
       .from('friendships')
       .select(`
         id, requester_id, addressee_id, requester_pinned, addressee_pinned,
-        requester:user_profiles!friendships_requester_id_fkey(id, name, photo_url, age, city, region),
-        addressee:user_profiles!friendships_addressee_id_fkey(id, name, photo_url, age, city, region)
+        requester:user_profiles!friendships_requester_id_fkey(id, name, photo_url, date_of_birth, city, region),
+        addressee:user_profiles!friendships_addressee_id_fkey(id, name, photo_url, date_of_birth, city, region)
       `)
       .eq('status', 'accepted')
       .or(`requester_id.eq.${learner.id},addressee_id.eq.${learner.id}`);
@@ -64,7 +67,7 @@ export default function FavouriteFriendsScreen() {
           friendId: friend.id,
           friendName: friend.name,
           friendPhotoUrl: friend.photo_url,
-          friendAge: friend.age ?? 0,
+          friendDob: friend.date_of_birth ?? null,
           friendCity: friend.city ?? '',
           friendRegion: friend.region ?? '',
           isPinned: isRequester ? f.requester_pinned : f.addressee_pinned,
@@ -128,7 +131,9 @@ export default function FavouriteFriendsScreen() {
       <View style={s.center}>
         <Text style={s.emptyEmoji}>⭐</Text>
         <Text style={s.emptyTitle}>No friends yet</Text>
-        <Text style={s.emptyHint}>Use "Find Friends for Learners" to add friends first.</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('LearnerDiscovery')} activeOpacity={0.7}>
+          <Text style={s.emptyLink}>Find Friends for Learners →</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -159,7 +164,7 @@ export default function FavouriteFriendsScreen() {
               <View style={s.rowInfo}>
                 <Text style={s.name} numberOfLines={1}>{item.friendName}</Text>
                 <Text style={s.meta} numberOfLines={1}>
-                  {item.friendAge} yrs · {item.friendCity}{item.friendRegion ? `, ${item.friendRegion}` : ''}
+                  {calcAge(item.friendDob) ?? '—'} yrs · {item.friendCity}{item.friendRegion ? `, ${item.friendRegion}` : ''}
                 </Text>
               </View>
 
@@ -205,6 +210,7 @@ const s = StyleSheet.create({
   emptyEmoji: { fontSize: 56 },
   emptyTitle: { fontSize: 20, fontWeight: '800', color: COLORS.bloomText },
   emptyHint:  { fontSize: 14, color: COLORS.bloomMuted, textAlign: 'center' },
+  emptyLink:  { fontSize: 14, color: COLORS.bloomAccent, fontWeight: '700', textAlign: 'center', marginTop: 8 },
 
   hint:    { fontSize: 13, color: COLORS.bloomMuted, marginBottom: 4 },
   counter: { fontSize: 13, fontWeight: '700', color: COLORS.bloomAccent, marginBottom: 16 },

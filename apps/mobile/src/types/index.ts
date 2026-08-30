@@ -20,7 +20,8 @@ export interface UserProfile {
   id: string;
   guardian_id: string;
   name: string;
-  age: number;
+  age?: number | null;
+  date_of_birth?: string | null;
   gender: string;
   languages: string[];
   photo_url?: string;

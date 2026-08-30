@@ -188,7 +188,7 @@ export default function GuardianHomeScreen() {
         {/* ── YOUR LEARNER ── */}
         <View style={[s.pillRow, { marginTop: 24 }]}>
           <View style={[s.pill, s.pillLearner]}>
-            <Text style={s.pillText}>🎓  YOUR LEARNER</Text>
+            <Text style={s.pillText}>🎓  FOR YOUR LEARNER</Text>
           </View>
           <View style={s.pillLine} />
         </View>

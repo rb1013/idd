@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
+import { COLORS, calcAge } from '../../constants';
 import { UserProfile } from '../../types';
 import { GuardianNavParamList } from '../../navigation';
 
@@ -61,7 +61,7 @@ export default function SelectUserScreen() {
             }
             <View style={styles.cardInfo}>
               <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.meta}>{item.age} yrs • {item.city}</Text>
+              <Text style={styles.meta}>{calcAge(item.date_of_birth) ?? item.age ?? '—'} yrs • {item.city}</Text>
               {item.email && <Text style={styles.email}>{item.email}</Text>}
             </View>
             <TouchableOpacity
