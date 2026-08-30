@@ -10,6 +10,7 @@ import UsersPage from './pages/UsersPage';
 import SituationTagsPage from './pages/SituationTagsPage';
 import MedicalConditionsPage from './pages/MedicalConditionsPage';
 import EventCategoriesPage from './pages/EventCategoriesPage';
+import TutorialSkillsPage from './pages/TutorialSkillsPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
@@ -42,6 +43,7 @@ function App() {
             <Route path="/situation-tags" element={<SituationTagsPage />} />
             <Route path="/medical-conditions" element={<MedicalConditionsPage />} />
             <Route path="/event-categories" element={<EventCategoriesPage />} />
+            <Route path="/tutorial-skills" element={<TutorialSkillsPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

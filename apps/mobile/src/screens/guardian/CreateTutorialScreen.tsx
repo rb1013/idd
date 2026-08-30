@@ -9,7 +9,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import {
-  COLORS, LANGUAGES, TUTORIAL_TARGET_SKILLS, TUTORIAL_VISUAL_STYLES,
+  COLORS, LANGUAGES, TUTORIAL_VISUAL_STYLES,
   TUTORIAL_IMAGE_STYLES, TUTORIAL_AUDIO, TUTORIAL_DURATIONS, TUTORIAL_COMPREHENSION,
 } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
@@ -55,12 +55,15 @@ export default function CreateTutorialScreen() {
 
   const [submitting, setSubmitting] = useState(false);
   const [quota, setQuota] = useState<{ used: number; limit: number } | null>(null);
+  const [targetSkills, setTargetSkills] = useState<string[]>([]);
 
   const title = [targetSkill, coreAction].filter(Boolean).join(': ');
   const tutorialDisplayName = displayName.trim() || title;
 
   useEffect(() => {
     if (guardian) loadQuota(guardian.id);
+    supabase.from('tutorial_skills').select('label').order('label')
+      .then(({ data }) => setTargetSkills((data ?? []).map((r: any) => r.label)));
   }, [guardian]);
 
   useEffect(() => {
@@ -163,7 +166,7 @@ export default function CreateTutorialScreen() {
       >
         <FieldBlock label="Target Skill *">
           <View style={styles.chipGrid}>
-            {TUTORIAL_TARGET_SKILLS.map(s => (
+            {targetSkills.map(s => (
               <TouchableOpacity
                 key={s}
                 style={[styles.chip, targetSkill === s && [styles.chipActive, { backgroundColor: SECTION_COLORS[0], borderColor: SECTION_COLORS[0] }]]}
