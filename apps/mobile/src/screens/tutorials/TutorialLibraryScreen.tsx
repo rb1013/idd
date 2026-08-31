@@ -1,16 +1,18 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  Image, ActivityIndicator, Alert, TextInput, Modal,
+  Image, ActivityIndicator, Alert, TextInput, Modal, ScrollView,
 } from 'react-native';
-import { useFocusEffect, useRoute, RouteProp } from '@react-navigation/native';
+import { useFocusEffect, useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS, TUTORIAL_TARGET_SKILLS, TUTORIAL_COMPREHENSION } from '../../constants';
+import { COLORS, TUTORIAL_COMPREHENSION } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import type { Tutorial } from '../../types';
 
 type RouteType = RouteProp<GuardianNavParamList, 'TutorialLibrary'>;
+type TutorialWithGuardian = Tutorial & { guardian?: { full_name: string } | null };
 
 const FORMAT_EMOJI: Record<string, string> = { video: '🎬', slideshow: '🖼' };
 
@@ -21,24 +23,27 @@ interface LinkedUser {
 }
 
 export default function TutorialLibraryScreen() {
-  useRoute<RouteType>();
+  const { params } = useRoute<RouteType>();
+  const linkedOnly = params?.linkedOnly ?? false;
   const { guardian } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<GuardianNavParamList>>();
 
-  const [tutorials, setTutorials] = useState<Tutorial[]>([]);
+  const [tutorials, setTutorials] = useState<TutorialWithGuardian[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filterSkill, setFilterSkill] = useState('');
-  const [filterLevel, setFilterLevel] = useState('');
-  const [filterFormat, setFilterFormat] = useState('');
+  const [filterSkills, setFilterSkills] = useState<string[]>([]);
+  const [filterLevels, setFilterLevels] = useState<string[]>([]);
+  const [skillOptions, setSkillOptions] = useState<string[]>([]);
+  const [showSkillPicker, setShowSkillPicker] = useState(false);
+  const [showLevelPicker, setShowLevelPicker] = useState(false);
 
   // Users belonging to this guardian
   const [users, setUsers] = useState<LinkedUser[]>([]);
 
-  // Assign-to-user flow
-  const [linkingTutorial, setLinkingTutorial] = useState<Tutorial | null>(null);
-  const [linking, setLinking] = useState(false);
-  const [alreadyLinkedUserIds, setAlreadyLinkedUserIds] = useState<Set<string>>(new Set());
-  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  // Linked tutorials for the guardian's learner
+  const [linkedTutorialIds, setLinkedTutorialIds] = useState<Set<string>>(new Set());
+  const [linkedLoaded, setLinkedLoaded] = useState(false);
+  const [togglingLinkId, setTogglingLinkId] = useState<string | null>(null);
 
   // Featured / favourite flow: userId -> Set of featured tutorialIds
   const [featuredMap, setFeaturedMap] = useState<Record<string, Set<string>>>({});
@@ -46,21 +51,31 @@ export default function TutorialLibraryScreen() {
   const [featureAssignedUsers, setFeatureAssignedUsers] = useState<LinkedUser[]>([]);
   const [togglingFeature, setTogglingFeature] = useState(false);
 
+  useEffect(() => {
+    navigation.setOptions({ title: linkedOnly ? "Learner's Tutorials" : 'Search Tutorials' });
+  }, [linkedOnly]);
+
   useFocusEffect(
     useCallback(() => {
       loadTutorials();
+      loadSkills();
       if (guardian) loadGuardianUsers(guardian.id);
     }, [guardian]),
   );
+
+  async function loadSkills() {
+    const { data } = await supabase.from('tutorial_skills').select('label').order('label');
+    setSkillOptions((data ?? []).map((r: any) => r.label));
+  }
 
   async function loadTutorials() {
     setLoading(true);
     const { data } = await supabase
       .from('tutorials')
-      .select('*')
+      .select('*, guardian:guardians!created_by_guardian_id(full_name)')
       .eq('status', 'approved')
       .order('created_at', { ascending: false });
-    setTutorials((data as Tutorial[]) || []);
+    setTutorials((data as TutorialWithGuardian[]) || []);
     setLoading(false);
   }
 
@@ -71,7 +86,19 @@ export default function TutorialLibraryScreen() {
       .eq('guardian_id', guardianId);
     const u = (data as LinkedUser[]) || [];
     setUsers(u);
-    if (u.length > 0) loadFeaturedMap(u.map(x => x.id));
+    if (u.length > 0) {
+      loadFeaturedMap(u.map(x => x.id));
+      loadLinkedTutorials(u[0].id);
+    }
+  }
+
+  async function loadLinkedTutorials(userId: string) {
+    const { data } = await supabase
+      .from('user_tutorials')
+      .select('tutorial_id')
+      .eq('user_id', userId);
+    setLinkedTutorialIds(new Set((data ?? []).map((r: any) => r.tutorial_id)));
+    setLinkedLoaded(true);
   }
 
   async function loadFeaturedMap(userIds: string[]) {
@@ -88,64 +115,29 @@ export default function TutorialLibraryScreen() {
     setFeaturedMap(map);
   }
 
-  // ── Assign flow ────────────────────────────────────────────────────────────
+  // ── Assign flow (direct 1:1) ───────────────────────────────────────────────
 
-  async function openLinkModal(tutorial: Tutorial) {
-    if (users.length === 0) { Alert.alert('No users', 'You have no IDD users to link this tutorial to.'); return; }
-    const { data } = await supabase
-      .from('user_tutorials')
-      .select('user_id')
-      .eq('tutorial_id', tutorial.id);
-    const linked = new Set<string>((data ?? []).map((r: any) => r.user_id));
-    setAlreadyLinkedUserIds(linked);
-    setSelectedUserIds(new Set(linked));
-    setLinkingTutorial(tutorial);
-  }
-
-  function toggleUserSelection(userId: string) {
-    setSelectedUserIds(prev => {
-      const next = new Set(prev);
-      if (next.has(userId)) next.delete(userId); else next.add(userId);
-      return next;
-    });
-  }
-
-  async function confirmLinkSelection() {
-    if (!linkingTutorial) return;
-    setLinking(true);
-    try {
-      const toAdd = [...selectedUserIds].filter(id => !alreadyLinkedUserIds.has(id));
-      const toRemove = [...alreadyLinkedUserIds].filter(id => !selectedUserIds.has(id));
-
-      if (toAdd.length > 0) {
-        await supabase.from('user_tutorials').upsert(
-          toAdd.map(uid => ({ user_id: uid, tutorial_id: linkingTutorial.id, added_by_guardian_id: guardian?.id ?? null })),
-          { onConflict: 'user_id,tutorial_id' },
-        );
-      }
-      for (const uid of toRemove) {
-        await supabase.from('user_tutorials').delete().eq('user_id', uid).eq('tutorial_id', linkingTutorial.id);
-        // clean up featured map locally
-        setFeaturedMap(prev => {
-          const next = { ...prev };
-          if (next[uid]) { next[uid] = new Set(next[uid]); next[uid].delete(linkingTutorial.id); }
-          return next;
-        });
-      }
-
-      const addedNames = users.filter(u => toAdd.includes(u.id)).map(u => u.name);
-      const removedNames = users.filter(u => toRemove.includes(u.id)).map(u => u.name);
-      const parts: string[] = [];
-      if (addedNames.length) parts.push(`Added to: ${addedNames.join(', ')}`);
-      if (removedNames.length) parts.push(`Removed from: ${removedNames.join(', ')}`);
-      if (parts.length === 0) parts.push('No changes made.');
-
-      Alert.alert('Done', parts.join('\n'));
-      setLinkingTutorial(null);
-    } catch (err: unknown) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Something went wrong.');
+  async function toggleLink(tutorial: Tutorial) {
+    if (users.length === 0) { Alert.alert('No learner', 'No learner profile found.'); return; }
+    const userId = users[0].id;
+    const isLinked = linkedTutorialIds.has(tutorial.id);
+    setTogglingLinkId(tutorial.id);
+    if (isLinked) {
+      await supabase.from('user_tutorials').delete().eq('user_id', userId).eq('tutorial_id', tutorial.id);
+      setLinkedTutorialIds(prev => { const next = new Set(prev); next.delete(tutorial.id); return next; });
+      setFeaturedMap(prev => {
+        const next = { ...prev };
+        if (next[userId]) { next[userId] = new Set(next[userId]); next[userId].delete(tutorial.id); }
+        return next;
+      });
+    } else {
+      await supabase.from('user_tutorials').upsert(
+        [{ user_id: userId, tutorial_id: tutorial.id, added_by_guardian_id: guardian?.id ?? null }],
+        { onConflict: 'user_id,tutorial_id' },
+      );
+      setLinkedTutorialIds(prev => new Set([...prev, tutorial.id]));
     }
-    setLinking(false);
+    setTogglingLinkId(null);
   }
 
   // ── Feature / favourite flow ───────────────────────────────────────────────
@@ -197,52 +189,81 @@ export default function TutorialLibraryScreen() {
   // ── Rendering ──────────────────────────────────────────────────────────────
 
   const filtered = tutorials.filter(t => {
+    if (linkedOnly && !linkedTutorialIds.has(t.id)) return false;
     const q = search.toLowerCase();
     const matchSearch = !q || t.title.toLowerCase().includes(q) || (t.topic ?? '').toLowerCase().includes(q) || t.category.toLowerCase().includes(q);
-    const matchSkill = !filterSkill || t.category === filterSkill;
-    const matchLevel = !filterLevel || t.comprehension_level === filterLevel;
-    const matchFormat = !filterFormat || t.format === filterFormat;
-    return matchSearch && matchSkill && matchLevel && matchFormat;
+    const matchSkill = filterSkills.length === 0 || filterSkills.includes(t.category);
+    const matchLevel = filterLevels.length === 0 || filterLevels.includes(t.comprehension_level);
+    return matchSearch && matchSkill && matchLevel;
   });
+
+  // In linkedOnly mode, show a full empty state (no filters/search) until tutorials are loaded and confirmed empty
+  const showNoLinkedState = linkedOnly && linkedLoaded && linkedTutorialIds.size === 0;
+  const showFilters = !linkedOnly || (linkedLoaded && linkedTutorialIds.size > 0);
 
   return (
     <View style={styles.container}>
+      {showNoLinkedState ? (
+        <View style={styles.noLinkedState}>
+          <Text style={styles.noLinkedEmoji}>📚</Text>
+          <Text style={styles.noLinkedTitle}>No tutorials added yet</Text>
+          <Text style={styles.noLinkedHint}>
+            Browse the tutorial library and add tutorials for your learner to watch.
+          </Text>
+          <TouchableOpacity
+            style={styles.noLinkedBtn}
+            onPress={() => navigation.navigate('TutorialLibrary', { linkedOnly: false })}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.noLinkedBtnText}>Browse Tutorials →</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
       {/* Search bar */}
-      <View style={styles.searchRow}>
-        <TextInput
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search tutorials…"
-          placeholderTextColor={COLORS.bloomMuted}
-          clearButtonMode="while-editing"
-        />
-      </View>
+      {showFilters && (
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search tutorials…"
+            placeholderTextColor={COLORS.bloomMuted}
+            clearButtonMode="while-editing"
+          />
+        </View>
+      )}
 
-      {/* Filter chips */}
-      <View style={styles.filterSection}>
-        <FilterRow
-          label="Skill"
-          options={['', ...TUTORIAL_TARGET_SKILLS]}
-          value={filterSkill}
-          onSelect={setFilterSkill}
-          labels={{ '': 'All Skills' }}
-        />
-        <FilterRow
-          label="Level"
-          options={['', ...TUTORIAL_COMPREHENSION]}
-          value={filterLevel}
-          onSelect={setFilterLevel}
-          labels={{ '': 'All Levels', easy: 'Easy', medium: 'Medium', complex: 'Complex', fluent: 'Fluent' }}
-        />
-        <FilterRow
-          label="Format"
-          options={['', 'video', 'slideshow']}
-          value={filterFormat}
-          onSelect={setFilterFormat}
-          labels={{ '': 'All', video: '🎬 Video', slideshow: '🖼 Slideshow' }}
-        />
-      </View>
+      {/* Filter panel */}
+      {showFilters && (
+        <View style={styles.filterPanel}>
+          <TouchableOpacity style={styles.filterRow} onPress={() => setShowSkillPicker(true)} activeOpacity={0.75}>
+            <Text style={styles.filterLabel}>Skill</Text>
+            <Text style={[styles.filterValue, filterSkills.length === 0 && styles.filterPlaceholder]} numberOfLines={1}>
+              {filterSkills.length === 0 ? 'All Skills' : filterSkills.length === 1 ? filterSkills[0] : `${filterSkills.length} selected`}
+            </Text>
+            {filterSkills.length > 0
+              ? <TouchableOpacity onPress={() => setFilterSkills([])} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={styles.filterClear}>✕</Text>
+                </TouchableOpacity>
+              : <Text style={styles.filterChevron}>›</Text>
+            }
+          </TouchableOpacity>
+          <View style={styles.filterDivider} />
+          <TouchableOpacity style={styles.filterRow} onPress={() => setShowLevelPicker(true)} activeOpacity={0.75}>
+            <Text style={styles.filterLabel}>Level</Text>
+            <Text style={[styles.filterValue, filterLevels.length === 0 && styles.filterPlaceholder, { textTransform: 'capitalize' }]} numberOfLines={1}>
+              {filterLevels.length === 0 ? 'All Levels' : filterLevels.length === 1 ? filterLevels[0] : `${filterLevels.length} selected`}
+            </Text>
+            {filterLevels.length > 0
+              ? <TouchableOpacity onPress={() => setFilterLevels([])} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={styles.filterClear}>✕</Text>
+                </TouchableOpacity>
+              : <Text style={styles.filterChevron}>›</Text>
+            }
+          </TouchableOpacity>
+        </View>
+      )}
 
       {loading ? (
         <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>
@@ -255,8 +276,14 @@ export default function TutorialLibraryScreen() {
           columnWrapperStyle={styles.row}
           renderItem={({ item: t }) => {
             const isFeaturedForAny = Object.values(featuredMap).some(s => s.has(t.id));
+            const isLinked = linkedTutorialIds.has(t.id);
+            const toggling = togglingLinkId === t.id;
             return (
-              <View style={[styles.card, isFeaturedForAny && styles.cardFeatured]}>
+              <TouchableOpacity
+                style={[styles.card, isFeaturedForAny && styles.cardFeatured]}
+                onPress={() => navigation.navigate('TutorialPreview', { tutorialId: t.id })}
+                activeOpacity={0.85}
+              >
                 {/* Thumbnail */}
                 <View>
                   {t.thumbnail_url
@@ -280,75 +307,106 @@ export default function TutorialLibraryScreen() {
                 <View style={styles.cardBody}>
                   <Text style={styles.cardTitle} numberOfLines={2}>{t.display_name || t.category}</Text>
                   <Text style={styles.cardMeta}>{t.category}</Text>
+                  {t.guardian?.full_name && (
+                    <Text style={styles.cardCreator} numberOfLines={1}>by {t.guardian.full_name}</Text>
+                  )}
                   <View style={styles.cardMetas}>
                     <Text style={styles.cardMetaChip}>{t.comprehension_level}</Text>
                     {t.duration_seconds ? <Text style={styles.cardMetaChip}>{t.duration_seconds}s</Text> : null}
-                    <Text style={styles.cardMetaChip}>🔗 {t.link_count ?? 0} {(t.link_count ?? 0) === 1 ? 'User' : 'Users'}</Text>
                   </View>
-                  <TouchableOpacity style={styles.addBtn} onPress={() => openLinkModal(t)}>
-                    <Text style={styles.addBtnText}>＋ Add to User</Text>
+                  <TouchableOpacity
+                    style={[styles.addBtn, isLinked && styles.addBtnLinked]}
+                    onPress={() => toggleLink(t)}
+                    disabled={toggling}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.addBtnText, isLinked && styles.addBtnTextLinked]}>
+                      {toggling ? '…' : linkedOnly ? '✕ Remove' : isLinked ? '✓ Added' : '＋ Add to Learner'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           }}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>🔍</Text>
-              <Text style={styles.emptyText}>No tutorials found</Text>
-              <Text style={styles.emptyHint}>Try adjusting your search or filters</Text>
+              <Text style={styles.emptyEmoji}>{linkedOnly ? '📚' : '🔍'}</Text>
+              <Text style={styles.emptyText}>{linkedOnly ? 'No linked tutorials' : 'No tutorials found'}</Text>
+              <Text style={styles.emptyHint}>{linkedOnly ? 'Add tutorials from the Tutorials page' : 'Try adjusting your search or filters'}</Text>
             </View>
           }
         />
       )}
 
-      {/* Assign-to-user modal */}
-      <Modal visible={!!linkingTutorial} animationType="slide" transparent onRequestClose={() => setLinkingTutorial(null)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setLinkingTutorial(null)}>
-          <TouchableOpacity style={styles.pickerCard} activeOpacity={1} onPress={() => {}}>
-            <Text style={styles.pickerTitle}>Add to users</Text>
-            <Text style={styles.pickerSub}>"{linkingTutorial?.display_name || linkingTutorial?.category}"</Text>
+      {/* Skill picker */}
+      <Modal visible={showSkillPicker} transparent animationType="slide" onRequestClose={() => setShowSkillPicker(false)}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowSkillPicker(false)}>
+          <View style={styles.pickerCard} onStartShouldSetResponder={() => true}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerTitle}>Target Skill</Text>
+              {filterSkills.length > 0 && (
+                <TouchableOpacity onPress={() => setFilterSkills([])}>
+                  <Text style={styles.pickerClearAll}>Clear all</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <ScrollView style={{ maxHeight: 340 }}>
+              {skillOptions.map(s => {
+                const selected = filterSkills.includes(s);
+                return (
+                  <TouchableOpacity
+                    key={s}
+                    style={[styles.pickerOption, selected && styles.pickerOptionActive]}
+                    onPress={() => setFilterSkills(prev => selected ? prev.filter(x => x !== s) : [...prev, s])}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.pickerOptionText, selected && styles.pickerOptionTextActive]}>{s}</Text>
+                    <View style={[styles.multiCheck, selected && styles.multiCheckActive]}>
+                      {selected && <Text style={styles.multiCheckMark}>✓</Text>}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <TouchableOpacity style={styles.confirmBtn} onPress={() => setShowSkillPicker(false)}>
+              <Text style={styles.confirmBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
-            {users.map(user => {
-              const checked = selectedUserIds.has(user.id);
+      {/* Level picker */}
+      <Modal visible={showLevelPicker} transparent animationType="slide" onRequestClose={() => setShowLevelPicker(false)}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowLevelPicker(false)}>
+          <View style={styles.pickerCard} onStartShouldSetResponder={() => true}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerTitle}>Comprehension Level</Text>
+              {filterLevels.length > 0 && (
+                <TouchableOpacity onPress={() => setFilterLevels([])}>
+                  <Text style={styles.pickerClearAll}>Clear all</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {(TUTORIAL_COMPREHENSION as string[]).map(l => {
+              const selected = filterLevels.includes(l);
               return (
                 <TouchableOpacity
-                  key={user.id}
-                  style={[styles.userRow, checked && styles.userRowSelected]}
-                  onPress={() => toggleUserSelection(user.id)}
-                  disabled={linking}
+                  key={l}
+                  style={[styles.pickerOption, selected && styles.pickerOptionActive]}
+                  onPress={() => setFilterLevels(prev => selected ? prev.filter(x => x !== l) : [...prev, l])}
                   activeOpacity={0.7}
                 >
-                  {user.photo_url
-                    ? <Image source={{ uri: user.photo_url }} style={styles.userAvatar} />
-                    : (
-                      <View style={[styles.userAvatar, styles.userAvatarPlaceholder]}>
-                        <Text style={styles.userAvatarText}>{user.name[0]}</Text>
-                      </View>
-                    )
-                  }
-                  <Text style={styles.userName}>{user.name}</Text>
-                  <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-                    {checked && <Text style={styles.checkmark}>✓</Text>}
+                  <Text style={[styles.pickerOptionText, selected && styles.pickerOptionTextActive, { textTransform: 'capitalize' }]}>{l}</Text>
+                  <View style={[styles.multiCheck, selected && styles.multiCheckActive]}>
+                    {selected && <Text style={styles.multiCheckMark}>✓</Text>}
                   </View>
                 </TouchableOpacity>
               );
             })}
-
-            <TouchableOpacity
-              style={[styles.confirmBtn, linking && { opacity: 0.6 }]}
-              onPress={confirmLinkSelection}
-              disabled={linking}
-            >
-              {linking
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.confirmBtnText}>Confirm</Text>
-              }
+            <TouchableOpacity style={styles.confirmBtn} onPress={() => setShowLevelPicker(false)}>
+              <Text style={styles.confirmBtnText}>Done</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setLinkingTutorial(null)}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
+          </View>
         </TouchableOpacity>
       </Modal>
 
@@ -395,38 +453,9 @@ export default function TutorialLibraryScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+        </>
+      )}
     </View>
-  );
-}
-
-function FilterRow({ label, options, value, onSelect, labels }: {
-  label: string;
-  options: string[];
-  value: string;
-  onSelect: (v: string) => void;
-  labels?: Record<string, string>;
-}) {
-  return (
-    <FlatList
-      horizontal
-      data={options}
-      keyExtractor={o => o}
-      style={styles.filterRow}
-      contentContainerStyle={styles.filterRowContent}
-      showsHorizontalScrollIndicator={false}
-      renderItem={({ item }) => {
-        const active = value === item;
-        const display = labels?.[item] ?? item;
-        return (
-          <TouchableOpacity
-            style={[styles.filterChip, active && styles.filterChipActive]}
-            onPress={() => onSelect(item)}
-          >
-            <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{display}</Text>
-          </TouchableOpacity>
-        );
-      }}
-    />
   );
 }
 
@@ -434,22 +463,47 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bloomBody },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
 
-  searchRow: { padding: 14, paddingBottom: 6 },
+  searchRow: { padding: 14, paddingBottom: 8 },
   searchInput: {
     backgroundColor: COLORS.bloomCard, borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
     paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, fontWeight: '500', color: COLORS.bloomText,
   },
 
-  filterSection: { gap: 2 },
-  filterRow: { maxHeight: 44 },
-  filterRowContent: { paddingHorizontal: 12, paddingVertical: 6, gap: 8 },
-  filterChip: {
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 18,
-    backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+  // Label-value filter panel
+  filterPanel: {
+    marginHorizontal: 14, marginBottom: 10,
+    backgroundColor: COLORS.bloomCard, borderRadius: 16,
+    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+    overflow: 'hidden',
   },
-  filterChipActive: { backgroundColor: COLORS.bloomNavy, borderColor: COLORS.bloomNavy },
-  filterChipText: { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted },
-  filterChipTextActive: { color: '#fff', fontWeight: '700' },
+  filterRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 13, gap: 8 },
+  filterLabel: { fontSize: 14, fontWeight: '700', color: COLORS.bloomText, width: 48 },
+  filterValue: { flex: 1, fontSize: 14, fontWeight: '600', color: COLORS.bloomText },
+  filterPlaceholder: { color: COLORS.bloomMuted, fontWeight: '400' },
+  filterClear: { fontSize: 13, color: COLORS.bloomMuted, fontWeight: '700', paddingHorizontal: 4 },
+  filterChevron: { fontSize: 20, color: COLORS.bloomMuted, lineHeight: 24 },
+  filterDivider: { height: 1, backgroundColor: COLORS.bloomBorder, marginHorizontal: 14 },
+
+  // Picker options inside modals
+  pickerOption: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 16,
+    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+  },
+  pickerOptionActive: { backgroundColor: '#DAEAFF' },
+  pickerOptionText: { fontSize: 15, fontWeight: '600', color: COLORS.bloomText },
+  pickerOptionTextActive: { color: COLORS.bloomAccent, fontWeight: '700' },
+  pickerCheck: { fontSize: 16, color: COLORS.bloomAccent, fontWeight: '800' },
+  pickerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  pickerClearAll: { fontSize: 13, fontWeight: '600', color: COLORS.bloomAccent },
+  multiCheck: {
+    width: 22, height: 22, borderRadius: 6,
+    borderWidth: 2, borderColor: COLORS.bloomBorder,
+    backgroundColor: COLORS.bloomBody,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  multiCheckActive: { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
+  multiCheckMark: { color: '#fff', fontSize: 12, fontWeight: '800' },
 
   list: { padding: 12, paddingBottom: 32 },
   row: { gap: 12, marginBottom: 12 },
@@ -480,6 +534,7 @@ const styles = StyleSheet.create({
   cardBody: { padding: 12, gap: 4 },
   cardTitle: { fontSize: 15, fontWeight: '800', color: COLORS.bloomText, lineHeight: 20 },
   cardMeta: { fontSize: 12, fontWeight: '500', color: COLORS.secondary, marginBottom: 2 },
+  cardCreator: { fontSize: 11, color: COLORS.bloomMuted, fontStyle: 'italic' },
   cardMetas: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
   cardMetaChip: {
     fontSize: 11, fontWeight: '600', color: COLORS.bloomMuted,
@@ -487,12 +542,24 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   addBtn: { backgroundColor: '#DAEAFF', borderRadius: 10, paddingVertical: 9, alignItems: 'center', marginTop: 2 },
+  addBtnLinked: { backgroundColor: '#D1FAE5' },
   addBtnText: { fontSize: 13, fontWeight: '800', color: COLORS.bloomAccent },
+  addBtnTextLinked: { color: '#065F46' },
 
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
   emptyEmoji: { fontSize: 48 },
   emptyText: { fontSize: 18, fontWeight: '700', color: COLORS.bloomText },
   emptyHint: { fontSize: 13, color: COLORS.bloomMuted },
+
+  noLinkedState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 },
+  noLinkedEmoji: { fontSize: 56 },
+  noLinkedTitle: { fontSize: 20, fontWeight: '800', color: COLORS.bloomText, textAlign: 'center' },
+  noLinkedHint: { fontSize: 14, color: COLORS.bloomMuted, textAlign: 'center', lineHeight: 22 },
+  noLinkedBtn: {
+    marginTop: 8, backgroundColor: COLORS.bloomNavy, borderRadius: 16,
+    paddingVertical: 14, paddingHorizontal: 28,
+  },
+  noLinkedBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   pickerCard: {
@@ -507,7 +574,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bloomBody, borderRadius: 16, padding: 16,
     borderWidth: 2, borderColor: 'transparent',
   },
-  userRowSelected: { borderColor: COLORS.bloomAccent, backgroundColor: '#DAEAFF' },
   userRowFeatured: { borderColor: '#F59E0B', backgroundColor: '#FFFBEB' },
   userAvatar: { width: 50, height: 50, borderRadius: 25 },
   userAvatarPlaceholder: { backgroundColor: '#DAEAFF', justifyContent: 'center', alignItems: 'center' },
@@ -516,12 +582,6 @@ const styles = StyleSheet.create({
   featureLimitNote: { fontSize: 11, color: COLORS.bloomMuted, marginTop: 2 },
   featureStar: { fontSize: 22 },
 
-  checkbox: {
-    width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: COLORS.bloomBorder,
-    backgroundColor: COLORS.bloomCard, justifyContent: 'center', alignItems: 'center',
-  },
-  checkboxChecked: { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
-  checkmark: { color: '#fff', fontSize: 14, fontWeight: '800' },
   confirmBtn: { marginTop: 4, paddingVertical: 15, alignItems: 'center', backgroundColor: COLORS.bloomNavy, borderRadius: 16 },
   confirmBtnText: { fontWeight: '800', fontSize: 15, color: '#fff' },
   cancelBtn: { paddingVertical: 13, alignItems: 'center', backgroundColor: COLORS.bloomBorder, borderRadius: 16 },

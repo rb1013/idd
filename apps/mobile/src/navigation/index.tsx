@@ -65,7 +65,7 @@ export type GuardianNavParamList = {
   GuardianHome: undefined;
   Profiles: undefined;
   Notifications: undefined;
-  Learning: undefined;
+  Learning: { initialTab?: 'search' | 'my' | 'create' } | undefined;
   Activities: undefined;
   Account: undefined;
   Schedule: undefined;
@@ -74,7 +74,7 @@ export type GuardianNavParamList = {
   EditUser: { userId: string };
   CreateTutorial: undefined;
   TutorialPreview: { tutorialId: string };
-  TutorialLibrary: { userId?: string };
+  TutorialLibrary: { userId?: string; linkedOnly?: boolean };
   LearnerDiscovery: undefined;
   LearnerPublicProfile: { learnerId: string };
   LearnerFriendRequests: undefined;
@@ -241,7 +241,7 @@ function GuardianTabs() {
       <GuardianNav.Screen name="GuardianHome"    component={GuardianHomeScreen}          options={{ headerShown: false, headerBackTitle: '' }} />
       <GuardianNav.Screen name="Profiles"        component={SelectUserScreen}            options={{ title: 'Profiles' }} />
       <GuardianNav.Screen name="Notifications"   component={GuardianNotificationsScreen} options={{ title: 'Notifications' }} />
-      <GuardianNav.Screen name="Learning"        component={GuardianTutorialsScreen}     options={{ title: 'Learning', headerRight: undefined }} />
+      <GuardianNav.Screen name="Learning"        component={GuardianTutorialsScreen}     options={{ title: 'Tutorials', headerRight: undefined }} />
       <GuardianNav.Screen name="Activities"      component={GuardianActivitiesScreen}    options={{ title: 'Activities', headerRight: undefined }} />
       <GuardianNav.Screen name="Account"         component={GuardianAccountScreen}       options={{ title: 'Account', headerRight: undefined }} />
       <GuardianNav.Screen name="Schedule"        component={ScheduleScreen}              options={{ title: 'Schedule' }} />
@@ -249,8 +249,8 @@ function GuardianTabs() {
       <GuardianNav.Screen name="CreateUser"      component={CreateUserScreen}            options={{ title: 'Create Profile' }} />
       <GuardianNav.Screen name="EditUser"        component={EditUserScreen}              options={{ title: 'Edit Profile' }} />
       <GuardianNav.Screen name="CreateTutorial"      component={CreateTutorialScreen}        options={{ title: 'Create Tutorial' }} />
-      <GuardianNav.Screen name="TutorialPreview"    component={TutorialPreviewScreen}       options={{ title: 'Preview Tutorial' }} />
-      <GuardianNav.Screen name="TutorialLibrary"    component={TutorialLibraryScreen}       options={{ title: 'Tutorial Library' }} />
+      <GuardianNav.Screen name="TutorialPreview"    component={TutorialPreviewScreen}       options={{ title: 'Preview Tutorial', headerRight: undefined }} />
+      <GuardianNav.Screen name="TutorialLibrary"    component={TutorialLibraryScreen}       options={{ title: 'Search Tutorials', headerRight: undefined }} />
       <GuardianNav.Screen name="LearnerDiscovery"   component={LearnerDiscoveryScreen}      options={{ title: 'Find Friends', headerRight: undefined }} />
       <GuardianNav.Screen name="LearnerPublicProfile" component={LearnerPublicProfileScreen} options={{ title: 'Learner Profile', headerRight: undefined }} />
       <GuardianNav.Screen name="LearnerFriendRequests" component={LearnerFriendRequestsScreen} options={{ title: 'Friend Requests', headerRight: undefined }} />

@@ -279,6 +279,15 @@ export default function GuardianHomeScreen() {
                 <Text style={s.actionEmoji}>📅</Text>
                 <Text style={s.actionLabel}>Schedule</Text>
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={s.actionTile}
+                onPress={() => navigation.navigate('TutorialLibrary', { linkedOnly: true })}
+                activeOpacity={0.78}
+              >
+                <Text style={s.actionEmoji}>📚</Text>
+                <Text style={s.actionLabel}>Learn</Text>
+              </TouchableOpacity>
             </View>
           </>
         )}

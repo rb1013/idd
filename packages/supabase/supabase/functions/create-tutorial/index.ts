@@ -67,6 +67,12 @@ serve(async (req) => {
         created_by_guardian_id: guardian_id,
         video_url: null,
         thumbnail_url: null,
+        core_action: core_action ?? null,
+        visual_style: visual_style ?? null,
+        image_style: image_style ?? null,
+        pacing_label: pacing < 0.5 ? 'slow' : 'normal',
+        tone_label: tone > 0.5 ? 'enthusiastic' : 'calm',
+        background_audio: background_audio ?? null,
       })
       .select()
       .single();

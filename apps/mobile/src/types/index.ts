@@ -107,6 +107,13 @@ export interface Tutorial {
   link_count: number;
   admin_notes: string | null;
   updated_at: string | null;
+  // Guardian input fields (null on older / admin-uploaded rows)
+  core_action: string | null;
+  visual_style: string | null;
+  image_style: string | null;
+  pacing_label: string | null;
+  tone_label: string | null;
+  background_audio: string | null;
 }
 
 export interface TutorialFrame {
