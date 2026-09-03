@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform, Modal,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -223,40 +224,40 @@ export default function CreateUserScreen({ navigation }: Props) {
           ))}
         </View>
         <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.6} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Text style={styles.cancelLink}>Cancel</Text>
+          <AppText style={styles.cancelLink}>Cancel</AppText>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {step === 'social' && (
           <View>
-            <Text style={styles.sectionTitle}>Social Profile</Text>
+            <AppText style={styles.sectionTitle}>Social Profile</AppText>
 
             <TouchableOpacity style={styles.photoPicker} onPress={pickPhoto}>
               {photoUri
                 ? <Image source={{ uri: photoUri }} style={styles.photo} />
-                : <Text style={styles.photoText}>Tap to add photo</Text>
+                : <AppText style={styles.photoText}>Tap to add photo</AppText>
               }
             </TouchableOpacity>
 
             <Field label="Name *" value={name} onChangeText={setName} placeholder="First name" />
-            <Text style={styles.label}>Date of Birth<Text style={styles.required}> *</Text></Text>
+            <AppText style={styles.label}>Date of Birth<AppText style={styles.required}> *</AppText></AppText>
             <TouchableOpacity
               style={styles.pickerBtn}
               onPress={() => { setTempDob(dob ?? new Date(2005, 0, 1)); setShowDobPicker(true); }}
               activeOpacity={0.75}
             >
-              <Text style={[styles.pickerBtnTxt, !dob && { color: COLORS.textLight }]}>
+              <AppText style={[styles.pickerBtnTxt, !dob && { color: COLORS.textLight }]}>
                 {dob ? dob.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Select date of birth…'}
-              </Text>
-              <Text style={{ fontSize: 18 }}>📅</Text>
+              </AppText>
+              <AppText style={{ fontSize: 18 }}>📅</AppText>
             </TouchableOpacity>
 
-            <Text style={styles.label}>Gender<Text style={styles.required}> *</Text></Text>
+            <AppText style={styles.label}>Gender<AppText style={styles.required}> *</AppText></AppText>
             <MultiSelectChips options={GENDERS.filter(g => g !== 'Prefer not to say')} selected={gender ? [gender] : []} onToggle={(v) => setGender(v[0] || '')} single />
 
-            <Text style={styles.label}>Username<Text style={styles.required}> *</Text></Text>
-            <Text style={styles.usernameHint}>Select a username. Learner will set up biometrics when they first sign in on their device.</Text>
+            <AppText style={styles.label}>Username<AppText style={styles.required}> *</AppText></AppText>
+            <AppText style={styles.usernameHint}>Select a username. Learner will set up biometrics when they first sign in on their device.</AppText>
             <TextInput
               style={[styles.input, usernameError ? styles.inputError : null]}
               value={username}
@@ -267,19 +268,19 @@ export default function CreateUserScreen({ navigation }: Props) {
               autoCorrect={false}
               placeholderTextColor={COLORS.textLight}
             />
-            {checkingUsername && <Text style={styles.checkingText}>Checking availability...</Text>}
-            {!checkingUsername && usernameError ? <Text style={styles.errorText}>{usernameError}</Text> : null}
-            {!checkingUsername && !usernameError && username.trim() ? <Text style={styles.availableText}>Username available</Text> : null}
+            {checkingUsername && <AppText style={styles.checkingText}>Checking availability...</AppText>}
+            {!checkingUsername && usernameError ? <AppText style={styles.errorText}>{usernameError}</AppText> : null}
+            {!checkingUsername && !usernameError && username.trim() ? <AppText style={styles.availableText}>Username available</AppText> : null}
           </View>
         )}
 
         {step === 'interests' && (
           <View>
-            <Text style={styles.sectionTitle}>More about Learner</Text>
-            <Text style={styles.sectionSubtitle}>Tell us more about this person</Text>
+            <AppText style={styles.sectionTitle}>More about Learner</AppText>
+            <AppText style={styles.sectionSubtitle}>Tell us more about this person</AppText>
 
             {likeCategories.length === 0
-              ? <Text style={styles.emptyHint}>Loading categories...</Text>
+              ? <AppText style={styles.emptyHint}>Loading categories...</AppText>
               : <>
                   <MultiSelectDropdown
                     label="Likes"
@@ -324,8 +325,8 @@ export default function CreateUserScreen({ navigation }: Props) {
 
         {step === 'location' && (
           <View>
-            <Text style={styles.sectionTitle}>Location</Text>
-            <Text style={styles.sectionSubtitle}>Where is this person based?</Text>
+            <AppText style={styles.sectionTitle}>Location</AppText>
+            <AppText style={styles.sectionSubtitle}>Where is this person based?</AppText>
 
             <DropdownPicker
               label="Country"
@@ -349,11 +350,11 @@ export default function CreateUserScreen({ navigation }: Props) {
 
         {step === 'health' && (
           <View>
-            <Text style={styles.sectionTitle}>Medical Condition</Text>
-            <Text style={styles.sectionSubtitle}>Select all that apply to this learner</Text>
+            <AppText style={styles.sectionTitle}>Medical Condition</AppText>
+            <AppText style={styles.sectionSubtitle}>Select all that apply to this learner</AppText>
 
             {medicalConditionOptions.length === 0 ? (
-              <Text style={styles.emptyHint}>No medical conditions have been added by the admin yet.</Text>
+              <AppText style={styles.emptyHint}>No medical conditions have been added by the admin yet.</AppText>
             ) : (
               <MultiSelectDropdown
                 label="Select conditions"
@@ -365,12 +366,12 @@ export default function CreateUserScreen({ navigation }: Props) {
             )}
 
             <View style={styles.disclaimer}>
-              <Text style={styles.disclaimerText}>
-                ⚠️  This information will <Text style={styles.disclaimerBold}>not</Text> be displayed on the learner's profile. It will only be used for finding compatible friends.{'\n\n'}
+              <AppText style={styles.disclaimerText}>
+                ⚠️  This information will <AppText style={styles.disclaimerBold}>not</AppText> be displayed on the learner's profile. It will only be used for finding compatible friends.{'\n\n'}
                 If you do not find your learner's medical condition in the list, please contact the admin at{' '}
-                <Text style={styles.disclaimerEmail}>reyaansh.bansal@gmail.com</Text>
+                <AppText style={styles.disclaimerEmail}>reyaansh.bansal@gmail.com</AppText>
                 . The admin will add it and let you know when it is available in this dropdown.
-              </Text>
+              </AppText>
             </View>
           </View>
         )}
@@ -380,16 +381,16 @@ export default function CreateUserScreen({ navigation }: Props) {
       <View style={styles.navRow}>
         {stepIndex > 0 && (
           <TouchableOpacity style={styles.backBtn} onPress={() => setStep(steps[stepIndex - 1])}>
-            <Text style={styles.backBtnText}>Back</Text>
+            <AppText style={styles.backBtnText}>Back</AppText>
           </TouchableOpacity>
         )}
         {stepIndex < steps.length - 1 ? (
           <TouchableOpacity style={styles.nextBtn} onPress={() => setStep(steps[stepIndex + 1])}>
-            <Text style={styles.nextBtnText}>Next</Text>
+            <AppText style={styles.nextBtnText}>Next</AppText>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={styles.nextBtn} onPress={handleSubmit} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.nextBtnText}>Create Profile</Text>}
+            {loading ? <ActivityIndicator color="#fff" /> : <AppText style={styles.nextBtnText}>Create Profile</AppText>}
           </TouchableOpacity>
         )}
       </View>
@@ -399,11 +400,11 @@ export default function CreateUserScreen({ navigation }: Props) {
           <View style={styles.sheet} onStartShouldSetResponder={() => true}>
             <View style={styles.sheetHdr}>
               <TouchableOpacity onPress={() => setShowDobPicker(false)}>
-                <Text style={styles.sheetCancel}>Cancel</Text>
+                <AppText style={styles.sheetCancel}>Cancel</AppText>
               </TouchableOpacity>
-              <Text style={styles.sheetTitle}>Date of Birth</Text>
+              <AppText style={styles.sheetTitle}>Date of Birth</AppText>
               <TouchableOpacity onPress={() => { setDob(tempDob); setShowDobPicker(false); }}>
-                <Text style={styles.sheetDone}>Done</Text>
+                <AppText style={styles.sheetDone}>Done</AppText>
               </TouchableOpacity>
             </View>
             <DateTimePicker
@@ -433,9 +434,9 @@ function Field({ label, ...props }: { label: string } & React.ComponentProps<typ
   const baseLabel = isRequired ? label.slice(0, -2) : label;
   return (
     <>
-      <Text style={styles.label}>
-        {baseLabel}{isRequired && <Text style={styles.required}> *</Text>}
-      </Text>
+      <AppText style={styles.label}>
+        {baseLabel}{isRequired && <AppText style={styles.required}> *</AppText>}
+      </AppText>
       <TextInput style={styles.input} placeholderTextColor={COLORS.textLight} {...props} />
     </>
   );
@@ -444,7 +445,7 @@ function Field({ label, ...props }: { label: string } & React.ComponentProps<typ
 function Toggle({ label, value, onToggle }: { label: string; value: boolean; onToggle: () => void }) {
   return (
     <TouchableOpacity style={styles.toggleRow} onPress={onToggle}>
-      <Text style={styles.toggleLabel}>{label}</Text>
+      <AppText style={styles.toggleLabel}>{label}</AppText>
       <View style={[styles.toggle, value && styles.toggleOn]}>
         <View style={[styles.toggleThumb, value && styles.toggleThumbOn]} />
       </View>
@@ -500,7 +501,7 @@ const styles = StyleSheet.create({
   backBtn: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
   backBtnText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   nextBtn: { flex: 2, backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center' },
-  nextBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  nextBtnText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '600' },
 
   disclaimer: {
     marginTop: 20, backgroundColor: '#FFF8E1', borderRadius: 12,

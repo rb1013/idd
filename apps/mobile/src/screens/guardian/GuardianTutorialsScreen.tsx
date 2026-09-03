@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   Image, ActivityIndicator, Alert, TextInput, Modal, ScrollView,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -17,8 +18,8 @@ const STATUS_COLORS: Record<TutorialStatus, { bg: string; text: string }> = {
   generating: { bg: '#E8ECEF', text: '#5D6D7E' },
   preview:    { bg: '#FEF3CD', text: '#B7791F' },
   pending:    { bg: '#DBEAFE', text: '#1D4ED8' },
-  approved:   { bg: '#D1FAE5', text: '#065F46' },
-  rejected:   { bg: '#FEE2E2', text: '#991B1B' },
+  approved:   { bg: COLORS.statusGreenLight, text: COLORS.statusGreenDark },
+  rejected:   { bg: COLORS.statusRedLight, text: '#991B1B' },
 };
 
 const STATUS_LABELS: Record<TutorialStatus, string> = {
@@ -172,7 +173,7 @@ export default function GuardianTutorialsScreen() {
               onPress={() => switchTab(tab)}
               activeOpacity={0.75}
             >
-              <Text style={[styles.tabText, active && styles.tabTextActive]}>{labels[tab]}</Text>
+              <AppText style={[styles.tabText, active && styles.tabTextActive]}>{labels[tab]}</AppText>
             </TouchableOpacity>
           );
         })}
@@ -195,28 +196,28 @@ export default function GuardianTutorialsScreen() {
           {/* Skill & Level filters */}
           <View style={styles.filterPanel}>
             <TouchableOpacity style={styles.filterRow} onPress={() => setShowSkillPicker(true)} activeOpacity={0.75}>
-              <Text style={styles.filterLabel}>Skill</Text>
-              <Text style={[styles.filterValue, filterSkills.length === 0 && styles.filterPlaceholder]} numberOfLines={1}>
+              <AppText style={styles.filterLabel}>Skill</AppText>
+              <AppText style={[styles.filterValue, filterSkills.length === 0 && styles.filterPlaceholder]} numberOfLines={1}>
                 {filterSkills.length === 0 ? 'All Skills' : filterSkills.length === 1 ? filterSkills[0] : `${filterSkills.length} selected`}
-              </Text>
+              </AppText>
               {filterSkills.length > 0
                 ? <TouchableOpacity onPress={() => setFilterSkills([])} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Text style={styles.filterClear}>✕</Text>
+                    <AppText style={styles.filterClear}>✕</AppText>
                   </TouchableOpacity>
-                : <Text style={styles.filterChevron}>›</Text>
+                : <AppText style={styles.filterChevron}>›</AppText>
               }
             </TouchableOpacity>
             <View style={styles.filterDivider} />
             <TouchableOpacity style={styles.filterRow} onPress={() => setShowLevelPicker(true)} activeOpacity={0.75}>
-              <Text style={styles.filterLabel}>Level</Text>
-              <Text style={[styles.filterValue, filterLevels.length === 0 && styles.filterPlaceholder, { textTransform: 'capitalize' }]} numberOfLines={1}>
+              <AppText style={styles.filterLabel}>Level</AppText>
+              <AppText style={[styles.filterValue, filterLevels.length === 0 && styles.filterPlaceholder, { textTransform: 'capitalize' }]} numberOfLines={1}>
                 {filterLevels.length === 0 ? 'All Levels' : filterLevels.length === 1 ? filterLevels[0] : `${filterLevels.length} selected`}
-              </Text>
+              </AppText>
               {filterLevels.length > 0
                 ? <TouchableOpacity onPress={() => setFilterLevels([])} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Text style={styles.filterClear}>✕</Text>
+                    <AppText style={styles.filterClear}>✕</AppText>
                   </TouchableOpacity>
-                : <Text style={styles.filterChevron}>›</Text>
+                : <AppText style={styles.filterChevron}>›</AppText>
               }
             </TouchableOpacity>
           </View>
@@ -239,14 +240,14 @@ export default function GuardianTutorialsScreen() {
                     <View style={styles.thumb}>
                       {t.thumbnail_url
                         ? <Image source={{ uri: t.thumbnail_url }} style={styles.thumbImage} />
-                        : <Text style={styles.thumbEmoji}>{FORMAT_EMOJI[t.format] ?? '📚'}</Text>
+                        : <AppText style={styles.thumbEmoji}>{FORMAT_EMOJI[t.format] ?? '📚'}</AppText>
                       }
                     </View>
                     <View style={styles.cardInfo}>
-                      <Text style={styles.cardTitle} numberOfLines={2}>{t.display_name || t.category}</Text>
-                      <Text style={styles.cardSub}>{t.category}</Text>
+                      <AppText style={styles.cardTitle} numberOfLines={2}>{t.display_name || t.category}</AppText>
+                      <AppText style={styles.cardSub}>{t.category}</AppText>
                       {(t as TutorialWithGuardian).guardian?.full_name && (
-                        <Text style={styles.cardCreator} numberOfLines={1}>by {(t as TutorialWithGuardian).guardian!.full_name}</Text>
+                        <AppText style={styles.cardCreator} numberOfLines={1}>by {(t as TutorialWithGuardian).guardian!.full_name}</AppText>
                       )}
                       <TouchableOpacity
                         style={styles.linkBtn}
@@ -254,9 +255,9 @@ export default function GuardianTutorialsScreen() {
                         disabled={toggling}
                         activeOpacity={0.75}
                       >
-                        <Text style={styles.linkBtnText}>
+                        <AppText style={styles.linkBtnText}>
                           {toggling ? '…' : '＋ Add to Learner'}
-                        </Text>
+                        </AppText>
                       </TouchableOpacity>
                     </View>
                   </TouchableOpacity>
@@ -264,9 +265,9 @@ export default function GuardianTutorialsScreen() {
               }}
               ListEmptyComponent={
                 <View style={styles.empty}>
-                  <Text style={styles.emptyEmoji}>🔍</Text>
-                  <Text style={styles.emptyText}>No tutorials found</Text>
-                  <Text style={styles.emptyHint}>Try a different search or filter</Text>
+                  <AppText style={styles.emptyEmoji}>🔍</AppText>
+                  <AppText style={styles.emptyText}>No tutorials found</AppText>
+                  <AppText style={styles.emptyHint}>Try a different search or filter</AppText>
                 </View>
               }
             />
@@ -277,10 +278,10 @@ export default function GuardianTutorialsScreen() {
             <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowSkillPicker(false)}>
               <View style={styles.sheet} onStartShouldSetResponder={() => true}>
                 <View style={styles.sheetHdr}>
-                  <Text style={styles.sheetTitle}>Target Skill</Text>
+                  <AppText style={styles.sheetTitle}>Target Skill</AppText>
                   {filterSkills.length > 0 && (
                     <TouchableOpacity onPress={() => setFilterSkills([])}>
-                      <Text style={styles.sheetClear}>Clear all</Text>
+                      <AppText style={styles.sheetClear}>Clear all</AppText>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -294,16 +295,16 @@ export default function GuardianTutorialsScreen() {
                         onPress={() => setFilterSkills(prev => selected ? prev.filter(x => x !== s) : [...prev, s])}
                         activeOpacity={0.7}
                       >
-                        <Text style={[styles.sheetOptionText, selected && styles.sheetOptionTextActive]}>{s}</Text>
+                        <AppText style={[styles.sheetOptionText, selected && styles.sheetOptionTextActive]}>{s}</AppText>
                         <View style={[styles.multiCheck, selected && styles.multiCheckActive]}>
-                          {selected && <Text style={styles.multiCheckMark}>✓</Text>}
+                          {selected && <AppText style={styles.multiCheckMark}>✓</AppText>}
                         </View>
                       </TouchableOpacity>
                     );
                   })}
                 </ScrollView>
                 <TouchableOpacity style={styles.sheetDone} onPress={() => setShowSkillPicker(false)}>
-                  <Text style={styles.sheetDoneText}>Done</Text>
+                  <AppText style={styles.sheetDoneText}>Done</AppText>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -314,10 +315,10 @@ export default function GuardianTutorialsScreen() {
             <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowLevelPicker(false)}>
               <View style={styles.sheet} onStartShouldSetResponder={() => true}>
                 <View style={styles.sheetHdr}>
-                  <Text style={styles.sheetTitle}>Comprehension Level</Text>
+                  <AppText style={styles.sheetTitle}>Comprehension Level</AppText>
                   {filterLevels.length > 0 && (
                     <TouchableOpacity onPress={() => setFilterLevels([])}>
-                      <Text style={styles.sheetClear}>Clear all</Text>
+                      <AppText style={styles.sheetClear}>Clear all</AppText>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -330,15 +331,15 @@ export default function GuardianTutorialsScreen() {
                       onPress={() => setFilterLevels(prev => selected ? prev.filter(x => x !== l) : [...prev, l])}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.sheetOptionText, selected && styles.sheetOptionTextActive, { textTransform: 'capitalize' }]}>{l}</Text>
+                      <AppText style={[styles.sheetOptionText, selected && styles.sheetOptionTextActive, { textTransform: 'capitalize' }]}>{l}</AppText>
                       <View style={[styles.multiCheck, selected && styles.multiCheckActive]}>
-                        {selected && <Text style={styles.multiCheckMark}>✓</Text>}
+                        {selected && <AppText style={styles.multiCheckMark}>✓</AppText>}
                       </View>
                     </TouchableOpacity>
                   );
                 })}
                 <TouchableOpacity style={styles.sheetDone} onPress={() => setShowLevelPicker(false)}>
-                  <Text style={styles.sheetDoneText}>Done</Text>
+                  <AppText style={styles.sheetDoneText}>Done</AppText>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -363,7 +364,7 @@ export default function GuardianTutorialsScreen() {
                   style={[styles.filterChip, active && styles.filterChipActive]}
                   onPress={() => setMyFilter(item.key)}
                 >
-                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{item.label}</Text>
+                  <AppText style={[styles.filterChipText, active && styles.filterChipTextActive]}>{item.label}</AppText>
                 </TouchableOpacity>
               );
             }}
@@ -385,36 +386,36 @@ export default function GuardianTutorialsScreen() {
                   <View style={styles.thumb}>
                     {t.thumbnail_url
                       ? <Image source={{ uri: t.thumbnail_url }} style={styles.thumbImage} />
-                      : <Text style={styles.thumbEmoji}>{FORMAT_EMOJI[t.format] ?? '📚'}</Text>
+                      : <AppText style={styles.thumbEmoji}>{FORMAT_EMOJI[t.format] ?? '📚'}</AppText>
                     }
                   </View>
                   <View style={styles.cardInfo}>
-                    <Text style={styles.cardTitle} numberOfLines={2}>{t.display_name || t.category}</Text>
-                    <Text style={styles.cardSub}>{t.category}</Text>
+                    <AppText style={styles.cardTitle} numberOfLines={2}>{t.display_name || t.category}</AppText>
+                    <AppText style={styles.cardSub}>{t.category}</AppText>
                     <View style={styles.cardMeta}>
                       <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[t.status as TutorialStatus].bg }]}>
-                        <Text style={[styles.statusText, { color: STATUS_COLORS[t.status as TutorialStatus].text }]}>
+                        <AppText style={[styles.statusText, { color: STATUS_COLORS[t.status as TutorialStatus].text }]}>
                           {STATUS_LABELS[t.status as TutorialStatus]}
-                        </Text>
+                        </AppText>
                       </View>
-                      {t.link_count > 0 && <Text style={styles.metaText}>🔗 {t.link_count}</Text>}
+                      {t.link_count > 0 && <AppText style={styles.metaText}>🔗 {t.link_count}</AppText>}
                     </View>
                     {t.status === 'generating' && (
-                      <Text style={styles.generatingHint}>May take 1–2 mins</Text>
+                      <AppText style={styles.generatingHint}>May take 1–2 mins</AppText>
                     )}
                   </View>
                   {t.status !== 'generating' && (
                     <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteTutorial(t)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Text style={styles.deleteBtnText}>🗑</Text>
+                      <AppText style={styles.deleteBtnText}>🗑</AppText>
                     </TouchableOpacity>
                   )}
                 </TouchableOpacity>
               )}
               ListEmptyComponent={
                 <View style={styles.empty}>
-                  <Text style={styles.emptyEmoji}>📚</Text>
-                  <Text style={styles.emptyText}>No tutorials yet</Text>
-                  <Text style={styles.emptyHint}>Create a tutorial to get started</Text>
+                  <AppText style={styles.emptyEmoji}>📚</AppText>
+                  <AppText style={styles.emptyText}>No tutorials yet</AppText>
+                  <AppText style={styles.emptyHint}>Create a tutorial to get started</AppText>
                 </View>
               }
             />
@@ -428,10 +429,10 @@ export default function GuardianTutorialsScreen() {
           {quota && (
             <View style={styles.quotaBar}>
               <View style={styles.quotaHeader}>
-                <Text style={styles.quotaLabel}>Monthly quota</Text>
-                <Text style={[styles.quotaCount, quota.used >= quota.limit && { color: COLORS.error }]}>
+                <AppText style={styles.quotaLabel}>Monthly quota</AppText>
+                <AppText style={[styles.quotaCount, quota.used >= quota.limit && { color: COLORS.error }]}>
                   {quota.used} / {quota.limit} used
-                </Text>
+                </AppText>
               </View>
               <View style={styles.quotaTrack}>
                 <View style={[styles.quotaFill, {
@@ -443,11 +444,11 @@ export default function GuardianTutorialsScreen() {
           )}
 
           <View style={styles.createCard}>
-            <Text style={styles.createEmoji}>✨</Text>
-            <Text style={styles.createHeading}>AI-Generated Tutorials</Text>
-            <Text style={styles.createBody}>
+            <AppText style={styles.createEmoji}>✨</AppText>
+            <AppText style={styles.createHeading}>AI-Generated Tutorials</AppText>
+            <AppText style={styles.createBody}>
               Describe what you'd like your learner to learn. Our AI will generate a personalised slideshow tutorial tailored to their needs.
-            </Text>
+            </AppText>
             <TouchableOpacity
               style={[styles.createBtn, quota?.used !== undefined && quota.used >= quota.limit && styles.createBtnDisabled]}
               onPress={() => {
@@ -456,7 +457,7 @@ export default function GuardianTutorialsScreen() {
               }}
               activeOpacity={0.85}
             >
-              <Text style={styles.createBtnText}>✨  Create Tutorial</Text>
+              <AppText style={styles.createBtnText}>✨  Create Tutorial</AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -489,10 +490,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, color: COLORS.bloomText,
   },
 
-  linkBtn: { marginTop: 8, backgroundColor: '#DAEAFF', borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
-  linkBtnLinked: { backgroundColor: '#D1FAE5' },
-  linkBtnText: { fontSize: 13, fontWeight: '800', color: COLORS.bloomAccent },
-  linkBtnTextLinked: { color: '#065F46' },
+  linkBtn: { marginTop: 8, backgroundColor: COLORS.bloomAccent, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
+  linkBtnLinked: { backgroundColor: COLORS.statusGreenLight },
+  linkBtnText: { fontSize: 13, fontWeight: '800', color: COLORS.bloomOnAccent },
+  linkBtnTextLinked: { color: COLORS.statusGreenDark },
 
   // Quota bar (shared)
   quotaBar: {
@@ -513,9 +514,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
     backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
   },
-  filterChipActive:     { backgroundColor: COLORS.bloomNavy, borderColor: COLORS.bloomNavy },
+  filterChipActive:     { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
   filterChipText:       { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted },
-  filterChipTextActive: { color: '#fff', fontWeight: '700' },
+  filterChipTextActive: { color: COLORS.bloomOnAccent, fontWeight: '700' },
 
   // Tutorial list
   list: { padding: 16, gap: 14 },
@@ -525,7 +526,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 3,
   },
   thumb: {
-    width: 80, height: 80, borderRadius: 14, backgroundColor: '#DAEAFF',
+    width: 80, height: 80, borderRadius: 14, backgroundColor: COLORS.bloomActiveBg,
     justifyContent: 'center', alignItems: 'center', overflow: 'hidden', flexShrink: 0,
   },
   thumbImage: { width: 80, height: 80 },
@@ -560,12 +561,12 @@ const styles = StyleSheet.create({
   createHeading: { fontSize: 20, fontWeight: '800', color: COLORS.bloomText, textAlign: 'center' },
   createBody:    { fontSize: 14, color: COLORS.bloomMuted, textAlign: 'center', lineHeight: 21 },
   createBtn: {
-    marginTop: 8, backgroundColor: COLORS.bloomNavy, borderRadius: 16,
+    marginTop: 8, backgroundColor: COLORS.bloomAccent, borderRadius: 16,
     paddingVertical: 15, paddingHorizontal: 32, alignItems: 'center',
-    shadowColor: COLORS.bloomNavy, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 5,
+    shadowColor: COLORS.bloomAccent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 5,
   },
   createBtnDisabled: { opacity: 0.45 },
-  createBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  createBtnText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 16 },
 
   // Label-value filter panel (Search tab)
   filterPanel: {
@@ -599,16 +600,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingVertical: 16,
     borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
   },
-  sheetOptionActive: { backgroundColor: '#DAEAFF' },
+  sheetOptionActive: { backgroundColor: COLORS.bloomActiveBg },
   sheetOptionText: { fontSize: 15, fontWeight: '600', color: COLORS.bloomText },
   sheetOptionTextActive: { color: COLORS.bloomAccent, fontWeight: '700' },
-  sheetDone: { marginHorizontal: 20, marginTop: 16, backgroundColor: COLORS.bloomNavy, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  sheetDoneText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  sheetDone: { marginHorizontal: 20, marginTop: 16, backgroundColor: COLORS.bloomAccent, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  sheetDoneText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 15 },
   multiCheck: {
     width: 22, height: 22, borderRadius: 6,
     borderWidth: 2, borderColor: COLORS.bloomBorder,
     backgroundColor: COLORS.bloomBody, justifyContent: 'center', alignItems: 'center',
   },
   multiCheckActive: { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
-  multiCheckMark: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  multiCheckMark: { color: COLORS.bloomOnAccent, fontSize: 12, fontWeight: '800' },
 });

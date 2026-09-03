@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Image, ActivityIndicator, Alert,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { GuardianNavParamList } from '../../navigation';
@@ -10,7 +11,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS, calcAge } from '../../constants';
 
-const AVATAR_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#F59E0B', '#3B82F6', '#EC4899'];
+const AVATAR_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, COLORS.statusAmber, COLORS.statusBlue, COLORS.statusPink];
 
 interface FriendForPin {
   friendshipId: string;
@@ -129,10 +130,10 @@ export default function FavouriteFriendsScreen() {
   if (friends.length === 0) {
     return (
       <View style={s.center}>
-        <Text style={s.emptyEmoji}>⭐</Text>
-        <Text style={s.emptyTitle}>No friends yet</Text>
+        <AppText style={s.emptyEmoji}>⭐</AppText>
+        <AppText style={s.emptyTitle}>No friends yet</AppText>
         <TouchableOpacity onPress={() => navigation.navigate('LearnerDiscovery')} activeOpacity={0.7}>
-          <Text style={s.emptyLink}>Find Friends for Learners →</Text>
+          <AppText style={s.emptyLink}>Find Friends for Learners →</AppText>
         </TouchableOpacity>
       </View>
     );
@@ -142,8 +143,8 @@ export default function FavouriteFriendsScreen() {
 
   return (
     <ScrollView style={s.container} contentContainerStyle={s.content}>
-      <Text style={s.hint}>Pin up to 5 favourites — they appear at the top of the learner's Friends list.</Text>
-      <Text style={s.counter}>{pinned}/5 pinned</Text>
+      <AppText style={s.hint}>Pin up to 5 favourites — they appear at the top of the learner's Friends list.</AppText>
+      <AppText style={s.counter}>{pinned}/5 pinned</AppText>
 
       {friends.map((item, index) => {
         const color = AVATAR_COLORS[index % AVATAR_COLORS.length];
@@ -156,16 +157,16 @@ export default function FavouriteFriendsScreen() {
                 <Image source={{ uri: item.friendPhotoUrl }} style={s.avatar} />
               ) : (
                 <View style={[s.avatar, { backgroundColor: color }]}>
-                  <Text style={s.avatarInitial}>{item.friendName[0]?.toUpperCase()}</Text>
+                  <AppText style={s.avatarInitial}>{item.friendName[0]?.toUpperCase()}</AppText>
                 </View>
               )}
 
               {/* Info */}
               <View style={s.rowInfo}>
-                <Text style={s.name} numberOfLines={1}>{item.friendName}</Text>
-                <Text style={s.meta} numberOfLines={1}>
+                <AppText style={s.name} numberOfLines={1}>{item.friendName}</AppText>
+                <AppText style={s.meta} numberOfLines={1}>
                   {calcAge(item.friendDob) ?? '—'} yrs · {item.friendCity}{item.friendRegion ? `, ${item.friendRegion}` : ''}
-                </Text>
+                </AppText>
               </View>
 
               {/* Pin toggle */}
@@ -175,7 +176,7 @@ export default function FavouriteFriendsScreen() {
                 activeOpacity={0.8}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={s.pinIcon}>{item.isPinned ? '⭐' : '☆'}</Text>
+                <AppText style={s.pinIcon}>{item.isPinned ? '⭐' : '☆'}</AppText>
               </TouchableOpacity>
 
               {/* Remove */}
@@ -187,13 +188,13 @@ export default function FavouriteFriendsScreen() {
                 activeOpacity={0.8}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={s.removeIcon}>✕</Text>
+                <AppText style={s.removeIcon}>✕</AppText>
               </TouchableOpacity>
             </View>
 
             {showTooltip && (
               <View style={s.tooltip}>
-                <Text style={s.tooltipText}>Remove {item.friendName} from friends list</Text>
+                <AppText style={s.tooltipText}>Remove {item.friendName} from friends list</AppText>
               </View>
             )}
           </View>
@@ -237,11 +238,11 @@ const s = StyleSheet.create({
   rowWrap: { marginBottom: 8 },
   removeBtn: {
     width: 44, height: 44, borderRadius: 12,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: COLORS.statusRedLight,
     justifyContent: 'center', alignItems: 'center', flexShrink: 0,
   },
   removeBtnActive: { backgroundColor: '#FECACA' },
-  removeIcon: { fontSize: 16, fontWeight: '700', color: '#DC2626' },
+  removeIcon: { fontSize: 16, fontWeight: '700', color: COLORS.statusRedDark },
   tooltip: {
     backgroundColor: '#1E3350',
     borderRadius: 8,

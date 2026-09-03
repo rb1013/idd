@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -152,15 +153,15 @@ export default function EditEventScreen() {
         {categories.length > 0 && (
           <Field label="Category" hint="optional">
             <TouchableOpacity style={s.pickerBtn} onPress={() => setShowCategoryPicker(true)} activeOpacity={0.75}>
-              <Text style={[s.pickerBtnTxt, !category && s.pickerPlaceholder]}>
+              <AppText style={[s.pickerBtnTxt, !category && s.pickerPlaceholder]}>
                 {category || 'Select category…'}
-              </Text>
+              </AppText>
               {category ? (
                 <TouchableOpacity onPress={() => setCategory('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Text style={s.clearTxt}>✕</Text>
+                  <AppText style={s.clearTxt}>✕</AppText>
                 </TouchableOpacity>
               ) : (
-                <Text style={s.pickerIcon}>🏷️</Text>
+                <AppText style={s.pickerIcon}>🏷️</AppText>
               )}
             </TouchableOpacity>
           </Field>
@@ -172,12 +173,12 @@ export default function EditEventScreen() {
             onPress={() => { setTempDate(date ?? new Date()); setShowDatePicker(true); }}
             activeOpacity={0.75}
           >
-            <Text style={[s.pickerBtnTxt, !date && s.pickerPlaceholder]}>
+            <AppText style={[s.pickerBtnTxt, !date && s.pickerPlaceholder]}>
               {date
                 ? date.toLocaleDateString(undefined, { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
                 : 'Select date…'}
-            </Text>
-            <Text style={s.pickerIcon}>📅</Text>
+            </AppText>
+            <AppText style={s.pickerIcon}>📅</AppText>
           </TouchableOpacity>
         </Field>
 
@@ -190,15 +191,15 @@ export default function EditEventScreen() {
             }}
             activeOpacity={0.75}
           >
-            <Text style={[s.pickerBtnTxt, !time && s.pickerPlaceholder]}>
+            <AppText style={[s.pickerBtnTxt, !time && s.pickerPlaceholder]}>
               {time ? formatTimeDisplay(time) : 'Select time…'}
-            </Text>
+            </AppText>
             {time ? (
               <TouchableOpacity onPress={() => setTime(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Text style={s.clearTxt}>✕</Text>
+                <AppText style={s.clearTxt}>✕</AppText>
               </TouchableOpacity>
             ) : (
-              <Text style={s.pickerIcon}>🕐</Text>
+              <AppText style={s.pickerIcon}>🕐</AppText>
             )}
           </TouchableOpacity>
         </Field>
@@ -233,7 +234,7 @@ export default function EditEventScreen() {
         >
           {submitting
             ? <ActivityIndicator color="#fff" />
-            : <Text style={s.submitBtnText}>Save Changes</Text>
+            : <AppText style={s.submitBtnText}>Save Changes</AppText>
           }
         </TouchableOpacity>
       </ScrollView>
@@ -243,9 +244,9 @@ export default function EditEventScreen() {
           <View style={s.sheet} onStartShouldSetResponder={() => true}>
             <View style={s.sheetHdr}>
               <TouchableOpacity onPress={() => setShowCategoryPicker(false)}>
-                <Text style={s.sheetCancel}>Cancel</Text>
+                <AppText style={s.sheetCancel}>Cancel</AppText>
               </TouchableOpacity>
-              <Text style={s.sheetTitle}>Select Category</Text>
+              <AppText style={s.sheetTitle}>Select Category</AppText>
               <View style={{ width: 60 }} />
             </View>
             <ScrollView style={{ maxHeight: 320 }}>
@@ -256,8 +257,8 @@ export default function EditEventScreen() {
                   onPress={() => { setCategory(cat); setShowCategoryPicker(false); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={[s.categoryOptionText, category === cat && s.categoryOptionTextActive]}>{cat}</Text>
-                  {category === cat && <Text style={s.categoryCheck}>✓</Text>}
+                  <AppText style={[s.categoryOptionText, category === cat && s.categoryOptionTextActive]}>{cat}</AppText>
+                  {category === cat && <AppText style={s.categoryCheck}>✓</AppText>}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -270,11 +271,11 @@ export default function EditEventScreen() {
           <View style={s.sheet} onStartShouldSetResponder={() => true}>
             <View style={s.sheetHdr}>
               <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                <Text style={s.sheetCancel}>Cancel</Text>
+                <AppText style={s.sheetCancel}>Cancel</AppText>
               </TouchableOpacity>
-              <Text style={s.sheetTitle}>Select Date</Text>
+              <AppText style={s.sheetTitle}>Select Date</AppText>
               <TouchableOpacity onPress={() => { setDate(tempDate); setShowDatePicker(false); }}>
-                <Text style={s.sheetDone}>Done</Text>
+                <AppText style={s.sheetDone}>Done</AppText>
               </TouchableOpacity>
             </View>
             <DateTimePicker
@@ -294,11 +295,11 @@ export default function EditEventScreen() {
           <View style={s.sheet} onStartShouldSetResponder={() => true}>
             <View style={s.sheetHdr}>
               <TouchableOpacity onPress={() => setShowTimePicker(false)}>
-                <Text style={s.sheetCancel}>Cancel</Text>
+                <AppText style={s.sheetCancel}>Cancel</AppText>
               </TouchableOpacity>
-              <Text style={s.sheetTitle}>Select Time</Text>
+              <AppText style={s.sheetTitle}>Select Time</AppText>
               <TouchableOpacity onPress={() => { setTime(tempTime); setShowTimePicker(false); }}>
-                <Text style={s.sheetDone}>Done</Text>
+                <AppText style={s.sheetDone}>Done</AppText>
               </TouchableOpacity>
             </View>
             <DateTimePicker
@@ -319,8 +320,8 @@ function Field({ label, hint, required, children }: { label: string; hint?: stri
   return (
     <View style={s.field}>
       <View style={s.fieldLabelRow}>
-        <Text style={s.fieldLabel}>{label}{required ? <Text style={{ color: '#EF4444' }}> *</Text> : ''}</Text>
-        {hint && <Text style={s.fieldHint}>{hint}</Text>}
+        <AppText style={s.fieldLabel}>{label}{required ? <AppText style={{ color: COLORS.statusError }}> *</AppText> : ''}</AppText>
+        {hint && <AppText style={s.fieldHint}>{hint}</AppText>}
       </View>
       {children}
     </View>
@@ -356,17 +357,17 @@ const s = StyleSheet.create({
   clearTxt:         { fontSize: 14, color: COLORS.bloomMuted, fontWeight: '700' },
 
   submitBtn: {
-    backgroundColor: COLORS.bloomNavy, borderRadius: 16,
+    backgroundColor: COLORS.bloomAccent, borderRadius: 16,
     paddingVertical: 17, alignItems: 'center', marginTop: 8,
   },
-  submitBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  submitBtnText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 16 },
 
   categoryOption: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 14,
     borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
   },
-  categoryOptionActive:     { backgroundColor: '#EBF4FF' },
+  categoryOptionActive:     { backgroundColor: COLORS.bloomTintBg },
   categoryOptionText:       { fontSize: 15, color: COLORS.bloomText },
   categoryOptionTextActive: { color: COLORS.bloomNavy, fontWeight: '700' },
   categoryCheck:            { fontSize: 16, color: COLORS.bloomNavy, fontWeight: '700' },

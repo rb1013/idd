@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert,
   Modal, ScrollView, Image,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,7 +15,7 @@ import { GuardianNavParamList } from '../../navigation';
 type Nav  = NativeStackNavigationProp<GuardianNavParamList>;
 type Rsvp = 'going' | 'interested' | 'not_going';
 
-const AVATAR_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#F59E0B', '#3B82F6', '#EC4899'];
+const AVATAR_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, COLORS.statusAmber, COLORS.statusBlue, COLORS.statusPink];
 
 interface LearnerInfo { name: string; date_of_birth: string | null; gender: string | null }
 
@@ -25,8 +26,8 @@ interface GuardianProfile {
 }
 
 const RSVP_OPTIONS: { value: Rsvp; label: string; activeColor: string; activeBg: string }[] = [
-  { value: 'going',      label: '✓ Going',     activeColor: '#065F46', activeBg: '#D4F0DE' },
-  { value: 'interested', label: '★ Interested', activeColor: '#92400E', activeBg: '#FEF3C7' },
+  { value: 'going',      label: '✓ Going',     activeColor: COLORS.statusGreenDark, activeBg: COLORS.secondaryLight },
+  { value: 'interested', label: '★ Interested', activeColor: COLORS.statusAmberDark, activeBg: COLORS.statusAmberLight },
   { value: 'not_going',  label: "✕ Can't go",  activeColor: COLORS.bloomMuted, activeBg: COLORS.bloomBorder },
 ];
 
@@ -221,9 +222,9 @@ export default function EventsScreen() {
             style={[s.tab, tab === t && s.tabActive]}
             onPress={() => setTab(t)}
           >
-            <Text style={[s.tabText, tab === t && s.tabTextActive]}>
+            <AppText style={[s.tabText, tab === t && s.tabTextActive]}>
               {t === 'upcoming' ? 'Upcoming' : 'My Events'}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         ))}
       </View>
@@ -237,15 +238,15 @@ export default function EventsScreen() {
             onPress={() => { setTempDateFrom(filterDateFrom ?? new Date()); setShowDateFromPicker(true); }}
             activeOpacity={0.7}
           >
-            <Text style={s.filterLabel}>From</Text>
-            <Text style={[s.filterValue, filterDateFrom && s.filterValueActive]}>
+            <AppText style={s.filterLabel}>From</AppText>
+            <AppText style={[s.filterValue, filterDateFrom && s.filterValueActive]}>
               {filterDateFrom
                 ? filterDateFrom.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
                 : 'Any date'}
-            </Text>
+            </AppText>
             {filterDateFrom
-              ? <TouchableOpacity onPress={() => setFilterDateFrom(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><Text style={s.filterClear}>✕</Text></TouchableOpacity>
-              : <Text style={s.filterArrow}>›</Text>
+              ? <TouchableOpacity onPress={() => setFilterDateFrom(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><AppText style={s.filterClear}>✕</AppText></TouchableOpacity>
+              : <AppText style={s.filterArrow}>›</AppText>
             }
           </TouchableOpacity>
 
@@ -257,15 +258,15 @@ export default function EventsScreen() {
             onPress={() => { setTempDateTo(filterDateTo ?? new Date()); setShowDateToPicker(true); }}
             activeOpacity={0.7}
           >
-            <Text style={s.filterLabel}>To</Text>
-            <Text style={[s.filterValue, filterDateTo && s.filterValueActive]}>
+            <AppText style={s.filterLabel}>To</AppText>
+            <AppText style={[s.filterValue, filterDateTo && s.filterValueActive]}>
               {filterDateTo
                 ? filterDateTo.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
                 : 'Any date'}
-            </Text>
+            </AppText>
             {filterDateTo
-              ? <TouchableOpacity onPress={() => setFilterDateTo(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><Text style={s.filterClear}>✕</Text></TouchableOpacity>
-              : <Text style={s.filterArrow}>›</Text>
+              ? <TouchableOpacity onPress={() => setFilterDateTo(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><AppText style={s.filterClear}>✕</AppText></TouchableOpacity>
+              : <AppText style={s.filterArrow}>›</AppText>
             }
           </TouchableOpacity>
 
@@ -277,13 +278,13 @@ export default function EventsScreen() {
                 onPress={() => setShowCategorySheet(true)}
                 activeOpacity={0.7}
               >
-                <Text style={s.filterLabel}>Category</Text>
-                <Text style={[s.filterValue, filterCategory && s.filterValueActive]}>
+                <AppText style={s.filterLabel}>Category</AppText>
+                <AppText style={[s.filterValue, filterCategory && s.filterValueActive]}>
                   {filterCategory || 'All'}
-                </Text>
+                </AppText>
                 {filterCategory
-                  ? <TouchableOpacity onPress={() => setFilterCategory('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><Text style={s.filterClear}>✕</Text></TouchableOpacity>
-                  : <Text style={s.filterArrow}>›</Text>
+                  ? <TouchableOpacity onPress={() => setFilterCategory('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><AppText style={s.filterClear}>✕</AppText></TouchableOpacity>
+                  : <AppText style={s.filterArrow}>›</AppText>
                 }
               </TouchableOpacity>
             </>
@@ -306,34 +307,34 @@ export default function EventsScreen() {
                 activeOpacity={0.82}
               >
                 <View style={s.dateTag}>
-                  <Text style={s.dateTagDay}>{d.getDate()}</Text>
-                  <Text style={s.dateTagMonth}>
+                  <AppText style={s.dateTagDay}>{d.getDate()}</AppText>
+                  <AppText style={s.dateTagMonth}>
                     {d.toLocaleDateString(undefined, { month: 'short' }).toUpperCase()}
-                  </Text>
+                  </AppText>
                 </View>
 
                 <View style={s.info}>
-                  <Text style={s.eventName}>{e.name}</Text>
-                  <Text style={s.eventMeta}>
+                  <AppText style={s.eventName}>{e.name}</AppText>
+                  <AppText style={s.eventMeta}>
                     {e.eventTime ? formatTime(e.eventTime) : ''}
                     {e.venue ? (e.eventTime ? '  ·  ' : '') + e.venue : ''}
-                  </Text>
+                  </AppText>
                   {!isMine ? (
                     <TouchableOpacity
                       onPress={() => openGuardianSheet(e.guardianId)}
                       activeOpacity={0.7}
                       hitSlop={{ top: 4, bottom: 4, left: 0, right: 8 }}
                     >
-                      <Text style={s.eventHostBtn}>By {e.guardianName}</Text>
+                      <AppText style={s.eventHostBtn}>By {e.guardianName}</AppText>
                     </TouchableOpacity>
                   ) : (
-                    <Text style={s.eventHost}>By {e.guardianName}</Text>
+                    <AppText style={s.eventHost}>By {e.guardianName}</AppText>
                   )}
                 </View>
 
                 <View style={s.goingBadge}>
-                  <Text style={s.goingNum}>{e.goingCount}</Text>
-                  <Text style={s.goingLabel}>going</Text>
+                  <AppText style={s.goingNum}>{e.goingCount}</AppText>
+                  <AppText style={s.goingLabel}>going</AppText>
                 </View>
               </TouchableOpacity>
 
@@ -344,7 +345,7 @@ export default function EventsScreen() {
                   onPress={() => navigation.navigate('EditEvent', { eventId: e.id })}
                   activeOpacity={0.7}
                 >
-                  <Text style={s.actionBtnText}>✏️  Edit</Text>
+                  <AppText style={s.actionBtnText}>✏️  Edit</AppText>
                 </TouchableOpacity>
                 <View style={s.actionDivider} />
                 <TouchableOpacity
@@ -352,7 +353,7 @@ export default function EventsScreen() {
                   onPress={() => deleteEvent(e.id)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[s.actionBtnText, s.actionBtnDelete]}>🗑  Delete</Text>
+                  <AppText style={[s.actionBtnText, s.actionBtnDelete]}>🗑  Delete</AppText>
                 </TouchableOpacity>
               </View>
               )}
@@ -365,16 +366,16 @@ export default function EventsScreen() {
             onPress={() => setVisibleCount(c => c + 10)}
             activeOpacity={0.75}
           >
-            <Text style={s.loadMoreText}>
+            <AppText style={s.loadMoreText}>
               Show more ({allFiltered.length - visibleCount} remaining)
-            </Text>
+            </AppText>
           </TouchableOpacity>
         ) : null}
         ListEmptyComponent={
           <View style={s.empty}>
-            <Text style={s.emptyEmoji}>🎉</Text>
-            <Text style={s.emptyText}>{tab === 'mine' ? "You haven't created any events" : 'No upcoming events'}</Text>
-            <Text style={s.emptyHint}>Tap below to create one</Text>
+            <AppText style={s.emptyEmoji}>🎉</AppText>
+            <AppText style={s.emptyText}>{tab === 'mine' ? "You haven't created any events" : 'No upcoming events'}</AppText>
+            <AppText style={s.emptyHint}>Tap below to create one</AppText>
           </View>
         }
       />
@@ -384,7 +385,7 @@ export default function EventsScreen() {
         onPress={() => navigation.navigate('CreateEvent')}
         activeOpacity={0.85}
       >
-        <Text style={s.fabText}>+ Create Event</Text>
+        <AppText style={s.fabText}>+ Create Event</AppText>
       </TouchableOpacity>
 
       {/* Filter: Date From picker */}
@@ -392,9 +393,9 @@ export default function EventsScreen() {
         <TouchableOpacity style={s.nudgeBackdrop} activeOpacity={1} onPress={() => setShowDateFromPicker(false)}>
           <View style={s.nudgeSheet} onStartShouldSetResponder={() => true}>
             <View style={s.filterPickerHdr}>
-              <TouchableOpacity onPress={() => setShowDateFromPicker(false)}><Text style={s.filterPickerCancel}>Cancel</Text></TouchableOpacity>
-              <Text style={s.filterPickerTitle}>From Date</Text>
-              <TouchableOpacity onPress={() => { setFilterDateFrom(tempDateFrom); setShowDateFromPicker(false); }}><Text style={s.filterPickerDone}>Done</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowDateFromPicker(false)}><AppText style={s.filterPickerCancel}>Cancel</AppText></TouchableOpacity>
+              <AppText style={s.filterPickerTitle}>From Date</AppText>
+              <TouchableOpacity onPress={() => { setFilterDateFrom(tempDateFrom); setShowDateFromPicker(false); }}><AppText style={s.filterPickerDone}>Done</AppText></TouchableOpacity>
             </View>
             <DateTimePicker value={tempDateFrom} mode="date" display="spinner" onChange={(_, d) => { if (d) setTempDateFrom(d); }} style={{ height: 220 }} />
           </View>
@@ -406,9 +407,9 @@ export default function EventsScreen() {
         <TouchableOpacity style={s.nudgeBackdrop} activeOpacity={1} onPress={() => setShowDateToPicker(false)}>
           <View style={s.nudgeSheet} onStartShouldSetResponder={() => true}>
             <View style={s.filterPickerHdr}>
-              <TouchableOpacity onPress={() => setShowDateToPicker(false)}><Text style={s.filterPickerCancel}>Cancel</Text></TouchableOpacity>
-              <Text style={s.filterPickerTitle}>To Date</Text>
-              <TouchableOpacity onPress={() => { setFilterDateTo(tempDateTo); setShowDateToPicker(false); }}><Text style={s.filterPickerDone}>Done</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowDateToPicker(false)}><AppText style={s.filterPickerCancel}>Cancel</AppText></TouchableOpacity>
+              <AppText style={s.filterPickerTitle}>To Date</AppText>
+              <TouchableOpacity onPress={() => { setFilterDateTo(tempDateTo); setShowDateToPicker(false); }}><AppText style={s.filterPickerDone}>Done</AppText></TouchableOpacity>
             </View>
             <DateTimePicker value={tempDateTo} mode="date" display="spinner" onChange={(_, d) => { if (d) setTempDateTo(d); }} style={{ height: 220 }} />
           </View>
@@ -420,8 +421,8 @@ export default function EventsScreen() {
         <TouchableOpacity style={s.nudgeBackdrop} activeOpacity={1} onPress={() => setShowCategorySheet(false)}>
           <View style={s.nudgeSheet} onStartShouldSetResponder={() => true}>
             <View style={s.filterPickerHdr}>
-              <TouchableOpacity onPress={() => setShowCategorySheet(false)}><Text style={s.filterPickerCancel}>Cancel</Text></TouchableOpacity>
-              <Text style={s.filterPickerTitle}>Category</Text>
+              <TouchableOpacity onPress={() => setShowCategorySheet(false)}><AppText style={s.filterPickerCancel}>Cancel</AppText></TouchableOpacity>
+              <AppText style={s.filterPickerTitle}>Category</AppText>
               <View style={{ width: 60 }} />
             </View>
             <ScrollView style={{ maxHeight: 320 }}>
@@ -432,10 +433,10 @@ export default function EventsScreen() {
                   onPress={() => { setFilterCategory(cat); setShowCategorySheet(false); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={[s.catOptionText, filterCategory === cat && s.catOptionTextActive]}>
+                  <AppText style={[s.catOptionText, filterCategory === cat && s.catOptionTextActive]}>
                     {cat || 'All categories'}
-                  </Text>
-                  {filterCategory === cat && <Text style={s.catCheck}>✓</Text>}
+                  </AppText>
+                  {filterCategory === cat && <AppText style={s.catCheck}>✓</AppText>}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -462,52 +463,52 @@ export default function EventsScreen() {
                     const d = new Date(selectedEvent.eventDate + 'T12:00:00');
                     return (
                       <View style={s.nudgeDateTag}>
-                        <Text style={s.nudgeDateDay}>{d.getDate()}</Text>
-                        <Text style={s.nudgeDateMonth}>
+                        <AppText style={s.nudgeDateDay}>{d.getDate()}</AppText>
+                        <AppText style={s.nudgeDateMonth}>
                           {d.toLocaleDateString(undefined, { month: 'short' }).toUpperCase()}
-                        </Text>
+                        </AppText>
                       </View>
                     );
                   })()}
                   <View style={s.nudgeTitleBlock}>
                     {selectedEvent.category && (
                       <View style={s.nudgeCategoryChip}>
-                        <Text style={s.nudgeCategoryText}>{selectedEvent.category}</Text>
+                        <AppText style={s.nudgeCategoryText}>{selectedEvent.category}</AppText>
                       </View>
                     )}
-                    <Text style={s.nudgeTitle}>{selectedEvent.name}</Text>
-                    <Text style={s.nudgeHost}>By {selectedEvent.guardianName}</Text>
+                    <AppText style={s.nudgeTitle}>{selectedEvent.name}</AppText>
+                    <AppText style={s.nudgeHost}>By {selectedEvent.guardianName}</AppText>
                   </View>
                 </View>
 
                 <ScrollView style={s.nudgeBody} showsVerticalScrollIndicator={false}>
                   {/* Date & time */}
                   <View style={s.nudgeRow}>
-                    <Text style={s.nudgeRowIcon}>📅</Text>
-                    <Text style={s.nudgeRowText}>{formatFullDate(selectedEvent.eventDate, selectedEvent.eventTime)}</Text>
+                    <AppText style={s.nudgeRowIcon}>📅</AppText>
+                    <AppText style={s.nudgeRowText}>{formatFullDate(selectedEvent.eventDate, selectedEvent.eventTime)}</AppText>
                   </View>
 
                   {/* Venue */}
                   {!!selectedEvent.venue && (
                     <View style={s.nudgeRow}>
-                      <Text style={s.nudgeRowIcon}>📍</Text>
-                      <Text style={s.nudgeRowText}>{selectedEvent.venue}</Text>
+                      <AppText style={s.nudgeRowIcon}>📍</AppText>
+                      <AppText style={s.nudgeRowText}>{selectedEvent.venue}</AppText>
                     </View>
                   )}
 
                   {/* Going count */}
                   <View style={s.nudgeRow}>
-                    <Text style={s.nudgeRowIcon}>👥</Text>
-                    <Text style={s.nudgeRowText}>
+                    <AppText style={s.nudgeRowIcon}>👥</AppText>
+                    <AppText style={s.nudgeRowText}>
                       {selectedEvent.goingCount === 0
                         ? 'No one has RSVPd yet'
                         : `${selectedEvent.goingCount} ${selectedEvent.goingCount === 1 ? 'person' : 'people'} going`}
-                    </Text>
+                    </AppText>
                   </View>
 
                   {/* Description */}
                   {!!selectedEvent.description && (
-                    <Text style={s.nudgeDescription}>{selectedEvent.description}</Text>
+                    <AppText style={s.nudgeDescription}>{selectedEvent.description}</AppText>
                   )}
                 </ScrollView>
 
@@ -524,9 +525,9 @@ export default function EventsScreen() {
                           disabled={nudgeRsvping}
                           activeOpacity={0.8}
                         >
-                          <Text style={[s.nudgeRsvpBtnText, active && { color: opt.activeColor, fontWeight: '800' }]}>
+                          <AppText style={[s.nudgeRsvpBtnText, active && { color: opt.activeColor, fontWeight: '800' }]}>
                             {opt.label}
-                          </Text>
+                          </AppText>
                         </TouchableOpacity>
                       );
                     })}
@@ -542,7 +543,7 @@ export default function EventsScreen() {
                   }}
                   activeOpacity={0.85}
                 >
-                  <Text style={s.nudgeBtnText}>View who is going</Text>
+                  <AppText style={s.nudgeBtnText}>View who is going</AppText>
                 </TouchableOpacity>
               </>
             )}
@@ -569,25 +570,25 @@ export default function EventsScreen() {
                     <Image source={{ uri: guardianSheet.photoUrl }} style={s.guardianSheetPhoto} />
                   ) : (
                     <View style={[s.guardianSheetAvatar, { backgroundColor: AVATAR_COLORS[guardianSheet.name.charCodeAt(0) % AVATAR_COLORS.length] }]}>
-                      <Text style={s.guardianSheetAvatarText}>{guardianSheet.name[0]?.toUpperCase()}</Text>
+                      <AppText style={s.guardianSheetAvatarText}>{guardianSheet.name[0]?.toUpperCase()}</AppText>
                     </View>
                   )}
                   <View style={s.guardianSheetInfo}>
-                    <Text style={s.guardianSheetName}>{guardianSheet.name}</Text>
+                    <AppText style={s.guardianSheetName}>{guardianSheet.name}</AppText>
                     {!!(guardianSheet.city || guardianSheet.state) && (
-                      <Text style={s.guardianSheetCity}>
+                      <AppText style={s.guardianSheetCity}>
                         📍 {[guardianSheet.city, guardianSheet.state].filter(Boolean).join(', ')}
-                      </Text>
+                      </AppText>
                     )}
                   </View>
                 </View>
                 {guardianSheet.situationTags.length > 0 && (
                   <View style={s.guardianSheetSection}>
-                    <Text style={s.guardianSheetSectionTitle}>Situation</Text>
+                    <AppText style={s.guardianSheetSectionTitle}>Situation</AppText>
                     <View style={s.guardianSheetTags}>
                       {guardianSheet.situationTags.map(t => (
                         <View key={t} style={s.guardianTag}>
-                          <Text style={s.guardianTagText}>{t}</Text>
+                          <AppText style={s.guardianTagText}>{t}</AppText>
                         </View>
                       ))}
                     </View>
@@ -596,16 +597,16 @@ export default function EventsScreen() {
 
                 {guardianSheet.learners.length > 0 && (
                   <View style={s.guardianSheetSection}>
-                    <Text style={s.guardianSheetSectionTitle}>Learner</Text>
+                    <AppText style={s.guardianSheetSectionTitle}>Learner</AppText>
                     {guardianSheet.learners.map((l, i) => (
                       <View key={i} style={s.learnerRow}>
-                        <Text style={s.learnerName}>{l.name}</Text>
-                        <Text style={s.learnerMeta}>
+                        <AppText style={s.learnerName}>{l.name}</AppText>
+                        <AppText style={s.learnerMeta}>
                           {[
                             l.date_of_birth ? `${calcAge(l.date_of_birth) ?? '—'} yrs` : null,
                             l.gender,
                           ].filter(Boolean).join('  ·  ')}
-                        </Text>
+                        </AppText>
                       </View>
                     ))}
                   </View>
@@ -648,7 +649,7 @@ const s = StyleSheet.create({
   },
   dateTag: {
     width: 46, height: 54, borderRadius: 12,
-    backgroundColor: '#DAEAFF', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    backgroundColor: COLORS.bloomActiveBg, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   dateTagDay:   { fontSize: 20, fontWeight: '900', color: COLORS.bloomNavy, lineHeight: 24 },
   dateTagMonth: { fontSize: 10, fontWeight: '700', color: COLORS.bloomAccent, letterSpacing: 0.5 },
@@ -672,7 +673,7 @@ const s = StyleSheet.create({
   },
   actionBtn: { flex: 1, paddingVertical: 10, alignItems: 'center' },
   actionBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomNavy },
-  actionBtnDelete: { color: '#EF4444' },
+  actionBtnDelete: { color: COLORS.statusError },
   actionDivider: { width: 1, backgroundColor: COLORS.bloomBorder },
 
   loadMoreBtn: {
@@ -689,12 +690,12 @@ const s = StyleSheet.create({
 
   fab: {
     position: 'absolute', bottom: 28, right: 20, left: 20,
-    backgroundColor: COLORS.bloomNavy, borderRadius: 16,
+    backgroundColor: COLORS.bloomAccent, borderRadius: 16,
     paddingVertical: 16, alignItems: 'center',
-    shadowColor: COLORS.bloomNavy, shadowOffset: { width: 0, height: 6 },
+    shadowColor: COLORS.bloomAccent, shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
   },
-  fabText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  fabText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 15 },
 
   filterPanel: {
     marginHorizontal: 14, marginBottom: 10,
@@ -727,7 +728,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 20, paddingVertical: 14,
     borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
   },
-  catOptionActive:     { backgroundColor: '#EBF4FF' },
+  catOptionActive:     { backgroundColor: COLORS.bloomTintBg },
   catOptionText:       { fontSize: 15, color: COLORS.bloomText },
   catOptionTextActive: { color: COLORS.bloomNavy, fontWeight: '700' },
   catCheck:            { fontSize: 16, color: COLORS.bloomNavy, fontWeight: '700' },
@@ -746,12 +747,12 @@ const s = StyleSheet.create({
   nudgeHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 20 },
   nudgeDateTag: {
     width: 52, height: 60, borderRadius: 14,
-    backgroundColor: '#DAEAFF', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    backgroundColor: COLORS.bloomActiveBg, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   nudgeDateDay:   { fontSize: 22, fontWeight: '900', color: COLORS.bloomNavy },
   nudgeDateMonth: { fontSize: 10, fontWeight: '700', color: COLORS.bloomAccent, letterSpacing: 0.5 },
   nudgeTitleBlock:    { flex: 1, gap: 4 },
-  nudgeCategoryChip:  { alignSelf: 'flex-start', backgroundColor: '#DAEAFF', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
+  nudgeCategoryChip:  { alignSelf: 'flex-start', backgroundColor: COLORS.bloomActiveBg, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
   nudgeCategoryText:  { fontSize: 11, color: COLORS.bloomNavy, fontWeight: '700' },
   nudgeTitle:     { fontSize: 20, fontWeight: '900', color: COLORS.bloomText },
   nudgeHost:      { fontSize: 12, color: COLORS.bloomAccent, fontWeight: '600' },
@@ -768,7 +769,7 @@ const s = StyleSheet.create({
   guardianSheetSection:      { marginTop: 16, gap: 8 },
   guardianSheetSectionTitle: { fontSize: 11, fontWeight: '800', color: COLORS.bloomMuted, letterSpacing: 0.8, textTransform: 'uppercase' },
   guardianSheetTags:         { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  guardianTag:               { backgroundColor: '#DAEAFF', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  guardianTag:               { backgroundColor: COLORS.bloomActiveBg, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   guardianTagText:           { fontSize: 12, color: COLORS.bloomNavy, fontWeight: '600' },
 
   learnerRow:  { backgroundColor: COLORS.bloomBody, borderRadius: 12, padding: 12, gap: 3, borderWidth: 1, borderColor: COLORS.bloomBorder },
@@ -791,8 +792,8 @@ const s = StyleSheet.create({
   nudgeRsvpBtnText: { fontSize: 12, fontWeight: '600', color: COLORS.bloomMuted },
 
   nudgeBtn: {
-    backgroundColor: COLORS.bloomNavy, borderRadius: 16,
+    backgroundColor: COLORS.bloomAccent, borderRadius: 16,
     paddingVertical: 15, alignItems: 'center',
   },
-  nudgeBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  nudgeBtnText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 15 },
 });

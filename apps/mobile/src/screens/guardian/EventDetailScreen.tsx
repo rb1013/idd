@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -13,7 +14,7 @@ import { GuardianNavParamList } from '../../navigation';
 type Route = RouteProp<GuardianNavParamList, 'EventDetail'>;
 type Nav   = NativeStackNavigationProp<GuardianNavParamList>;
 
-const AVATAR_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#F59E0B', '#3B82F6', '#EC4899'];
+const AVATAR_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, COLORS.statusAmber, COLORS.statusBlue, COLORS.statusPink];
 
 type Rsvp = 'going' | 'interested' | 'not_going';
 
@@ -34,8 +35,8 @@ function formatDate(dateStr: string, timeStr?: string | null): string {
 }
 
 const RSVP_OPTIONS: { value: Rsvp; label: string; activeColor: string; activeBg: string }[] = [
-  { value: 'going',      label: '✓ Going',      activeColor: '#065F46', activeBg: '#D4F0DE' },
-  { value: 'interested', label: '★ Interested',  activeColor: '#92400E', activeBg: '#FEF3C7' },
+  { value: 'going',      label: '✓ Going',      activeColor: COLORS.statusGreenDark, activeBg: COLORS.secondaryLight },
+  { value: 'interested', label: '★ Interested',  activeColor: COLORS.statusAmberDark, activeBg: COLORS.statusAmberLight },
   { value: 'not_going',  label: "✕ Can't go",   activeColor: COLORS.bloomMuted, activeBg: COLORS.bloomBorder },
 ];
 
@@ -112,7 +113,7 @@ export default function EventDetailScreen() {
   }
 
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
-  if (!event)  return <View style={s.center}><Text style={s.errorText}>Event not found</Text></View>;
+  if (!event)  return <View style={s.center}><AppText style={s.errorText}>Event not found</AppText></View>;
 
   const going      = attendees.filter(a => a.rsvp === 'going');
   const interested = attendees.filter(a => a.rsvp === 'interested');
@@ -123,18 +124,18 @@ export default function EventDetailScreen() {
       {/* Header */}
       <View style={s.header}>
         <View style={s.dateBox}>
-          <Text style={s.dateBoxDay}>{new Date(event.eventDate + 'T12:00:00').getDate()}</Text>
-          <Text style={s.dateBoxMonth}>
+          <AppText style={s.dateBoxDay}>{new Date(event.eventDate + 'T12:00:00').getDate()}</AppText>
+          <AppText style={s.dateBoxMonth}>
             {new Date(event.eventDate + 'T12:00:00').toLocaleDateString(undefined, { month: 'short' }).toUpperCase()}
-          </Text>
+          </AppText>
         </View>
         <View style={s.headerInfo}>
-          <Text style={s.eventName}>{event.name}</Text>
-          <Text style={s.eventOrganiser}>By {event.guardianName}</Text>
+          <AppText style={s.eventName}>{event.name}</AppText>
+          <AppText style={s.eventOrganiser}>By {event.guardianName}</AppText>
         </View>
         {isOrganiser && (
           <TouchableOpacity onPress={deleteEvent} style={s.deleteBtn} activeOpacity={0.7}>
-            <Text style={s.deleteBtnText}>🗑</Text>
+            <AppText style={s.deleteBtnText}>🗑</AppText>
           </TouchableOpacity>
         )}
       </View>
@@ -146,7 +147,7 @@ export default function EventDetailScreen() {
         {!!event.description && (
           <>
             <View style={s.divider} />
-            <Text style={s.description}>{event.description}</Text>
+            <AppText style={s.description}>{event.description}</AppText>
           </>
         )}
       </View>
@@ -154,7 +155,7 @@ export default function EventDetailScreen() {
       {/* RSVP — hidden for the event organiser */}
       {!isOrganiser && (
         <View style={s.card}>
-          <Text style={s.sectionTitle}>Your RSVP</Text>
+          <AppText style={s.sectionTitle}>Your RSVP</AppText>
           <View style={s.rsvpRow}>
             {RSVP_OPTIONS.map(opt => {
               const active = myRsvp === opt.value;
@@ -166,9 +167,9 @@ export default function EventDetailScreen() {
                   disabled={rsvping}
                   activeOpacity={0.8}
                 >
-                  <Text style={[s.rsvpBtnText, active && { color: opt.activeColor, fontWeight: '800' }]}>
+                  <AppText style={[s.rsvpBtnText, active && { color: opt.activeColor, fontWeight: '800' }]}>
                     {opt.label}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               );
             })}
@@ -179,16 +180,16 @@ export default function EventDetailScreen() {
       {/* Attendees */}
       {(going.length > 0 || interested.length > 0) && (
         <View style={s.card}>
-          <Text style={s.sectionTitle}>Who's coming</Text>
+          <AppText style={s.sectionTitle}>Who's coming</AppText>
           {going.length > 0 && (
             <>
-              <Text style={s.groupLabel}>Going ({going.length})</Text>
+              <AppText style={s.groupLabel}>Going ({going.length})</AppText>
               {going.map(a => <AttendeeRow key={a.guardianId} name={a.guardianName} />)}
             </>
           )}
           {interested.length > 0 && (
             <>
-              <Text style={[s.groupLabel, { marginTop: 8 }]}>Interested ({interested.length})</Text>
+              <AppText style={[s.groupLabel, { marginTop: 8 }]}>Interested ({interested.length})</AppText>
               {interested.map(a => <AttendeeRow key={a.guardianId} name={a.guardianName} />)}
             </>
           )}
@@ -201,8 +202,8 @@ export default function EventDetailScreen() {
 function DetailRow({ icon, text }: { icon: string; text: string }) {
   return (
     <View style={s.detailRow}>
-      <Text style={s.detailIcon}>{icon}</Text>
-      <Text style={s.detailText}>{text}</Text>
+      <AppText style={s.detailIcon}>{icon}</AppText>
+      <AppText style={s.detailText}>{text}</AppText>
     </View>
   );
 }
@@ -212,9 +213,9 @@ function AttendeeRow({ name }: { name: string }) {
   return (
     <View style={s.attendeeRow}>
       <View style={[s.attendeeAvatar, { backgroundColor: color }]}>
-        <Text style={s.attendeeInitial}>{name[0]?.toUpperCase()}</Text>
+        <AppText style={s.attendeeInitial}>{name[0]?.toUpperCase()}</AppText>
       </View>
-      <Text style={s.attendeeName}>{name}</Text>
+      <AppText style={s.attendeeName}>{name}</AppText>
     </View>
   );
 }
@@ -234,7 +235,7 @@ const s = StyleSheet.create({
   },
   dateBox: {
     width: 52, height: 60, borderRadius: 14,
-    backgroundColor: '#DAEAFF', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    backgroundColor: COLORS.bloomActiveBg, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   dateBoxDay:    { fontSize: 22, fontWeight: '900', color: COLORS.bloomNavy },
   dateBoxMonth:  { fontSize: 10, fontWeight: '700', color: COLORS.bloomAccent, letterSpacing: 0.5 },
@@ -267,6 +268,6 @@ const s = StyleSheet.create({
   groupLabel:     { fontSize: 11, fontWeight: '700', color: COLORS.bloomMuted, letterSpacing: 0.5 },
   attendeeRow:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
   attendeeAvatar: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  attendeeInitial:{ fontSize: 12, fontWeight: '800', color: '#fff' },
+  attendeeInitial:{ fontSize: 12, fontWeight: '800', color: COLORS.bloomOnAccent },
   attendeeName:   { fontSize: 14, fontWeight: '600', color: COLORS.bloomText },
 });

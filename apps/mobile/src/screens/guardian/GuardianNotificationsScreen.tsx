@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   ActivityIndicator, Alert,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
@@ -80,12 +81,12 @@ export default function GuardianNotificationsScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.inner}>
       <View style={styles.listHeader}>
-        <Text style={styles.sectionTitle}>Notifications</Text>
-        {unread > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{unread}</Text></View>}
+        <AppText style={styles.sectionTitle}>Notifications</AppText>
+        {unread > 0 && <View style={styles.badge}><AppText style={styles.badgeText}>{unread}</AppText></View>}
       </View>
 
       {notifications.length === 0 ? (
-        <Text style={styles.empty}>No notifications yet.</Text>
+        <AppText style={styles.empty}>No notifications yet.</AppText>
       ) : (
         notifications.map(n => {
           const isAddresseeNotif =
@@ -101,11 +102,11 @@ export default function GuardianNotificationsScreen() {
               activeOpacity={isAddresseeNotif ? 1 : 0.7}
             >
               <View style={styles.notifRow}>
-                <Text style={styles.notifType}>{formatType(n.type)}</Text>
+                <AppText style={styles.notifType}>{formatType(n.type)}</AppText>
                 {!n.read && <View style={styles.dot} />}
               </View>
-              <Text style={styles.notifMessage}>{n.message}</Text>
-              <Text style={styles.notifDate}>{new Date(n.created_at).toLocaleDateString()}</Text>
+              <AppText style={styles.notifMessage}>{n.message}</AppText>
+              <AppText style={styles.notifDate}>{new Date(n.created_at).toLocaleDateString()}</AppText>
 
               {isAddresseeNotif && (
                 <View style={styles.actionRow}>
@@ -116,7 +117,7 @@ export default function GuardianNotificationsScreen() {
                   >
                     {acting === n.id
                       ? <ActivityIndicator size="small" color="#fff" />
-                      : <Text style={styles.actionBtnText}>✓  Accept</Text>
+                      : <AppText style={styles.actionBtnText}>✓  Accept</AppText>
                     }
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -124,15 +125,15 @@ export default function GuardianNotificationsScreen() {
                     onPress={() => handleFriendRequest(n, 'rejected')}
                     disabled={acting === n.id}
                   >
-                    <Text style={[styles.actionBtnText, { color: COLORS.error }]}>✕  Reject</Text>
+                    <AppText style={[styles.actionBtnText, { color: COLORS.error }]}>✕  Reject</AppText>
                   </TouchableOpacity>
                 </View>
               )}
 
               {n.type === 'friend_request' && n.friendship && n.friendship.status !== 'pending' && (
-                <Text style={styles.resolvedLabel}>
+                <AppText style={styles.resolvedLabel}>
                   {n.friendship.status === 'accepted' ? '✓ Accepted' : '✕ Rejected'}
-                </Text>
+                </AppText>
               )}
             </TouchableOpacity>
           );
@@ -173,7 +174,7 @@ const styles = StyleSheet.create({
   },
   acceptBtn: { backgroundColor: COLORS.secondary, borderColor: COLORS.secondary },
   rejectBtn: { backgroundColor: COLORS.surface, borderColor: COLORS.error },
-  actionBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  actionBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.bloomOnAccent },
   resolvedLabel: { marginTop: 10, fontSize: 13, fontWeight: '600', color: COLORS.textLight },
   empty: { color: COLORS.textLight, textAlign: 'center', marginTop: 32, fontSize: 15 },
 });

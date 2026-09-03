@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   Image, Alert, ActivityIndicator,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -51,29 +52,29 @@ export default function SelectUserScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         ListHeaderComponent={
-          <Text style={styles.subtitle}>Manage user profiles under your care</Text>
+          <AppText style={styles.subtitle}>Manage user profiles under your care</AppText>
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
             {item.photo_url
               ? <Image source={{ uri: item.photo_url }} style={styles.avatar} />
-              : <View style={styles.avatarPlaceholder}><Text style={styles.avatarText}>{item.name[0]}</Text></View>
+              : <View style={styles.avatarPlaceholder}><AppText style={styles.avatarText}>{item.name[0]}</AppText></View>
             }
             <View style={styles.cardInfo}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.meta}>{calcAge(item.date_of_birth) ?? item.age ?? '—'} yrs • {item.city}</Text>
-              {item.email && <Text style={styles.email}>{item.email}</Text>}
+              <AppText style={styles.name}>{item.name}</AppText>
+              <AppText style={styles.meta}>{calcAge(item.date_of_birth) ?? item.age ?? '—'} yrs • {item.city}</AppText>
+              {item.email && <AppText style={styles.email}>{item.email}</AppText>}
             </View>
             <TouchableOpacity
               style={styles.editBtn}
               onPress={() => navigation.navigate('EditUser', { userId: item.id })}
             >
-              <Text style={styles.editBtnText}>Edit</Text>
+              <AppText style={styles.editBtnText}>Edit</AppText>
             </TouchableOpacity>
           </View>
         )}
         ListEmptyComponent={
-          <Text style={styles.empty}>No profiles yet. Tap ⚙ → Create New Profile.</Text>
+          <AppText style={styles.empty}>No profiles yet. Tap ⚙ → Create New Profile.</AppText>
         }
       />
     </View>

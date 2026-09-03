@@ -4,6 +4,7 @@ import {
   TextInput, Modal, KeyboardAvoidingView, Platform,
   ActivityIndicator, Alert,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -102,30 +103,30 @@ export default function DiscussionsScreen() {
             onPress={() => navigation.navigate('DiscussionDetail', { postId: p.id })}
             activeOpacity={0.82}
           >
-            <Text style={s.postTitle}>{p.title}</Text>
-            <Text style={s.postBody} numberOfLines={2}>{p.body}</Text>
+            <AppText style={s.postTitle}>{p.title}</AppText>
+            <AppText style={s.postBody} numberOfLines={2}>{p.body}</AppText>
             <View style={s.postMeta}>
-              <Text style={s.metaText}>{p.guardianName}</Text>
-              <Text style={s.metaDot}>·</Text>
-              <Text style={s.metaText}>{timeAgo(p.createdAt)}</Text>
-              <Text style={s.metaDot}>·</Text>
-              <Text style={s.metaText}>
+              <AppText style={s.metaText}>{p.guardianName}</AppText>
+              <AppText style={s.metaDot}>·</AppText>
+              <AppText style={s.metaText}>{timeAgo(p.createdAt)}</AppText>
+              <AppText style={s.metaDot}>·</AppText>
+              <AppText style={s.metaText}>
                 {p.replyCount} {p.replyCount === 1 ? 'reply' : 'replies'}
-              </Text>
+              </AppText>
             </View>
           </TouchableOpacity>
         )}
         ListEmptyComponent={
           <View style={s.empty}>
-            <Text style={s.emptyEmoji}>💬</Text>
-            <Text style={s.emptyText}>No discussions yet</Text>
-            <Text style={s.emptyHint}>Start the first conversation</Text>
+            <AppText style={s.emptyEmoji}>💬</AppText>
+            <AppText style={s.emptyText}>No discussions yet</AppText>
+            <AppText style={s.emptyHint}>Start the first conversation</AppText>
           </View>
         }
       />
 
       <TouchableOpacity style={s.fab} onPress={() => setShowCreate(true)} activeOpacity={0.85}>
-        <Text style={s.fabText}>+ New Discussion</Text>
+        <AppText style={s.fabText}>+ New Discussion</AppText>
       </TouchableOpacity>
 
       <Modal
@@ -145,9 +146,9 @@ export default function DiscussionsScreen() {
           />
           <View style={s.modalSheet}>
             <View style={s.modalHandle} />
-            <Text style={s.modalTitle}>Start a Discussion</Text>
+            <AppText style={s.modalTitle}>Start a Discussion</AppText>
 
-            <Text style={s.fieldLabel}>Topic</Text>
+            <AppText style={s.fieldLabel}>Topic</AppText>
             <TextInput
               style={s.fieldInput}
               value={newTitle}
@@ -157,7 +158,7 @@ export default function DiscussionsScreen() {
               maxLength={120}
             />
 
-            <Text style={s.fieldLabel}>Details</Text>
+            <AppText style={s.fieldLabel}>Details</AppText>
             <TextInput
               style={[s.fieldInput, s.fieldTextArea]}
               value={newBody}
@@ -175,7 +176,7 @@ export default function DiscussionsScreen() {
             >
               {submitting
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={s.submitBtnText}>Post Discussion</Text>
+                : <AppText style={s.submitBtnText}>Post Discussion</AppText>
               }
             </TouchableOpacity>
           </View>
@@ -204,12 +205,12 @@ const s = StyleSheet.create({
 
   fab: {
     position: 'absolute', bottom: 28, right: 20, left: 20,
-    backgroundColor: COLORS.bloomNavy, borderRadius: 16,
+    backgroundColor: COLORS.bloomAccent, borderRadius: 16,
     paddingVertical: 16, alignItems: 'center',
-    shadowColor: COLORS.bloomNavy, shadowOffset: { width: 0, height: 6 },
+    shadowColor: COLORS.bloomAccent, shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
   },
-  fabText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  fabText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 15 },
 
   empty:      { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyEmoji: { fontSize: 56 },
@@ -238,8 +239,8 @@ const s = StyleSheet.create({
   fieldTextArea: { minHeight: 100, textAlignVertical: 'top' },
 
   submitBtn: {
-    backgroundColor: COLORS.bloomNavy, borderRadius: 14,
+    backgroundColor: COLORS.bloomAccent, borderRadius: 14,
     paddingVertical: 16, alignItems: 'center', marginTop: 4,
   },
-  submitBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  submitBtnText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 15 },
 });

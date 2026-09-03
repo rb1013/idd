@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ScrollView,
+  KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ScrollView, Image,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import AppText from '../../components/AppText';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { saveGuardianCredentials } from '../../lib/biometricStore';
@@ -35,17 +35,17 @@ export default function LoginScreen({ navigation }: Props) {
       >
         {/* Branded header */}
         <View style={s.header}>
-          <LinearGradient colors={['#5BC8F5', '#FFB830']} style={s.appIcon}>
-            <Text style={s.appIconEmoji}>☀️</Text>
-          </LinearGradient>
-          <Text style={s.appName}>Ray<Text style={s.appDot}>.</Text></Text>
-          <Text style={s.tagline}>Guiding light for every day</Text>
+          <Image source={require('../../../assets/elis-logo3.png')} style={s.elisLogo} resizeMode="contain" />
+          <AppText style={s.appName}>ELIS</AppText>
+          <View style={s.taglinePill}>
+            <AppText style={s.tagline}>Empathy · Learning · Inclusive · Support</AppText>
+          </View>
         </View>
 
         {/* Form */}
         <View style={s.form}>
           <Text style={s.title}>Welcome back</Text>
-          <Text style={s.subtitle}>Sign in to your Ray account</Text>
+          <Text style={s.subtitle}>Sign in to your ELIS account</Text>
 
           <TextInput
             style={s.input}
@@ -72,14 +72,14 @@ export default function LoginScreen({ navigation }: Props) {
             activeOpacity={0.85}
           >
             {loading
-              ? <ActivityIndicator color="#fff" />
+              ? <ActivityIndicator color={COLORS.bloomOnAccent} />
               : <Text style={s.btnText}>Sign In</Text>
             }
           </TouchableOpacity>
 
           <View style={s.dividerRow}>
             <View style={s.dividerLine} />
-            <Text style={s.dividerText}>NEW TO BLOOM?</Text>
+            <Text style={s.dividerText}>NEW TO ELIS?</Text>
             <View style={s.dividerLine} />
           </View>
 
@@ -102,19 +102,19 @@ const s = StyleSheet.create({
   container: { flexGrow: 1 },
 
   header: {
-    backgroundColor: COLORS.bloomNavy,
-    paddingTop: 72, paddingBottom: 44,
+    backgroundColor: COLORS.bloomAccent,
+    paddingTop: 54, paddingBottom: 30,
     alignItems: 'center',
     borderBottomLeftRadius: 36, borderBottomRightRadius: 36,
   },
-  appIcon: {
-    width: 88, height: 88, borderRadius: 26,
-    justifyContent: 'center', alignItems: 'center', marginBottom: 14,
+  elisLogo:    { width: 227, height: 124 },
+  appName:     { fontSize: 32, fontWeight: '900', color: COLORS.bloomOnAccent, letterSpacing: 3, marginTop: 4 },
+  taglinePill: {
+    marginTop: 10,
+    backgroundColor: 'rgba(45,49,46,0.13)',
+    borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6,
   },
-  appIconEmoji: { fontSize: 48 },
-  appName: { fontSize: 38, fontWeight: '900', color: '#fff', letterSpacing: -1 },
-  appDot:  { color: COLORS.bloomDot },
-  tagline: { fontSize: 15, color: 'rgba(255,255,255,0.55)', marginTop: 6, fontWeight: '500' },
+  tagline:     { fontSize: 13, fontWeight: '700', color: COLORS.bloomOnAccent, letterSpacing: 1.5 },
 
   form:     { padding: 24, paddingTop: 32 },
   title:    { fontSize: 22, fontWeight: '900', color: COLORS.bloomText, marginBottom: 4 },
@@ -127,19 +127,19 @@ const s = StyleSheet.create({
   },
 
   btn: {
-    backgroundColor: COLORS.bloomNavy, borderRadius: 14,
+    backgroundColor: COLORS.bloomAccent, borderRadius: 14,
     paddingVertical: 16, alignItems: 'center', marginTop: 4, marginBottom: 28,
   },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  btnText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '800' },
 
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
   dividerLine:{ flex: 1, height: 1, backgroundColor: COLORS.bloomBorder },
   dividerText:{ fontSize: 11, fontWeight: '700', color: COLORS.bloomMuted, letterSpacing: 0.5 },
 
   registerBox: {
-    backgroundColor: '#FEF9E7', borderWidth: 1.5, borderColor: '#F59E0B33',
+    backgroundColor: COLORS.bloomActiveBg, borderWidth: 1.5, borderColor: COLORS.bloomSageMid,
     borderRadius: 16, padding: 18, alignItems: 'center', gap: 10,
   },
   registerHint: { fontSize: 13, color: COLORS.bloomMuted, textAlign: 'center' },
-  registerBtn:  { fontSize: 14, fontWeight: '900', color: '#92400E' },
+  registerBtn:  { fontSize: 14, fontWeight: '900', color: COLORS.bloomActiveText },
 });

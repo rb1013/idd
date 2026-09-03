@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, Alert, Modal, ScrollView, Dimensions, Image,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
@@ -10,7 +11,7 @@ import { COLORS, calcAge } from '../../constants';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
-const AVATAR_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#F59E0B', '#3B82F6', '#EC4899'];
+const AVATAR_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, COLORS.statusAmber, COLORS.statusBlue, COLORS.statusPink];
 
 const AGE_GROUPS    = ['Under 10', '10–14', '15–18', '19–25', '26–35', '36+'];
 const GENDER_OPTIONS = ['Male', 'Female'];
@@ -62,12 +63,12 @@ function SheetSection({ id, emoji, title, options, selected, onToggle, openId, s
   return (
     <View style={s.sheetSec}>
       <TouchableOpacity style={s.sheetSecHdr} onPress={() => setOpenId(open ? null : id)} activeOpacity={0.7}>
-        <Text style={s.sheetSecTitle}>{emoji}  {title}</Text>
+        <AppText style={s.sheetSecTitle}>{emoji}  {title}</AppText>
         <View style={s.sheetSecRight}>
           {selected.length > 0 && (
-            <View style={s.sheetSecBadge}><Text style={s.sheetSecBadgeTxt}>{selected.length}</Text></View>
+            <View style={s.sheetSecBadge}><AppText style={s.sheetSecBadgeTxt}>{selected.length}</AppText></View>
           )}
-          <Text style={s.sheetSecArr}>{open ? '▲' : '▼'}</Text>
+          <AppText style={s.sheetSecArr}>{open ? '▲' : '▼'}</AppText>
         </View>
       </TouchableOpacity>
       {open && (
@@ -76,9 +77,9 @@ function SheetSection({ id, emoji, title, options, selected, onToggle, openId, s
             const on = selected.includes(opt);
             return (
               <TouchableOpacity key={opt} style={s.optRow} onPress={() => onToggle(opt)} activeOpacity={0.7}>
-                <Text style={[s.optTxt, on && s.optTxtOn]}>{opt}</Text>
+                <AppText style={[s.optTxt, on && s.optTxtOn]}>{opt}</AppText>
                 <View style={[s.optCheck, on && s.optCheckOn]}>
-                  {on && <Text style={s.optCheckMark}>✓</Text>}
+                  {on && <AppText style={s.optCheckMark}>✓</AppText>}
                 </View>
               </TouchableOpacity>
             );
@@ -308,11 +309,11 @@ export default function GuardianConnectionsScreen() {
     return (
       <TouchableOpacity key={item.guardianId} style={s.card} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
         <View style={[s.avatar, { backgroundColor: avatarColor(item.guardianName) }]}>
-          <Text style={s.avatarInitial}>{item.guardianName[0]?.toUpperCase()}</Text>
+          <AppText style={s.avatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
         </View>
         <View style={s.info}>
-          <Text style={s.guardianName}>{item.guardianName}</Text>
-          {item.city ? <Text style={s.meta}>{item.city}</Text> : null}
+          <AppText style={s.guardianName}>{item.guardianName}</AppText>
+          {item.city ? <AppText style={s.meta}>{item.city}</AppText> : null}
         </View>
         <View style={s.actions}>
           {processing === item.guardianId ? (
@@ -320,7 +321,7 @@ export default function GuardianConnectionsScreen() {
           ) : (
             <View style={s.disconnectWrap}>
               {hoveredDisconnect === item.guardianId && (
-                <Text style={s.disconnectLabel}>Delete Connection</Text>
+                <AppText style={s.disconnectLabel}>Delete Connection</AppText>
               )}
               <TouchableOpacity
                 style={s.disconnectBtn}
@@ -329,7 +330,7 @@ export default function GuardianConnectionsScreen() {
                 onPressOut={() => setHoveredDisconnect(null)}
                 activeOpacity={0.7}
               >
-                <Text style={s.disconnectIcon}>🗑️</Text>
+                <AppText style={s.disconnectIcon}>🗑️</AppText>
               </TouchableOpacity>
             </View>
           )}
@@ -343,12 +344,12 @@ export default function GuardianConnectionsScreen() {
     return (
       <TouchableOpacity key={item.guardianId} style={[s.card, s.pendingCard]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
         <View style={[s.avatar, { backgroundColor: avatarColor(item.guardianName) }]}>
-          <Text style={s.avatarInitial}>{item.guardianName[0]?.toUpperCase()}</Text>
+          <AppText style={s.avatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
         </View>
         <View style={s.info}>
-          <Text style={s.guardianName}>{item.guardianName}</Text>
-          {item.city ? <Text style={s.meta}>{item.city}</Text> : null}
-          <Text style={s.pendingLabel}>Wants to connect with you</Text>
+          <AppText style={s.guardianName}>{item.guardianName}</AppText>
+          {item.city ? <AppText style={s.meta}>{item.city}</AppText> : null}
+          <AppText style={s.pendingLabel}>Wants to connect with you</AppText>
         </View>
         <View style={s.actions}>
           {isProcessing ? (
@@ -356,10 +357,10 @@ export default function GuardianConnectionsScreen() {
           ) : (
             <>
               <TouchableOpacity style={s.acceptBtn} onPress={() => accept(item)}>
-                <Text style={s.acceptText}>✓</Text>
+                <AppText style={s.acceptText}>✓</AppText>
               </TouchableOpacity>
               <TouchableOpacity style={s.declineBtn} onPress={() => decline(item)}>
-                <Text style={s.declineText}>✕</Text>
+                <AppText style={s.declineText}>✕</AppText>
               </TouchableOpacity>
             </>
           )}
@@ -374,31 +375,31 @@ export default function GuardianConnectionsScreen() {
     return (
       <TouchableOpacity key={item.guardianId} style={s.card} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
         <View style={[s.avatar, { backgroundColor: avatarColor(item.guardianName) }]}>
-          <Text style={s.avatarInitial}>{item.guardianName[0]?.toUpperCase()}</Text>
+          <AppText style={s.avatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
         </View>
         <View style={s.info}>
-          <Text style={s.guardianName}>{item.guardianName}</Text>
-          {item.city ? <Text style={s.meta}>{item.city}</Text> : null}
+          <AppText style={s.guardianName}>{item.guardianName}</AppText>
+          {item.city ? <AppText style={s.meta}>{item.city}</AppText> : null}
         </View>
         <View style={s.actions}>
           {isProcessing || isSending ? (
             <ActivityIndicator color={COLORS.bloomAccent} />
           ) : item.status === 'accepted' ? (
-            <View style={s.connectedBadge}><Text style={s.connectedText}>✓ Connected</Text></View>
+            <View style={s.connectedBadge}><AppText style={s.connectedText}>✓ Connected</AppText></View>
           ) : item.status === 'pending_sent' ? (
-            <View style={s.pendingBadge}><Text style={s.pendingText}>Pending</Text></View>
+            <View style={s.pendingBadge}><AppText style={s.pendingText}>Pending</AppText></View>
           ) : item.status === 'pending_received' ? (
             <>
               <TouchableOpacity style={s.acceptBtn} onPress={() => accept(item)}>
-                <Text style={s.acceptText}>✓ Accept</Text>
+                <AppText style={s.acceptText}>✓ Accept</AppText>
               </TouchableOpacity>
               <TouchableOpacity style={s.declineBtn} onPress={() => decline(item)}>
-                <Text style={s.declineText}>✕</Text>
+                <AppText style={s.declineText}>✕</AppText>
               </TouchableOpacity>
             </>
           ) : (
             <TouchableOpacity style={s.connectBtn} onPress={(e) => { e.stopPropagation(); sendRequest(item); }}>
-              <Text style={s.connectText}>Connect</Text>
+              <AppText style={s.connectText}>Connect</AppText>
             </TouchableOpacity>
           )}
         </View>
@@ -417,10 +418,10 @@ export default function GuardianConnectionsScreen() {
           onPress={() => setActiveTab('connected')}
           activeOpacity={0.8}
         >
-          <Text style={[s.tabTxt, activeTab === 'connected' && s.tabTxtActive]}>
+          <AppText style={[s.tabTxt, activeTab === 'connected' && s.tabTxtActive]}>
             My Connections
             {connected.length > 0 ? `  ${connected.length}` : ''}
-          </Text>
+          </AppText>
           {pendingReceived.length > 0 && activeTab !== 'connected' && (
             <View style={s.tabDot} />
           )}
@@ -430,7 +431,7 @@ export default function GuardianConnectionsScreen() {
           onPress={() => setActiveTab('find')}
           activeOpacity={0.8}
         >
-          <Text style={[s.tabTxt, activeTab === 'find' && s.tabTxtActive]}>Find Guardians</Text>
+          <AppText style={[s.tabTxt, activeTab === 'find' && s.tabTxtActive]}>Find Guardians</AppText>
         </TouchableOpacity>
       </View>
 
@@ -441,28 +442,28 @@ export default function GuardianConnectionsScreen() {
         <ScrollView contentContainerStyle={s.list}>
           {pendingReceived.length === 0 && connected.length === 0 ? (
             <View style={s.empty}>
-              <Text style={s.emptyEmoji}>🤝</Text>
-              <Text style={s.emptyText}>No connections yet</Text>
-              <Text style={s.emptyHint}>
+              <AppText style={s.emptyEmoji}>🤝</AppText>
+              <AppText style={s.emptyText}>No connections yet</AppText>
+              <AppText style={s.emptyHint}>
                 Connect with other guardians who share similar experiences — filter by your learner's situation, age, or location to find the right people.
-              </Text>
+              </AppText>
               <TouchableOpacity style={s.emptyBtn} onPress={() => setActiveTab('find')} activeOpacity={0.8}>
-                <Text style={s.emptyBtnTxt}>Find Guardians</Text>
+                <AppText style={s.emptyBtnTxt}>Find Guardians</AppText>
               </TouchableOpacity>
             </View>
           ) : (
             <>
               {pendingReceived.length > 0 && (
                 <>
-                  <Text style={s.sectionHeader}>Pending requests  ·  {pendingReceived.length}</Text>
+                  <AppText style={s.sectionHeader}>Pending requests  ·  {pendingReceived.length}</AppText>
                   {pendingReceived.map(item => renderPendingCard(item))}
                 </>
               )}
               {connected.length > 0 && (
                 <>
-                  <Text style={[s.sectionHeader, pendingReceived.length > 0 && { marginTop: 20 }]}>
+                  <AppText style={[s.sectionHeader, pendingReceived.length > 0 && { marginTop: 20 }]}>
                     Connected  ·  {connected.length}
-                  </Text>
+                  </AppText>
                   {connected.map(item => renderConnectedCard(item))}
                 </>
               )}
@@ -493,12 +494,12 @@ export default function GuardianConnectionsScreen() {
 
           <View style={s.filterRow}>
             <TouchableOpacity style={[s.filterBtn, totalActive > 0 && s.filterBtnActive]} onPress={openSheet} activeOpacity={0.8}>
-              <Text style={[s.filterBtnTxt, totalActive > 0 && s.filterBtnTxtActive]}>
+              <AppText style={[s.filterBtnTxt, totalActive > 0 && s.filterBtnTxtActive]}>
                 {totalActive > 0 ? `Filters  ·  ${totalActive}` : 'Filters'}
-              </Text>
-              <Text style={[s.filterBtnIcon, totalActive > 0 && s.filterBtnTxtActive]}>⊟</Text>
+              </AppText>
+              <AppText style={[s.filterBtnIcon, totalActive > 0 && s.filterBtnTxtActive]}>⊟</AppText>
             </TouchableOpacity>
-            <Text style={s.resultCount}>{discovered.length} result{discovered.length !== 1 ? 's' : ''}</Text>
+            <AppText style={s.resultCount}>{discovered.length} result{discovered.length !== 1 ? 's' : ''}</AppText>
           </View>
 
           <FlatList
@@ -508,9 +509,9 @@ export default function GuardianConnectionsScreen() {
             renderItem={({ item }) => renderDiscoverCard(item)}
             ListEmptyComponent={
               <View style={s.empty}>
-                <Text style={s.emptyEmoji}>🔍</Text>
-                <Text style={s.emptyText}>No guardians found</Text>
-                <Text style={s.emptyHint}>Try adjusting your filters</Text>
+                <AppText style={s.emptyEmoji}>🔍</AppText>
+                <AppText style={s.emptyText}>No guardians found</AppText>
+                <AppText style={s.emptyHint}>Try adjusting your filters</AppText>
               </View>
             }
           />
@@ -531,13 +532,13 @@ export default function GuardianConnectionsScreen() {
                   <Image source={{ uri: peekGuardian.photoUrl }} style={s.peekPhoto} />
                 ) : (
                   <View style={[s.peekPhoto, s.peekPhotoFallback, { backgroundColor: avatarColor(peekGuardian.guardianName) }]}>
-                    <Text style={s.peekInitial}>{peekGuardian.guardianName[0]?.toUpperCase()}</Text>
+                    <AppText style={s.peekInitial}>{peekGuardian.guardianName[0]?.toUpperCase()}</AppText>
                   </View>
                 )}
                 <View style={s.peekHeaderInfo}>
-                  <Text style={s.peekName}>{peekGuardian.guardianName}</Text>
+                  <AppText style={s.peekName}>{peekGuardian.guardianName}</AppText>
                   {peekGuardian.city ? (
-                    <Text style={s.peekCity}>📍 {peekGuardian.city}</Text>
+                    <AppText style={s.peekCity}>📍 {peekGuardian.city}</AppText>
                   ) : null}
                 </View>
               </View>
@@ -545,16 +546,16 @@ export default function GuardianConnectionsScreen() {
               {/* Learner section */}
               {peekGuardian.learnerName ? (
                 <View style={s.peekSection}>
-                  <Text style={s.peekSectionLabel}>Learner</Text>
+                  <AppText style={s.peekSectionLabel}>Learner</AppText>
                   <View style={s.peekLearnerRow}>
                     <View style={s.peekLearnerDetail}>
-                      <Text style={s.peekLearnerName}>{peekGuardian.learnerName}</Text>
-                      <Text style={s.peekLearnerMeta}>
+                      <AppText style={s.peekLearnerName}>{peekGuardian.learnerName}</AppText>
+                      <AppText style={s.peekLearnerMeta}>
                         {[
                           peekGuardian.learnerDob ? `${calcAge(peekGuardian.learnerDob) ?? '—'} yrs` : null,
                           peekGuardian.learnerGender || null,
                         ].filter(Boolean).join('  ·  ')}
-                      </Text>
+                      </AppText>
                     </View>
                   </View>
                 </View>
@@ -563,11 +564,11 @@ export default function GuardianConnectionsScreen() {
               {/* Situation tags */}
               {peekGuardian.situationTags.length > 0 ? (
                 <View style={s.peekSection}>
-                  <Text style={s.peekSectionLabel}>Situation</Text>
+                  <AppText style={s.peekSectionLabel}>Situation</AppText>
                   <View style={s.peekTagWrap}>
                     {peekGuardian.situationTags.map(tag => (
                       <View key={tag} style={s.peekTag}>
-                        <Text style={s.peekTagTxt}>{tag}</Text>
+                        <AppText style={s.peekTagTxt}>{tag}</AppText>
                       </View>
                     ))}
                   </View>
@@ -577,25 +578,25 @@ export default function GuardianConnectionsScreen() {
               {/* Action */}
               <View style={s.peekActions}>
                 {peekGuardian.status === 'accepted' ? (
-                  <View style={[s.sheetApply, { backgroundColor: '#065F46' }]}>
-                    <Text style={s.sheetApplyTxt}>✓ Connected</Text>
+                  <View style={[s.sheetApply, { backgroundColor: COLORS.statusGreenDark }]}>
+                    <AppText style={s.sheetApplyTxt}>✓ Connected</AppText>
                   </View>
                 ) : peekGuardian.status === 'pending_sent' ? (
                   <View style={[s.sheetApply, { backgroundColor: COLORS.bloomMuted }]}>
-                    <Text style={s.sheetApplyTxt}>Request Sent</Text>
+                    <AppText style={s.sheetApplyTxt}>Request Sent</AppText>
                   </View>
                 ) : peekGuardian.status === 'pending_received' ? (
                   <View style={{ flexDirection: 'row', gap: 10 }}>
                     <TouchableOpacity style={[s.sheetApply, { flex: 1 }]} onPress={() => { accept(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
-                      <Text style={s.sheetApplyTxt}>✓ Accept</Text>
+                      <AppText style={s.sheetApplyTxt}>✓ Accept</AppText>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[s.sheetApply, { flex: 1, backgroundColor: '#FEE2E2' }]} onPress={() => { decline(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
-                      <Text style={[s.sheetApplyTxt, { color: '#B91C1C' }]}>✕ Decline</Text>
+                    <TouchableOpacity style={[s.sheetApply, { flex: 1, backgroundColor: COLORS.statusRedLight }]} onPress={() => { decline(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
+                      <AppText style={[s.sheetApplyTxt, { color: '#B91C1C' }]}>✕ Decline</AppText>
                     </TouchableOpacity>
                   </View>
                 ) : (
                   <TouchableOpacity style={s.sheetApply} onPress={() => { sendRequest(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
-                    <Text style={s.sheetApplyTxt}>Connect</Text>
+                    <AppText style={s.sheetApplyTxt}>Connect</AppText>
                   </TouchableOpacity>
                 )}
               </View>
@@ -610,11 +611,11 @@ export default function GuardianConnectionsScreen() {
           <View style={s.sheet} onStartShouldSetResponder={() => true}>
             <View style={s.sheetHdr}>
               <TouchableOpacity onPress={clearSheet} activeOpacity={0.7}>
-                <Text style={s.sheetClear}>Clear all</Text>
+                <AppText style={s.sheetClear}>Clear all</AppText>
               </TouchableOpacity>
-              <Text style={s.sheetTitle}>Filters</Text>
+              <AppText style={s.sheetTitle}>Filters</AppText>
               <TouchableOpacity onPress={() => setSheetOpen(false)} activeOpacity={0.7}>
-                <Text style={s.sheetClose}>✕</Text>
+                <AppText style={s.sheetClose}>✕</AppText>
               </TouchableOpacity>
             </View>
 
@@ -640,7 +641,7 @@ export default function GuardianConnectionsScreen() {
             </ScrollView>
 
             <TouchableOpacity style={s.sheetApply} onPress={applySheet} activeOpacity={0.85}>
-              <Text style={s.sheetApplyTxt}>Show results</Text>
+              <AppText style={s.sheetApplyTxt}>Show results</AppText>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -670,7 +671,7 @@ const s = StyleSheet.create({
   tabTxtActive: { color: COLORS.bloomNavy, fontWeight: '800' },
   tabDot: {
     width: 8, height: 8, borderRadius: 4,
-    backgroundColor: '#EF4444', marginLeft: 2,
+    backgroundColor: COLORS.statusError, marginLeft: 2,
   },
 
   sectionHeader: {
@@ -688,9 +689,9 @@ const s = StyleSheet.create({
 
   filterRow:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingBottom: 10, gap: 10 },
   filterBtn:       { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.bloomCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1.5, borderColor: COLORS.bloomBorder },
-  filterBtnActive: { backgroundColor: COLORS.bloomNavy, borderColor: COLORS.bloomNavy },
+  filterBtnActive: { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
   filterBtnTxt:    { fontSize: 13, fontWeight: '700', color: COLORS.bloomMuted },
-  filterBtnTxtActive: { color: '#fff' },
+  filterBtnTxtActive: { color: COLORS.bloomOnAccent },
   filterBtnIcon:   { fontSize: 16, color: COLORS.bloomMuted },
   resultCount:     { fontSize: 13, color: COLORS.bloomMuted, fontWeight: '600' },
 
@@ -714,27 +715,27 @@ const s = StyleSheet.create({
   pendingLabel:  { fontSize: 12, fontWeight: '600', color: '#B45309', marginTop: 2 },
   actions:       { alignItems: 'center', gap: 6 },
 
-  connectBtn:     { backgroundColor: COLORS.bloomNavy, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
-  connectText:    { color: '#fff', fontWeight: '700', fontSize: 13 },
-  connectedBadge: { backgroundColor: '#D4F0DE', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  connectedText:  { fontSize: 12, fontWeight: '700', color: '#065F46' },
+  connectBtn:     { backgroundColor: COLORS.bloomAccent, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
+  connectText:    { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 13 },
+  connectedBadge: { backgroundColor: COLORS.secondaryLight, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
+  connectedText:  { fontSize: 12, fontWeight: '700', color: COLORS.statusGreenDark },
   disconnectWrap:  { alignItems: 'flex-end', gap: 4 },
   disconnectLabel: { fontSize: 10, fontWeight: '700', color: '#B91C1C', textAlign: 'right' },
-  disconnectBtn:   { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
+  disconnectBtn:   { width: 36, height: 36, borderRadius: 10, backgroundColor: COLORS.statusRedLight, justifyContent: 'center', alignItems: 'center' },
   disconnectIcon:  { fontSize: 18 },
   pendingBadge:   { backgroundColor: COLORS.bloomBorder, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
   pendingText:    { fontSize: 12, fontWeight: '600', color: COLORS.bloomMuted },
-  acceptBtn:      { backgroundColor: COLORS.bloomNavy, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  acceptText:     { color: '#fff', fontWeight: '700', fontSize: 12 },
-  declineBtn:     { backgroundColor: '#FEE2E2', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
+  acceptBtn:      { backgroundColor: COLORS.bloomAccent, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
+  acceptText:     { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 12 },
+  declineBtn:     { backgroundColor: COLORS.statusRedLight, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
   declineText:    { color: '#B91C1C', fontWeight: '700', fontSize: 12 },
 
   empty:      { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyEmoji: { fontSize: 56 },
   emptyText:  { fontSize: 20, fontWeight: '800', color: COLORS.bloomText },
   emptyHint:  { fontSize: 14, color: COLORS.bloomMuted, textAlign: 'center', paddingHorizontal: 32 },
-  emptyBtn:   { backgroundColor: COLORS.bloomNavy, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 },
-  emptyBtnTxt: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  emptyBtn:   { backgroundColor: COLORS.bloomAccent, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 },
+  emptyBtnTxt: { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 15 },
 
   // Filter sheet
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
@@ -756,8 +757,8 @@ const s = StyleSheet.create({
   sheetSecHdr: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
   sheetSecTitle: { fontSize: 15, fontWeight: '700', color: COLORS.bloomText },
   sheetSecRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sheetSecBadge: { backgroundColor: COLORS.bloomNavy, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2 },
-  sheetSecBadgeTxt: { fontSize: 11, fontWeight: '800', color: '#fff' },
+  sheetSecBadge: { backgroundColor: COLORS.bloomAccent, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2 },
+  sheetSecBadgeTxt: { fontSize: 11, fontWeight: '800', color: COLORS.bloomOnAccent },
   sheetSecArr: { fontSize: 11, color: COLORS.bloomMuted },
 
   optRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 11 },
@@ -768,14 +769,14 @@ const s = StyleSheet.create({
     borderWidth: 2, borderColor: COLORS.bloomBorder,
     justifyContent: 'center', alignItems: 'center',
   },
-  optCheckOn:   { backgroundColor: COLORS.bloomNavy, borderColor: COLORS.bloomNavy },
-  optCheckMark: { fontSize: 12, color: '#fff', fontWeight: '900' },
+  optCheckOn:   { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
+  optCheckMark: { fontSize: 12, color: COLORS.bloomOnAccent, fontWeight: '900' },
 
   sheetApply: {
-    margin: 16, backgroundColor: COLORS.bloomNavy,
+    margin: 16, backgroundColor: COLORS.bloomAccent,
     borderRadius: 14, paddingVertical: 15, alignItems: 'center',
   },
-  sheetApplyTxt: { fontSize: 16, fontWeight: '800', color: '#fff' },
+  sheetApplyTxt: { fontSize: 16, fontWeight: '800', color: COLORS.bloomOnAccent },
 
   // Quick look
   peekHandle: {

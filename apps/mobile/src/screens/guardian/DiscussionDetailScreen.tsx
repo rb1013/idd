@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useFocusEffect, useRoute, RouteProp } from '@react-navigation/native';
@@ -13,7 +14,7 @@ import { GuardianNavParamList } from '../../navigation';
 
 type Route = RouteProp<GuardianNavParamList, 'DiscussionDetail'>;
 
-const AVATAR_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#F59E0B', '#3B82F6', '#EC4899'];
+const AVATAR_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, COLORS.statusAmber, COLORS.statusBlue, COLORS.statusPink];
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -102,20 +103,20 @@ export default function DiscussionDetailScreen() {
         ListHeaderComponent={
           post ? (
             <View style={s.postCard}>
-              <Text style={s.postTitle}>{post.title}</Text>
-              <Text style={s.postBody}>{post.body}</Text>
-              <Text style={s.postMeta}>{post.guardianName} · {timeAgo(post.createdAt)}</Text>
+              <AppText style={s.postTitle}>{post.title}</AppText>
+              <AppText style={s.postBody}>{post.body}</AppText>
+              <AppText style={s.postMeta}>{post.guardianName} · {timeAgo(post.createdAt)}</AppText>
               {replies.length > 0 && (
-                <Text style={s.repliesHeader}>
+                <AppText style={s.repliesHeader}>
                   {replies.length} {replies.length === 1 ? 'Reply' : 'Replies'}
-                </Text>
+                </AppText>
               )}
             </View>
           ) : null
         }
         ListEmptyComponent={
           <View style={s.noReplies}>
-            <Text style={s.noRepliesText}>No replies yet — be the first!</Text>
+            <AppText style={s.noRepliesText}>No replies yet — be the first!</AppText>
           </View>
         }
         renderItem={({ item: r }) => {
@@ -124,14 +125,14 @@ export default function DiscussionDetailScreen() {
           return (
             <View style={[s.replyRow, isMe && s.replyRowMe]}>
               <View style={[s.replyAvatar, { backgroundColor: color }]}>
-                <Text style={s.replyAvatarText}>{r.guardianName[0]?.toUpperCase()}</Text>
+                <AppText style={s.replyAvatarText}>{r.guardianName[0]?.toUpperCase()}</AppText>
               </View>
               <View style={[s.bubble, isMe && s.bubbleMe]}>
-                <Text style={[s.bubbleAuthor, isMe && s.bubbleAuthorMe]}>
+                <AppText style={[s.bubbleAuthor, isMe && s.bubbleAuthorMe]}>
                   {isMe ? 'You' : r.guardianName}
-                </Text>
-                <Text style={[s.bubbleContent, isMe && s.bubbleContentMe]}>{r.content}</Text>
-                <Text style={[s.bubbleTime, isMe && s.bubbleTimeMe]}>{timeAgo(r.createdAt)}</Text>
+                </AppText>
+                <AppText style={[s.bubbleContent, isMe && s.bubbleContentMe]}>{r.content}</AppText>
+                <AppText style={[s.bubbleTime, isMe && s.bubbleTimeMe]}>{timeAgo(r.createdAt)}</AppText>
               </View>
             </View>
           );
@@ -157,7 +158,7 @@ export default function DiscussionDetailScreen() {
         >
           {sending
             ? <ActivityIndicator size="small" color="#fff" />
-            : <Text style={s.sendBtnText}>↑</Text>
+            : <AppText style={s.sendBtnText}>↑</AppText>
           }
         </TouchableOpacity>
       </View>
@@ -192,11 +193,11 @@ const s = StyleSheet.create({
     borderRadius: 16, borderBottomLeftRadius: 4, padding: 12, gap: 3,
     borderWidth: 1, borderColor: COLORS.bloomBorder,
   },
-  bubbleMe:          { backgroundColor: COLORS.bloomNavy, borderBottomLeftRadius: 16, borderBottomRightRadius: 4, borderColor: COLORS.bloomNavy },
+  bubbleMe:          { backgroundColor: COLORS.bloomAccent, borderBottomLeftRadius: 16, borderBottomRightRadius: 4, borderColor: COLORS.bloomAccent },
   bubbleAuthor:      { fontSize: 11, fontWeight: '700', color: COLORS.bloomAccent },
   bubbleAuthorMe:    { color: 'rgba(255,255,255,0.65)' },
   bubbleContent:     { fontSize: 14, color: COLORS.bloomText, lineHeight: 20 },
-  bubbleContentMe:   { color: '#fff' },
+  bubbleContentMe:   { color: COLORS.bloomOnAccent },
   bubbleTime:        { fontSize: 10, color: COLORS.bloomMuted, marginTop: 2 },
   bubbleTimeMe:      { color: 'rgba(255,255,255,0.55)' },
 
@@ -217,7 +218,7 @@ const s = StyleSheet.create({
   },
   sendBtn: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: COLORS.bloomNavy, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: COLORS.bloomAccent, justifyContent: 'center', alignItems: 'center',
   },
-  sendBtnText: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  sendBtnText: { color: COLORS.bloomOnAccent, fontSize: 18, fontWeight: '700' },
 });

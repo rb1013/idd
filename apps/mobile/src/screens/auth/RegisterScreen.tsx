@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
   ScrollView, Modal, FlatList, Image,
 } from 'react-native';
@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
+import AppText from '../../components/AppText';
 import { supabase } from '../../lib/supabase';
 import { COLORS } from '../../constants';
 import { US_STATES } from '../../constants/usStates';
@@ -107,8 +108,8 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={[styles.inner, { paddingBottom: Math.max(insets.bottom + 24, 48) }]} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Set up your Ray account</Text>
+        <AppText style={styles.title}>Create Account</AppText>
+        <AppText style={styles.subtitle}>Set up your ELIS account</AppText>
 
         {/* Profile photo */}
         <TouchableOpacity style={styles.photoPicker} onPress={pickPhoto} activeOpacity={0.8}>
@@ -116,27 +117,27 @@ export default function RegisterScreen() {
             <Image source={{ uri: photoUri }} style={styles.photoPreview} />
           ) : (
             <View style={styles.photoPlaceholder}>
-              <Text style={styles.photoPlaceholderEmoji}>📷</Text>
-              <Text style={styles.photoPlaceholderText}>Add photo</Text>
+              <AppText style={styles.photoPlaceholderEmoji}>📷</AppText>
+              <AppText style={styles.photoPlaceholderText}>Add photo</AppText>
             </View>
           )}
           {photoUri && (
             <View style={styles.photoEditBadge}>
-              <Text style={styles.photoEditEmoji}>✏️</Text>
+              <AppText style={styles.photoEditEmoji}>✏️</AppText>
             </View>
           )}
         </TouchableOpacity>
 
-        <Text style={styles.label}>Full Name *</Text>
+        <AppText style={styles.label}>Full Name *</AppText>
         <TextInput
           style={styles.input}
           value={fullName}
           onChangeText={setFullName}
           placeholder="Your full name"
-          placeholderTextColor={COLORS.textLight}
+          placeholderTextColor={COLORS.bloomMuted}
         />
 
-        <Text style={styles.label}>Email *</Text>
+        <AppText style={styles.label}>Email *</AppText>
         <TextInput
           style={styles.input}
           value={email}
@@ -144,77 +145,77 @@ export default function RegisterScreen() {
           placeholder="your@email.com"
           keyboardType="email-address"
           autoCapitalize="none"
-          placeholderTextColor={COLORS.textLight}
+          placeholderTextColor={COLORS.bloomMuted}
         />
 
-        <Text style={styles.label}>Phone (optional)</Text>
+        <AppText style={styles.label}>Phone (optional)</AppText>
         <TextInput
           style={styles.input}
           value={phone}
           onChangeText={setPhone}
           placeholder="+1 555 000 0000"
           keyboardType="phone-pad"
-          placeholderTextColor={COLORS.textLight}
+          placeholderTextColor={COLORS.bloomMuted}
         />
 
-        <Text style={styles.label}>Password *</Text>
+        <AppText style={styles.label}>Password *</AppText>
         <TextInput
           style={styles.input}
           value={password}
           onChangeText={setPassword}
           placeholder="Min. 6 characters"
           secureTextEntry
-          placeholderTextColor={COLORS.textLight}
+          placeholderTextColor={COLORS.bloomMuted}
         />
 
-        <Text style={styles.label}>Confirm Password *</Text>
+        <AppText style={styles.label}>Confirm Password *</AppText>
         <TextInput
           style={styles.input}
           value={confirm}
           onChangeText={setConfirm}
           placeholder="Repeat password"
           secureTextEntry
-          placeholderTextColor={COLORS.textLight}
+          placeholderTextColor={COLORS.bloomMuted}
         />
 
         {/* Location */}
-        <Text style={styles.label}>Country</Text>
+        <AppText style={styles.label}>Country</AppText>
         <View style={[styles.input, styles.readOnly]}>
-          <Text style={styles.readOnlyText}>USA</Text>
+          <AppText style={styles.readOnlyText}>USA</AppText>
         </View>
 
-        <Text style={styles.label}>State</Text>
+        <AppText style={styles.label}>State</AppText>
         <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowStatePicker(true)} activeOpacity={0.7}>
-          <Text style={[styles.pickerBtnText, !state && styles.placeholder]}>
+          <AppText style={[styles.pickerBtnText, !state && styles.placeholder]}>
             {state || 'Select state...'}
-          </Text>
-          <Text style={styles.chevron}>▾</Text>
+          </AppText>
+          <AppText style={styles.chevron}>▾</AppText>
         </TouchableOpacity>
 
-        <Text style={styles.label}>City</Text>
+        <AppText style={styles.label}>City</AppText>
         <TextInput
           style={styles.input}
           value={city}
           onChangeText={setCity}
           placeholder="e.g. Austin"
-          placeholderTextColor={COLORS.textLight}
+          placeholderTextColor={COLORS.bloomMuted}
         />
 
         {/* Situation tags */}
-        <Text style={styles.label}>Situation Tags (optional)</Text>
-        <Text style={styles.sublabel}>Select the situations that apply to your learner</Text>
+        <AppText style={styles.label}>Situation Tags (optional)</AppText>
+        <AppText style={styles.sublabel}>Select the situations that apply to your learner</AppText>
         <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>
-          <Text style={[styles.pickerBtnText, selectedTags.length === 0 && styles.placeholder]}>
+          <AppText style={[styles.pickerBtnText, selectedTags.length === 0 && styles.placeholder]}>
             {selectedTags.length === 0 ? 'Select tags...' : `${selectedTags.length} selected`}
-          </Text>
-          <Text style={styles.chevron}>▾</Text>
+          </AppText>
+          <AppText style={styles.chevron}>▾</AppText>
         </TouchableOpacity>
         {selectedTags.length > 0 && (
           <View style={styles.chipRow}>
             {selectedTags.map(tag => (
               <TouchableOpacity key={tag} style={styles.chip} onPress={() => toggleTag(tag)} activeOpacity={0.7}>
-                <Text style={styles.chipText}>{tag}</Text>
-                <Text style={styles.chipX}>✕</Text>
+                <AppText style={styles.chipText}>{tag}</AppText>
+                <AppText style={styles.chipX}>✕</AppText>
               </TouchableOpacity>
             ))}
           </View>
@@ -222,11 +223,11 @@ export default function RegisterScreen() {
 
         {/* PIN setup */}
         <View style={styles.pinSection}>
-          <Text style={styles.pinSectionTitle}>🔐  Guardian PIN</Text>
-          <Text style={styles.pinSectionHint}>
-            You'll use this 6-digit PIN to access Guardian mode from the Ray home screen.
-          </Text>
-          <Text style={styles.label}>PIN *</Text>
+          <AppText style={styles.pinSectionTitle}>🔐  Guardian PIN</AppText>
+          <AppText style={styles.pinSectionHint}>
+            You'll use this 6-digit PIN to access Guardian mode from the ELIS home screen.
+          </AppText>
+          <AppText style={styles.label}>PIN *</AppText>
           <TextInput
             style={styles.input}
             value={pin}
@@ -235,9 +236,9 @@ export default function RegisterScreen() {
             keyboardType="number-pad"
             maxLength={6}
             secureTextEntry
-            placeholderTextColor={COLORS.textLight}
+            placeholderTextColor={COLORS.bloomMuted}
           />
-          <Text style={styles.label}>Confirm PIN *</Text>
+          <AppText style={styles.label}>Confirm PIN *</AppText>
           <TextInput
             style={styles.input}
             value={confirmPin}
@@ -246,12 +247,15 @@ export default function RegisterScreen() {
             keyboardType="number-pad"
             maxLength={6}
             secureTextEntry
-            placeholderTextColor={COLORS.textLight}
+            placeholderTextColor={COLORS.bloomMuted}
           />
         </View>
 
         <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Create Account</Text>}
+          {loading
+            ? <ActivityIndicator color={COLORS.bloomOnAccent} />
+            : <AppText style={styles.buttonText}>Create Account</AppText>
+          }
         </TouchableOpacity>
       </ScrollView>
 
@@ -260,9 +264,9 @@ export default function RegisterScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select State</Text>
+              <AppText style={styles.modalTitle}>Select State</AppText>
               <TouchableOpacity onPress={() => setShowStatePicker(false)}>
-                <Text style={styles.modalClose}>Done</Text>
+                <AppText style={styles.modalClose}>Done</AppText>
               </TouchableOpacity>
             </View>
             <FlatList
@@ -273,10 +277,10 @@ export default function RegisterScreen() {
                   style={[styles.listItem, state === item && styles.listItemSelected]}
                   onPress={() => { setState(item); setShowStatePicker(false); }}
                 >
-                  <Text style={[styles.listItemText, state === item && styles.listItemTextSelected]}>
+                  <AppText style={[styles.listItemText, state === item && styles.listItemTextSelected]}>
                     {item}
-                  </Text>
-                  {state === item && <Text style={styles.listCheck}>✓</Text>}
+                  </AppText>
+                  {state === item && <AppText style={styles.listCheck}>✓</AppText>}
                 </TouchableOpacity>
               )}
               ItemSeparatorComponent={() => <View style={styles.listDivider} />}
@@ -290,14 +294,14 @@ export default function RegisterScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Situation Tags</Text>
+              <AppText style={styles.modalTitle}>Situation Tags</AppText>
               <TouchableOpacity onPress={() => setShowTagPicker(false)}>
-                <Text style={styles.modalClose}>Done</Text>
+                <AppText style={styles.modalClose}>Done</AppText>
               </TouchableOpacity>
             </View>
             {tagOptions.length === 0 ? (
               <View style={styles.emptyTags}>
-                <Text style={styles.emptyTagsText}>No tags available yet.</Text>
+                <AppText style={styles.emptyTagsText}>No tags available yet.</AppText>
               </View>
             ) : (
               <FlatList
@@ -310,10 +314,10 @@ export default function RegisterScreen() {
                       style={[styles.listItem, selected && styles.listItemSelected]}
                       onPress={() => toggleTag(item)}
                     >
-                      <Text style={[styles.listItemText, selected && styles.listItemTextSelected]}>
+                      <AppText style={[styles.listItemText, selected && styles.listItemTextSelected]}>
                         {item}
-                      </Text>
-                      {selected && <Text style={styles.listCheck}>✓</Text>}
+                      </AppText>
+                      {selected && <AppText style={styles.listCheck}>✓</AppText>}
                     </TouchableOpacity>
                   );
                 }}
@@ -328,31 +332,31 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: COLORS.bloomBody },
   inner:     { padding: 24 },
-  title:     { fontSize: 28, fontWeight: '700', color: COLORS.text, marginBottom: 4, marginTop: 16 },
-  subtitle:  { fontSize: 16, color: COLORS.textLight, marginBottom: 24 },
-  label:     { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 6 },
-  sublabel:  { fontSize: 12, color: COLORS.textLight, marginBottom: 8, marginTop: -2 },
+  title:     { fontSize: 28, fontWeight: '700', color: COLORS.bloomText, marginBottom: 4, marginTop: 16 },
+  subtitle:  { fontSize: 16, color: COLORS.bloomMuted, marginBottom: 24 },
+  label:     { fontSize: 14, fontWeight: '600', color: COLORS.bloomText, marginBottom: 6 },
+  sublabel:  { fontSize: 12, color: COLORS.bloomMuted, marginBottom: 8, marginTop: -2 },
 
   photoPicker: {
     alignSelf: 'center', marginBottom: 28, position: 'relative',
   },
   photoPreview: {
     width: 100, height: 100, borderRadius: 50,
-    borderWidth: 3, borderColor: COLORS.primary,
+    borderWidth: 3, borderColor: COLORS.bloomAccent,
   },
   photoPlaceholder: {
     width: 100, height: 100, borderRadius: 50,
-    backgroundColor: COLORS.surface, borderWidth: 2,
-    borderColor: COLORS.border, borderStyle: 'dashed',
+    backgroundColor: COLORS.bloomCard, borderWidth: 2,
+    borderColor: COLORS.bloomBorder, borderStyle: 'dashed',
     justifyContent: 'center', alignItems: 'center', gap: 4,
   },
   photoPlaceholderEmoji: { fontSize: 28 },
-  photoPlaceholderText: { fontSize: 12, color: COLORS.textLight, fontWeight: '600' },
+  photoPlaceholderText:  { fontSize: 12, color: COLORS.bloomMuted, fontWeight: '600' },
   photoEditBadge: {
     position: 'absolute', bottom: 2, right: 2,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.bloomAccent,
     width: 28, height: 28, borderRadius: 14,
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 2, borderColor: '#fff',
@@ -360,64 +364,64 @@ const styles = StyleSheet.create({
   photoEditEmoji: { fontSize: 13 },
 
   input: {
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
-    borderRadius: 12, padding: 16, fontSize: 16, color: COLORS.text, marginBottom: 16,
+    backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+    borderRadius: 12, padding: 16, fontSize: 16, color: COLORS.bloomText, marginBottom: 16,
   },
-  readOnly:     { backgroundColor: '#F3F4F6', justifyContent: 'center' },
-  readOnlyText: { fontSize: 16, color: COLORS.textLight },
+  readOnly:     { backgroundColor: COLORS.bloomActiveBg, justifyContent: 'center' },
+  readOnlyText: { fontSize: 16, color: COLORS.bloomMuted },
 
   pickerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
     borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, marginBottom: 12,
   },
-  pickerBtnText: { fontSize: 16, color: COLORS.text },
-  placeholder:   { color: COLORS.textLight },
-  chevron:       { fontSize: 14, color: COLORS.textLight },
+  pickerBtnText: { fontSize: 16, color: COLORS.bloomText },
+  placeholder:   { color: COLORS.bloomMuted },
+  chevron:       { fontSize: 14, color: COLORS.bloomMuted },
 
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   chip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: COLORS.primary + '18', borderWidth: 1.5, borderColor: COLORS.primary,
+    backgroundColor: COLORS.bloomActiveBg, borderWidth: 1.5, borderColor: COLORS.bloomSageMid,
     borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6,
   },
-  chipText: { fontSize: 13, color: COLORS.primary, fontWeight: '600' },
-  chipX:    { fontSize: 11, color: COLORS.primary, fontWeight: '700' },
+  chipText: { fontSize: 13, color: COLORS.bloomActiveText, fontWeight: '600' },
+  chipX:    { fontSize: 11, color: COLORS.bloomActiveText, fontWeight: '700' },
 
   pinSection: {
-    backgroundColor: '#EEF4FF', borderRadius: 16,
+    backgroundColor: COLORS.bloomActiveBg, borderRadius: 16,
     padding: 18, marginTop: 8, marginBottom: 8,
-    borderWidth: 1.5, borderColor: COLORS.primary + '30',
+    borderWidth: 1.5, borderColor: COLORS.bloomSageMid,
   },
-  pinSectionTitle: { fontSize: 15, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
-  pinSectionHint:  { fontSize: 13, color: COLORS.textLight, lineHeight: 18, marginBottom: 12 },
+  pinSectionTitle: { fontSize: 15, fontWeight: '800', color: COLORS.bloomText, marginBottom: 6 },
+  pinSectionHint:  { fontSize: 13, color: COLORS.bloomMuted, lineHeight: 18, marginBottom: 12 },
 
   button: {
-    backgroundColor: COLORS.primary, borderRadius: 12,
+    backgroundColor: COLORS.bloomAccent, borderRadius: 12,
     padding: 16, alignItems: 'center', marginTop: 8,
   },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  buttonText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '700' },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalCard: {
-    backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: COLORS.bloomCard, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     maxHeight: '70%',
   },
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 18, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    padding: 18, borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
   },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: COLORS.text },
-  modalClose: { fontSize: 16, fontWeight: '600', color: COLORS.primary },
+  modalTitle: { fontSize: 17, fontWeight: '700', color: COLORS.bloomText },
+  modalClose: { fontSize: 16, fontWeight: '600', color: COLORS.bloomAccent },
 
-  listItem:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
-  listItemSelected: { backgroundColor: '#EEF4FF' },
-  listItemText:     { fontSize: 16, color: COLORS.text },
-  listItemTextSelected: { fontWeight: '700', color: COLORS.primary },
-  listCheck:    { fontSize: 16, color: COLORS.primary, fontWeight: '700' },
-  listDivider:  { height: 1, backgroundColor: COLORS.border, marginHorizontal: 20 },
+  listItem:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
+  listItemSelected:     { backgroundColor: COLORS.bloomActiveBg },
+  listItemText:         { fontSize: 16, color: COLORS.bloomText },
+  listItemTextSelected: { fontWeight: '700', color: COLORS.bloomActiveText },
+  listCheck:    { fontSize: 16, color: COLORS.bloomActiveText, fontWeight: '700' },
+  listDivider:  { height: 1, backgroundColor: COLORS.bloomBorder, marginHorizontal: 20 },
 
   emptyTags:     { padding: 40, alignItems: 'center' },
-  emptyTagsText: { fontSize: 15, color: COLORS.textLight },
+  emptyTagsText: { fontSize: 15, color: COLORS.bloomMuted },
 });

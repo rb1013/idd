@@ -3,6 +3,7 @@ import {
   View, Text, Image, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, Alert, ActivityIndicator, Modal, Dimensions,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
@@ -20,8 +21,8 @@ const STATUS_COLORS: Record<TutorialStatus, { bg: string; text: string }> = {
   generating: { bg: '#E8ECEF', text: '#5D6D7E' },
   preview:    { bg: '#FEF3CD', text: '#B7791F' },
   pending:    { bg: '#DBEAFE', text: '#1D4ED8' },
-  approved:   { bg: '#D1FAE5', text: '#065F46' },
-  rejected:   { bg: '#FEE2E2', text: '#991B1B' },
+  approved:   { bg: COLORS.statusGreenLight, text: COLORS.statusGreenDark },
+  rejected:   { bg: COLORS.statusRedLight, text: '#991B1B' },
 };
 const STATUS_LABELS: Record<TutorialStatus, string> = {
   generating: 'Generating…',
@@ -265,7 +266,7 @@ export default function TutorialPreviewScreen() {
   if (!tutorial) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>Tutorial not found</Text>
+        <AppText style={styles.errorText}>Tutorial not found</AppText>
       </View>
     );
   }
@@ -274,8 +275,8 @@ export default function TutorialPreviewScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={COLORS.bloomAccent} />
-        <Text style={styles.generatingText}>AI is creating your tutorial…</Text>
-        <Text style={styles.generatingHint}>This usually takes 30–60 seconds</Text>
+        <AppText style={styles.generatingText}>AI is creating your tutorial…</AppText>
+        <AppText style={styles.generatingHint}>This usually takes 30–60 seconds</AppText>
       </View>
     );
   }
@@ -288,21 +289,21 @@ export default function TutorialPreviewScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Status banner */}
         <View style={[styles.statusBanner, { backgroundColor: STATUS_COLORS[tutorial.status as TutorialStatus].bg }]}>
-          <Text style={[styles.statusBannerText, { color: STATUS_COLORS[tutorial.status as TutorialStatus].text }]}>
+          <AppText style={[styles.statusBannerText, { color: STATUS_COLORS[tutorial.status as TutorialStatus].text }]}>
             {STATUS_LABELS[tutorial.status as TutorialStatus]}
-          </Text>
+          </AppText>
         </View>
 
         {/* Rejected admin notes */}
         {tutorial.status === 'rejected' && tutorial.admin_notes && (
           <View style={styles.adminNotesCard}>
-            <Text style={styles.adminNotesLabel}>Admin Notes</Text>
-            <Text style={styles.adminNotesText}>{tutorial.admin_notes}</Text>
+            <AppText style={styles.adminNotesLabel}>Admin Notes</AppText>
+            <AppText style={styles.adminNotesText}>{tutorial.admin_notes}</AppText>
           </View>
         )}
 
         {/* Tutorial title */}
-        <Text style={styles.title}>{tutorial.display_name || tutorial.category}</Text>
+        <AppText style={styles.title}>{tutorial.display_name || tutorial.category}</AppText>
 
         {/* Frame viewer */}
         {frames.length > 0 && (
@@ -317,9 +318,9 @@ export default function TutorialPreviewScreen() {
                 }}
                 disabled={(tutorial?.frames?.length ?? 0) <= 1}
               >
-                <Text style={[styles.autoPlayBtnText, autoPlay && { color: '#fff' }]}>
+                <AppText style={[styles.autoPlayBtnText, autoPlay && { color: COLORS.bloomOnAccent }]}>
                   {autoPlay ? '⏸  Stop' : '▶  Play video'}
-                </Text>
+                </AppText>
               </TouchableOpacity>
             </View>
 
@@ -329,8 +330,8 @@ export default function TutorialPreviewScreen() {
                 ? <Image source={{ uri: currentFrame.image_url }} style={styles.image} resizeMode="contain" />
                 : (
                   <View style={styles.imagePlaceholder}>
-                    <Text style={styles.imagePlaceholderEmoji}>🖼</Text>
-                    <Text style={styles.imagePlaceholderText}>No image</Text>
+                    <AppText style={styles.imagePlaceholderEmoji}>🖼</AppText>
+                    <AppText style={styles.imagePlaceholderText}>No image</AppText>
                   </View>
                 )
               }
@@ -346,9 +347,9 @@ export default function TutorialPreviewScreen() {
                     else { player.seekTo(0); player.play(); }
                   }}
                 >
-                  <Text style={styles.audioBtnText}>
+                  <AppText style={styles.audioBtnText}>
                     {playerStatus.playing ? '⏸  Pause' : '🔊  Replay slide'}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               )}
               {['preview', 'rejected'].includes(tutorial.status) && (
@@ -365,23 +366,23 @@ export default function TutorialPreviewScreen() {
                     }
                   }}
                 >
-                  <Text style={styles.editBtnText}>✏️  Edit slide</Text>
+                  <AppText style={styles.editBtnText}>✏️  Edit slide</AppText>
                 </TouchableOpacity>
               )}
             </View>
 
             {/* Frame counter */}
             <View style={styles.frameHeader}>
-              <Text style={styles.frameCounter}>Frame {frameIndex + 1} of {frames.length}</Text>
+              <AppText style={styles.frameCounter}>Frame {frameIndex + 1} of {frames.length}</AppText>
             </View>
 
             {/* Caption + narration */}
             <View style={styles.frameText}>
               {currentFrame?.caption && (
-                <Text style={styles.caption}>{currentFrame.caption}</Text>
+                <AppText style={styles.caption}>{currentFrame.caption}</AppText>
               )}
               {currentFrame?.tts_text && (
-                <Text style={styles.narration}>{currentFrame.tts_text}</Text>
+                <AppText style={styles.narration}>{currentFrame.tts_text}</AppText>
               )}
             </View>
 
@@ -392,7 +393,7 @@ export default function TutorialPreviewScreen() {
                 onPress={() => setFrameIndex(i => Math.max(0, i - 1))}
                 disabled={frameIndex === 0}
               >
-                <Text style={styles.navBtnText}>← Prev</Text>
+                <AppText style={styles.navBtnText}>← Prev</AppText>
               </TouchableOpacity>
               <View style={styles.frameDots}>
                 {frames.map((_, i) => (
@@ -406,7 +407,7 @@ export default function TutorialPreviewScreen() {
                 onPress={() => setFrameIndex(i => Math.min(frames.length - 1, i + 1))}
                 disabled={frameIndex === frames.length - 1}
               >
-                <Text style={styles.navBtnText}>Next →</Text>
+                <AppText style={styles.navBtnText}>Next →</AppText>
               </TouchableOpacity>
             </View>
           </View>
@@ -420,12 +421,12 @@ export default function TutorialPreviewScreen() {
               onPress={submitForReview}
               disabled={submitting}
             >
-              {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnTextPrimary}>Submit for Review</Text>}
+              {submitting ? <ActivityIndicator color="#fff" /> : <AppText style={styles.actionBtnTextPrimary}>Submit for Review</AppText>}
             </TouchableOpacity>
           )}
           {tutorial.status === 'pending' && (
             <TouchableOpacity style={[styles.actionBtn, styles.actionBtnWarning]} onPress={withdrawFromReview}>
-              <Text style={styles.actionBtnTextPrimary}>Withdraw from Review</Text>
+              <AppText style={styles.actionBtnTextPrimary}>Withdraw from Review</AppText>
             </TouchableOpacity>
           )}
           {tutorial.status === 'rejected' && (
@@ -434,23 +435,23 @@ export default function TutorialPreviewScreen() {
               onPress={submitForReview}
               disabled={submitting}
             >
-              {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnTextPrimary}>Resubmit for Review</Text>}
+              {submitting ? <ActivityIndicator color="#fff" /> : <AppText style={styles.actionBtnTextPrimary}>Resubmit for Review</AppText>}
             </TouchableOpacity>
           )}
           {tutorial.status === 'approved' && (
             <View style={styles.approvedBanner}>
-              <Text style={styles.approvedText}>✅ This tutorial is live in the shared library</Text>
+              <AppText style={styles.approvedText}>✅ This tutorial is live in the shared library</AppText>
             </View>
           )}
           <TouchableOpacity style={[styles.actionBtn, styles.actionBtnDelete]} onPress={deleteTutorial}>
-            <Text style={styles.actionBtnTextDelete}>Delete Tutorial</Text>
+            <AppText style={styles.actionBtnTextDelete}>Delete Tutorial</AppText>
           </TouchableOpacity>
         </View>
 
         {/* Guardian inputs used to generate this tutorial */}
         {tutorial.source === 'ai_generated' && (
           <View style={styles.inputsCard}>
-            <Text style={styles.inputsCardTitle}>Generation Settings</Text>
+            <AppText style={styles.inputsCardTitle}>Generation Settings</AppText>
             <View style={styles.inputsGrid}>
               {tutorial.category      && <InputRow label="Skill"         value={tutorial.category} />}
               {tutorial.core_action   && <InputRow label="Core Action"   value={tutorial.core_action} />}
@@ -460,7 +461,7 @@ export default function TutorialPreviewScreen() {
 
             {['preview', 'rejected'].includes(tutorial.status) && (
               <TouchableOpacity style={styles.regenTutorialBtn} onPress={regenerateTutorial} activeOpacity={0.8}>
-                <Text style={styles.regenTutorialBtnText}>🔄  Re-generate Tutorial</Text>
+                <AppText style={styles.regenTutorialBtnText}>🔄  Re-generate Tutorial</AppText>
               </TouchableOpacity>
             )}
           </View>
@@ -471,9 +472,9 @@ export default function TutorialPreviewScreen() {
       <Modal visible={!!editingFrame} animationType="slide" onRequestClose={() => setEditingFrame(null)}>
         <View style={styles.editorContainer}>
           <View style={styles.editorHeader}>
-            <Text style={styles.editorTitle}>Edit Frame {(editingFrame ? frames.indexOf(editingFrame) : 0) + 1}</Text>
+            <AppText style={styles.editorTitle}>Edit Frame {(editingFrame ? frames.indexOf(editingFrame) : 0) + 1}</AppText>
             <TouchableOpacity onPress={() => setEditingFrame(null)} style={styles.editorClose}>
-              <Text style={styles.editorCloseText}>✕</Text>
+              <AppText style={styles.editorCloseText}>✕</AppText>
             </TouchableOpacity>
           </View>
 
@@ -482,10 +483,10 @@ export default function TutorialPreviewScreen() {
             {/* ── Caption ── */}
             <View style={styles.editorSection}>
               <View style={styles.editorFieldRow}>
-                <Text style={styles.editorFieldLabel}>Caption</Text>
+                <AppText style={styles.editorFieldLabel}>Caption</AppText>
                 {!editingCaption && (
                   <TouchableOpacity onPress={() => setEditingCaption(true)} style={styles.editorPencilBtn}>
-                    <Text style={styles.editorPencilText}>✏️</Text>
+                    <AppText style={styles.editorPencilText}>✏️</AppText>
                   </TouchableOpacity>
                 )}
               </View>
@@ -507,18 +508,18 @@ export default function TutorialPreviewScreen() {
                   >
                     {savingCaption
                       ? <ActivityIndicator size="small" color="#fff" />
-                      : <Text style={styles.editorInlineConfirmText}>✓</Text>
+                      : <AppText style={styles.editorInlineConfirmText}>✓</AppText>
                     }
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.editorInlineDismiss}
                     onPress={() => { setEditCaption(editingFrame?.caption ?? ''); setEditingCaption(false); }}
                   >
-                    <Text style={styles.editorInlineDismissText}>✕</Text>
+                    <AppText style={styles.editorInlineDismissText}>✕</AppText>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <Text style={styles.editorFieldValue}>{editCaption || '—'}</Text>
+                <AppText style={styles.editorFieldValue}>{editCaption || '—'}</AppText>
               )}
             </View>
 
@@ -527,10 +528,10 @@ export default function TutorialPreviewScreen() {
             {/* ── Narration ── */}
             <View style={styles.editorSection}>
               <View style={styles.editorFieldRow}>
-                <Text style={styles.editorFieldLabel}>Narration text</Text>
+                <AppText style={styles.editorFieldLabel}>Narration text</AppText>
                 {!editingNarration && (
                   <TouchableOpacity onPress={() => setEditingNarration(true)} style={styles.editorPencilBtn}>
-                    <Text style={styles.editorPencilText}>✏️</Text>
+                    <AppText style={styles.editorPencilText}>✏️</AppText>
                   </TouchableOpacity>
                 )}
               </View>
@@ -552,7 +553,7 @@ export default function TutorialPreviewScreen() {
                       style={styles.editorInlineDismiss}
                       onPress={() => { setEditTts(editingFrame?.tts_text ?? ''); setEditingNarration(false); }}
                     >
-                      <Text style={styles.editorInlineDismissText}>Cancel</Text>
+                      <AppText style={styles.editorInlineDismissText}>Cancel</AppText>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.editorInlineConfirm, savingNarration && { opacity: 0.5 }]}
@@ -561,13 +562,13 @@ export default function TutorialPreviewScreen() {
                     >
                       {savingNarration
                         ? <ActivityIndicator size="small" color="#fff" />
-                        : <Text style={styles.editorInlineConfirmText}>Save &amp; regenerate audio</Text>
+                        : <AppText style={styles.editorInlineConfirmText}>Save &amp; regenerate audio</AppText>
                       }
                     </TouchableOpacity>
                   </View>
                 </>
               ) : (
-                <Text style={styles.editorFieldValue}>{editTts || '—'}</Text>
+                <AppText style={styles.editorFieldValue}>{editTts || '—'}</AppText>
               )}
             </View>
 
@@ -578,7 +579,7 @@ export default function TutorialPreviewScreen() {
               {editingFrame?.image_url && (
                 <Image source={{ uri: editingFrame.image_url }} style={styles.editorImage} resizeMode="cover" />
               )}
-              <Text style={styles.editorFieldLabel}>What should the image show?</Text>
+              <AppText style={styles.editorFieldLabel}>What should the image show?</AppText>
               <TextInput
                 style={[styles.editorInput, { height: 80, marginBottom: 10 }]}
                 value={editImagePrompt}
@@ -596,7 +597,7 @@ export default function TutorialPreviewScreen() {
               >
                 {regeneratingImage
                   ? <ActivityIndicator color={COLORS.bloomAccent} size="small" />
-                  : <Text style={styles.regenBtnText}>🔄  Regenerate image</Text>
+                  : <AppText style={styles.regenBtnText}>🔄  Regenerate image</AppText>
                 }
               </TouchableOpacity>
             </View>
@@ -605,7 +606,7 @@ export default function TutorialPreviewScreen() {
 
           <View style={styles.editorActions}>
             <TouchableOpacity style={styles.editorDoneBtn} onPress={() => setEditingFrame(null)}>
-              <Text style={styles.editorDoneBtnText}>Done</Text>
+              <AppText style={styles.editorDoneBtnText}>Done</AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -617,8 +618,8 @@ export default function TutorialPreviewScreen() {
 function InputRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.inputRow}>
-      <Text style={styles.inputRowLabel}>{label}</Text>
-      <Text style={styles.inputRowValue} numberOfLines={2}>{value}</Text>
+      <AppText style={styles.inputRowLabel}>{label}</AppText>
+      <AppText style={styles.inputRowValue} numberOfLines={2}>{value}</AppText>
     </View>
   );
 }
@@ -626,7 +627,7 @@ function InputRow({ label, value }: { label: string; value: string }) {
 function MetaBadge({ text, color }: { text: string; color?: string }) {
   return (
     <View style={[styles.metaBadge, color ? { backgroundColor: `${color}22`, borderColor: color } : {}]}>
-      <Text style={[styles.metaBadgeText, color ? { color } : {}]}>{text}</Text>
+      <AppText style={[styles.metaBadgeText, color ? { color } : {}]}>{text}</AppText>
     </View>
   );
 }
@@ -650,7 +651,7 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 20 },
   metaBadge: {
     paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10,
-    backgroundColor: '#DAEAFF', borderWidth: 1, borderColor: COLORS.bloomAccent,
+    backgroundColor: COLORS.bloomActiveBg, borderWidth: 1, borderColor: COLORS.bloomAccent,
   },
   metaBadgeText: { fontSize: 12, fontWeight: '600', color: COLORS.bloomAccent, textTransform: 'capitalize' },
 
@@ -666,21 +667,21 @@ const styles = StyleSheet.create({
   frameHeader: { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 10 },
   frameCounter: { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted },
   autoPlayBtn: {
-    backgroundColor: '#DAEAFF', borderRadius: 8,
+    backgroundColor: COLORS.bloomActiveBg, borderRadius: 8,
     paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: COLORS.bloomAccent,
   },
   autoPlayBtnActive: { backgroundColor: COLORS.bloomAccent },
   autoPlayBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomAccent },
   audioBtn: { backgroundColor: '#F0FDF4', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: '#86EFAC' },
   audioBtnText: { fontSize: 13, fontWeight: '700', color: '#166534' },
-  editBtn: { backgroundColor: '#DAEAFF', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: COLORS.bloomAccent },
+  editBtn: { backgroundColor: COLORS.bloomActiveBg, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: COLORS.bloomAccent },
   editBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomAccent },
 
   frameImage: { width: '100%', aspectRatio: 1, backgroundColor: '#000' },
   image: { width: '100%', height: '100%' },
   imagePlaceholder: {
     width: '100%', height: '100%',
-    backgroundColor: '#DAEAFF', justifyContent: 'center', alignItems: 'center', gap: 8,
+    backgroundColor: COLORS.bloomActiveBg, justifyContent: 'center', alignItems: 'center', gap: 8,
   },
   imagePlaceholderEmoji: { fontSize: 48 },
   imagePlaceholderText: { fontSize: 14, color: COLORS.bloomMuted },
@@ -690,7 +691,7 @@ const styles = StyleSheet.create({
   narration: { fontSize: 16, color: COLORS.bloomText, lineHeight: 24, opacity: 0.75 },
 
   frameNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 16 },
-  navBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: '#DAEAFF' },
+  navBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: COLORS.bloomActiveBg },
   navBtnDisabled: { opacity: 0.3 },
   navBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomAccent },
   frameDots: { flexDirection: 'row', gap: 6 },
@@ -699,13 +700,13 @@ const styles = StyleSheet.create({
 
   actions: { gap: 12 },
   actionBtn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
-  actionBtnPrimary: { backgroundColor: COLORS.bloomNavy, shadowColor: COLORS.bloomNavy, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
+  actionBtnPrimary: { backgroundColor: COLORS.bloomAccent, shadowColor: COLORS.bloomAccent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
   actionBtnWarning: { backgroundColor: COLORS.warning },
   actionBtnDisabled: { opacity: 0.5 },
-  actionBtnTextPrimary: { color: '#fff', fontWeight: '800', fontSize: 15 },
-  approvedBanner: { backgroundColor: '#D4F0DE', borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
+  actionBtnTextPrimary: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 15 },
+  approvedBanner: { backgroundColor: COLORS.secondaryLight, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
   approvedText: { color: COLORS.success, fontWeight: '700', fontSize: 14 },
-  actionBtnDelete: { backgroundColor: '#FEE2E2', borderWidth: 1.5, borderColor: '#FCA5A5' },
+  actionBtnDelete: { backgroundColor: COLORS.statusRedLight, borderWidth: 1.5, borderColor: '#FCA5A5' },
   actionBtnTextDelete: { color: '#991B1B', fontWeight: '700', fontSize: 15 },
 
   // Guardian inputs card
@@ -723,7 +724,7 @@ const styles = StyleSheet.create({
   inputRowValue: { flex: 1, fontSize: 14, fontWeight: '600', color: COLORS.bloomText, textTransform: 'capitalize' },
 
   regenTutorialBtn: {
-    backgroundColor: '#DAEAFF', borderRadius: 12, paddingVertical: 13,
+    backgroundColor: COLORS.bloomActiveBg, borderRadius: 12, paddingVertical: 13,
     alignItems: 'center', marginTop: 4,
   },
   regenTutorialBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.bloomAccent },
@@ -752,7 +753,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bloomAccent, borderRadius: 10,
     paddingHorizontal: 14, paddingVertical: 10, minWidth: 44, alignItems: 'center',
   },
-  editorInlineConfirmText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  editorInlineConfirmText: { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 13 },
   editorInlineDismiss: {
     backgroundColor: COLORS.bloomBorder, borderRadius: 10,
     paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center',
@@ -766,7 +767,7 @@ const styles = StyleSheet.create({
   },
   regenBtn: {
     flexDirection: 'row', justifyContent: 'center',
-    backgroundColor: '#DAEAFF', borderRadius: 10, paddingVertical: 12,
+    backgroundColor: COLORS.bloomActiveBg, borderRadius: 10, paddingVertical: 12,
   },
   regenBtnDisabled: { opacity: 0.5 },
   regenBtnText: { color: COLORS.bloomAccent, fontWeight: '700', fontSize: 14 },
@@ -774,6 +775,6 @@ const styles = StyleSheet.create({
     padding: 20, paddingBottom: 36,
     backgroundColor: COLORS.bloomCard, borderTopWidth: 1, borderTopColor: COLORS.bloomBorder,
   },
-  editorDoneBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: COLORS.bloomNavy },
-  editorDoneBtnText: { fontWeight: '700', color: '#fff', fontSize: 15 },
+  editorDoneBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: COLORS.bloomAccent },
+  editorDoneBtnText: { fontWeight: '700', color: COLORS.bloomOnAccent, fontSize: 15 },
 });

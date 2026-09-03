@@ -4,6 +4,7 @@ import {
   TextInput, Alert, ActivityIndicator, Modal, FlatList,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -107,12 +108,12 @@ function TimePicker({
   return (
     <>
       <TouchableOpacity style={styles.fbox} onPress={() => setVisible(true)}>
-        <Text style={styles.fboxText}>{value}</Text>
+        <AppText style={styles.fboxText}>{value}</AppText>
       </TouchableOpacity>
       <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
         <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={() => setVisible(false)}>
           <View style={styles.pickerCard}>
-            <Text style={styles.pickerTitle}>Select time</Text>
+            <AppText style={styles.pickerTitle}>Select time</AppText>
             <FlatList
               data={TIMES}
               keyExtractor={t => t}
@@ -122,7 +123,7 @@ function TimePicker({
                   style={[styles.pickerItem, value === item && styles.pickerItemSel]}
                   onPress={() => { onChange(item); setVisible(false); }}
                 >
-                  <Text style={[styles.pickerItemTxt, value === item && styles.pickerItemTxtSel]}>{item}</Text>
+                  <AppText style={[styles.pickerItemTxt, value === item && styles.pickerItemTxtSel]}>{item}</AppText>
                 </TouchableOpacity>
               )}
             />
@@ -141,12 +142,12 @@ function DatePicker({
   return (
     <>
       <TouchableOpacity style={styles.fbox} onPress={() => setVisible(true)}>
-        <Text style={styles.fboxText}>{formatDate(value)}</Text>
+        <AppText style={styles.fboxText}>{formatDate(value)}</AppText>
       </TouchableOpacity>
       <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
         <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={() => setVisible(false)}>
           <View style={styles.pickerCard}>
-            <Text style={styles.pickerTitle}>Select date</Text>
+            <AppText style={styles.pickerTitle}>Select date</AppText>
             <FlatList
               data={options}
               keyExtractor={d => d}
@@ -156,9 +157,9 @@ function DatePicker({
                   style={[styles.pickerItem, value === item && styles.pickerItemSel]}
                   onPress={() => { onChange(item); setVisible(false); }}
                 >
-                  <Text style={[styles.pickerItemTxt, value === item && styles.pickerItemTxtSel]}>
+                  <AppText style={[styles.pickerItemTxt, value === item && styles.pickerItemTxtSel]}>
                     {formatDateLong(item)}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               )}
             />
@@ -178,7 +179,7 @@ function EmojiRow({ emojis, selected, onSelect }: { emojis: string[]; selected: 
           style={[styles.emojiChip, selected === e && styles.emojiChipSel]}
           onPress={() => onSelect(e)}
         >
-          <Text style={styles.emojiChipTxt}>{e}</Text>
+          <AppText style={styles.emojiChipTxt}>{e}</AppText>
         </TouchableOpacity>
       ))}
     </View>
@@ -354,27 +355,27 @@ export default function UserScheduleScreen() {
           const dayTemplates = templates.filter(t => t.day_of_week === dow);
           return (
             <View key={dow} style={styles.dayBlock}>
-              <Text style={styles.dayLabel}>{day.toUpperCase()}</Text>
+              <AppText style={styles.dayLabel}>{day.toUpperCase()}</AppText>
               {dayTemplates.length === 0
-                ? <Text style={styles.emptyDay}>No classes</Text>
+                ? <AppText style={styles.emptyDay}>No classes</AppText>
                 : dayTemplates.map(t => (
                   <View key={t.id} style={styles.classCard}>
-                    <Text style={styles.classEmoji}>{t.emoji}</Text>
+                    <AppText style={styles.classEmoji}>{t.emoji}</AppText>
                     <View style={styles.classInfo}>
-                      <Text style={styles.classTitle}>{t.title}</Text>
-                      <Text style={styles.classTime}>
+                      <AppText style={styles.classTitle}>{t.title}</AppText>
+                      <AppText style={styles.classTime}>
                         {formatTime(t.start_time)} – {formatTime(t.end_time)}
                         {' · '}Until {formatDate(t.valid_until)}
-                      </Text>
+                      </AppText>
                     </View>
                     <TouchableOpacity style={styles.delBtn} onPress={() => deleteTemplate(t.id)}>
-                      <Text style={styles.delBtnTxt}>✕</Text>
+                      <AppText style={styles.delBtnTxt}>✕</AppText>
                     </TouchableOpacity>
                   </View>
                 ))
               }
               <TouchableOpacity style={styles.addDayBtn} onPress={() => openWeeklySheet(dow)}>
-                <Text style={styles.addDayBtnTxt}>+ Add {DAYS_SHORT[dow]} class</Text>
+                <AppText style={styles.addDayBtnTxt}>+ Add {DAYS_SHORT[dow]} class</AppText>
               </TouchableOpacity>
             </View>
           );
@@ -390,9 +391,9 @@ export default function UserScheduleScreen() {
     if (events.length === 0) {
       return (
         <View style={[styles.center, { flex: 1 }]}>
-          <Text style={{ fontSize: 44, marginBottom: 8 }}>✨</Text>
-          <Text style={styles.emptyTitle}>No one-off events</Text>
-          <Text style={styles.emptyHint}>Add a special class or cancel a recurring one</Text>
+          <AppText style={{ fontSize: 44, marginBottom: 8 }}>✨</AppText>
+          <AppText style={styles.emptyTitle}>No one-off events</AppText>
+          <AppText style={styles.emptyHint}>Add a special class or cancel a recurring one</AppText>
         </View>
       );
     }
@@ -400,24 +401,24 @@ export default function UserScheduleScreen() {
       <ScrollView contentContainerStyle={styles.tabContent}>
         {events.map(ev => (
           <View key={ev.id}>
-            <Text style={styles.ooDateLabel}>
+            <AppText style={styles.ooDateLabel}>
               {formatDateLong(ev.event_date)}
               {ev.is_cancellation ? ' — cancellation' : ''}
-            </Text>
+            </AppText>
             <View style={[styles.classCard, ev.is_cancellation && styles.cancelCard]}>
-              <Text style={styles.classEmoji}>{ev.is_cancellation ? '🚫' : ev.emoji}</Text>
+              <AppText style={styles.classEmoji}>{ev.is_cancellation ? '🚫' : ev.emoji}</AppText>
               <View style={styles.classInfo}>
-                <Text style={[styles.classTitle, ev.is_cancellation && { color: '#DC2626' }]}>{ev.title}</Text>
-                <Text style={[styles.classTime, ev.is_cancellation && { color: '#EF4444' }]}>
+                <AppText style={[styles.classTitle, ev.is_cancellation && { color: COLORS.statusRedDark }]}>{ev.title}</AppText>
+                <AppText style={[styles.classTime, ev.is_cancellation && { color: COLORS.statusError }]}>
                   {formatTime(ev.start_time)} – {formatTime(ev.end_time)}
                   {ev.is_cancellation ? '' : ' · One-off'}
-                </Text>
+                </AppText>
               </View>
               {ev.is_cancellation && (
-                <View style={styles.cancelBadge}><Text style={styles.cancelBadgeTxt}>CANCELLED</Text></View>
+                <View style={styles.cancelBadge}><AppText style={styles.cancelBadgeTxt}>CANCELLED</AppText></View>
               )}
               <TouchableOpacity style={styles.delBtn} onPress={() => deleteEvent(ev.id)}>
-                <Text style={styles.delBtnTxt}>✕</Text>
+                <AppText style={styles.delBtnTxt}>✕</AppText>
               </TouchableOpacity>
             </View>
           </View>
@@ -441,10 +442,10 @@ export default function UserScheduleScreen() {
       {/* Segmented control */}
       <View style={styles.seg}>
         <TouchableOpacity style={[styles.segBtn, tab === 'weekly' && styles.segBtnOn]} onPress={() => setTab('weekly')}>
-          <Text style={[styles.segTxt, tab === 'weekly' && styles.segTxtOn]}>📅  Weekly</Text>
+          <AppText style={[styles.segTxt, tab === 'weekly' && styles.segTxtOn]}>📅  Weekly</AppText>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.segBtn, tab === 'oneoff' && styles.segBtnOn]} onPress={() => setTab('oneoff')}>
-          <Text style={[styles.segTxt, tab === 'oneoff' && styles.segTxtOn]}>✨  One-off</Text>
+          <AppText style={[styles.segTxt, tab === 'oneoff' && styles.segTxtOn]}>✨  One-off</AppText>
         </TouchableOpacity>
       </View>
 
@@ -452,7 +453,7 @@ export default function UserScheduleScreen() {
       {tab === 'oneoff' && (
         <View style={styles.ooTopRow}>
           <TouchableOpacity style={styles.addPill} onPress={openOneoffSheet}>
-            <Text style={styles.addPillTxt}>+ Add</Text>
+            <AppText style={styles.addPillTxt}>+ Add</AppText>
           </TouchableOpacity>
         </View>
       )}
@@ -465,9 +466,9 @@ export default function UserScheduleScreen() {
           <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => setWeeklySheet(false)}>
             <TouchableOpacity style={styles.sheet} activeOpacity={1} onPress={() => {}}>
               <View style={styles.sheetHandle} />
-              <Text style={styles.sheetTitle}>Add {DAYS[addDay]} Class</Text>
+              <AppText style={styles.sheetTitle}>Add {DAYS[addDay]} Class</AppText>
 
-              <Text style={styles.fieldLabel}>Class name</Text>
+              <AppText style={styles.fieldLabel}>Class name</AppText>
               <TextInput
                 style={styles.fieldInput}
                 value={wTitle}
@@ -476,7 +477,7 @@ export default function UserScheduleScreen() {
                 placeholderTextColor={COLORS.textLight}
               />
 
-              <Text style={styles.fieldLabel}>Emoji</Text>
+              <AppText style={styles.fieldLabel}>Emoji</AppText>
               <EmojiRow
                 emojis={wSuggestions}
                 selected={wEmoji}
@@ -485,33 +486,33 @@ export default function UserScheduleScreen() {
 
               <View style={styles.fieldRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Start time</Text>
+                  <AppText style={styles.fieldLabel}>Start time</AppText>
                   <TimePicker value={wStart} onChange={setWStart} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>End time</Text>
+                  <AppText style={styles.fieldLabel}>End time</AppText>
                   <TimePicker value={wEnd} onChange={setWEnd} />
                 </View>
               </View>
 
               <View style={styles.fieldRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Valid from</Text>
+                  <AppText style={styles.fieldLabel}>Valid from</AppText>
                   <DatePicker value={wFrom} onChange={setWFrom} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Until</Text>
+                  <AppText style={styles.fieldLabel}>Until</AppText>
                   <DatePicker value={wUntil} onChange={v => setWUntil(v)} minDate={wFrom} />
                 </View>
               </View>
-              <Text style={styles.fieldHint}>Repeats every {DAYS[addDay]} · Max 3 months</Text>
+              <AppText style={styles.fieldHint}>Repeats every {DAYS[addDay]} · Max 3 months</AppText>
 
               <TouchableOpacity
                 style={[styles.saveBtn, wSaving && { opacity: 0.6 }]}
                 onPress={saveWeeklyClass}
                 disabled={wSaving}
               >
-                <Text style={styles.saveBtnTxt}>{wSaving ? 'Saving…' : 'Save Class'}</Text>
+                <AppText style={styles.saveBtnTxt}>{wSaving ? 'Saving…' : 'Save Class'}</AppText>
               </TouchableOpacity>
             </TouchableOpacity>
           </TouchableOpacity>
@@ -524,30 +525,30 @@ export default function UserScheduleScreen() {
           <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => setOneoffSheet(false)}>
             <TouchableOpacity style={styles.sheet} activeOpacity={1} onPress={() => {}}>
               <View style={styles.sheetHandle} />
-              <Text style={styles.sheetTitle}>Add One-off Event</Text>
+              <AppText style={styles.sheetTitle}>Add One-off Event</AppText>
 
               {/* Radio */}
               <TouchableOpacity style={[styles.radio, ooMode === 'new' && styles.radioSel]} onPress={() => setOoMode('new')}>
                 <View style={[styles.radioDot, ooMode === 'new' && styles.radioDotSel]} />
                 <View>
-                  <Text style={styles.radioTitle}>New class on a specific date</Text>
-                  <Text style={styles.radioSub}>Add a class that doesn't repeat</Text>
+                  <AppText style={styles.radioTitle}>New class on a specific date</AppText>
+                  <AppText style={styles.radioSub}>Add a class that doesn't repeat</AppText>
                 </View>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.radio, ooMode === 'cancel' && styles.radioSel]} onPress={() => setOoMode('cancel')}>
                 <View style={[styles.radioDot, ooMode === 'cancel' && styles.radioDotSel]} />
                 <View>
-                  <Text style={styles.radioTitle}>Cancel a recurring class</Text>
-                  <Text style={styles.radioSub}>Mark one occurrence as cancelled</Text>
+                  <AppText style={styles.radioTitle}>Cancel a recurring class</AppText>
+                  <AppText style={styles.radioSub}>Mark one occurrence as cancelled</AppText>
                 </View>
               </TouchableOpacity>
 
-              <Text style={styles.fieldLabel}>{ooMode === 'cancel' ? 'Date to cancel' : 'Date'}</Text>
+              <AppText style={styles.fieldLabel}>{ooMode === 'cancel' ? 'Date to cancel' : 'Date'}</AppText>
               <DatePicker value={ooDate} onChange={v => { setOoDate(v); setCancelTemplateId(null); }} />
 
               {ooMode === 'new' ? (
                 <>
-                  <Text style={styles.fieldLabel}>Class name</Text>
+                  <AppText style={styles.fieldLabel}>Class name</AppText>
                   <TextInput
                     style={styles.fieldInput}
                     value={ooTitle}
@@ -556,16 +557,16 @@ export default function UserScheduleScreen() {
                     placeholderTextColor={COLORS.textLight}
                   />
 
-                  <Text style={styles.fieldLabel}>Emoji</Text>
+                  <AppText style={styles.fieldLabel}>Emoji</AppText>
                   <EmojiRow emojis={ooSuggestions} selected={ooEmoji} onSelect={setOoEmoji} />
 
                   <View style={styles.fieldRow}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.fieldLabel}>Start time</Text>
+                      <AppText style={styles.fieldLabel}>Start time</AppText>
                       <TimePicker value={ooStart} onChange={setOoStart} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.fieldLabel}>End time</Text>
+                      <AppText style={styles.fieldLabel}>End time</AppText>
                       <TimePicker value={ooEnd} onChange={setOoEnd} />
                     </View>
                   </View>
@@ -575,24 +576,24 @@ export default function UserScheduleScreen() {
                     onPress={saveOneoffEvent}
                     disabled={ooSaving}
                   >
-                    <Text style={styles.saveBtnTxt}>{ooSaving ? 'Saving…' : 'Save Event'}</Text>
+                    <AppText style={styles.saveBtnTxt}>{ooSaving ? 'Saving…' : 'Save Event'}</AppText>
                   </TouchableOpacity>
                 </>
               ) : (
                 <>
-                  <Text style={styles.fieldLabel}>Which class to cancel?</Text>
+                  <AppText style={styles.fieldLabel}>Which class to cancel?</AppText>
                   {cancellable.length === 0
-                    ? <Text style={styles.fieldHint}>No recurring classes on {formatDateLong(ooDate)}</Text>
+                    ? <AppText style={styles.fieldHint}>No recurring classes on {formatDateLong(ooDate)}</AppText>
                     : cancellable.map(t => (
                       <TouchableOpacity
                         key={t.id}
                         style={[styles.cancelOption, cancelTemplateId === t.id && styles.cancelOptionSel]}
                         onPress={() => setCancelTemplateId(t.id)}
                       >
-                        <Text style={styles.cancelOptionEmoji}>{t.emoji}</Text>
-                        <Text style={styles.cancelOptionTxt}>
+                        <AppText style={styles.cancelOptionEmoji}>{t.emoji}</AppText>
+                        <AppText style={styles.cancelOptionTxt}>
                           {t.title}  {formatTime(t.start_time)}
-                        </Text>
+                        </AppText>
                       </TouchableOpacity>
                     ))
                   }
@@ -601,7 +602,7 @@ export default function UserScheduleScreen() {
                     onPress={saveOneoffEvent}
                     disabled={ooSaving}
                   >
-                    <Text style={styles.cancelBtnTxt}>{ooSaving ? 'Saving…' : 'Mark as Cancelled'}</Text>
+                    <AppText style={styles.cancelBtnTxt}>{ooSaving ? 'Saving…' : 'Mark as Cancelled'}</AppText>
                   </TouchableOpacity>
                 </>
               )}
@@ -626,12 +627,12 @@ const styles = StyleSheet.create({
   },
   segBtn: { flex: 1, padding: 10, alignItems: 'center', borderRadius: 10 },
   segBtnOn: { backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
-  segTxt: { fontSize: 14, fontWeight: '700', color: '#9CA3AF' },
-  segTxtOn: { color: '#111827' },
+  segTxt: { fontSize: 14, fontWeight: '700', color: COLORS.statusMidGrey },
+  segTxtOn: { color: COLORS.statusDark },
 
   ooTopRow: { alignItems: 'flex-end', paddingHorizontal: 16, paddingBottom: 8 },
-  addPill: { backgroundColor: '#8B5CF6', borderRadius: 12, paddingVertical: 9, paddingHorizontal: 18 },
-  addPillTxt: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  addPill: { backgroundColor: COLORS.statusViolet, borderRadius: 12, paddingVertical: 9, paddingHorizontal: 18 },
+  addPillTxt: { color: COLORS.bloomOnAccent, fontSize: 13, fontWeight: '700' },
 
   tabContent: { padding: 16, paddingBottom: 40 },
 
@@ -648,24 +649,24 @@ const styles = StyleSheet.create({
   cancelCard: { backgroundColor: '#FFF1F2', borderWidth: 1, borderColor: '#FECDD3' },
   classEmoji: { fontSize: 24, flexShrink: 0 },
   classInfo: { flex: 1 },
-  classTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  classTime: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  classTitle: { fontSize: 15, fontWeight: '700', color: COLORS.statusDark },
+  classTime: { fontSize: 12, color: COLORS.statusMidGrey, marginTop: 2 },
   delBtn: {
     width: 28, height: 28, borderRadius: 14,
     backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center',
   },
-  delBtnTxt: { fontSize: 13, color: '#EF4444' },
+  delBtnTxt: { fontSize: 13, color: COLORS.statusError },
 
   addDayBtn: {
     paddingVertical: 10, paddingHorizontal: 14,
-    borderRadius: 12, borderWidth: 2, borderStyle: 'dashed', borderColor: '#E5E7EB',
+    borderRadius: 12, borderWidth: 2, borderStyle: 'dashed', borderColor: COLORS.statusGrey,
     backgroundColor: 'transparent',
   },
-  addDayBtnTxt: { fontSize: 13, fontWeight: '700', color: '#8B5CF6' },
+  addDayBtnTxt: { fontSize: 13, fontWeight: '700', color: COLORS.statusViolet },
 
-  ooDateLabel: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5, marginTop: 4 },
-  cancelBadge: { backgroundColor: '#FEE2E2', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  cancelBadgeTxt: { fontSize: 10, fontWeight: '800', color: '#EF4444', letterSpacing: 0.3 },
+  ooDateLabel: { fontSize: 11, fontWeight: '700', color: COLORS.statusMidGrey, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5, marginTop: 4 },
+  cancelBadge: { backgroundColor: COLORS.statusRedLight, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  cancelBadgeTxt: { fontSize: 10, fontWeight: '800', color: COLORS.statusError, letterSpacing: 0.3 },
 
   // Sheet
   sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,.45)', justifyContent: 'flex-end' },
@@ -673,23 +674,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', borderRadius: 24, padding: 20, paddingBottom: 36,
     maxHeight: '90%',
   },
-  sheetHandle: { width: 40, height: 4, backgroundColor: '#E5E7EB', borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
-  sheetTitle: { fontSize: 18, fontWeight: '800', color: '#111827', textAlign: 'center', marginBottom: 20 },
+  sheetHandle: { width: 40, height: 4, backgroundColor: COLORS.statusGrey, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
+  sheetTitle: { fontSize: 18, fontWeight: '800', color: COLORS.statusDark, textAlign: 'center', marginBottom: 20 },
 
   fieldLabel: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 },
   fieldInput: {
-    borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 12,
-    padding: 12, fontSize: 15, color: '#111827',
+    borderWidth: 1.5, borderColor: COLORS.statusGrey, borderRadius: 12,
+    padding: 12, fontSize: 15, color: COLORS.statusDark,
     marginBottom: 14, fontFamily: undefined,
   },
   fieldRow: { flexDirection: 'row', gap: 10, marginBottom: 0 },
-  fieldHint: { fontSize: 12, color: '#9CA3AF', marginTop: 2, marginBottom: 14 },
+  fieldHint: { fontSize: 12, color: COLORS.statusMidGrey, marginTop: 2, marginBottom: 14 },
 
   fbox: {
-    borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 12,
+    borderWidth: 1.5, borderColor: COLORS.statusGrey, borderRadius: 12,
     padding: 12, backgroundColor: '#F9FAFB', marginBottom: 14,
   },
-  fboxText: { fontSize: 15, color: '#111827' },
+  fboxText: { fontSize: 15, color: COLORS.statusDark },
 
   emojiRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
   emojiChip: {
@@ -698,41 +699,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 2, borderColor: 'transparent',
   },
-  emojiChipSel: { backgroundColor: '#EDE9FE', borderColor: '#8B5CF6' },
+  emojiChipSel: { backgroundColor: '#EDE9FE', borderColor: COLORS.statusViolet },
   emojiChipTxt: { fontSize: 24 },
 
   saveBtn: {
-    backgroundColor: '#8B5CF6', borderRadius: 16, padding: 16,
+    backgroundColor: COLORS.statusViolet, borderRadius: 16, padding: 16,
     alignItems: 'center', marginTop: 8,
   },
-  saveBtnTxt: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  saveBtnTxt: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '800' },
 
   cancelBtn: {
-    backgroundColor: '#FEE2E2', borderRadius: 16, padding: 16,
+    backgroundColor: COLORS.statusRedLight, borderRadius: 16, padding: 16,
     alignItems: 'center', marginTop: 8,
   },
-  cancelBtnTxt: { color: '#EF4444', fontSize: 16, fontWeight: '800' },
+  cancelBtnTxt: { color: COLORS.statusError, fontSize: 16, fontWeight: '800' },
 
   radio: {
     flexDirection: 'row', gap: 12, alignItems: 'flex-start',
-    padding: 12, borderRadius: 14, borderWidth: 2, borderColor: '#E5E7EB',
+    padding: 12, borderRadius: 14, borderWidth: 2, borderColor: COLORS.statusGrey,
     marginBottom: 10,
   },
-  radioSel: { borderColor: '#8B5CF6', backgroundColor: '#F5F3FF' },
+  radioSel: { borderColor: COLORS.statusViolet, backgroundColor: '#F5F3FF' },
   radioDot: {
     width: 18, height: 18, borderRadius: 9,
     borderWidth: 2.5, borderColor: '#D1D5DB', marginTop: 2, flexShrink: 0,
   },
-  radioDotSel: { borderColor: '#8B5CF6', backgroundColor: '#8B5CF6' },
+  radioDotSel: { borderColor: COLORS.statusViolet, backgroundColor: COLORS.statusViolet },
   radioTitle: { fontSize: 14, fontWeight: '700', color: '#374151' },
-  radioSub: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  radioSub: { fontSize: 12, color: COLORS.statusMidGrey, marginTop: 2 },
 
   cancelOption: {
     flexDirection: 'row', gap: 10, alignItems: 'center',
-    padding: 12, borderRadius: 12, borderWidth: 1.5, borderColor: '#E5E7EB',
+    padding: 12, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.statusGrey,
     marginBottom: 8, backgroundColor: '#F9FAFB',
   },
-  cancelOptionSel: { borderColor: '#8B5CF6', backgroundColor: '#F5F3FF' },
+  cancelOptionSel: { borderColor: COLORS.statusViolet, backgroundColor: '#F5F3FF' },
   cancelOptionEmoji: { fontSize: 20 },
   cancelOptionTxt: { fontSize: 14, fontWeight: '700', color: '#374151' },
 
@@ -743,9 +744,9 @@ const styles = StyleSheet.create({
     width: 240,
     shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.2, shadowRadius: 24, elevation: 12,
   },
-  pickerTitle: { fontSize: 16, fontWeight: '800', color: '#111827', textAlign: 'center', marginBottom: 10 },
+  pickerTitle: { fontSize: 16, fontWeight: '800', color: COLORS.statusDark, textAlign: 'center', marginBottom: 10 },
   pickerItem: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10 },
   pickerItemSel: { backgroundColor: '#EDE9FE' },
   pickerItemTxt: { fontSize: 15, color: '#374151', textAlign: 'center' },
-  pickerItemTxtSel: { color: '#8B5CF6', fontWeight: '700' },
+  pickerItemTxtSel: { color: COLORS.statusViolet, fontWeight: '700' },
 });

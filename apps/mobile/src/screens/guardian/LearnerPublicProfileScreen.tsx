@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Image, ActivityIndicator, Alert,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -13,7 +14,7 @@ import { GuardianNavParamList } from '../../navigation';
 type Nav   = NativeStackNavigationProp<GuardianNavParamList>;
 type Route = RouteProp<GuardianNavParamList, 'LearnerPublicProfile'>;
 
-const AVATAR_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#F59E0B', '#3B82F6', '#EC4899'];
+const AVATAR_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, COLORS.statusAmber, COLORS.statusBlue, COLORS.statusPink];
 
 type ConnectionStatus = 'none' | 'pending_sent' | 'pending_received' | 'accepted';
 
@@ -142,7 +143,7 @@ export default function LearnerPublicProfileScreen() {
     return <View style={s.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
   }
   if (!profile) {
-    return <View style={s.center}><Text style={s.errorText}>Profile not found</Text></View>;
+    return <View style={s.center}><AppText style={s.errorText}>Profile not found</AppText></View>;
   }
 
   const avatarColor = AVATAR_COLORS[profile.name.charCodeAt(0) % AVATAR_COLORS.length];
@@ -155,13 +156,13 @@ export default function LearnerPublicProfileScreen() {
           <Image source={{ uri: profile.photo_url }} style={s.avatar} />
         ) : (
           <View style={[s.avatar, { backgroundColor: avatarColor }]}>
-            <Text style={s.avatarInitial}>{profile.name[0]?.toUpperCase()}</Text>
+            <AppText style={s.avatarInitial}>{profile.name[0]?.toUpperCase()}</AppText>
           </View>
         )}
-        <Text style={s.name}>{profile.name}</Text>
-        <Text style={s.subMeta}>
+        <AppText style={s.name}>{profile.name}</AppText>
+        <AppText style={s.subMeta}>
           {calcAge(profile.date_of_birth) ?? '—'} years old · {profile.city}, {profile.region}
-        </Text>
+        </AppText>
       </View>
 
       {/* About */}
@@ -177,14 +178,14 @@ export default function LearnerPublicProfileScreen() {
       <View style={s.actionCard}>
         {profile.connectionStatus === 'accepted' && (
           <View style={s.statusRow}>
-            <Text style={s.statusIcon}>✅</Text>
-            <Text style={s.statusText}>Already friends</Text>
+            <AppText style={s.statusIcon}>✅</AppText>
+            <AppText style={s.statusText}>Already friends</AppText>
           </View>
         )}
         {profile.connectionStatus === 'pending_sent' && (
           <View style={s.statusRow}>
-            <Text style={s.statusIcon}>⏳</Text>
-            <Text style={s.statusText}>Friend request sent — waiting for guardian to accept</Text>
+            <AppText style={s.statusIcon}>⏳</AppText>
+            <AppText style={s.statusText}>Friend request sent — waiting for guardian to accept</AppText>
           </View>
         )}
         {profile.connectionStatus === 'pending_received' && (
@@ -192,14 +193,14 @@ export default function LearnerPublicProfileScreen() {
             style={s.connectBtn}
             onPress={() => navigation.navigate('LearnerFriendRequests')}
           >
-            <Text style={s.connectBtnText}>Respond to friend request →</Text>
+            <AppText style={s.connectBtnText}>Respond to friend request →</AppText>
           </TouchableOpacity>
         )}
         {profile.connectionStatus === 'none' && (
           <>
-            <Text style={s.connectHint}>
+            <AppText style={s.connectHint}>
               Sending a request will notify {profile.name}'s guardian. They can accept or decline on behalf of their learner.
-            </Text>
+            </AppText>
             <TouchableOpacity
               style={[s.connectBtn, sending && { opacity: 0.6 }]}
               onPress={sendRequest}
@@ -207,7 +208,7 @@ export default function LearnerPublicProfileScreen() {
             >
               {sending
                 ? <ActivityIndicator color={COLORS.bloomAccent} />
-                : <Text style={s.connectBtnText}>Send Friend Request</Text>
+                : <AppText style={s.connectBtnText}>Send Friend Request</AppText>
               }
             </TouchableOpacity>
           </>
@@ -220,10 +221,10 @@ export default function LearnerPublicProfileScreen() {
 function InfoRow({ label, value, fallback }: { label: string; value: string | null | undefined; fallback: string }) {
   return (
     <View style={s.infoRow}>
-      <Text style={s.infoLabel}>{label}</Text>
-      <Text style={[s.infoValue, !value && s.infoEmpty]} numberOfLines={2}>
+      <AppText style={s.infoLabel}>{label}</AppText>
+      <AppText style={[s.infoValue, !value && s.infoEmpty]} numberOfLines={2}>
         {value || fallback}
-      </Text>
+      </AppText>
     </View>
   );
 }
@@ -270,5 +271,5 @@ const s = StyleSheet.create({
     backgroundColor: COLORS.bloomAccent, borderRadius: 12,
     paddingVertical: 14, alignItems: 'center',
   },
-  connectBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  connectBtnText: { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 15 },
 });

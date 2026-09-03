@@ -17,19 +17,19 @@ const { width } = Dimensions.get('window');
 const FORMAT_EMOJI: Record<string, string> = { video: '🎬', slideshow: '🖼' };
 
 const CATEGORY_META: Record<string, { emoji: string; color: string }> = {
-  'Math':      { emoji: '🔢', color: '#4A90E2' },
-  'Reading':   { emoji: '📖', color: '#5CBB7A' },
+  'Math':      { emoji: '🔢', color: COLORS.primary },
+  'Reading':   { emoji: '📖', color: COLORS.secondary },
   'Science':   { emoji: '🔬', color: '#1ABC9C' },
   'Life Skills': { emoji: '🏠', color: '#F5A623' },
   'Social':    { emoji: '🤝', color: '#9B59B6' },
-  'Health':    { emoji: '🍎', color: '#E53E3E' },
+  'Health':    { emoji: '🍎', color: COLORS.error },
   'Art':       { emoji: '🎨', color: '#E67E22' },
   'Music':     { emoji: '🎵', color: '#8E44AD' },
   'Sport':     { emoji: '⚽', color: '#27AE60' },
   'Cooking':   { emoji: '🍳', color: '#D35400' },
   'Safety':    { emoji: '⛑️', color: '#C0392B' },
 };
-const CAT_COLORS = ['#4A90E2', '#5CBB7A', '#F5A623', '#9B59B6', '#E53E3E', '#1ABC9C', '#E67E22'];
+const CAT_COLORS = [COLORS.primary, COLORS.secondary, '#F5A623', '#9B59B6', COLORS.error, '#1ABC9C', '#E67E22'];
 function categoryColor(name: string): string {
   return CATEGORY_META[name]?.color ?? CAT_COLORS[Math.abs([...name].reduce((h, c) => c.charCodeAt(0) + ((h << 5) - h), 0)) % CAT_COLORS.length];
 }
@@ -540,27 +540,27 @@ const styles = StyleSheet.create({
   featuredCard: {
     borderRadius: 24, overflow: 'hidden',
     backgroundColor: '#FFFBEB',
-    borderWidth: 2.5, borderColor: '#F59E0B',
-    shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 6 },
+    borderWidth: 2.5, borderColor: COLORS.statusAmber,
+    shadowColor: COLORS.statusAmber, shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.28, shadowRadius: 16, elevation: 7,
   },
   featuredImgWrap: { position: 'relative' },
   featuredImg: { width: '100%', aspectRatio: 1 },
-  featuredImgPlaceholder: { backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
+  featuredImgPlaceholder: { backgroundColor: COLORS.statusAmberLight, justifyContent: 'center', alignItems: 'center' },
   featuredBadge: {
     position: 'absolute', top: 14, left: 14,
-    backgroundColor: '#F59E0B', borderRadius: 20,
+    backgroundColor: COLORS.statusAmber, borderRadius: 20,
     paddingHorizontal: 12, paddingVertical: 5,
     shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 6, elevation: 3,
   },
   featuredBadgeText: { fontSize: 13, fontWeight: '800', color: '#fff' },
   featuredBody: { padding: 18, gap: 6 },
   featuredTitle: { fontSize: 22, fontWeight: '900', color: '#1A1A2E', lineHeight: 28 },
-  featuredMeta: { fontSize: 14, color: '#92400E', fontWeight: '600' },
+  featuredMeta: { fontSize: 14, color: COLORS.statusAmberDark, fontWeight: '600' },
   featuredPlayBtn: {
-    marginTop: 10, backgroundColor: '#7C3AED', borderRadius: 16,
+    marginTop: 10, backgroundColor: COLORS.statusDeepPurple, borderRadius: 16,
     paddingVertical: 14, alignItems: 'center',
-    shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 6 },
+    shadowColor: COLORS.statusDeepPurple, shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.45, shadowRadius: 14, elevation: 6,
   },
   featuredPlayBtnText: { color: '#fff', fontWeight: '900', fontSize: 17, letterSpacing: 0.3 },
@@ -618,8 +618,8 @@ const styles = StyleSheet.create({
   startBtn: {
     marginTop: 32, marginHorizontal: 28, alignSelf: 'stretch',
     borderRadius: 20, paddingVertical: 18, alignItems: 'center',
-    backgroundColor: '#7C3AED',
-    shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 8 },
+    backgroundColor: COLORS.statusDeepPurple,
+    shadowColor: COLORS.statusDeepPurple, shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.55, shadowRadius: 20, elevation: 10,
   },
   startBtnText: { color: '#fff', fontWeight: '900', fontSize: 20, letterSpacing: 0.5 },
@@ -643,9 +643,9 @@ const styles = StyleSheet.create({
   autoPlayBtn: {
     marginHorizontal: 20, marginBottom: 8, borderRadius: 14,
     paddingVertical: 12, alignItems: 'center',
-    backgroundColor: 'rgba(124,58,237,0.2)', borderWidth: 1.5, borderColor: '#7C3AED',
+    backgroundColor: 'rgba(124,58,237,0.2)', borderWidth: 1.5, borderColor: COLORS.statusDeepPurple,
   },
-  autoPlayBtnActive: { backgroundColor: '#7C3AED' },
+  autoPlayBtnActive: { backgroundColor: COLORS.statusDeepPurple },
   autoPlayBtnText: { fontWeight: '700', fontSize: 15, color: '#A78BFA' },
   slideshowNav: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -653,9 +653,9 @@ const styles = StyleSheet.create({
   },
   navBtn: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 14, paddingHorizontal: 20, paddingVertical: 12 },
   navBtnHidden: { opacity: 0 },
-  navBtnDone: { backgroundColor: '#7C3AED' },
+  navBtnDone: { backgroundColor: COLORS.statusDeepPurple },
   navBtnText: { fontWeight: '700', color: '#fff', fontSize: 15 },
   dots: { flexDirection: 'row', gap: 6 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.2)' },
-  dotActive: { backgroundColor: '#7C3AED', width: 20 },
+  dotActive: { backgroundColor: COLORS.statusDeepPurple, width: 20 },
 });

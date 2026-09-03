@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator,
   Image, Alert, TextInput, Modal, FlatList,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
@@ -172,26 +173,26 @@ export default function GuardianAccountScreen() {
           ? <Image source={{ uri: photoSource }} style={styles.avatar} />
           : (
             <View style={[styles.avatar, styles.avatarPlaceholder]}>
-              <Text style={styles.avatarInitial}>{guardian?.full_name[0]?.toUpperCase()}</Text>
+              <AppText style={styles.avatarInitial}>{guardian?.full_name[0]?.toUpperCase()}</AppText>
             </View>
           )
         }
         <View style={styles.avatarEditBadge}>
           {uploading
             ? <ActivityIndicator size={14} color="#fff" />
-            : <Text style={styles.avatarEditIcon}>✏️</Text>
+            : <AppText style={styles.avatarEditIcon}>✏️</AppText>
           }
         </View>
       </TouchableOpacity>
-      <Text style={styles.avatarHint}>Tap to change photo</Text>
+      <AppText style={styles.avatarHint}>Tap to change photo</AppText>
 
       {/* Account details */}
-      <Text style={styles.sectionTitle}>Account Details</Text>
+      <AppText style={styles.sectionTitle}>Account Details</AppText>
       <View style={styles.card}>
         {/* Editable name row */}
         {editingName ? (
           <View style={styles.phoneEditRow}>
-            <Text style={styles.infoLabel}>Name</Text>
+            <AppText style={styles.infoLabel}>Name</AppText>
             <TextInput
               style={styles.phoneInput}
               value={name}
@@ -202,22 +203,22 @@ export default function GuardianAccountScreen() {
             />
             <View style={styles.phoneActions}>
               <TouchableOpacity onPress={() => { setName(guardian?.full_name ?? ''); setEditingName(false); }}>
-                <Text style={styles.phoneCancel}>Cancel</Text>
+                <AppText style={styles.phoneCancel}>Cancel</AppText>
               </TouchableOpacity>
               <TouchableOpacity style={styles.phoneSaveBtn} onPress={saveName} disabled={savingName}>
                 {savingName
                   ? <ActivityIndicator size={14} color="#fff" />
-                  : <Text style={styles.phoneSaveText}>Save</Text>
+                  : <AppText style={styles.phoneSaveText}>Save</AppText>
                 }
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           <TouchableOpacity style={styles.infoRow} onPress={() => setEditingName(true)} activeOpacity={0.7}>
-            <Text style={styles.infoLabel}>Name</Text>
+            <AppText style={styles.infoLabel}>Name</AppText>
             <View style={styles.phoneViewRight}>
-              <Text style={styles.infoValue}>{name || '—'}</Text>
-              <Text style={styles.editLink}>✏️</Text>
+              <AppText style={styles.infoValue}>{name || '—'}</AppText>
+              <AppText style={styles.editLink}>✏️</AppText>
             </View>
           </TouchableOpacity>
         )}
@@ -228,7 +229,7 @@ export default function GuardianAccountScreen() {
         {/* Editable phone row */}
         {editingPhone ? (
           <View style={styles.phoneEditRow}>
-            <Text style={styles.infoLabel}>Phone</Text>
+            <AppText style={styles.infoLabel}>Phone</AppText>
             <TextInput
               style={styles.phoneInput}
               value={phone}
@@ -240,29 +241,29 @@ export default function GuardianAccountScreen() {
             />
             <View style={styles.phoneActions}>
               <TouchableOpacity onPress={() => { setPhone(guardian?.phone ?? ''); setEditingPhone(false); }}>
-                <Text style={styles.phoneCancel}>Cancel</Text>
+                <AppText style={styles.phoneCancel}>Cancel</AppText>
               </TouchableOpacity>
               <TouchableOpacity style={styles.phoneSaveBtn} onPress={savePhone} disabled={savingPhone}>
                 {savingPhone
                   ? <ActivityIndicator size={14} color="#fff" />
-                  : <Text style={styles.phoneSaveText}>Save</Text>
+                  : <AppText style={styles.phoneSaveText}>Save</AppText>
                 }
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           <TouchableOpacity style={styles.infoRow} onPress={() => setEditingPhone(true)} activeOpacity={0.7}>
-            <Text style={styles.infoLabel}>Phone</Text>
+            <AppText style={styles.infoLabel}>Phone</AppText>
             <View style={styles.phoneViewRight}>
-              <Text style={styles.infoValue}>{phone || '—'}</Text>
-              <Text style={styles.editLink}>✏️</Text>
+              <AppText style={styles.infoValue}>{phone || '—'}</AppText>
+              <AppText style={styles.editLink}>✏️</AppText>
             </View>
           </TouchableOpacity>
         )}
       </View>
 
       {/* Location */}
-      <Text style={[styles.sectionTitle, { marginTop: 28 }]}>Location</Text>
+      <AppText style={[styles.sectionTitle, { marginTop: 28 }]}>Location</AppText>
       <View style={styles.card}>
         <InfoRow label="Country" value="USA" />
         <View style={styles.divider} />
@@ -270,18 +271,18 @@ export default function GuardianAccountScreen() {
           <>
             {/* State picker row */}
             <View style={styles.phoneEditRow}>
-              <Text style={styles.infoLabel}>State</Text>
+              <AppText style={styles.infoLabel}>State</AppText>
               <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowStatePicker(true)} activeOpacity={0.7}>
-                <Text style={[styles.pickerBtnText, !state && { color: COLORS.textLight }]}>
+                <AppText style={[styles.pickerBtnText, !state && { color: COLORS.textLight }]}>
                   {state || 'Select state...'}
-                </Text>
-                <Text style={styles.chevron}>▾</Text>
+                </AppText>
+                <AppText style={styles.chevron}>▾</AppText>
               </TouchableOpacity>
             </View>
             <View style={styles.divider} />
             {/* City text row */}
             <View style={styles.phoneEditRow}>
-              <Text style={styles.infoLabel}>City</Text>
+              <AppText style={styles.infoLabel}>City</AppText>
               <TextInput
                 style={styles.phoneInput}
                 value={city}
@@ -292,12 +293,12 @@ export default function GuardianAccountScreen() {
             </View>
             <View style={styles.phoneActions}>
               <TouchableOpacity onPress={() => { setCity(guardian?.city ?? ''); setState(guardian?.state ?? ''); setEditingLocation(false); }}>
-                <Text style={styles.phoneCancel}>Cancel</Text>
+                <AppText style={styles.phoneCancel}>Cancel</AppText>
               </TouchableOpacity>
               <TouchableOpacity style={styles.phoneSaveBtn} onPress={saveLocation} disabled={savingLocation}>
                 {savingLocation
                   ? <ActivityIndicator size={14} color="#fff" />
-                  : <Text style={styles.phoneSaveText}>Save</Text>
+                  : <AppText style={styles.phoneSaveText}>Save</AppText>
                 }
               </TouchableOpacity>
             </View>
@@ -305,18 +306,18 @@ export default function GuardianAccountScreen() {
         ) : (
           <>
             <TouchableOpacity style={styles.infoRow} onPress={() => setEditingLocation(true)} activeOpacity={0.7}>
-              <Text style={styles.infoLabel}>State</Text>
+              <AppText style={styles.infoLabel}>State</AppText>
               <View style={styles.phoneViewRight}>
-                <Text style={styles.infoValue}>{state || '—'}</Text>
-                <Text style={styles.editLink}>✏️</Text>
+                <AppText style={styles.infoValue}>{state || '—'}</AppText>
+                <AppText style={styles.editLink}>✏️</AppText>
               </View>
             </TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity style={styles.infoRow} onPress={() => setEditingLocation(true)} activeOpacity={0.7}>
-              <Text style={styles.infoLabel}>City</Text>
+              <AppText style={styles.infoLabel}>City</AppText>
               <View style={styles.phoneViewRight}>
-                <Text style={styles.infoValue}>{city || '—'}</Text>
-                <Text style={styles.editLink}>✏️</Text>
+                <AppText style={styles.infoValue}>{city || '—'}</AppText>
+                <AppText style={styles.editLink}>✏️</AppText>
               </View>
             </TouchableOpacity>
           </>
@@ -324,31 +325,31 @@ export default function GuardianAccountScreen() {
       </View>
 
       {/* Situation Tags */}
-      <Text style={[styles.sectionTitle, { marginTop: 28 }]}>Situation Tags</Text>
+      <AppText style={[styles.sectionTitle, { marginTop: 28 }]}>Situation Tags</AppText>
       <View style={styles.card}>
         {editingTags ? (
           <>
             <TouchableOpacity style={styles.updateTagsLink} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>
-              <Text style={styles.updateTagsLinkText}>Select more</Text>
+              <AppText style={styles.updateTagsLinkText}>Select more</AppText>
             </TouchableOpacity>
             {selectedTags.length > 0 && (
               <View style={styles.tagChipRow}>
                 {selectedTags.map(tag => (
                   <TouchableOpacity key={tag} style={styles.tagChip} onPress={() => toggleTag(tag)} activeOpacity={0.7}>
-                    <Text style={styles.tagChipText}>{tag}</Text>
-                    <Text style={styles.tagChipX}>✕</Text>
+                    <AppText style={styles.tagChipText}>{tag}</AppText>
+                    <AppText style={styles.tagChipX}>✕</AppText>
                   </TouchableOpacity>
                 ))}
               </View>
             )}
             <View style={styles.phoneActions}>
               <TouchableOpacity onPress={() => { setSelectedTags(guardian?.situation_tags ?? []); setEditingTags(false); }}>
-                <Text style={styles.phoneCancel}>Cancel</Text>
+                <AppText style={styles.phoneCancel}>Cancel</AppText>
               </TouchableOpacity>
               <TouchableOpacity style={styles.phoneSaveBtn} onPress={saveTags} disabled={savingTags}>
                 {savingTags
                   ? <ActivityIndicator size={14} color="#fff" />
-                  : <Text style={styles.phoneSaveText}>Save</Text>
+                  : <AppText style={styles.phoneSaveText}>Save</AppText>
                 }
               </TouchableOpacity>
             </View>
@@ -357,24 +358,24 @@ export default function GuardianAccountScreen() {
           <TouchableOpacity style={styles.infoRow} onPress={() => setEditingTags(true)} activeOpacity={0.7}>
             <View style={{ flex: 1 }}>
               {selectedTags.length === 0 ? (
-                <Text style={styles.infoValue}>None selected</Text>
+                <AppText style={styles.infoValue}>None selected</AppText>
               ) : (
                 <View style={styles.tagChipRow}>
                   {selectedTags.map(tag => (
                     <View key={tag} style={styles.tagChipReadOnly}>
-                      <Text style={styles.tagChipText}>{tag}</Text>
+                      <AppText style={styles.tagChipText}>{tag}</AppText>
                     </View>
                   ))}
                 </View>
               )}
             </View>
-            <Text style={styles.editLink}>✏️</Text>
+            <AppText style={styles.editLink}>✏️</AppText>
           </TouchableOpacity>
         )}
       </View>
 
       {/* Notification settings — commented out, re-enable when notifications are wired up
-      <Text style={[styles.sectionTitle, { marginTop: 28 }]}>Notification Settings</Text>
+      <AppText style={[styles.sectionTitle, { marginTop: 28 }]}>Notification Settings</AppText>
       <View style={styles.card}>
         <Toggle
           label="Friend requests"
@@ -391,7 +392,7 @@ export default function GuardianAccountScreen() {
       */}
 
       <TouchableOpacity style={styles.signOutBtn} onPress={signOut}>
-        <Text style={styles.signOutText}>Sign Out</Text>
+        <AppText style={styles.signOutText}>Sign Out</AppText>
       </TouchableOpacity>
     </ScrollView>
 
@@ -400,9 +401,9 @@ export default function GuardianAccountScreen() {
       <View style={styles.modalOverlay}>
         <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select State</Text>
+            <AppText style={styles.modalTitle}>Select State</AppText>
             <TouchableOpacity onPress={() => setShowStatePicker(false)}>
-              <Text style={styles.modalClose}>Done</Text>
+              <AppText style={styles.modalClose}>Done</AppText>
             </TouchableOpacity>
           </View>
           <FlatList
@@ -413,8 +414,8 @@ export default function GuardianAccountScreen() {
                 style={[styles.stateItem, state === item && styles.stateItemSelected]}
                 onPress={() => { setState(item); setShowStatePicker(false); }}
               >
-                <Text style={[styles.stateItemText, state === item && styles.stateItemTextSelected]}>{item}</Text>
-                {state === item && <Text style={styles.stateCheck}>✓</Text>}
+                <AppText style={[styles.stateItemText, state === item && styles.stateItemTextSelected]}>{item}</AppText>
+                {state === item && <AppText style={styles.stateCheck}>✓</AppText>}
               </TouchableOpacity>
             )}
             ItemSeparatorComponent={() => <View style={styles.stateDivider} />}
@@ -428,14 +429,14 @@ export default function GuardianAccountScreen() {
       <View style={styles.modalOverlay}>
         <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Situation Tags</Text>
+            <AppText style={styles.modalTitle}>Situation Tags</AppText>
             <TouchableOpacity onPress={() => setShowTagPicker(false)}>
-              <Text style={styles.modalClose}>Done</Text>
+              <AppText style={styles.modalClose}>Done</AppText>
             </TouchableOpacity>
           </View>
           {tagOptions.length === 0 ? (
             <View style={{ padding: 40, alignItems: 'center' }}>
-              <Text style={{ fontSize: 15, color: COLORS.textLight }}>No tags available yet.</Text>
+              <AppText style={{ fontSize: 15, color: COLORS.textLight }}>No tags available yet.</AppText>
             </View>
           ) : (
             <FlatList
@@ -448,8 +449,8 @@ export default function GuardianAccountScreen() {
                     style={[styles.stateItem, selected && styles.stateItemSelected]}
                     onPress={() => toggleTag(item)}
                   >
-                    <Text style={[styles.stateItemText, selected && styles.stateItemTextSelected]}>{item}</Text>
-                    {selected && <Text style={styles.stateCheck}>✓</Text>}
+                    <AppText style={[styles.stateItemText, selected && styles.stateItemTextSelected]}>{item}</AppText>
+                    {selected && <AppText style={styles.stateCheck}>✓</AppText>}
                   </TouchableOpacity>
                 );
               }}
@@ -466,8 +467,8 @@ export default function GuardianAccountScreen() {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
+      <AppText style={styles.infoLabel}>{label}</AppText>
+      <AppText style={styles.infoValue}>{value}</AppText>
     </View>
   );
 }
@@ -475,7 +476,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 function Toggle({ label, value, onToggle }: { label: string; value: boolean; onToggle: () => void }) {
   return (
     <TouchableOpacity style={styles.toggleRow} onPress={onToggle} delayPressIn={50}>
-      <Text style={styles.toggleLabel}>{label}</Text>
+      <AppText style={styles.toggleLabel}>{label}</AppText>
       <View style={[styles.toggle, value && styles.toggleOn]}>
         <View style={[styles.toggleThumb, value && styles.toggleThumbOn]} />
       </View>
@@ -525,7 +526,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8, paddingHorizontal: 18,
     justifyContent: 'center', alignItems: 'center', minWidth: 60,
   },
-  phoneSaveText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  phoneSaveText: { color: COLORS.bloomOnAccent, fontSize: 14, fontWeight: '700' },
 
   toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 },
   toggleLabel: { fontSize: 15, color: COLORS.text },

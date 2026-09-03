@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, Alert, ActivityIndicator, Modal,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -96,10 +97,10 @@ export default function CreateTutorialScreen() {
       {/* Quota pill */}
       {quota && (
         <View style={styles.quotaPill}>
-          <Text style={styles.quotaLabel}>Monthly quota</Text>
-          <Text style={[styles.quotaCount, quota.used >= quota.limit && { color: COLORS.error }]}>
+          <AppText style={styles.quotaLabel}>Monthly quota</AppText>
+          <AppText style={[styles.quotaCount, quota.used >= quota.limit && { color: COLORS.error }]}>
             {quota.used} / {quota.limit} used
-          </Text>
+          </AppText>
         </View>
       )}
 
@@ -107,14 +108,14 @@ export default function CreateTutorialScreen() {
       <View style={styles.formCard}>
         <FieldBlock label="Target Skill *">
           <TouchableOpacity style={styles.selectRow} onPress={() => setShowSkillPicker(true)} activeOpacity={0.75}>
-            <Text style={[styles.selectValue, !targetSkill && styles.selectPlaceholder]}>
+            <AppText style={[styles.selectValue, !targetSkill && styles.selectPlaceholder]}>
               {targetSkill || 'Select a skill…'}
-            </Text>
+            </AppText>
             {targetSkill
               ? <TouchableOpacity onPress={() => setTargetSkill('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Text style={styles.selectClear}>✕</Text>
+                  <AppText style={styles.selectClear}>✕</AppText>
                 </TouchableOpacity>
-              : <Text style={styles.selectChevron}>›</Text>
+              : <AppText style={styles.selectChevron}>›</AppText>
             }
           </TouchableOpacity>
         </FieldBlock>
@@ -131,7 +132,7 @@ export default function CreateTutorialScreen() {
             maxLength={60}
             returnKeyType="done"
           />
-          <Text style={styles.charCount}>{coreAction.length}/60</Text>
+          <AppText style={styles.charCount}>{coreAction.length}/60</AppText>
         </FieldBlock>
 
         <Divider />
@@ -146,7 +147,7 @@ export default function CreateTutorialScreen() {
             maxLength={40}
             returnKeyType="done"
           />
-          <Text style={styles.charCount}>{displayName.length}/40</Text>
+          <AppText style={styles.charCount}>{displayName.length}/40</AppText>
         </FieldBlock>
 
         <Divider />
@@ -168,21 +169,21 @@ export default function CreateTutorialScreen() {
       >
         {submitting
           ? <ActivityIndicator color="#fff" />
-          : <Text style={styles.submitText}>✨  Create Tutorial</Text>
+          : <AppText style={styles.submitText}>✨  Create Tutorial</AppText>
         }
       </TouchableOpacity>
-      <Text style={styles.footerNote}>
+      <AppText style={styles.footerNote}>
         Uses 1 of your {quota?.limit ?? 10} monthly credits · AI generation takes ~30 seconds
-      </Text>
+      </AppText>
 
       <Modal visible={showSkillPicker} transparent animationType="slide" onRequestClose={() => setShowSkillPicker(false)}>
         <TouchableOpacity style={styles.sheetBackdrop} activeOpacity={1} onPress={() => setShowSkillPicker(false)}>
           <View style={styles.sheet} onStartShouldSetResponder={() => true}>
             <View style={styles.sheetHdr}>
               <TouchableOpacity onPress={() => setShowSkillPicker(false)}>
-                <Text style={styles.sheetCancel}>Cancel</Text>
+                <AppText style={styles.sheetCancel}>Cancel</AppText>
               </TouchableOpacity>
-              <Text style={styles.sheetTitle}>Target Skill</Text>
+              <AppText style={styles.sheetTitle}>Target Skill</AppText>
               <View style={{ width: 60 }} />
             </View>
             <ScrollView style={{ maxHeight: 360 }}>
@@ -193,8 +194,8 @@ export default function CreateTutorialScreen() {
                   onPress={() => { setTargetSkill(s); setShowSkillPicker(false); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.sheetOptionText, targetSkill === s && styles.sheetOptionTextActive]}>{s}</Text>
-                  {targetSkill === s && <Text style={styles.sheetCheck}>✓</Text>}
+                  <AppText style={[styles.sheetOptionText, targetSkill === s && styles.sheetOptionTextActive]}>{s}</AppText>
+                  {targetSkill === s && <AppText style={styles.sheetCheck}>✓</AppText>}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -210,8 +211,8 @@ export default function CreateTutorialScreen() {
 function FieldBlock({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <View style={styles.fieldBlock}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      {hint ? <Text style={styles.fieldHint}>{hint}</Text> : null}
+      <AppText style={styles.fieldLabel}>{label}</AppText>
+      {hint ? <AppText style={styles.fieldHint}>{hint}</AppText> : null}
       {children}
     </View>
   );
@@ -235,9 +236,9 @@ function SegRow({ options, value, onSelect, activeColor = COLORS.bloomAccent }: 
           style={[styles.seg, value === o.key && styles.segActive]}
           onPress={() => onSelect(o.key)}
         >
-          <Text style={[styles.segText, value === o.key && [styles.segTextActive, { color: activeColor }]]}>
+          <AppText style={[styles.segText, value === o.key && [styles.segTextActive, { color: activeColor }]]}>
             {o.label}
-          </Text>
+          </AppText>
         </TouchableOpacity>
       ))}
     </View>
@@ -251,7 +252,7 @@ const styles = StyleSheet.create({
   content: { padding: 14, paddingBottom: 120, gap: 12 },
 
   quotaPill: {
-    backgroundColor: '#EBF4FF', borderRadius: 14,
+    backgroundColor: COLORS.bloomTintBg, borderRadius: 14,
     padding: 13, flexDirection: 'row',
     justifyContent: 'space-between', alignItems: 'center',
   },
@@ -293,13 +294,13 @@ const styles = StyleSheet.create({
 
   // Submit
   submitBtn: {
-    backgroundColor: COLORS.bloomNavy, borderRadius: 18,
+    backgroundColor: COLORS.bloomAccent, borderRadius: 18,
     paddingVertical: 17, alignItems: 'center',
-    shadowColor: COLORS.bloomNavy, shadowOffset: { width: 0, height: 6 },
+    shadowColor: COLORS.bloomAccent, shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
   },
   submitBtnDisabled: { opacity: 0.5 },
-  submitText: { color: '#fff', fontWeight: '800', fontSize: 17 },
+  submitText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 17 },
   footerNote: { fontSize: 12, color: COLORS.bloomMuted, textAlign: 'center', lineHeight: 18 },
 
   // Target skill selector row
@@ -333,7 +334,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingVertical: 16,
     borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
   },
-  sheetOptionActive: { backgroundColor: '#DAEAFF' },
+  sheetOptionActive: { backgroundColor: COLORS.bloomActiveBg },
   sheetOptionText: { fontSize: 15, fontWeight: '600', color: COLORS.bloomText },
   sheetOptionTextActive: { color: COLORS.bloomAccent, fontWeight: '700' },
   sheetCheck: { fontSize: 16, color: COLORS.bloomAccent, fontWeight: '800' },

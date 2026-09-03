@@ -6,6 +6,7 @@ import {
   ActivityIndicator, View, TouchableOpacity, Text,
   Modal, StyleSheet, Alert,
 } from 'react-native';
+import AppText from '../components/AppText';
 import { useAuth } from '../lib/AuthContext';
 import { supabase } from '../lib/supabase';
 import { COLORS } from '../constants';
@@ -131,33 +132,33 @@ function GuardianSettingsBtn() {
   return (
     <>
       <TouchableOpacity onPress={() => setVisible(true)} style={navStyles.gearBtn} activeOpacity={0.7}>
-        <Text style={navStyles.gearIcon}>⚙️</Text>
+        <AppText style={navStyles.gearIcon}>⚙️</AppText>
       </TouchableOpacity>
 
       <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
         <TouchableOpacity style={navStyles.overlay} activeOpacity={1} onPress={() => setVisible(false)}>
           <TouchableOpacity style={navStyles.card} activeOpacity={1} onPress={() => {}}>
-            <Text style={navStyles.cardTitle}>Settings</Text>
+            <AppText style={navStyles.cardTitle}>Settings</AppText>
 
             <TouchableOpacity style={navStyles.item} onPress={() => { setVisible(false); navigation.navigate('Account'); }}>
-              <Text style={navStyles.itemIcon}>👤</Text>
-              <Text style={navStyles.itemText}>Account</Text>
+              <AppText style={navStyles.itemIcon}>👤</AppText>
+              <AppText style={navStyles.itemText}>Account</AppText>
             </TouchableOpacity>
             <View style={navStyles.divider} />
 
             {!hasLearner && (
               <>
                 <TouchableOpacity style={navStyles.item} onPress={() => { setVisible(false); navigation.navigate('CreateUser'); }}>
-                  <Text style={navStyles.itemIcon}>➕</Text>
-                  <Text style={navStyles.itemText}>Create New Profile</Text>
+                  <AppText style={navStyles.itemIcon}>➕</AppText>
+                  <AppText style={navStyles.itemText}>Create New Profile</AppText>
                 </TouchableOpacity>
                 <View style={navStyles.divider} />
               </>
             )}
 
             <TouchableOpacity style={[navStyles.item, { paddingBottom: 4 }]} onPress={handleSignOut}>
-              <Text style={navStyles.itemIcon}>🚪</Text>
-              <Text style={[navStyles.itemText, { color: '#EF4444' }]}>Sign Out</Text>
+              <AppText style={navStyles.itemIcon}>🚪</AppText>
+              <AppText style={[navStyles.itemText, { color: '#EF4444' }]}>Sign Out</AppText>
             </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>
@@ -217,7 +218,7 @@ function PendingScreen() {
           onPress={signOut}
           style={{ paddingHorizontal: 24, paddingVertical: 10, borderRadius: 20, backgroundColor: '#FEF2F2', borderWidth: 1.5, borderColor: '#FECACA' }}
         >
-          <Text style={{ fontSize: 14, fontWeight: '700', color: '#DC2626' }}>Sign out and try again</Text>
+          <AppText style={{ fontSize: 14, fontWeight: '700', color: '#DC2626' }}>Sign out and try again</AppText>
         </TouchableOpacity>
       )}
     </View>
@@ -230,8 +231,8 @@ function GuardianTabs() {
   return (
     <GuardianNav.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: COLORS.bloomNavy },
-        headerTintColor: '#FFFFFF',
+        headerStyle: { backgroundColor: COLORS.bloomAccent },
+        headerTintColor: COLORS.bloomNavy,
         headerBackTitle: '',
         headerShadowVisible: false,
         headerRight: () => <GuardianSettingsBtn />,

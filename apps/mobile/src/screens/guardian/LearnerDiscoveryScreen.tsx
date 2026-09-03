@@ -4,6 +4,7 @@ import {
   TextInput, Image, ActivityIndicator, Alert, Modal,
   ScrollView, Dimensions, Platform,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -15,7 +16,7 @@ type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
 const { width, height: SCREEN_H } = Dimensions.get('window');
 
-const AVATAR_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#F59E0B', '#3B82F6', '#EC4899'];
+const AVATAR_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, COLORS.statusAmber, COLORS.statusBlue, COLORS.statusPink];
 const AGE_GROUPS   = ['Under 10', '10–14', '15–18', '19–25', '26–35', '36+'];
 
 function getAgeGroup(dob: string | null): string | null {
@@ -70,12 +71,12 @@ function SheetSection({ id, emoji, title, options, selected, onToggle, openId, s
         onPress={() => setOpenId(open ? null : id)}
         activeOpacity={0.7}
       >
-        <Text style={s.sheetSecTitle}>{emoji}  {title}</Text>
+        <AppText style={s.sheetSecTitle}>{emoji}  {title}</AppText>
         <View style={s.sheetSecRight}>
           {selected.length > 0 && (
-            <View style={s.sheetSecBadge}><Text style={s.sheetSecBadgeTxt}>{selected.length}</Text></View>
+            <View style={s.sheetSecBadge}><AppText style={s.sheetSecBadgeTxt}>{selected.length}</AppText></View>
           )}
-          <Text style={s.sheetSecArr}>{open ? '▲' : '▼'}</Text>
+          <AppText style={s.sheetSecArr}>{open ? '▲' : '▼'}</AppText>
         </View>
       </TouchableOpacity>
       {open && (
@@ -89,9 +90,9 @@ function SheetSection({ id, emoji, title, options, selected, onToggle, openId, s
                 onPress={() => onToggle(opt)}
                 activeOpacity={0.7}
               >
-                <Text style={[s.optTxt, on && s.optTxtOn]}>{opt}</Text>
+                <AppText style={[s.optTxt, on && s.optTxtOn]}>{opt}</AppText>
                 <View style={[s.optCheck, on && s.optCheckOn]}>
-                  {on && <Text style={s.optCheckMark}>✓</Text>}
+                  {on && <AppText style={s.optCheckMark}>✓</AppText>}
                 </View>
               </TouchableOpacity>
             );
@@ -366,7 +367,7 @@ export default function LearnerDiscoveryScreen() {
       {/* ── Search row ─────────────────────────────────────────── */}
       <View style={s.searchRow}>
         <View style={s.searchInp}>
-          <Text style={s.searchIcon}>🔍</Text>
+          <AppText style={s.searchIcon}>🔍</AppText>
           <TextInput
             style={s.searchText}
             value={searchName}
@@ -377,7 +378,7 @@ export default function LearnerDiscoveryScreen() {
           />
         </View>
         <View style={s.searchInp}>
-          <Text style={s.searchIcon}>📍</Text>
+          <AppText style={s.searchIcon}>📍</AppText>
           <TextInput
             style={s.searchText}
             value={searchCity}
@@ -394,15 +395,15 @@ export default function LearnerDiscoveryScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.pillsScroll} contentContainerStyle={s.pillsContent}>
           {activePills.map(p => (
             <TouchableOpacity key={p.key} style={s.pill} onPress={() => removePill(p.type, p.raw)} activeOpacity={0.75}>
-              <Text style={s.pillTxt}>{p.label}</Text>
-              <Text style={s.pillX}>×</Text>
+              <AppText style={s.pillTxt}>{p.label}</AppText>
+              <AppText style={s.pillX}>×</AppText>
             </TouchableOpacity>
           ))}
         </ScrollView>
         <TouchableOpacity style={s.filterBtn} onPress={openSheet} activeOpacity={0.8}>
-          <Text style={s.filterBtnTxt}>Filters</Text>
+          <AppText style={s.filterBtnTxt}>Filters</AppText>
           {totalActive > 0 && (
-            <View style={s.filterBadge}><Text style={s.filterBadgeTxt}>{totalActive}</Text></View>
+            <View style={s.filterBadge}><AppText style={s.filterBadgeTxt}>{totalActive}</AppText></View>
           )}
         </TouchableOpacity>
       </View>
@@ -410,7 +411,7 @@ export default function LearnerDiscoveryScreen() {
       {/* ── Results count ───────────────────────────────────────── */}
       {!loading && (
         <View style={s.resBar}>
-          <Text style={s.resCount}>{filtered.length} learner{filtered.length !== 1 ? 's' : ''} found</Text>
+          <AppText style={s.resCount}>{filtered.length} learner{filtered.length !== 1 ? 's' : ''} found</AppText>
         </View>
       )}
 
@@ -436,27 +437,27 @@ export default function LearnerDiscoveryScreen() {
                   <Image source={{ uri: l.photo_url }} style={s.avatar} />
                 ) : (
                   <View style={[s.avatar, { backgroundColor: color }]}>
-                    <Text style={s.avatarInit}>{l.name[0]?.toUpperCase()}</Text>
+                    <AppText style={s.avatarInit}>{l.name[0]?.toUpperCase()}</AppText>
                   </View>
                 )}
 
                 {/* Info */}
                 <View style={s.rowInfo}>
-                  <Text style={s.rowName} numberOfLines={1}>{l.name}</Text>
-                  <Text style={s.rowMeta} numberOfLines={1}>
+                  <AppText style={s.rowName} numberOfLines={1}>{l.name}</AppText>
+                  <AppText style={s.rowMeta} numberOfLines={1}>
                     {calcAge(l.date_of_birth) ?? '—'} yrs · {l.city}{l.region ? `, ${l.region}` : ''}
-                  </Text>
+                  </AppText>
                 </View>
 
                 {/* Action */}
                 {l.connectionStatus === 'accepted' && (
                   <View style={[s.actionBtn, s.actionBtnFriends]}>
-                    <Text style={[s.actionBtnTxt, { color: '#065F46' }]}>✓ Friends</Text>
+                    <AppText style={[s.actionBtnTxt, { color: COLORS.bloomActiveText }]}>✓ Friends</AppText>
                   </View>
                 )}
                 {l.connectionStatus === 'pending_sent' && (
                   <View style={[s.actionBtn, s.actionBtnPending]}>
-                    <Text style={[s.actionBtnTxt, { color: COLORS.bloomMuted }]}>Pending</Text>
+                    <AppText style={[s.actionBtnTxt, { color: COLORS.bloomMuted }]}>Pending</AppText>
                   </View>
                 )}
                 {l.connectionStatus === 'pending_received' && (
@@ -465,7 +466,7 @@ export default function LearnerDiscoveryScreen() {
                     onPress={() => navigation.navigate('LearnerFriendRequests')}
                     activeOpacity={0.8}
                   >
-                    <Text style={s.actionBtnTxt}>Respond</Text>
+                    <AppText style={s.actionBtnTxt}>Respond</AppText>
                   </TouchableOpacity>
                 )}
                 {l.connectionStatus === 'none' && (
@@ -477,7 +478,7 @@ export default function LearnerDiscoveryScreen() {
                   >
                     {isSending
                       ? <ActivityIndicator size="small" color="#fff" />
-                      : <Text style={s.actionBtnTxt}>Connect</Text>
+                      : <AppText style={s.actionBtnTxt}>Connect</AppText>
                     }
                   </TouchableOpacity>
                 )}
@@ -486,9 +487,9 @@ export default function LearnerDiscoveryScreen() {
           }}
           ListEmptyComponent={
             <View style={s.empty}>
-              <Text style={s.emptyEmoji}>🔍</Text>
-              <Text style={s.emptyText}>No learners found</Text>
-              <Text style={s.emptyHint}>Try adjusting your filters</Text>
+              <AppText style={s.emptyEmoji}>🔍</AppText>
+              <AppText style={s.emptyText}>No learners found</AppText>
+              <AppText style={s.emptyHint}>Try adjusting your filters</AppText>
             </View>
           }
         />
@@ -500,9 +501,9 @@ export default function LearnerDiscoveryScreen() {
           <View style={s.sheet} onStartShouldSetResponder={() => true}>
             <View style={s.sheetHandle} />
             <View style={s.sheetHdr}>
-              <Text style={s.sheetTitle}>Filter Learners</Text>
+              <AppText style={s.sheetTitle}>Filter Learners</AppText>
               <TouchableOpacity onPress={clearDraft} activeOpacity={0.75}>
-                <Text style={s.sheetClear}>Clear all</Text>
+                <AppText style={s.sheetClear}>Clear all</AppText>
               </TouchableOpacity>
             </View>
             <ScrollView style={s.sheetBody} showsVerticalScrollIndicator={false}>
@@ -546,7 +547,7 @@ export default function LearnerDiscoveryScreen() {
               )}
             </ScrollView>
             <TouchableOpacity style={s.sheetApply} onPress={applySheet} activeOpacity={0.85}>
-              <Text style={s.sheetApplyTxt}>Show {draftPreview.length} Results</Text>
+              <AppText style={s.sheetApplyTxt}>Show {draftPreview.length} Results</AppText>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -593,7 +594,7 @@ const s = StyleSheet.create({
   },
   filterBtnTxt:  { fontSize: 12, fontWeight: '800', color: COLORS.bloomAccent },
   filterBadge:   { backgroundColor: COLORS.bloomAccent, borderRadius: 9, paddingHorizontal: 6, paddingVertical: 1 },
-  filterBadgeTxt: { fontSize: 10, fontWeight: '900', color: '#fff' },
+  filterBadgeTxt: { fontSize: 10, fontWeight: '900', color: COLORS.bloomOnAccent },
 
   // Results count
   resBar:   { paddingHorizontal: 14, paddingBottom: 6 },
@@ -617,10 +618,10 @@ const s = StyleSheet.create({
 
   actionBtn: {
     borderRadius: 9, paddingHorizontal: 12, paddingVertical: 7,
-    alignItems: 'center', backgroundColor: COLORS.bloomNavy, flexShrink: 0,
+    alignItems: 'center', backgroundColor: COLORS.bloomAccent, flexShrink: 0,
   },
-  actionBtnTxt:     { color: '#fff', fontWeight: '700', fontSize: 12 },
-  actionBtnFriends: { backgroundColor: '#D4F0DE' },
+  actionBtnTxt:     { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 12 },
+  actionBtnFriends: { backgroundColor: COLORS.bloomActiveBg },
   actionBtnPending: { backgroundColor: COLORS.bloomBorder },
   actionBtnRespond: { backgroundColor: COLORS.bloomAccent },
 
@@ -663,7 +664,7 @@ const s = StyleSheet.create({
   sheetSecRight:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sheetSecTitle:    { fontSize: 13, fontWeight: '800', color: COLORS.bloomText },
   sheetSecBadge:    { backgroundColor: COLORS.bloomAccent, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 1 },
-  sheetSecBadgeTxt: { fontSize: 10, fontWeight: '900', color: '#fff' },
+  sheetSecBadgeTxt: { fontSize: 10, fontWeight: '900', color: COLORS.bloomOnAccent },
   sheetSecArr:      { fontSize: 10, color: COLORS.bloomMuted },
 
   optRow: {
@@ -679,12 +680,12 @@ const s = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   optCheckOn:   { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
-  optCheckMark: { color: '#fff', fontSize: 11, fontWeight: '900' },
+  optCheckMark: { color: COLORS.bloomOnAccent, fontSize: 11, fontWeight: '900' },
 
   sheetApply: {
     marginHorizontal: 18, marginTop: 10,
-    backgroundColor: COLORS.bloomNavy, borderRadius: 16,
+    backgroundColor: COLORS.bloomAccent, borderRadius: 16,
     paddingVertical: 14, alignItems: 'center',
   },
-  sheetApplyTxt: { color: '#fff', fontWeight: '900', fontSize: 15 },
+  sheetApplyTxt: { color: COLORS.bloomOnAccent, fontWeight: '900', fontSize: 15 },
 });

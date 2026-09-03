@@ -3,8 +3,9 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   ScrollView, StatusBar, Image, Platform, Modal, Alert,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { SafeAreaView } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Notifications from 'expo-notifications';
@@ -15,7 +16,7 @@ import { GuardianNavParamList } from '../../navigation';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
-const AVATAR_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#F59E0B', '#3B82F6', '#EC4899'];
+const AVATAR_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, COLORS.statusAmber, COLORS.statusBlue, COLORS.statusPink];
 
 type Learner = { id: string; name: string; photo_url: string | null; tutorialCount: number };
 type Stats   = { learners: number; tutorials: number; activities: number };
@@ -25,7 +26,7 @@ const ACTIONS: {
   badgeBg: string | null; badgeText: string | null;
   screen: keyof GuardianNavParamList; statKey: keyof Stats | null;
 }[] = [
-  { label: 'Tutorials',   emoji: '📚', badgeBg: '#DAEAFF', badgeText: '#1E5CA8', screen: 'Learning',           statKey: 'tutorials' },
+  { label: 'Tutorials',   emoji: '📚', badgeBg: null, badgeText: null, screen: 'Learning',           statKey: null },
   { label: 'Connections', emoji: '👥', badgeBg: null,      badgeText: null,      screen: 'GuardianConnections', statKey: null        },
   { label: 'Discussions', emoji: '💬', badgeBg: null,      badgeText: null,      screen: 'Discussions',         statKey: null        },
   { label: 'Events',      emoji: '🎉', badgeBg: null,      badgeText: null,      screen: 'Events',              statKey: null        },
@@ -37,6 +38,7 @@ export default function GuardianHomeScreen() {
   const [learners, setLearners]   = useState<Learner[]>([]);
   const [stats, setStats]         = useState<Stats>({ learners: 0, tutorials: 0, activities: 0 });
   const [showMenu, setShowMenu]   = useState(false);
+  const insets = useSafeAreaInsets();
 
   function handleSignOut() {
     setShowMenu(false);
@@ -102,18 +104,8 @@ export default function GuardianHomeScreen() {
 
   return (
     <View style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.bloomNavy} />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.bloomAccent} />
       <SafeAreaView style={s.safeHeader}>
-
-        {/* Brand row */}
-        <View style={s.brandRow}>
-          <LinearGradient colors={['#5BC8F5', '#FFB830']} style={s.appIcon}>
-            <Text style={s.appIconEmoji}>☀️</Text>
-          </LinearGradient>
-          <Text style={s.appName}>
-            Ray<Text style={s.appDot}>.</Text>
-          </Text>
-        </View>
 
         {/* Guardian row */}
         <View style={s.guardianRow}>
@@ -122,11 +114,11 @@ export default function GuardianHomeScreen() {
               <Image source={{ uri: guardian.photo_url }} style={s.avatarCircle} />
             ) : (
               <View style={s.avatarCircle}>
-                <Text style={s.avatarInitial}>{initial}</Text>
+                <AppText style={s.avatarInitial}>{initial}</AppText>
               </View>
             )}
             <View>
-              <Text style={s.guardianName}>{guardian?.full_name ?? 'Guardian'}</Text>
+              <AppText style={s.guardianName}>{guardian?.full_name ?? 'Guardian'}</AppText>
             </View>
           </View>
 
@@ -144,13 +136,13 @@ export default function GuardianHomeScreen() {
       {/* Body */}
       <ScrollView
         style={s.body}
-        contentContainerStyle={s.bodyContent}
+        contentContainerStyle={[s.bodyContent, { paddingBottom: 80 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
       >
         {/* ── FOR YOU ── */}
         <View style={s.pillRow}>
           <View style={s.pill}>
-            <Text style={s.pillText}>👤  FOR YOU</Text>
+            <AppText style={s.pillText}>👤  FOR YOU</AppText>
           </View>
           <View style={s.pillLine} />
         </View>
@@ -170,11 +162,11 @@ export default function GuardianHomeScreen() {
                     onPress={() => navigation.navigate(action.screen as any)}
                     activeOpacity={0.78}
                   >
-                    <Text style={s.actionEmoji}>{action.emoji}</Text>
-                    <Text style={s.actionLabel}>{action.label}</Text>
+                    <AppText style={s.actionEmoji}>{action.emoji}</AppText>
+                    <AppText style={s.actionLabel}>{action.label}</AppText>
                     {action.badgeBg && count != null && count > 0 && (
                       <View style={[s.actionBadge, { backgroundColor: action.badgeBg }]}>
-                        <Text style={[s.actionBadgeText, { color: action.badgeText! }]}>{count}</Text>
+                        <AppText style={[s.actionBadgeText, { color: action.badgeText! }]}>{count}</AppText>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -188,7 +180,7 @@ export default function GuardianHomeScreen() {
         {/* ── YOUR LEARNER ── */}
         <View style={[s.pillRow, { marginTop: 24 }]}>
           <View style={[s.pill, s.pillLearner]}>
-            <Text style={s.pillText}>🎓  FOR YOUR LEARNER</Text>
+            <AppText style={s.pillText}>🎓  FOR YOUR LEARNER</AppText>
           </View>
           <View style={s.pillLine} />
         </View>
@@ -204,11 +196,10 @@ export default function GuardianHomeScreen() {
                 <Image source={{ uri: learners[0].photo_url }} style={s.learnerAvatar} />
               ) : (
                 <View style={[s.learnerAvatar, { backgroundColor: AVATAR_COLORS[0] }]}>
-                  <Text style={s.learnerInitial}>{learners[0].name[0]?.toUpperCase()}</Text>
+                  <AppText style={s.learnerInitial}>{learners[0].name[0]?.toUpperCase()}</AppText>
                 </View>
               )}
-              <Text style={s.learnerName} numberOfLines={1}>{learners[0].name.split(' ')[0]}</Text>
-              <Text style={s.learnerMeta}>{learners[0].tutorialCount} tutorial{learners[0].tutorialCount !== 1 ? 's' : ''}</Text>
+              <AppText style={s.learnerName} numberOfLines={1}>{learners[0].name.split(' ')[0]}</AppText>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -217,10 +208,9 @@ export default function GuardianHomeScreen() {
               activeOpacity={0.8}
             >
               <View style={s.addAvatar}>
-                <Text style={s.addIcon}>+</Text>
+                <AppText style={s.addIcon}>+</AppText>
               </View>
-              <Text style={s.addNewLabel}>Add New</Text>
-              <Text style={s.learnerMeta}> </Text>
+              <AppText style={s.addNewLabel}>Add New</AppText>
             </TouchableOpacity>
           )}
         </View>
@@ -233,8 +223,8 @@ export default function GuardianHomeScreen() {
                 onPress={() => navigation.navigate('LearnerDiscovery')}
                 activeOpacity={0.78}
               >
-                <Text style={s.actionEmoji}>🔍</Text>
-                <Text style={s.actionLabel}>Find{'\n'}Friends</Text>
+                <AppText style={s.actionEmoji}>🔍</AppText>
+                <AppText style={s.actionLabel}>Find{'\n'}Friends</AppText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -242,8 +232,8 @@ export default function GuardianHomeScreen() {
                 onPress={() => navigation.navigate('LearnerFriendRequests')}
                 activeOpacity={0.78}
               >
-                <Text style={s.actionEmoji}>🤝</Text>
-                <Text style={s.actionLabel}>Friend{'\n'}Requests</Text>
+                <AppText style={s.actionEmoji}>🤝</AppText>
+                <AppText style={s.actionLabel}>Friend{'\n'}Requests</AppText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -251,8 +241,8 @@ export default function GuardianHomeScreen() {
                 onPress={() => navigation.navigate('FavouriteFriends')}
                 activeOpacity={0.78}
               >
-                <Text style={s.actionEmoji}>⭐</Text>
-                <Text style={s.actionLabel}>Manage{'\n'}Friends</Text>
+                <AppText style={s.actionEmoji}>⭐</AppText>
+                <AppText style={s.actionLabel}>Manage{'\n'}Friends</AppText>
               </TouchableOpacity>
             </View>
 
@@ -262,11 +252,11 @@ export default function GuardianHomeScreen() {
                 onPress={() => navigation.navigate('Activities')}
                 activeOpacity={0.78}
               >
-                <Text style={s.actionEmoji}>✅</Text>
-                <Text style={s.actionLabel}>Activities</Text>
+                <AppText style={s.actionEmoji}>✅</AppText>
+                <AppText style={s.actionLabel}>Activities</AppText>
                 {stats.activities > 0 && (
                   <View style={[s.actionBadge, { backgroundColor: '#D4F5E2' }]}>
-                    <Text style={[s.actionBadgeText, { color: '#0A6635' }]}>{stats.activities}</Text>
+                    <AppText style={[s.actionBadgeText, { color: '#0A6635' }]}>{stats.activities}</AppText>
                   </View>
                 )}
               </TouchableOpacity>
@@ -276,8 +266,8 @@ export default function GuardianHomeScreen() {
                 onPress={() => navigation.navigate('Schedule')}
                 activeOpacity={0.78}
               >
-                <Text style={s.actionEmoji}>📅</Text>
-                <Text style={s.actionLabel}>Schedule</Text>
+                <AppText style={s.actionEmoji}>📅</AppText>
+                <AppText style={s.actionLabel}>Schedule</AppText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -285,8 +275,8 @@ export default function GuardianHomeScreen() {
                 onPress={() => navigation.navigate('TutorialLibrary', { linkedOnly: true })}
                 activeOpacity={0.78}
               >
-                <Text style={s.actionEmoji}>📚</Text>
-                <Text style={s.actionLabel}>Learn</Text>
+                <AppText style={s.actionEmoji}>📚</AppText>
+                <AppText style={s.actionLabel}>Learn</AppText>
               </TouchableOpacity>
             </View>
           </>
@@ -301,11 +291,11 @@ export default function GuardianHomeScreen() {
           <TouchableOpacity style={s.menuCard} activeOpacity={1} onPress={() => {}}>
             <View style={s.menuHeader}>
               <View style={s.menuAvatar}>
-                <Text style={s.menuAvatarText}>{initial}</Text>
+                <AppText style={s.menuAvatarText}>{initial}</AppText>
               </View>
               <View>
-                <Text style={s.menuName}>{guardian?.full_name}</Text>
-                <Text style={s.menuEmail}>{guardian?.email}</Text>
+                <AppText style={s.menuName}>{guardian?.full_name}</AppText>
+                <AppText style={s.menuEmail}>{guardian?.email}</AppText>
               </View>
             </View>
 
@@ -316,9 +306,9 @@ export default function GuardianHomeScreen() {
               onPress={() => { setShowMenu(false); navigation.navigate('LearnerSelect'); }}
               activeOpacity={0.7}
             >
-              <Text style={s.menuItemIcon}>🏠</Text>
-              <Text style={s.menuItemText}>Home</Text>
-              <Text style={s.menuItemArr}>›</Text>
+              <AppText style={s.menuItemIcon}>🏠</AppText>
+              <AppText style={s.menuItemText}>Home</AppText>
+              <AppText style={s.menuItemArr}>›</AppText>
             </TouchableOpacity>
 
             <View style={s.menuDivider} />
@@ -328,17 +318,17 @@ export default function GuardianHomeScreen() {
               onPress={() => { setShowMenu(false); navigation.navigate('Account'); }}
               activeOpacity={0.7}
             >
-              <Text style={s.menuItemIcon}>👤</Text>
-              <Text style={s.menuItemText}>Account</Text>
-              <Text style={s.menuItemArr}>›</Text>
+              <AppText style={s.menuItemIcon}>👤</AppText>
+              <AppText style={s.menuItemText}>Account</AppText>
+              <AppText style={s.menuItemArr}>›</AppText>
             </TouchableOpacity>
 
             <View style={s.menuDivider} />
 
             <TouchableOpacity style={s.menuItem} onPress={handleSignOut} activeOpacity={0.7}>
-              <Text style={s.menuItemIcon}>🚪</Text>
-              <Text style={[s.menuItemText, { color: '#E53E3E' }]}>Sign Out</Text>
-              <Text style={s.menuItemArr}>›</Text>
+              <AppText style={s.menuItemIcon}>🚪</AppText>
+              <AppText style={[s.menuItemText, { color: COLORS.error }]}>Sign Out</AppText>
+              <AppText style={s.menuItemArr}>›</AppText>
             </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>
@@ -349,21 +339,10 @@ export default function GuardianHomeScreen() {
 }
 
 const s = StyleSheet.create({
-  root:       { flex: 1, backgroundColor: COLORS.bloomNavy },
-  safeHeader: { backgroundColor: COLORS.bloomNavy },
+  root:       { flex: 1, backgroundColor: COLORS.bloomAccent },
+  safeHeader: { backgroundColor: COLORS.bloomAccent },
 
   // Brand row
-  brandRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 9, paddingTop: 10, paddingHorizontal: 18, marginBottom: 10,
-  },
-  appIcon: {
-    width: 30, height: 30, borderRadius: 8,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  appIconEmoji: { fontSize: 16 },
-  appName:      { fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
-  appDot:       { color: COLORS.bloomDot },
 
   // Guardian row
   guardianRow: {
@@ -379,19 +358,19 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   avatarInitial: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  guardianName:  { fontSize: 15, fontWeight: '600', color: '#fff' },
+  guardianName:  { fontSize: 15, fontWeight: '600', color: COLORS.bloomOnAccent },
   hamburgerBtn:  { padding: 6, gap: 5, alignItems: 'flex-end', justifyContent: 'center' },
   hamburgerLine: { width: 22, height: 2, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.85)' },
   // Body
   body:        { flex: 1, backgroundColor: COLORS.bloomBody },
-  bodyContent: { padding: 14, paddingBottom: 32 },
+  bodyContent: { padding: 14 },
 
   // Section pill headers
   pillRow:     { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  pill:        { backgroundColor: '#FEF9E7', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
-  pillLearner: { backgroundColor: '#FEF9E7' },
-  pillText:    { fontSize: 11, fontWeight: '900', color: '#92400E', letterSpacing: 0.6 },
-  pillLine:    { flex: 1, height: 2.5, backgroundColor: '#C8D4E0', borderRadius: 2 },
+  pill:        { backgroundColor: COLORS.bloomActiveBg, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
+  pillLearner: { backgroundColor: COLORS.bloomActiveBg },
+  pillText:    { fontSize: 12, fontWeight: '800', color: COLORS.bloomNavy, letterSpacing: 1 },
+  pillLine:    { flex: 1, height: 2, backgroundColor: COLORS.bloomSageMid, borderRadius: 2 },
 
   // Action grid (Option C tile style)
   actionGrid:    { gap: 8, marginBottom: 4 },
@@ -410,7 +389,7 @@ const s = StyleSheet.create({
     elevation: 2,
   },
   actionEmoji:     { fontSize: 28 },
-  actionLabel:     { fontSize: 12, fontWeight: '900', color: COLORS.bloomText, textAlign: 'center' },
+  actionLabel:     { fontSize: 15, fontWeight: '400', color: COLORS.bloomText, textAlign: 'center' },
   actionBadge:     { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
   actionBadgeText: { fontSize: 9, fontWeight: '800' },
 
@@ -429,8 +408,8 @@ const s = StyleSheet.create({
     marginBottom: 10, justifyContent: 'center', alignItems: 'center',
   },
   learnerInitial: { fontSize: 26, fontWeight: '700', color: '#fff' },
-  learnerName:    { fontSize: 14, fontWeight: '800', color: COLORS.bloomText, textAlign: 'center' },
-  addNewLabel:    { fontSize: 14, fontWeight: '700', color: COLORS.bloomText, textAlign: 'center' },
+  learnerName:    { fontSize: 14, fontWeight: '400', color: COLORS.bloomText, textAlign: 'center' },
+  addNewLabel:    { fontSize: 14, fontWeight: '400', color: COLORS.bloomText, textAlign: 'center' },
   learnerMeta:    { fontSize: 11, color: '#AAA', marginTop: 4, textAlign: 'center' },
   addAvatar: {
     width: 68, height: 68, borderRadius: 34, marginBottom: 10,

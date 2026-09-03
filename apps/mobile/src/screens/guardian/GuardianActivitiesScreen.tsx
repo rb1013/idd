@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
@@ -127,19 +128,19 @@ export default function GuardianActivitiesScreen() {
         {/* Quota bar */}
         <View style={styles.quotaCard}>
           <View>
-            <Text style={styles.quotaLabel}>Activities selected</Text>
-            {saveStatus === 'saving' && <Text style={styles.saveHint}>Saving…</Text>}
-            {saveStatus === 'saved'  && <Text style={[styles.saveHint, { color: '#5CBB7A' }]}>✓ Saved</Text>}
+            <AppText style={styles.quotaLabel}>Activities selected</AppText>
+            {saveStatus === 'saving' && <AppText style={styles.saveHint}>Saving…</AppText>}
+            {saveStatus === 'saved'  && <AppText style={[styles.saveHint, { color: COLORS.secondary }]}>✓ Saved</AppText>}
           </View>
           <View style={styles.quotaRight}>
-            <Text style={styles.quotaCount}>{selectedKeys.length}</Text>
-            <Text style={styles.quotaMax}> / {MAX_ACTIVITIES}</Text>
+            <AppText style={styles.quotaCount}>{selectedKeys.length}</AppText>
+            <AppText style={styles.quotaMax}> / {MAX_ACTIVITIES}</AppText>
           </View>
         </View>
 
-        <Text style={styles.setupHint}>
+        <AppText style={styles.setupHint}>
           These activities will appear every day for all users under your account.
-        </Text>
+        </AppText>
 
         {/* Preset grid — 3 columns */}
         <View style={styles.presetGrid}>
@@ -158,11 +159,11 @@ export default function GuardianActivitiesScreen() {
                 disabled={isDisabled}
                 activeOpacity={0.75}
               >
-                <Text style={styles.presetEmoji}>{preset.emoji}</Text>
-                <Text style={styles.presetName}>{preset.name}</Text>
+                <AppText style={styles.presetEmoji}>{preset.emoji}</AppText>
+                <AppText style={styles.presetName}>{preset.name}</AppText>
                 {isSelected && (
                   <View style={[styles.presetTick, { backgroundColor: preset.color }]}>
-                    <Text style={styles.presetTickText}>✓</Text>
+                    <AppText style={styles.presetTickText}>✓</AppText>
                   </View>
                 )}
               </TouchableOpacity>
@@ -202,9 +203,9 @@ export default function GuardianActivitiesScreen() {
     if (byUser.size === 0) {
       return (
         <View style={styles.center}>
-          <Text style={styles.emptyEmoji}>📊</Text>
-          <Text style={styles.emptyTitle}>No data yet</Text>
-          <Text style={styles.emptyHint}>Activity completions will appear here</Text>
+          <AppText style={styles.emptyEmoji}>📊</AppText>
+          <AppText style={styles.emptyTitle}>No data yet</AppText>
+          <AppText style={styles.emptyHint}>Activity completions will appear here</AppText>
         </View>
       );
     }
@@ -224,7 +225,7 @@ export default function GuardianActivitiesScreen() {
 
     return (
       <ScrollView contentContainerStyle={styles.reportContent}>
-        <Text style={styles.reportHint}>Last 7 days · Data auto-deleted after 7 days</Text>
+        <AppText style={styles.reportHint}>Last 7 days · Data auto-deleted after 7 days</AppText>
         {Array.from(byUser.entries()).map(([userId, days]) => {
           const userName = days[0].userName;
           const totalActs = selectedKeys.length;
@@ -234,10 +235,10 @@ export default function GuardianActivitiesScreen() {
               {/* User header */}
               <View style={styles.reportUserHeader}>
                 <View style={[styles.reportAvatar, { backgroundColor: avatarColor(userName) }]}>
-                  <Text style={styles.reportAvatarText}>{userName[0]}</Text>
+                  <AppText style={styles.reportAvatarText}>{userName[0]}</AppText>
                 </View>
                 <View style={styles.reportUserInfo}>
-                  <Text style={styles.reportUserName}>{userName}</Text>
+                  <AppText style={styles.reportUserName}>{userName}</AppText>
                 </View>
               </View>
 
@@ -249,13 +250,13 @@ export default function GuardianActivitiesScreen() {
                   <View key={day.logDate} style={[styles.reportDayRow, isToday && styles.reportDayRowToday]}>
                     {/* Line 1: date + bar + count */}
                     <View style={styles.reportDayTopRow}>
-                      <Text style={[styles.reportDayLabel, isToday && styles.reportDayLabelToday]}>
+                      <AppText style={[styles.reportDayLabel, isToday && styles.reportDayLabelToday]}>
                         {isToday ? 'Today' : shortDate(day.logDate)}
-                      </Text>
+                      </AppText>
                       <View style={styles.reportMiniBarBg}>
                         <View style={[styles.reportMiniBar, { width: `${pct * 100}%` }]} />
                       </View>
-                      <Text style={styles.reportDayCount}>{day.completedKeys.size}/{totalActs}</Text>
+                      <AppText style={styles.reportDayCount}>{day.completedKeys.size}/{totalActs}</AppText>
                     </View>
                     {/* Line 2: activity pips (wrappable) */}
                     <View style={styles.reportDayPips}>
@@ -268,13 +269,13 @@ export default function GuardianActivitiesScreen() {
                             style={[
                               styles.pip,
                               done
-                                ? { backgroundColor: preset?.bgColor ?? '#D4F5E2', borderColor: preset?.color ?? '#5CBB7A', borderWidth: 2 }
+                                ? { backgroundColor: preset?.bgColor ?? '#D4F5E2', borderColor: preset?.color ?? COLORS.secondary, borderWidth: 2 }
                                 : styles.pipEmpty,
                             ]}
                           >
-                            <Text style={[styles.pipEmoji, !done && styles.pipEmojiDim]}>
+                            <AppText style={[styles.pipEmoji, !done && styles.pipEmojiDim]}>
                               {preset?.emoji ?? '?'}
-                            </Text>
+                            </AppText>
                           </View>
                         );
                       })}
@@ -297,13 +298,13 @@ export default function GuardianActivitiesScreen() {
           style={[styles.tabBtn, tab === 'setup' && styles.tabBtnActive]}
           onPress={() => switchTab('setup')}
         >
-          <Text style={[styles.tabLabel, tab === 'setup' && styles.tabLabelActive]}>✅  Activities</Text>
+          <AppText style={[styles.tabLabel, tab === 'setup' && styles.tabLabelActive]}>✅  Activities</AppText>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tabBtn, tab === 'report' && styles.tabBtnActive]}
           onPress={() => switchTab('report')}
         >
-          <Text style={[styles.tabLabel, tab === 'report' && styles.tabLabelActive]}>📊  Report</Text>
+          <AppText style={[styles.tabLabel, tab === 'report' && styles.tabLabelActive]}>📊  Report</AppText>
         </TouchableOpacity>
       </View>
 
@@ -312,7 +313,7 @@ export default function GuardianActivitiesScreen() {
   );
 }
 
-const AVATAR_COLORS = ['#5CBB7A', '#9B59B6', '#F5A623', '#4A90E2', '#E53E3E', '#1ABC9C'];
+const AVATAR_COLORS = [COLORS.secondary, '#9B59B6', '#F5A623', COLORS.primary, COLORS.error, '#1ABC9C'];
 function avatarColor(name: string) {
   return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 }
@@ -405,6 +406,6 @@ const styles = StyleSheet.create({
   pipEmoji: { fontSize: 18 },
   pipEmojiDim: { opacity: 0.2 },
   reportMiniBarBg: { flex: 1, height: 7, backgroundColor: COLORS.border, borderRadius: 4, overflow: 'hidden' },
-  reportMiniBar: { height: 7, borderRadius: 4, backgroundColor: '#5CBB7A' },
+  reportMiniBar: { height: 7, borderRadius: 4, backgroundColor: COLORS.secondary },
   reportDayCount: { fontSize: 12, fontWeight: '800', color: COLORS.text, width: 28, textAlign: 'right' },
 });

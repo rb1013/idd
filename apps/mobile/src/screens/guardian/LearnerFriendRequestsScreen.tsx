@@ -3,12 +3,13 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   Image, ActivityIndicator, Alert,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 
-const AVATAR_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#F59E0B', '#3B82F6', '#EC4899'];
+const AVATAR_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, COLORS.statusAmber, COLORS.statusBlue, COLORS.statusPink];
 
 interface FriendRequest {
   friendshipId: string;
@@ -185,9 +186,9 @@ export default function LearnerFriendRequestsScreen() {
   if (requests.length === 0) {
     return (
       <View style={s.center}>
-        <Text style={s.emptyEmoji}>🤝</Text>
-        <Text style={s.emptyText}>No pending requests</Text>
-        <Text style={s.emptyHint}>Find friends for your learner from the Community screen</Text>
+        <AppText style={s.emptyEmoji}>🤝</AppText>
+        <AppText style={s.emptyText}>No pending requests</AppText>
+        <AppText style={s.emptyHint}>Find friends for your learner from the Community screen</AppText>
       </View>
     );
   }
@@ -203,18 +204,18 @@ export default function LearnerFriendRequestsScreen() {
           <Image source={{ uri: req.requesterPhoto }} style={s.avatar} />
         ) : (
           <View style={[s.avatar, { backgroundColor: color }]}>
-            <Text style={s.avatarInitial}>{req.requesterName[0]?.toUpperCase()}</Text>
+            <AppText style={s.avatarInitial}>{req.requesterName[0]?.toUpperCase()}</AppText>
           </View>
         )}
 
         {/* Info */}
         <View style={s.info}>
-          <Text style={s.name}>{req.requesterName}</Text>
-          <Text style={s.meta}>
+          <AppText style={s.name}>{req.requesterName}</AppText>
+          <AppText style={s.meta}>
             {req.requesterAge} yrs · {req.requesterCity}, {req.requesterRegion}
-          </Text>
+          </AppText>
           {req.requesterGuardianName && (
-            <Text style={s.guardianNote}>Guardian: {req.requesterGuardianName}</Text>
+            <AppText style={s.guardianNote}>Guardian: {req.requesterGuardianName}</AppText>
           )}
         </View>
 
@@ -224,10 +225,10 @@ export default function LearnerFriendRequestsScreen() {
             {isProcessing ? <ActivityIndicator color={COLORS.bloomAccent} /> : (
               <>
                 <TouchableOpacity style={s.acceptBtn} onPress={() => accept(req)}>
-                  <Text style={s.acceptBtnText}>✓ Accept</Text>
+                  <AppText style={s.acceptBtnText}>✓ Accept</AppText>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.declineBtn} onPress={() => decline(req)}>
-                  <Text style={s.declineBtnText}>Decline</Text>
+                  <AppText style={s.declineBtnText}>Decline</AppText>
                 </TouchableOpacity>
               </>
             )}
@@ -237,7 +238,7 @@ export default function LearnerFriendRequestsScreen() {
           <View style={s.actions}>
             {isProcessing ? <ActivityIndicator color={COLORS.bloomMuted} /> : (
               <TouchableOpacity style={s.cancelBtn} onPress={() => cancel(req)}>
-                <Text style={s.cancelBtnText}>Cancel</Text>
+                <AppText style={s.cancelBtnText}>Cancel</AppText>
               </TouchableOpacity>
             )}
           </View>
@@ -256,15 +257,15 @@ export default function LearnerFriendRequestsScreen() {
         <>
           {incoming.length > 0 && (
             <>
-              <Text style={s.sectionTitle}>INCOMING ({incoming.length})</Text>
+              <AppText style={s.sectionTitle}>INCOMING ({incoming.length})</AppText>
               {incoming.map(renderRequest)}
             </>
           )}
           {outgoing.length > 0 && (
             <>
-              <Text style={[s.sectionTitle, { marginTop: incoming.length > 0 ? 24 : 0 }]}>
+              <AppText style={[s.sectionTitle, { marginTop: incoming.length > 0 ? 24 : 0 }]}>
                 SENT ({outgoing.length})
-              </Text>
+              </AppText>
               {outgoing.map(renderRequest)}
             </>
           )}
@@ -305,15 +306,15 @@ const s = StyleSheet.create({
 
   actions: { alignItems: 'center', gap: 6 },
   acceptBtn: {
-    backgroundColor: COLORS.bloomNavy, borderRadius: 10,
+    backgroundColor: COLORS.bloomAccent, borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 7,
   },
-  acceptBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  acceptBtnText: { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 13 },
   declineBtn: {
-    backgroundColor: '#FEE2E2', borderRadius: 10,
+    backgroundColor: COLORS.statusRedLight, borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 7,
   },
-  declineBtnText: { color: '#DC2626', fontWeight: '700', fontSize: 13 },
+  declineBtnText: { color: COLORS.statusRedDark, fontWeight: '700', fontSize: 13 },
   cancelBtn: {
     backgroundColor: COLORS.bloomBorder, borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 7,

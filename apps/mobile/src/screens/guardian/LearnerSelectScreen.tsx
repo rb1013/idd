@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Image, ActivityIndicator, Alert, Dimensions, Modal, TextInput,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import AppText from '../../components/AppText';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -19,7 +19,7 @@ type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
 const { width } = Dimensions.get('window');
 const TILE_SIZE  = (width - 48 - 14) / 2;
-const USER_COLORS = ['#FF6B6B', '#845EF7', '#20C997', '#FF922B', '#339AF0', '#F06595', '#74C0FC'];
+const USER_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, '#FF922B', '#339AF0', '#F06595', '#74C0FC'];
 
 type LearnerTile = {
   id: string;
@@ -183,38 +183,38 @@ export default function LearnerSelectScreen() {
 
         {/* Header */}
         <View style={s.header}>
-          <LinearGradient colors={['#5BC8F5', '#FFB830']} style={s.appIcon}>
-            <Text style={s.appIconEmoji}>☀️</Text>
-          </LinearGradient>
-          <Text style={s.appName}>Ray<Text style={s.appDot}>.</Text></Text>
-          <Text style={s.tagline}>Guiding light for every day</Text>
+          <Image source={require('../../../assets/elis-logo3.png')} style={s.elisLogo} resizeMode="contain" />
+          <AppText style={s.appName}>ELIS</AppText>
+          <View style={s.taglinePill}>
+            <AppText style={s.tagline}>Empathy · Learning · Inclusive · Support</AppText>
+          </View>
         </View>
 
         <View style={s.body}>
           <View style={s.tilesGrid}>
             {/* Guardian tile */}
             <TouchableOpacity style={s.guardianTile} onPress={openPinModal} activeOpacity={0.85}>
-              <View style={[s.tileBar, { backgroundColor: COLORS.bloomNavy }]} />
+              <View style={[s.tileBar, { backgroundColor: COLORS.bloomAccent }]} />
               <View style={[s.tileBody, s.guardianTileBody]}>
                 <View style={s.avatarWrap}>
                   {guardian?.photo_url ? (
                     <Image source={{ uri: guardian.photo_url }} style={s.avatar} />
                   ) : (
                     <View style={[s.avatar, s.avatarFallback, { backgroundColor: COLORS.bloomAccent + '25' }]}>
-                      <Text style={[s.avatarInitial, { color: COLORS.bloomAccent }]}>{initial}</Text>
+                      <AppText style={[s.avatarInitial, { color: COLORS.bloomAccent }]}>{initial}</AppText>
                     </View>
                   )}
                 </View>
-                <Text style={s.userName}>{guardian?.full_name ?? 'Guardian'}</Text>
-                <Text style={[s.userSub, { color: COLORS.bloomAccent }]}>Guardian</Text>
+                <AppText style={s.userName}>{guardian?.full_name ?? 'Guardian'}</AppText>
+                <AppText style={[s.userSub, { color: COLORS.bloomAccent }]}>Guardian</AppText>
               </View>
               <View style={s.guardianRoleBadge}>
-                <Text style={s.guardianRoleEmoji}>🤓</Text>
+                <AppText style={s.guardianRoleEmoji}>🤓</AppText>
               </View>
             </TouchableOpacity>
 
             {learners.map((tile, i) => {
-                const color = USER_COLORS[i % USER_COLORS.length];
+                const color = COLORS.bloomOrange;
                 const hasCredentials = !!tile.biometricUser;
                 return (
                   <TouchableOpacity
@@ -231,20 +231,17 @@ export default function LearnerSelectScreen() {
                           <Image source={{ uri: tile.photo_url }} style={s.avatar} />
                         ) : (
                           <View style={[s.avatar, s.avatarFallback, { backgroundColor: color + '25' }]}>
-                            <Text style={[s.avatarInitial, { color }]}>{tile.name[0]?.toUpperCase()}</Text>
+                            <AppText style={[s.avatarInitial, { color }]}>{tile.name[0]?.toUpperCase()}</AppText>
                           </View>
                         )}
                         <View style={[s.badge, { backgroundColor: hasCredentials ? color : COLORS.bloomMuted }]}>
                           {biometricLoading === tile.id
                             ? <ActivityIndicator size={11} color="#fff" />
-                            : <Text style={s.badgeEmoji}>{hasCredentials ? '🫆' : '🔒'}</Text>
+                            : <AppText style={s.badgeEmoji}>{hasCredentials ? '🫆' : '🔒'}</AppText>
                           }
                         </View>
                       </View>
-                      <Text style={s.userName} numberOfLines={2}>{tile.name}</Text>
-                      <Text style={[s.userSub, { color: hasCredentials ? color : COLORS.bloomMuted }]}>
-                        {hasCredentials ? 'Tap to unlock' : 'Setup needed'}
-                      </Text>
+                      <AppText style={s.userName} numberOfLines={2}>{tile.name}</AppText>
                     </View>
                   </TouchableOpacity>
                 );
@@ -262,7 +259,7 @@ export default function LearnerSelectScreen() {
             }
             activeOpacity={0.75}
           >
-            <Text style={s.signOutText}>Sign out</Text>
+            <AppText style={s.signOutText}>Sign out</AppText>
           </TouchableOpacity>
         </View>
 
@@ -276,8 +273,8 @@ export default function LearnerSelectScreen() {
             {/* ── PIN entry ── */}
             {!forgotPin && (
               <>
-                <Text style={s.pinTitle}>Guardian Mode</Text>
-                <Text style={s.pinSubtitle}>Enter your 6-digit PIN</Text>
+                <AppText style={s.pinTitle}>Guardian Mode</AppText>
+                <AppText style={s.pinSubtitle}>Enter your 6-digit PIN</AppText>
 
                 <TouchableOpacity style={s.pinDotsRow} activeOpacity={1} onPress={() => pinInputRef.current?.focus()}>
                   {[0, 1, 2, 3, 4, 5].map(i => (
@@ -294,7 +291,7 @@ export default function LearnerSelectScreen() {
                   autoFocus
                 />
 
-                {pinError ? <Text style={s.pinError}>{pinError}</Text> : null}
+                {pinError ? <AppText style={s.pinError}>{pinError}</AppText> : null}
 
                 <TouchableOpacity
                   style={[s.pinSubmitBtn, pin.length !== 6 && { opacity: 0.5 }]}
@@ -304,12 +301,12 @@ export default function LearnerSelectScreen() {
                 >
                   {pinLoading
                     ? <ActivityIndicator color="#fff" />
-                    : <Text style={s.pinSubmitText}>Continue</Text>
+                    : <AppText style={s.pinSubmitText}>Continue</AppText>
                   }
                 </TouchableOpacity>
 
                 <TouchableOpacity style={s.forgotBtn} onPress={() => { setForgotPin(true); setPinError(''); }} activeOpacity={0.7}>
-                  <Text style={s.forgotBtnText}>Forgot PIN?</Text>
+                  <AppText style={s.forgotBtnText}>Forgot PIN?</AppText>
                 </TouchableOpacity>
               </>
             )}
@@ -317,8 +314,8 @@ export default function LearnerSelectScreen() {
             {/* ── Step 1: verify password ── */}
             {forgotPin && !verified && (
               <>
-                <Text style={s.pinTitle}>Reset PIN</Text>
-                <Text style={s.pinSubtitle}>Enter your account password to continue</Text>
+                <AppText style={s.pinTitle}>Reset PIN</AppText>
+                <AppText style={s.pinSubtitle}>Enter your account password to continue</AppText>
 
                 <TextInput
                   style={s.passwordInput}
@@ -331,7 +328,7 @@ export default function LearnerSelectScreen() {
                   autoCapitalize="none"
                 />
 
-                {pinError ? <Text style={s.pinError}>{pinError}</Text> : null}
+                {pinError ? <AppText style={s.pinError}>{pinError}</AppText> : null}
 
                 <TouchableOpacity
                   style={[s.pinSubmitBtn, !verifyPassword && { opacity: 0.5 }]}
@@ -341,12 +338,12 @@ export default function LearnerSelectScreen() {
                 >
                   {pinLoading
                     ? <ActivityIndicator color="#fff" />
-                    : <Text style={s.pinSubmitText}>Verify</Text>
+                    : <AppText style={s.pinSubmitText}>Verify</AppText>
                   }
                 </TouchableOpacity>
 
                 <TouchableOpacity style={s.forgotBtn} onPress={closeForgot} activeOpacity={0.7}>
-                  <Text style={s.forgotBtnText}>← Back to PIN</Text>
+                  <AppText style={s.forgotBtnText}>← Back to PIN</AppText>
                 </TouchableOpacity>
               </>
             )}
@@ -354,8 +351,8 @@ export default function LearnerSelectScreen() {
             {/* ── Step 2: set new PIN ── */}
             {forgotPin && verified && (
               <>
-                <Text style={s.pinTitle}>Set New PIN</Text>
-                <Text style={s.pinSubtitle}>Choose a new 6-digit PIN</Text>
+                <AppText style={s.pinTitle}>Set New PIN</AppText>
+                <AppText style={s.pinSubtitle}>Choose a new 6-digit PIN</AppText>
 
                 <TextInput
                   style={s.passwordInput}
@@ -379,7 +376,7 @@ export default function LearnerSelectScreen() {
                   placeholderTextColor={COLORS.bloomMuted}
                 />
 
-                {pinError ? <Text style={s.pinError}>{pinError}</Text> : null}
+                {pinError ? <AppText style={s.pinError}>{pinError}</AppText> : null}
 
                 <TouchableOpacity
                   style={[s.pinSubmitBtn, (newPin.length !== 6 || confirmPin.length !== 6) && { opacity: 0.5 }]}
@@ -389,7 +386,7 @@ export default function LearnerSelectScreen() {
                 >
                   {pinLoading
                     ? <ActivityIndicator color="#fff" />
-                    : <Text style={s.pinSubmitText}>Save New PIN</Text>
+                    : <AppText style={s.pinSubmitText}>Save New PIN</AppText>
                   }
                 </TouchableOpacity>
               </>
@@ -409,31 +406,31 @@ const s = StyleSheet.create({
 
   // Header
   header: {
-    backgroundColor: COLORS.bloomNavy,
-    paddingTop: 72, paddingBottom: 44,
+    backgroundColor: COLORS.bloomAccent,
+    paddingTop: 54, paddingBottom: 30,
     alignItems: 'center',
     borderBottomLeftRadius: 36, borderBottomRightRadius: 36,
   },
-  appIcon: {
-    width: 88, height: 88, borderRadius: 26,
-    justifyContent: 'center', alignItems: 'center', marginBottom: 14,
+  elisLogo:  { width: 227, height: 124 },
+  appName:   { fontSize: 32, fontWeight: '900', color: COLORS.bloomOnAccent, letterSpacing: 3, marginTop: 4 },
+  taglinePill: {
+    marginTop: 10, marginBottom: 16,
+    backgroundColor: 'rgba(45,49,46,0.13)',
+    borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6,
   },
-  appIconEmoji: { fontSize: 48 },
-  appName:      { fontSize: 38, fontWeight: '900', color: '#fff', letterSpacing: -1 },
-  appDot:       { color: COLORS.bloomDot },
-  tagline:      { fontSize: 15, color: 'rgba(255,255,255,0.55)', marginTop: 6, fontWeight: '500', marginBottom: 20 },
+  tagline:   { fontSize: 13, fontWeight: '700', color: COLORS.bloomOnAccent, letterSpacing: 1.5 },
 
   guardianTile: {
     width: TILE_SIZE,
     backgroundColor: COLORS.bloomCard, borderRadius: 22,
     overflow: 'hidden', position: 'relative',
-    shadowColor: COLORS.bloomNavy, shadowOffset: { width: 0, height: 4 },
+    shadowColor: COLORS.bloomAccent, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15, shadowRadius: 10, elevation: 5,
   },
   guardianTileBody: { paddingVertical: 20 },
   guardianRoleBadge: {
     position: 'absolute', top: 14, right: 14,
-    backgroundColor: COLORS.bloomNavy,
+    backgroundColor: COLORS.bloomAccent,
     width: 32, height: 32, borderRadius: 16,
     justifyContent: 'center', alignItems: 'center',
   },
@@ -471,10 +468,10 @@ const s = StyleSheet.create({
   signOutBtn: {
     marginTop: 36, alignSelf: 'center',
     paddingVertical: 10, paddingHorizontal: 28,
-    borderRadius: 20, borderWidth: 1.5, borderColor: '#FECACA',
-    backgroundColor: '#FEF2F2',
+    borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(45,49,46,0.25)',
+    backgroundColor: 'rgba(45,49,46,0.15)',
   },
-  signOutText: { fontSize: 14, fontWeight: '700', color: '#DC2626' },
+  signOutText: { fontSize: 14, fontWeight: '700', color: COLORS.bloomActiveText },
 
   // PIN Modal
   pinOverlay: {
@@ -513,10 +510,10 @@ const s = StyleSheet.create({
   },
 
   pinSubmitBtn: {
-    width: '100%', backgroundColor: COLORS.bloomNavy,
+    width: '100%', backgroundColor: COLORS.bloomAccent,
     borderRadius: 16, paddingVertical: 16,
     alignItems: 'center', marginTop: 20, marginBottom: 8,
   },
-  pinSubmitText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  pinSubmitText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '800' },
 
 });

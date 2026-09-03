@@ -1,3 +1,12 @@
+export const FONTS = {
+  regular:   'Raleway_400Regular',
+  medium:    'Raleway_500Medium',
+  semiBold:  'Raleway_600SemiBold',
+  bold:      'Raleway_700Bold',
+  extraBold: 'Raleway_800ExtraBold',
+  black:     'Raleway_900Black',
+};
+
 export const COLORS = {
   primary: '#4A90E2',
   primaryLight: '#D6E8FA',
@@ -15,15 +24,54 @@ export const COLORS = {
   success: '#5CBB7A',
   warning: '#F5A623',
 
-  // Bloom guardian theme
-  bloomNavy: '#1E3350',
-  bloomAccent: '#2D63A8',
-  bloomDot: '#7ABAFF',
-  bloomBody: '#F5F7FA',
-  bloomCard: '#FFFFFF',
-  bloomBorder: '#E4EAF2',
-  bloomMuted: '#8A9BB0',
-  bloomText: '#1A2533',
+  // ELIS guardian theme (Empathy · Learning · Inclusive · Support)
+  bloomNavy: '#2D312E',    // Charcoal — primary buttons, nav headers
+  bloomAccent: '#A2B997',  // Sage green — interactive, active states
+  bloomDot: '#9BB2C4',     // Dusty sky blue — highlights, dots
+  bloomBody: '#FDFBF7',    // Cream white — page background
+  bloomCard: '#FFFFFF',    // White — card surfaces
+  bloomBorder: '#E4E1DB',  // Warm stone border
+  bloomMuted: '#7A847B',   // Warm muted green-grey
+  bloomText: '#2D312E',    // Charcoal — body text
+
+  // ELIS active/selected state tints
+  bloomActiveBg: '#E6EDE2',    // light sage — selected rows, active pills
+  bloomTintBg: '#E2ECF3',      // sky-lt — quota pills, badge tints (Embrace sky-lt)
+  bloomSageMid: '#C4D1BC',     // medium sage — secondary UI accents
+  bloomActiveText: '#4A7C59',  // dark sage — badge text on bloomActiveBg
+  bloomOnAccent: '#2D312E',    // charcoal — text/icons on sage (bloomAccent) backgrounds
+  bloomOrange: '#C4804A',      // warm terracotta — learner section accent
+  bloomOrangeLight: '#F5E6D8', // light tint — learner section backgrounds
+
+  // Status — red / error family
+  statusRed: '#FF6B6B',
+  statusRedLight: '#FEE2E2',
+  statusRedDark: '#DC2626',
+  statusError: '#EF4444',
+
+  // Status — green / approved family
+  statusTeal: '#20C997',
+  statusGreenDark: '#065F46',
+  statusGreenLight: '#D1FAE5',
+
+  // Status — amber / warning family
+  statusAmber: '#F59E0B',
+  statusAmberDark: '#92400E',
+  statusAmberLight: '#FEF3C7',
+
+  // Status — purple family
+  statusPurple: '#845EF7',
+  statusViolet: '#8B5CF6',
+  statusDeepPurple: '#7C3AED',
+
+  // Status — other accents
+  statusPink: '#EC4899',
+  statusBlue: '#3B82F6',
+
+  // Status — neutrals
+  statusGrey: '#E5E7EB',
+  statusMidGrey: '#9CA3AF',
+  statusDark: '#111827',
 };
 
 export const DAYS_OF_WEEK = [
