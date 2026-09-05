@@ -114,6 +114,7 @@ export interface Tutorial {
   pacing_label: string | null;
   tone_label: string | null;
   background_audio: string | null;
+  is_public: boolean;
 }
 
 export interface TutorialFrame {

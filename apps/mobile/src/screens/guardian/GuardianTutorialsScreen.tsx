@@ -34,13 +34,12 @@ const FORMAT_EMOJI: Record<string, string> = { video: '🎬', slideshow: '🖼' 
 
 type Tab = 'search' | 'my' | 'create';
 
-type MyFilter = 'all' | TutorialStatus;
-const MY_FILTERS: { key: MyFilter; label: string }[] = [
-  { key: 'all',      label: 'All' },
-  { key: 'preview',  label: 'Preview' },
-  { key: 'pending',  label: 'Pending Approval' },
-  { key: 'approved', label: 'Approved' },
-  { key: 'rejected', label: 'Rejected' },
+const MY_FILTER_OPTIONS: { key: TutorialStatus; label: string }[] = [
+  { key: 'generating', label: 'Generating Tutorial' },
+  { key: 'preview',    label: 'Preview' },
+  { key: 'pending',    label: 'Pending Approval' },
+  { key: 'approved',   label: 'Approved' },
+  { key: 'rejected',   label: 'Rejected' },
 ];
 
 export default function GuardianTutorialsScreen() {
@@ -53,7 +52,9 @@ export default function GuardianTutorialsScreen() {
   // ── My Tutorials tab ──────────────────────────────────────────────────────
   const [myTutorials, setMyTutorials]   = useState<Tutorial[]>([]);
   const [loadingMy, setLoadingMy]       = useState(true);
-  const [myFilter, setMyFilter]         = useState<MyFilter>('all');
+  const [myFilters, setMyFilters]       = useState<TutorialStatus[]>([]);
+  const [myVisibility, setMyVisibility] = useState<'all' | 'public' | 'private'>('all');
+  const [showMyFilterPicker, setShowMyFilterPicker] = useState(false);
   const [quota, setQuota]               = useState<{ used: number; limit: number } | null>(null);
 
   // ── Search Tutorials tab ──────────────────────────────────────────────────
@@ -149,7 +150,11 @@ export default function GuardianTutorialsScreen() {
     setTogglingId(null);
   }
 
-  const filteredMy = myFilter === 'all' ? myTutorials : myTutorials.filter(t => t.status === myFilter);
+  const filteredMy = myTutorials.filter(t => {
+    const matchStatus = myFilters.length === 0 || myFilters.includes(t.status as TutorialStatus);
+    const matchVis = myVisibility === 'all' || (myVisibility === 'public' ? t.is_public : !t.is_public);
+    return matchStatus && matchVis;
+  });
   const filteredSearch = approved.filter(t => {
     if (linkedIds.has(t.id)) return false;
     const q = searchQuery.toLowerCase();
@@ -350,25 +355,75 @@ export default function GuardianTutorialsScreen() {
       {/* ── My Tutorials tab ─────────────────────────────────────────────── */}
       {activeTab === 'my' && (
         <View style={{ flex: 1 }}>
-          <FlatList
-            horizontal
-            data={MY_FILTERS}
-            keyExtractor={f => f.key}
-            style={styles.filterBar}
-            contentContainerStyle={styles.filterBarContent}
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => {
-              const active = myFilter === item.key;
-              return (
-                <TouchableOpacity
-                  style={[styles.filterChip, active && styles.filterChipActive]}
-                  onPress={() => setMyFilter(item.key)}
-                >
-                  <AppText style={[styles.filterChipText, active && styles.filterChipTextActive]}>{item.label}</AppText>
+          {/* Status + Visibility filters */}
+          <View style={styles.filterPanel}>
+            <TouchableOpacity style={styles.filterRow} onPress={() => setShowMyFilterPicker(true)} activeOpacity={0.75}>
+              <AppText style={styles.filterLabel}>Status</AppText>
+              <AppText style={[styles.filterValue, myFilters.length === 0 && styles.filterPlaceholder]} numberOfLines={1}>
+                {myFilters.length === 0 ? 'All Statuses' : myFilters.length === 1 ? MY_FILTER_OPTIONS.find(o => o.key === myFilters[0])?.label : `${myFilters.length} selected`}
+              </AppText>
+              {myFilters.length > 0
+                ? <TouchableOpacity onPress={() => setMyFilters([])} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <AppText style={styles.filterClear}>✕</AppText>
+                  </TouchableOpacity>
+                : <AppText style={styles.filterChevron}>›</AppText>
+              }
+            </TouchableOpacity>
+            <View style={styles.filterDivider} />
+            <View style={styles.filterRow}>
+              <AppText style={styles.filterLabel}>Show</AppText>
+              <View style={styles.segmented}>
+                {(['all', 'public', 'private'] as const).map(v => (
+                  <TouchableOpacity
+                    key={v}
+                    style={[styles.segment, myVisibility === v && styles.segmentActive]}
+                    onPress={() => setMyVisibility(v)}
+                    activeOpacity={0.7}
+                  >
+                    <AppText style={[styles.segmentText, myVisibility === v && styles.segmentTextActive]}>
+                      {v === 'all' ? 'All' : v === 'public' ? '🌐 Public' : '🔒 Private'}
+                    </AppText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+
+          <Modal visible={showMyFilterPicker} transparent animationType="slide" onRequestClose={() => setShowMyFilterPicker(false)}>
+            <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowMyFilterPicker(false)}>
+              <View style={styles.sheet} onStartShouldSetResponder={() => true}>
+                <View style={styles.sheetHdr}>
+                  <AppText style={styles.sheetTitle}>Filter by Status</AppText>
+                  {myFilters.length > 0 && (
+                    <TouchableOpacity onPress={() => setMyFilters([])}>
+                      <AppText style={styles.filterClear}>Clear</AppText>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <ScrollView style={{ maxHeight: 340 }}>
+                  {MY_FILTER_OPTIONS.map(o => {
+                    const selected = myFilters.includes(o.key);
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.sheetOption, selected && styles.sheetOptionActive]}
+                        onPress={() => setMyFilters(prev => selected ? prev.filter(k => k !== o.key) : [...prev, o.key])}
+                        activeOpacity={0.7}
+                      >
+                        <AppText style={[styles.sheetOptionText, selected && styles.sheetOptionTextActive]}>{o.label}</AppText>
+                        <View style={[styles.multiCheck, selected && styles.multiCheckActive]}>
+                          {selected && <AppText style={styles.multiCheckMark}>✓</AppText>}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+                <TouchableOpacity style={styles.sheetDone} onPress={() => setShowMyFilterPicker(false)}>
+                  <AppText style={styles.sheetDoneText}>Done</AppText>
                 </TouchableOpacity>
-              );
-            }}
-          />
+              </View>
+            </TouchableOpacity>
+          </Modal>
 
           {loadingMy ? (
             <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>
@@ -399,6 +454,7 @@ export default function GuardianTutorialsScreen() {
                         </AppText>
                       </View>
                       {t.link_count > 0 && <AppText style={styles.metaText}>🔗 {t.link_count}</AppText>}
+                      {!t.is_public && <AppText style={styles.privateBadge}>🔒</AppText>}
                     </View>
                     {t.status === 'generating' && (
                       <AppText style={styles.generatingHint}>May take 1–2 mins</AppText>
@@ -507,16 +563,6 @@ const styles = StyleSheet.create({
   quotaTrack: { height: 8, backgroundColor: COLORS.bloomBorder, borderRadius: 4, overflow: 'hidden' },
   quotaFill:  { height: '100%', borderRadius: 4 },
 
-  // Filter chips (My tab)
-  filterBar:        { maxHeight: 52, marginTop: 10 },
-  filterBarContent: { paddingHorizontal: 16, gap: 8, alignItems: 'center' },
-  filterChip: {
-    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-  },
-  filterChipActive:     { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
-  filterChipText:       { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted },
-  filterChipTextActive: { color: COLORS.bloomOnAccent, fontWeight: '700' },
 
   // Tutorial list
   list: { padding: 16, gap: 14 },
@@ -540,6 +586,7 @@ const styles = StyleSheet.create({
   statusText:   { fontSize: 12, fontWeight: '700' },
   metaText:     { fontSize: 13, color: COLORS.bloomMuted, fontWeight: '500' },
   generatingHint: { fontSize: 11, color: COLORS.bloomMuted, marginTop: 4 },
+  privateBadge:   { fontSize: 13 },
   deleteBtn:    { padding: 6 },
   deleteBtnText:{ fontSize: 22 },
 
@@ -581,6 +628,14 @@ const styles = StyleSheet.create({
   filterClear: { fontSize: 13, color: COLORS.bloomMuted, fontWeight: '700', paddingHorizontal: 4 },
   filterChevron: { fontSize: 20, color: COLORS.bloomMuted, lineHeight: 24 },
   filterDivider: { height: 1, backgroundColor: COLORS.bloomBorder, marginHorizontal: 14 },
+  segmented:     { flex: 1, flexDirection: 'row', gap: 6 },
+  segment: {
+    flex: 1, paddingVertical: 7, borderRadius: 10, alignItems: 'center',
+    backgroundColor: COLORS.bloomBody, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+  },
+  segmentActive:     { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
+  segmentText:       { fontSize: 12, fontWeight: '600', color: COLORS.bloomMuted },
+  segmentTextActive: { fontSize: 12, fontWeight: '700', color: COLORS.bloomOnAccent },
 
   // Picker bottom sheet
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },

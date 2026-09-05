@@ -261,6 +261,10 @@ export default function LearnerSelectScreen() {
         <TouchableOpacity style={s.pinOverlay} activeOpacity={1} onPress={() => setShowPinModal(false)}>
           <TouchableOpacity style={s.pinCard} activeOpacity={1} onPress={() => {}}>
 
+            <TouchableOpacity style={s.pinClose} onPress={() => setShowPinModal(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <AppText style={s.pinCloseText}>✕</AppText>
+            </TouchableOpacity>
+
             {/* ── PIN entry ── */}
             {!forgotPin && (
               <>
@@ -471,11 +475,13 @@ const s = StyleSheet.create({
   },
   pinCard: {
     backgroundColor: '#fff', borderRadius: 28,
-    paddingHorizontal: 32, paddingTop: 32, paddingBottom: 28,
+    paddingHorizontal: 32, paddingTop: 40, paddingBottom: 28,
     width: width - 56, alignItems: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.3, shadowRadius: 32, elevation: 16,
   },
+  pinClose: { position: 'absolute', top: 14, right: 16, padding: 4 },
+  pinCloseText: { fontSize: 18, color: COLORS.bloomMuted, fontWeight: '600' },
   pinTitle:    { fontSize: 22, fontWeight: '900', color: COLORS.bloomText, marginBottom: 6 },
   pinSubtitle: { fontSize: 14, color: COLORS.bloomMuted, marginBottom: 28, textAlign: 'center' },
 

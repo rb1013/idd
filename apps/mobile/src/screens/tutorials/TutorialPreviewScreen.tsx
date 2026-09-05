@@ -443,7 +443,7 @@ export default function TutorialPreviewScreen() {
               {submitting ? <ActivityIndicator color="#fff" /> : <AppText style={styles.actionBtnTextPrimary}>Resubmit for Review</AppText>}
             </TouchableOpacity>
           )}
-          {tutorial.status === 'approved' && (
+          {tutorial.status === 'approved' && tutorial.is_public && (
             <View style={styles.approvedBanner}>
               <AppText style={styles.approvedText}>✅ This tutorial is live in the shared library</AppText>
             </View>
