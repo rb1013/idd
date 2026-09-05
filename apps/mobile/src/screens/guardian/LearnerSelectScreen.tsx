@@ -208,9 +208,6 @@ export default function LearnerSelectScreen() {
                 <AppText style={s.userName}>{guardian?.full_name ?? 'Guardian'}</AppText>
                 <AppText style={[s.userSub, { color: COLORS.bloomAccent }]}>Guardian</AppText>
               </View>
-              <View style={s.guardianRoleBadge}>
-                <AppText style={s.guardianRoleEmoji}>🤓</AppText>
-              </View>
             </TouchableOpacity>
 
             {learners.map((tile, i) => {
@@ -234,12 +231,6 @@ export default function LearnerSelectScreen() {
                             <AppText style={[s.avatarInitial, { color }]}>{tile.name[0]?.toUpperCase()}</AppText>
                           </View>
                         )}
-                        <View style={[s.badge, { backgroundColor: hasCredentials ? color : COLORS.bloomMuted }]}>
-                          {biometricLoading === tile.id
-                            ? <ActivityIndicator size={11} color="#fff" />
-                            : <AppText style={s.badgeEmoji}>{hasCredentials ? '🫆' : '🔒'}</AppText>
-                          }
-                        </View>
                       </View>
                       <AppText style={s.userName} numberOfLines={2}>{tile.name}</AppText>
                     </View>
@@ -450,7 +441,7 @@ const s = StyleSheet.create({
   tileBody: { padding: 16, alignItems: 'center', gap: 8 },
 
   avatarWrap:    { position: 'relative', marginBottom: 2 },
-  avatar:        { width: 74, height: 74, borderRadius: 37 },
+  avatar:        { width: 90, height: 90, borderRadius: 45 },
   avatarFallback:{ justifyContent: 'center', alignItems: 'center' },
   avatarInitial: { fontSize: 28, fontWeight: '900' },
 

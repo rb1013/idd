@@ -203,7 +203,12 @@ export default function RegisterScreen() {
 
         {/* Situation tags */}
         <AppText style={styles.label}>Situation Tags (optional)</AppText>
-        <AppText style={styles.sublabel}>Select the situations that apply to your learner</AppText>
+        <View style={styles.helperBox}>
+          <AppText style={styles.helperTitle}>ℹ️  What are Situation Tags?</AppText>
+          <AppText style={styles.helperText}>
+            Situation tags describe your learner's specific needs or medical conditions. It helps you connect with parents in similar situations.
+          </AppText>
+        </View>
         <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>
           <AppText style={[styles.pickerBtnText, selectedTags.length === 0 && styles.placeholder]}>
             {selectedTags.length === 0 ? 'Select tags...' : `${selectedTags.length} selected`}
@@ -406,7 +411,7 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalCard: {
     backgroundColor: COLORS.bloomCard, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    maxHeight: '70%',
+    maxHeight: '70%', paddingBottom: 32,
   },
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -424,4 +429,12 @@ const styles = StyleSheet.create({
 
   emptyTags:     { padding: 40, alignItems: 'center' },
   emptyTagsText: { fontSize: 15, color: COLORS.bloomMuted },
+
+  helperBox: {
+    backgroundColor: COLORS.bloomActiveBg, borderRadius: 12,
+    padding: 14, marginBottom: 12,
+    borderLeftWidth: 3, borderLeftColor: COLORS.bloomAccent,
+  },
+  helperTitle: { fontSize: 13, fontWeight: '700', color: COLORS.bloomText, marginBottom: 5 },
+  helperText:  { fontSize: 12, color: COLORS.bloomText, lineHeight: 18 },
 });

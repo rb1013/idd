@@ -8,6 +8,7 @@ import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navig
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import type { TutorialWithFrames, TutorialFrame, TutorialStatus } from '../../types';
@@ -26,8 +27,8 @@ const STATUS_COLORS: Record<TutorialStatus, { bg: string; text: string }> = {
 };
 const STATUS_LABELS: Record<TutorialStatus, string> = {
   generating: 'Generating…',
-  preview:    'Review Needed',
-  pending:    'Pending Admin Review',
+  preview:    'Preview',
+  pending:    'Pending Approval',
   approved:   'Approved',
   rejected:   'Rejected by Admin',
 };
@@ -36,6 +37,7 @@ export default function TutorialPreviewScreen() {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteType>();
   const { tutorialId } = route.params;
+  const { guardian } = useAuth();
 
   const [tutorial, setTutorial] = useState<TutorialWithFrames | null>(null);
   const [loading, setLoading] = useState(true);
@@ -283,19 +285,22 @@ export default function TutorialPreviewScreen() {
 
   const frames = tutorial.frames ?? [];
   const currentFrame = frames[frameIndex];
+  const isCreator = guardian?.id === tutorial.created_by_guardian_id;
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Status banner */}
-        <View style={[styles.statusBanner, { backgroundColor: STATUS_COLORS[tutorial.status as TutorialStatus].bg }]}>
-          <AppText style={[styles.statusBannerText, { color: STATUS_COLORS[tutorial.status as TutorialStatus].text }]}>
-            {STATUS_LABELS[tutorial.status as TutorialStatus]}
-          </AppText>
-        </View>
+        {/* Status banner — creator only */}
+        {isCreator && (
+          <View style={[styles.statusBanner, { backgroundColor: STATUS_COLORS[tutorial.status as TutorialStatus].bg }]}>
+            <AppText style={[styles.statusBannerText, { color: STATUS_COLORS[tutorial.status as TutorialStatus].text }]}>
+              {STATUS_LABELS[tutorial.status as TutorialStatus]}
+            </AppText>
+          </View>
+        )}
 
-        {/* Rejected admin notes */}
-        {tutorial.status === 'rejected' && tutorial.admin_notes && (
+        {/* Rejected admin notes — creator only */}
+        {isCreator && tutorial.status === 'rejected' && tutorial.admin_notes && (
           <View style={styles.adminNotesCard}>
             <AppText style={styles.adminNotesLabel}>Admin Notes</AppText>
             <AppText style={styles.adminNotesText}>{tutorial.admin_notes}</AppText>
@@ -318,7 +323,7 @@ export default function TutorialPreviewScreen() {
                 }}
                 disabled={(tutorial?.frames?.length ?? 0) <= 1}
               >
-                <AppText style={[styles.autoPlayBtnText, autoPlay && { color: COLORS.bloomOnAccent }]}>
+                <AppText style={styles.autoPlayBtnText}>
                   {autoPlay ? '⏸  Stop' : '▶  Play video'}
                 </AppText>
               </TouchableOpacity>
@@ -344,7 +349,7 @@ export default function TutorialPreviewScreen() {
                   style={styles.audioBtn}
                   onPress={() => {
                     if (playerStatus.playing) { player.pause(); }
-                    else { player.seekTo(0); player.play(); }
+                    else { player.pause(); player.seekTo(0); player.play(); }
                   }}
                 >
                   <AppText style={styles.audioBtnText}>
@@ -352,7 +357,7 @@ export default function TutorialPreviewScreen() {
                   </AppText>
                 </TouchableOpacity>
               )}
-              {['preview', 'rejected'].includes(tutorial.status) && (
+              {isCreator && ['preview', 'rejected'].includes(tutorial.status) && (
                 <TouchableOpacity
                   style={styles.editBtn}
                   onPress={() => {
@@ -413,8 +418,8 @@ export default function TutorialPreviewScreen() {
           </View>
         )}
 
-        {/* Action buttons */}
-        <View style={styles.actions}>
+        {/* Action buttons — creator only */}
+        {isCreator && <View style={styles.actions}>
           {tutorial.status === 'preview' && (
             <TouchableOpacity
               style={[styles.actionBtn, styles.actionBtnPrimary, submitting && styles.actionBtnDisabled]}
@@ -446,10 +451,10 @@ export default function TutorialPreviewScreen() {
           <TouchableOpacity style={[styles.actionBtn, styles.actionBtnDelete]} onPress={deleteTutorial}>
             <AppText style={styles.actionBtnTextDelete}>Delete Tutorial</AppText>
           </TouchableOpacity>
-        </View>
+        </View>}
 
-        {/* Guardian inputs used to generate this tutorial */}
-        {tutorial.source === 'ai_generated' && (
+        {/* Guardian inputs used to generate this tutorial — creator only */}
+        {isCreator && tutorial.source === 'ai_generated' && (
           <View style={styles.inputsCard}>
             <AppText style={styles.inputsCardTitle}>Generation Settings</AppText>
             <View style={styles.inputsGrid}>
@@ -667,11 +672,11 @@ const styles = StyleSheet.create({
   frameHeader: { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 10 },
   frameCounter: { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted },
   autoPlayBtn: {
-    backgroundColor: COLORS.bloomActiveBg, borderRadius: 8,
-    paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: COLORS.bloomAccent,
+    backgroundColor: COLORS.bloomAccent, borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 8,
   },
-  autoPlayBtnActive: { backgroundColor: COLORS.bloomAccent },
-  autoPlayBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomAccent },
+  autoPlayBtnActive: { backgroundColor: COLORS.bloomNavy },
+  autoPlayBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomOnAccent },
   audioBtn: { backgroundColor: '#F0FDF4', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: '#86EFAC' },
   audioBtnText: { fontSize: 13, fontWeight: '700', color: '#166534' },
   editBtn: { backgroundColor: COLORS.bloomActiveBg, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: COLORS.bloomAccent },
@@ -691,9 +696,9 @@ const styles = StyleSheet.create({
   narration: { fontSize: 16, color: COLORS.bloomText, lineHeight: 24, opacity: 0.75 },
 
   frameNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 16 },
-  navBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: COLORS.bloomActiveBg },
+  navBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: COLORS.bloomAccent },
   navBtnDisabled: { opacity: 0.3 },
-  navBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomAccent },
+  navBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomOnAccent },
   frameDots: { flexDirection: 'row', gap: 6 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.bloomBorder },
   dotActive: { backgroundColor: COLORS.bloomAccent, width: 20 },

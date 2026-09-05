@@ -2,41 +2,102 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 export default function AppSettingsPage() {
-  const [quotaLimit, setQuotaLimit] = useState<number>(10);
-  const [draft, setDraft]           = useState<string>('10');
-  const [loading, setLoading]       = useState(true);
-  const [saving, setSaving]         = useState(false);
-  const [saved, setSaved]           = useState(false);
+  const [quotaLimit, setQuotaLimit]       = useState<number>(10);
+  const [draftQuota, setDraftQuota]       = useState<string>('10');
+  const [savingQuota, setSavingQuota]     = useState(false);
+  const [savedQuota, setSavedQuota]       = useState(false);
+
+  const [defaultDuration, setDefaultDuration] = useState<number>(25);
+  const [draftDuration, setDraftDuration]     = useState<string>('25');
+  const [savingDuration, setSavingDuration]   = useState(false);
+  const [savedDuration, setSavedDuration]     = useState(false);
+
+  const [imageTimeout, setImageTimeout]     = useState<number>(65000);
+  const [draftTimeout, setDraftTimeout]     = useState<string>('65000');
+  const [savingTimeout, setSavingTimeout]   = useState(false);
+  const [savedTimeout, setSavedTimeout]     = useState(false);
+
+  const [maxFrames, setMaxFrames]       = useState<number>(4);
+  const [draftFrames, setDraftFrames]   = useState<string>('4');
+  const [savingFrames, setSavingFrames] = useState(false);
+  const [savedFrames, setSavedFrames]   = useState(false);
+
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => { load(); }, []);
 
   async function load() {
-    const { data } = await supabase.from('app_settings').select('tutorial_quota_limit').single();
+    const { data } = await supabase.from('app_settings').select('tutorial_quota_limit, tutorial_default_duration, tutorial_image_timeout_ms, tutorial_max_frames').single();
     if (data) {
       setQuotaLimit(data.tutorial_quota_limit);
-      setDraft(String(data.tutorial_quota_limit));
+      setDraftQuota(String(data.tutorial_quota_limit));
+      setDefaultDuration(data.tutorial_default_duration ?? 25);
+      setDraftDuration(String(data.tutorial_default_duration ?? 25));
+      setImageTimeout(data.tutorial_image_timeout_ms ?? 65000);
+      setDraftTimeout(String(data.tutorial_image_timeout_ms ?? 65000));
+      setMaxFrames(data.tutorial_max_frames ?? 4);
+      setDraftFrames(String(data.tutorial_max_frames ?? 4));
     }
     setLoading(false);
   }
 
-  async function save(e: React.FormEvent) {
+  async function saveQuota(e: React.FormEvent) {
     e.preventDefault();
-    const val = parseInt(draft, 10);
+    const val = parseInt(draftQuota, 10);
     if (isNaN(val) || val < 1) return;
-    setSaving(true);
+    setSavingQuota(true);
     await supabase.from('app_settings').update({ tutorial_quota_limit: val, updated_at: new Date().toISOString() }).eq('id', 1);
     setQuotaLimit(val);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setSavingQuota(false);
+    setSavedQuota(true);
+    setTimeout(() => setSavedQuota(false), 2500);
+  }
+
+  async function saveDuration(e: React.FormEvent) {
+    e.preventDefault();
+    const val = parseInt(draftDuration, 10);
+    if (isNaN(val) || val < 5) return;
+    setSavingDuration(true);
+    await supabase.from('app_settings').update({ tutorial_default_duration: val, updated_at: new Date().toISOString() }).eq('id', 1);
+    setDefaultDuration(val);
+    setSavingDuration(false);
+    setSavedDuration(true);
+    setTimeout(() => setSavedDuration(false), 2500);
+  }
+
+  async function saveFrames(e: React.FormEvent) {
+    e.preventDefault();
+    const val = parseInt(draftFrames, 10);
+    if (isNaN(val) || val < 1) return;
+    setSavingFrames(true);
+    await supabase.from('app_settings').update({ tutorial_max_frames: val, updated_at: new Date().toISOString() }).eq('id', 1);
+    setMaxFrames(val);
+    setSavingFrames(false);
+    setSavedFrames(true);
+    setTimeout(() => setSavedFrames(false), 2500);
+  }
+
+  async function saveTimeout(e: React.FormEvent) {
+    e.preventDefault();
+    const val = parseInt(draftTimeout, 10);
+    if (isNaN(val) || val < 10000) return;
+    setSavingTimeout(true);
+    await supabase.from('app_settings').update({ tutorial_image_timeout_ms: val, updated_at: new Date().toISOString() }).eq('id', 1);
+    setImageTimeout(val);
+    setSavingTimeout(false);
+    setSavedTimeout(true);
+    setTimeout(() => setSavedTimeout(false), 2500);
   }
 
   if (loading) return <div style={{ padding: 32 }}>Loading…</div>;
 
-  const dirty = parseInt(draft, 10) !== quotaLimit;
+  const dirtyQuota    = parseInt(draftQuota, 10) !== quotaLimit;
+  const dirtyDuration = parseInt(draftDuration, 10) !== defaultDuration;
+  const dirtyTimeout  = parseInt(draftTimeout, 10) !== imageTimeout;
+  const dirtyFrames   = parseInt(draftFrames, 10) !== maxFrames;
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <h1 style={styles.heading}>App Settings</h1>
 
       <div style={styles.card}>
@@ -45,30 +106,107 @@ export default function AppSettingsPage() {
           Monthly limit for AI-generated tutorials per guardian. Applies to all guardians.
           Currently set to <strong>{quotaLimit}</strong>.
         </p>
-
-        <form onSubmit={save} style={styles.form}>
+        <form onSubmit={saveQuota} style={styles.form}>
           <label style={styles.label}>Monthly quota limit</label>
           <div style={styles.inputRow}>
             <input
-              type="number"
-              min={1}
-              max={100}
-              value={draft}
-              onChange={e => setDraft(e.target.value)}
+              type="number" min={1} max={100}
+              value={draftQuota} onChange={e => setDraftQuota(e.target.value)}
               style={styles.input}
             />
             <button
               type="submit"
-              disabled={saving || !dirty || parseInt(draft, 10) < 1 || isNaN(parseInt(draft, 10))}
-              style={{ ...styles.btn, ...(saving || !dirty ? styles.btnDisabled : {}) }}
+              disabled={savingQuota || !dirtyQuota || parseInt(draftQuota, 10) < 1 || isNaN(parseInt(draftQuota, 10))}
+              style={{ ...styles.btn, ...(savingQuota || !dirtyQuota ? styles.btnDisabled : {}) }}
             >
-              {saving ? 'Saving…' : 'Save'}
+              {savingQuota ? 'Saving…' : 'Save'}
             </button>
           </div>
-          {saved && <p style={styles.savedMsg}>✓ Saved successfully</p>}
-          {dirty && !saved && (
-            <p style={styles.hint}>Changed from {quotaLimit} → {draft}</p>
-          )}
+          {savedQuota && <p style={styles.savedMsg}>✓ Saved successfully</p>}
+          {dirtyQuota && !savedQuota && <p style={styles.hint}>Changed from {quotaLimit} → {draftQuota}</p>}
+        </form>
+      </div>
+
+      <div style={styles.card}>
+        <h2 style={styles.cardTitle}>Tutorial Default Duration</h2>
+        <p style={styles.cardDesc}>
+          Duration (in seconds) used when generating AI tutorials. Applies to all new tutorials.
+          Currently set to <strong>{defaultDuration}s</strong>.
+        </p>
+        <form onSubmit={saveDuration} style={styles.form}>
+          <label style={styles.label}>Duration (seconds)</label>
+          <div style={styles.inputRow}>
+            <input
+              type="number" min={5} max={120}
+              value={draftDuration} onChange={e => setDraftDuration(e.target.value)}
+              style={styles.input}
+            />
+            <button
+              type="submit"
+              disabled={savingDuration || !dirtyDuration || parseInt(draftDuration, 10) < 5 || isNaN(parseInt(draftDuration, 10))}
+              style={{ ...styles.btn, ...(savingDuration || !dirtyDuration ? styles.btnDisabled : {}) }}
+            >
+              {savingDuration ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+          {savedDuration && <p style={styles.savedMsg}>✓ Saved successfully</p>}
+          {dirtyDuration && !savedDuration && <p style={styles.hint}>Changed from {defaultDuration}s → {draftDuration}s</p>}
+        </form>
+      </div>
+
+      <div style={styles.card}>
+        <h2 style={styles.cardTitle}>Frames per Tutorial</h2>
+        <p style={styles.cardDesc}>
+          Number of frames (slides) Claude generates per tutorial. Each frame gets its own image and audio.
+          More frames = richer tutorial but higher cost (~$0.04 per extra frame).
+          Currently set to <strong>{maxFrames} frames</strong>.
+        </p>
+        <form onSubmit={saveFrames} style={styles.form}>
+          <label style={styles.label}>Max frames</label>
+          <div style={styles.inputRow}>
+            <input
+              type="number" min={1} max={10}
+              value={draftFrames} onChange={e => setDraftFrames(e.target.value)}
+              style={styles.input}
+            />
+            <button
+              type="submit"
+              disabled={savingFrames || !dirtyFrames || parseInt(draftFrames, 10) < 1 || isNaN(parseInt(draftFrames, 10))}
+              style={{ ...styles.btn, ...(savingFrames || !dirtyFrames ? styles.btnDisabled : {}) }}
+            >
+              {savingFrames ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+          {savedFrames && <p style={styles.savedMsg}>✓ Saved successfully</p>}
+          {dirtyFrames && !savedFrames && <p style={styles.hint}>Changed from {maxFrames} → {draftFrames} frames</p>}
+        </form>
+      </div>
+
+      <div style={styles.card}>
+        <h2 style={styles.cardTitle}>Image Generation Timeout</h2>
+        <p style={styles.cardDesc}>
+          Maximum time (in milliseconds) to wait for a single DALL·E image call before failing the job.
+          All frames generate in parallel so this is the wall-time cap for the image step regardless of frame count.
+          Free-tier wall-clock limit is 150s — keep this well below that. Currently set to <strong>{imageTimeout}ms ({imageTimeout / 1000}s)</strong>.
+        </p>
+        <form onSubmit={saveTimeout} style={styles.form}>
+          <label style={styles.label}>Timeout (milliseconds)</label>
+          <div style={styles.inputRow}>
+            <input
+              type="number" min={10000} max={120000} step={1000}
+              value={draftTimeout} onChange={e => setDraftTimeout(e.target.value)}
+              style={{ ...styles.input, width: 130 }}
+            />
+            <button
+              type="submit"
+              disabled={savingTimeout || !dirtyTimeout || parseInt(draftTimeout, 10) < 10000 || isNaN(parseInt(draftTimeout, 10))}
+              style={{ ...styles.btn, ...(savingTimeout || !dirtyTimeout ? styles.btnDisabled : {}) }}
+            >
+              {savingTimeout ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+          {savedTimeout && <p style={styles.savedMsg}>✓ Saved successfully</p>}
+          {dirtyTimeout && !savedTimeout && <p style={styles.hint}>Changed from {imageTimeout}ms → {draftTimeout}ms</p>}
         </form>
       </div>
     </div>

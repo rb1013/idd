@@ -24,8 +24,8 @@ const STATUS_COLORS: Record<TutorialStatus, { bg: string; text: string }> = {
 
 const STATUS_LABELS: Record<TutorialStatus, string> = {
   generating: 'Generating…',
-  preview:    'Review Needed',
-  pending:    'Pending Review',
+  preview:    'Preview',
+  pending:    'Pending Approval',
   approved:   'Approved',
   rejected:   'Rejected',
 };
@@ -37,8 +37,8 @@ type Tab = 'search' | 'my' | 'create';
 type MyFilter = 'all' | TutorialStatus;
 const MY_FILTERS: { key: MyFilter; label: string }[] = [
   { key: 'all',      label: 'All' },
-  { key: 'preview',  label: 'Review Needed' },
-  { key: 'pending',  label: 'Pending' },
+  { key: 'preview',  label: 'Preview' },
+  { key: 'pending',  label: 'Pending Approval' },
   { key: 'approved', label: 'Approved' },
   { key: 'rejected', label: 'Rejected' },
 ];
@@ -109,7 +109,7 @@ export default function GuardianTutorialsScreen() {
 
   async function loadApproved() {
     setLoadingSearch(true);
-    const { data } = await supabase.from('tutorials').select('*, guardian:guardians!created_by_guardian_id(full_name)').eq('status', 'approved').order('created_at', { ascending: false });
+    const { data } = await supabase.from('tutorials').select('*, guardian:guardians!created_by_guardian_id(full_name)').eq('status', 'approved').eq('is_public', true).order('created_at', { ascending: false });
     setApproved((data as TutorialWithGuardian[]) || []);
     setLoadingSearch(false);
   }

@@ -19,7 +19,7 @@ serve(async (req) => {
     const {
       guardian_id, title, display_name, target_skill, core_action, format,
       visual_style, image_style, pacing, tone, duration_seconds,
-      comprehension_level, language, background_audio, category_id,
+      comprehension_level, language, background_audio, category_id, is_public,
     } = body;
 
     if (!guardian_id || !title || !target_skill || !core_action || !format) {
@@ -29,24 +29,25 @@ serve(async (req) => {
       );
     }
 
-    // Check monthly quota (10/month max)
+    // Check monthly quota and fetch admin settings
     const month = new Date().toISOString().slice(0, 7);
-    const { data: quota } = await supabase
-      .from('guardian_tutorial_quota')
-      .select('count')
-      .eq('guardian_id', guardian_id)
-      .eq('month', month)
-      .single();
+    const [{ data: quota }, { data: appSettings }] = await Promise.all([
+      supabase.from('guardian_tutorial_quota').select('count').eq('guardian_id', guardian_id).eq('month', month).single(),
+      supabase.from('app_settings').select('tutorial_quota_limit, tutorial_max_frames').eq('id', 1).single(),
+    ]);
 
-    if ((quota?.count ?? 0) >= 10) {
+    const quotaLimit = appSettings?.tutorial_quota_limit ?? 10;
+    const maxFrames  = appSettings?.tutorial_max_frames ?? 4;
+
+    if ((quota?.count ?? 0) >= quotaLimit) {
       return new Response(
-        JSON.stringify({ error: 'Monthly quota of 10 tutorials reached. Try again next month.' }),
+        JSON.stringify({ error: `Monthly quota of ${quotaLimit} tutorials reached. Try again next month.` }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
     const topic = `${target_skill}: ${core_action}`;
-    const ai_prompt = buildPrompt({ target_skill, core_action, format, visual_style, image_style, pacing, tone, duration_seconds, comprehension_level, language });
+    const ai_prompt = buildPrompt({ target_skill, core_action, format, visual_style, image_style, pacing, tone, duration_seconds, comprehension_level, language, frameCount: maxFrames });
 
     // Insert tutorial record at status: generating
     const { data: tutorial, error: insertError } = await supabase
@@ -73,6 +74,7 @@ serve(async (req) => {
         pacing_label: pacing < 0.5 ? 'slow' : 'normal',
         tone_label: tone > 0.5 ? 'enthusiastic' : 'calm',
         background_audio: background_audio ?? null,
+        is_public: is_public ?? true,
       })
       .select()
       .single();
@@ -118,10 +120,11 @@ interface PromptParams {
   duration_seconds: number;
   comprehension_level: string;
   language: string;
+  frameCount: number;
 }
 
 function buildPrompt(p: PromptParams): string {
-  const frameCount = 3;
+  const frameCount = p.frameCount;
   const paceLabel = p.pacing < 0.5 ? 'slow and deliberate' : 'normal';
   const toneLabel = p.tone > 0.5 ? 'enthusiastic and encouraging' : 'calm and gentle';
 

@@ -247,7 +247,7 @@ export default function CreateUserScreen({ navigation }: Props) {
               onPress={() => { setTempDob(dob ?? new Date(2005, 0, 1)); setShowDobPicker(true); }}
               activeOpacity={0.75}
             >
-              <AppText style={[styles.pickerBtnTxt, !dob && { color: COLORS.textLight }]}>
+              <AppText style={[styles.pickerBtnTxt, !dob && { color: COLORS.bloomMuted }]}>
                 {dob ? dob.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Select date of birth…'}
               </AppText>
               <AppText style={{ fontSize: 18 }}>📅</AppText>
@@ -266,7 +266,7 @@ export default function CreateUserScreen({ navigation }: Props) {
               placeholder="e.g. alex123"
               autoCapitalize="none"
               autoCorrect={false}
-              placeholderTextColor={COLORS.textLight}
+              placeholderTextColor={COLORS.bloomMuted}
             />
             {checkingUsername && <AppText style={styles.checkingText}>Checking availability...</AppText>}
             {!checkingUsername && usernameError ? <AppText style={styles.errorText}>{usernameError}</AppText> : null}
@@ -390,7 +390,7 @@ export default function CreateUserScreen({ navigation }: Props) {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={styles.nextBtn} onPress={handleSubmit} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <AppText style={styles.nextBtnText}>Create Profile</AppText>}
+            {loading ? <ActivityIndicator color={COLORS.bloomOnAccent} /> : <AppText style={styles.nextBtnText}>Create Profile</AppText>}
           </TouchableOpacity>
         )}
       </View>
@@ -437,7 +437,7 @@ function Field({ label, ...props }: { label: string } & React.ComponentProps<typ
       <AppText style={styles.label}>
         {baseLabel}{isRequired && <AppText style={styles.required}> *</AppText>}
       </AppText>
-      <TextInput style={styles.input} placeholderTextColor={COLORS.textLight} {...props} />
+      <TextInput style={styles.input} placeholderTextColor={COLORS.bloomMuted} {...props} />
     </>
   );
 }
@@ -454,76 +454,76 @@ function Toggle({ label, value, onToggle }: { label: string; value: boolean; onT
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: COLORS.bloomBody },
   scroll: { flex: 1 },
   stepRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
   stepIndicator: { flex: 1, flexDirection: 'row', justifyContent: 'center', gap: 8 },
-  cancelLink: { fontSize: 14, color: COLORS.textLight, fontWeight: '500' },
-  stepDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.border },
-  stepDotActive: { backgroundColor: COLORS.primary },
+  cancelLink: { fontSize: 14, color: COLORS.bloomMuted, fontWeight: '500' },
+  stepDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.bloomBorder },
+  stepDotActive: { backgroundColor: COLORS.bloomAccent },
   inner: { padding: 24, paddingBottom: 48 },
-  sectionTitle: { fontSize: 24, fontWeight: '700', color: COLORS.text, marginBottom: 4 },
-  sectionSubtitle: { fontSize: 14, color: COLORS.textLight, marginBottom: 20 },
+  sectionTitle: { fontSize: 24, fontWeight: '700', color: COLORS.bloomText, marginBottom: 4 },
+  sectionSubtitle: { fontSize: 14, color: COLORS.bloomMuted, marginBottom: 20 },
   photoPicker: {
     width: 100, height: 100, borderRadius: 50,
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: COLORS.bloomActiveBg,
     justifyContent: 'center', alignItems: 'center',
     alignSelf: 'center', marginBottom: 24,
   },
   photo: { width: 100, height: 100, borderRadius: 50 },
-  photoText: { color: COLORS.primary, fontSize: 13, textAlign: 'center' },
-  label: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 8, marginTop: 16 },
+  photoText: { color: COLORS.bloomActiveText, fontSize: 13, textAlign: 'center' },
+  label: { fontSize: 14, fontWeight: '600', color: COLORS.bloomText, marginBottom: 8, marginTop: 16 },
   required: { color: COLORS.error, fontWeight: '700' },
-  usernameHint: { fontSize: 13, color: COLORS.textLight, lineHeight: 18, marginBottom: 8 },
+  usernameHint: { fontSize: 13, color: COLORS.bloomMuted, lineHeight: 18, marginBottom: 8 },
   input: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.bloomCard,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.bloomBorder,
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    color: COLORS.text,
+    color: COLORS.bloomText,
     marginBottom: 4,
   },
   inputError: { borderColor: COLORS.error },
   errorText: { fontSize: 13, color: COLORS.error, marginTop: 2, marginBottom: 4 },
-  checkingText: { fontSize: 13, color: COLORS.textLight, marginTop: 2, marginBottom: 4 },
-  availableText: { fontSize: 13, color: COLORS.success, marginTop: 2, marginBottom: 4 },
+  checkingText: { fontSize: 13, color: COLORS.bloomMuted, marginTop: 2, marginBottom: 4 },
+  availableText: { fontSize: 13, color: COLORS.bloomActiveText, marginTop: 2, marginBottom: 4 },
   toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
-  toggleLabel: { fontSize: 16, color: COLORS.text },
-  toggle: { width: 52, height: 30, borderRadius: 15, backgroundColor: COLORS.border, justifyContent: 'center', padding: 2 },
-  toggleOn: { backgroundColor: COLORS.primary },
+  toggleLabel: { fontSize: 16, color: COLORS.bloomText },
+  toggle: { width: 52, height: 30, borderRadius: 15, backgroundColor: COLORS.bloomBorder, justifyContent: 'center', padding: 2 },
+  toggleOn: { backgroundColor: COLORS.bloomAccent },
   toggleThumb: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff' },
   toggleThumbOn: { alignSelf: 'flex-end' },
-  navRow: { flexDirection: 'row', gap: 12, padding: 16, paddingBottom: 32, backgroundColor: COLORS.background, borderTopWidth: 1, borderTopColor: COLORS.border },
-  charCount: { fontSize: 12, color: COLORS.textLight, textAlign: 'right', marginTop: 4 },
-  emptyHint: { color: COLORS.textLight, fontSize: 14, marginTop: 16, textAlign: 'center' },
-  backBtn: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
-  backBtnText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
-  nextBtn: { flex: 2, backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center' },
+  navRow: { flexDirection: 'row', gap: 12, padding: 16, paddingBottom: 32, backgroundColor: COLORS.bloomBody, borderTopWidth: 1, borderTopColor: COLORS.bloomBorder },
+  charCount: { fontSize: 12, color: COLORS.bloomMuted, textAlign: 'right', marginTop: 4 },
+  emptyHint: { color: COLORS.bloomMuted, fontSize: 14, marginTop: 16, textAlign: 'center' },
+  backBtn: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.bloomBorder, alignItems: 'center' },
+  backBtnText: { color: COLORS.bloomText, fontSize: 16, fontWeight: '600' },
+  nextBtn: { flex: 2, backgroundColor: COLORS.bloomAccent, borderRadius: 12, padding: 16, alignItems: 'center' },
   nextBtnText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '600' },
 
   disclaimer: {
-    marginTop: 20, backgroundColor: '#FFF8E1', borderRadius: 12,
-    borderWidth: 1.5, borderColor: '#F6C90E', padding: 16,
+    marginTop: 20, backgroundColor: COLORS.bloomActiveBg, borderRadius: 12,
+    borderWidth: 1.5, borderColor: COLORS.bloomSageMid, padding: 16,
   },
-  disclaimerText: { fontSize: 13, color: '#6D5700', lineHeight: 20 },
+  disclaimerText: { fontSize: 13, color: COLORS.bloomText, lineHeight: 20 },
   disclaimerBold: { fontWeight: '800' },
-  disclaimerEmail: { fontWeight: '700', color: COLORS.primary },
+  disclaimerEmail: { fontWeight: '700', color: COLORS.bloomActiveText },
 
   pickerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: COLORS.bloomCard, borderWidth: 1, borderColor: COLORS.bloomBorder,
     borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, marginBottom: 4,
   },
-  pickerBtnTxt: { fontSize: 16, color: COLORS.text, flex: 1 },
+  pickerBtnTxt: { fontSize: 16, color: COLORS.bloomText, flex: 1 },
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 32 },
+  sheet: { backgroundColor: COLORS.bloomCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 32 },
   sheetHdr: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
   },
-  sheetTitle:  { fontSize: 16, fontWeight: '800', color: COLORS.text },
-  sheetCancel: { fontSize: 15, color: COLORS.textLight },
-  sheetDone:   { fontSize: 15, fontWeight: '700', color: COLORS.primary },
+  sheetTitle:  { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
+  sheetCancel: { fontSize: 15, color: COLORS.bloomMuted },
+  sheetDone:   { fontSize: 15, fontWeight: '700', color: COLORS.bloomAccent },
 });

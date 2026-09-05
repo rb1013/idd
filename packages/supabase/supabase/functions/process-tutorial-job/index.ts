@@ -35,9 +35,9 @@ serve(async (req) => {
   return new Response(JSON.stringify({ ok: true, status: 'queued' }), { status: 200 });
 });
 
-const MAX_FRAMES       = 3;      // cap to stay within 150s Supabase timeout
-const IMAGE_TIMEOUT_MS = 40_000; // 40s per image (gpt-image-1 can be slow)
-const AUDIO_TIMEOUT_MS = 20_000; // 20s per audio clip
+const MAX_FRAMES_DEFAULT = 4;    // fallback if app_settings fetch fails; free tier wall-clock: 150s; paid: 400s
+const AUDIO_TIMEOUT_MS = 20_000; // 20s per audio clip; runs in parallel with image generation
+const IMAGE_TIMEOUT_MS_DEFAULT = 65_000; // fallback if app_settings fetch fails
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
@@ -69,37 +69,42 @@ async function processJob(
     if (fetchErr || !tutorial) throw new Error('Tutorial not found');
     if (tutorial.format === 'video') throw new Error('Video generation not yet available.');
 
+    // Fetch admin-configurable settings (fall back to defaults if unavailable)
+    const { data: settings } = await supabase.from('app_settings').select('tutorial_image_timeout_ms, tutorial_max_frames').eq('id', 1).single();
+    const imageTimeoutMs = settings?.tutorial_image_timeout_ms ?? IMAGE_TIMEOUT_MS_DEFAULT;
+    const maxFrames      = settings?.tutorial_max_frames ?? MAX_FRAMES_DEFAULT;
+
     // ── Step 1: Generate script via Claude ────────────────────────────────────
     console.log(`[job:${jobId}] generating script`);
     const script = await withTimeout(generateScript(tutorial.ai_prompt), AUDIO_TIMEOUT_MS, 'Claude script');
 
-    // Cap frames to avoid timeout
-    const frames = script.frames.slice(0, MAX_FRAMES);
-    console.log(`[job:${jobId}] script ready — ${frames.length} frames (capped at ${MAX_FRAMES})`);
+    // Cap frames to admin-configured limit
+    const frames = script.frames.slice(0, maxFrames);
+    console.log(`[job:${jobId}] script ready — ${frames.length} frames (capped at ${maxFrames})`);
 
-    // ── Step 2: Generate image + audio for each frame ─────────────────────────
-    const frameRows = [];
-    let thumbnailUrl: string | null = null;
+    // ── Step 2: Generate image + audio for all frames in parallel ────────────
+    // Each frame generates its image and audio concurrently with each other.
+    // Worst-case wall time = max(IMAGE_TIMEOUT_MS, AUDIO_TIMEOUT_MS) = 40s,
+    // regardless of frame count — well within the 150s free-tier limit.
+    console.log(`[job:${jobId}] generating image + audio for ${frames.length} frames in parallel`);
 
-    for (const frame of frames) {
+    const frameRows = await Promise.all(frames.map(async (frame) => {
       const storagePath = `${tutorialId}/frame-${frame.order}`;
-      console.log(`[job:${jobId}] frame ${frame.order}: generating image`);
 
-      const imageUrl = await withTimeout(
-        generateAndStoreImage(supabase, frame.image_prompt, `${storagePath}.png`),
-        IMAGE_TIMEOUT_MS, `image frame ${frame.order}`,
-      );
-      console.log(`[job:${jobId}] frame ${frame.order}: image done — generating audio`);
+      const [imageUrl, audioUrl] = await Promise.all([
+        withTimeout(
+          generateAndStoreImage(supabase, frame.image_prompt, `${storagePath}.png`),
+          imageTimeoutMs, `image frame ${frame.order}`,
+        ),
+        withTimeout(
+          generateAndStoreAudio(supabase, frame.tts_text, `${storagePath}.mp3`),
+          AUDIO_TIMEOUT_MS, `audio frame ${frame.order}`,
+        ),
+      ]);
 
-      const audioUrl = await withTimeout(
-        generateAndStoreAudio(supabase, frame.tts_text, `${storagePath}.mp3`),
-        AUDIO_TIMEOUT_MS, `audio frame ${frame.order}`,
-      );
-      console.log(`[job:${jobId}] frame ${frame.order}: audio done`);
+      console.log(`[job:${jobId}] frame ${frame.order}: done`);
 
-      if (frame.order === 1) thumbnailUrl = imageUrl;
-
-      frameRows.push({
+      return {
         tutorial_id:  tutorialId,
         order_index:  frame.order,
         caption:      frame.caption,
@@ -107,16 +112,19 @@ async function processJob(
         image_prompt: frame.image_prompt,
         image_url:    imageUrl,
         audio_url:    audioUrl,
-      });
-    }
+      };
+    }));
+
+    const thumbnailUrl = frameRows.find(r => r.order_index === 1)?.image_url ?? null;
 
     // ── Step 3: Persist frames + update tutorial ───────────────────────────────
     console.log(`[job:${jobId}] inserting ${frameRows.length} frames`);
     await supabase.from('tutorial_frames').insert(frameRows);
 
+    const finalStatus = tutorial.is_public === false ? 'approved' : 'preview';
     await supabase
       .from('tutorials')
-      .update({ status: 'preview', thumbnail_url: thumbnailUrl, updated_at: new Date().toISOString() })
+      .update({ status: finalStatus, thumbnail_url: thumbnailUrl, updated_at: new Date().toISOString() })
       .eq('id', tutorialId);
 
     await supabase

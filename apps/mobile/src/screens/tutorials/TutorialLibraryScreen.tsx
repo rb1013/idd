@@ -75,6 +75,7 @@ export default function TutorialLibraryScreen() {
       .from('tutorials')
       .select('*, guardian:guardians!created_by_guardian_id(full_name)')
       .eq('status', 'approved')
+      .eq('is_public', true)
       .order('created_at', { ascending: false });
     setTutorials((data as TutorialWithGuardian[]) || []);
     setLoading(false);

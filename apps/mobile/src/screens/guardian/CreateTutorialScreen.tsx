@@ -8,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS, TUTORIAL_DURATIONS } from '../../constants';
+import { COLORS } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 
 // Defaults saved to every tutorial. To re-enable guardian customisation,
@@ -29,9 +29,10 @@ export default function CreateTutorialScreen() {
   const [targetSkill, setTargetSkill] = useState('');
   const [coreAction, setCoreAction] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [duration, setDuration] = useState(20);
+  const [isPublic, setIsPublic] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [quota, setQuota] = useState<{ used: number; limit: number } | null>(null);
+  const [defaultDuration, setDefaultDuration] = useState(25);
   const [targetSkills, setTargetSkills] = useState<string[]>([]);
   const [showSkillPicker, setShowSkillPicker] = useState(false);
 
@@ -46,10 +47,11 @@ export default function CreateTutorialScreen() {
   async function loadQuota(guardianId: string) {
     const [{ data }, { data: settings }] = await Promise.all([
       supabase.from('guardian_tutorial_quota').select('count').eq('guardian_id', guardianId).eq('month', new Date().toISOString().slice(0, 7)).single(),
-      supabase.from('app_settings').select('tutorial_quota_limit').single(),
+      supabase.from('app_settings').select('tutorial_quota_limit, tutorial_default_duration').single(),
     ]);
     const limit = settings?.tutorial_quota_limit ?? 10;
     setQuota({ used: data?.count ?? 0, limit });
+    if (settings?.tutorial_default_duration) setDefaultDuration(settings.tutorial_default_duration);
   }
 
   async function handleSubmit() {
@@ -74,10 +76,11 @@ export default function CreateTutorialScreen() {
           image_style: TUTORIAL_DEFAULTS.image_style,
           pacing: TUTORIAL_DEFAULTS.pacing,
           tone: TUTORIAL_DEFAULTS.tone,
-          duration_seconds: duration,
+          duration_seconds: defaultDuration,
           comprehension_level: TUTORIAL_DEFAULTS.comprehension_level,
           language: 'English',
           background_audio: TUTORIAL_DEFAULTS.background_audio,
+          is_public: isPublic,
         },
       });
       if (error || data?.error) throw new Error(data?.error ?? error?.message);
@@ -103,6 +106,10 @@ export default function CreateTutorialScreen() {
           </AppText>
         </View>
       )}
+
+      <View style={styles.infoBanner}>
+        <AppText style={styles.infoText}>ℹ️  Shared tutorials are reviewed by an admin before becoming visible to other guardians.</AppText>
+      </View>
 
       {/* Form card */}
       <View style={styles.formCard}>
@@ -152,12 +159,12 @@ export default function CreateTutorialScreen() {
 
         <Divider />
 
-        <FieldBlock label="Duration">
-          <SegRow
-            options={TUTORIAL_DURATIONS.map(d => ({ key: String(d), label: `${d}s` }))}
-            value={String(duration)}
-            onSelect={v => setDuration(Number(v))}
-          />
+        <FieldBlock label="Share with other guardians" hint="When approved, this tutorial will appear in the shared library for all guardians to use.">
+          <TouchableOpacity style={styles.shareToggleRow} onPress={() => setIsPublic(v => !v)} activeOpacity={0.7}>
+            <View style={[styles.shareToggle, isPublic && styles.shareToggleOn]}>
+              <View style={[styles.shareThumb, isPublic && styles.shareThumbOn]} />
+            </View>
+          </TouchableOpacity>
         </FieldBlock>
       </View>
 
@@ -172,9 +179,7 @@ export default function CreateTutorialScreen() {
           : <AppText style={styles.submitText}>✨  Create Tutorial</AppText>
         }
       </TouchableOpacity>
-      <AppText style={styles.footerNote}>
-        Uses 1 of your {quota?.limit ?? 10} monthly credits · AI generation takes ~30 seconds
-      </AppText>
+      <AppText style={styles.footerNote}>AI generation takes upto 1-2 mins</AppText>
 
       <Modal visible={showSkillPicker} transparent animationType="slide" onRequestClose={() => setShowSkillPicker(false)}>
         <TouchableOpacity style={styles.sheetBackdrop} activeOpacity={1} onPress={() => setShowSkillPicker(false)}>
@@ -259,6 +264,13 @@ const styles = StyleSheet.create({
   quotaLabel: { fontSize: 14, fontWeight: '600', color: COLORS.bloomText },
   quotaCount: { fontSize: 14, fontWeight: '800', color: COLORS.bloomAccent },
 
+  infoBanner: {
+    backgroundColor: COLORS.bloomActiveBg, borderRadius: 12,
+    borderLeftWidth: 3, borderLeftColor: COLORS.bloomAccent,
+    padding: 12,
+  },
+  infoText: { fontSize: 13, color: COLORS.bloomText, lineHeight: 18 },
+
   formCard: {
     backgroundColor: COLORS.bloomCard, borderRadius: 20, padding: 16,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
@@ -314,6 +326,12 @@ const styles = StyleSheet.create({
   selectPlaceholder: { color: COLORS.bloomMuted, fontWeight: '400' },
   selectClear: { fontSize: 15, color: COLORS.bloomMuted, fontWeight: '700', paddingHorizontal: 4 },
   selectChevron: { fontSize: 22, color: COLORS.bloomMuted, lineHeight: 26 },
+  // Share toggle
+  shareToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  shareToggle: { width: 52, height: 30, borderRadius: 15, backgroundColor: COLORS.bloomBorder, justifyContent: 'center', padding: 2 },
+  shareToggleOn: { backgroundColor: COLORS.bloomAccent },
+  shareThumb: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff' },
+  shareThumbOn: { alignSelf: 'flex-end' },
   // Skill picker sheet
   sheetBackdrop: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end',
