@@ -12,6 +12,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import type { TutorialWithFrames, TutorialFrame, TutorialStatus } from '../../types';
+import YoutubePlayer from '../../components/YoutubePlayer';
 
 const { width } = Dimensions.get('window');
 
@@ -290,8 +291,8 @@ export default function TutorialPreviewScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Status banner — creator only */}
-        {isCreator && (
+        {/* Status banner — creator only, not shown when approved */}
+        {isCreator && tutorial.status !== 'approved' && (
           <View style={[styles.statusBanner, { backgroundColor: STATUS_COLORS[tutorial.status as TutorialStatus].bg }]}>
             <AppText style={[styles.statusBannerText, { color: STATUS_COLORS[tutorial.status as TutorialStatus].text }]}>
               {STATUS_LABELS[tutorial.status as TutorialStatus]}
@@ -310,8 +311,23 @@ export default function TutorialPreviewScreen() {
         {/* Tutorial title */}
         <AppText style={styles.title}>{tutorial.display_name || tutorial.category}</AppText>
 
-        {/* Frame viewer */}
-        {frames.length > 0 && (
+        {/* YouTube player */}
+        {tutorial.source === 'youtube' && tutorial.video_url && (() => {
+          const match = tutorial.video_url.match(/embed\/([a-zA-Z0-9_-]{11})/);
+          const videoId = match?.[1];
+          if (!videoId) return null;
+          return (
+            <View style={{ marginBottom: 20 }}>
+              <YoutubePlayer
+                videoId={videoId}
+                height={Math.round((width - 32) * 9 / 16)}
+              />
+            </View>
+          );
+        })()}
+
+        {/* Frame viewer (slideshow only) */}
+        {tutorial.source !== 'youtube' && frames.length > 0 && (
           <View style={styles.frameContainer}>
             {/* Play All — top */}
             <View style={styles.frameActions}>
@@ -449,7 +465,7 @@ export default function TutorialPreviewScreen() {
             </View>
           )}
           <TouchableOpacity style={[styles.actionBtn, styles.actionBtnDelete]} onPress={deleteTutorial}>
-            <AppText style={styles.actionBtnTextDelete}>Delete Tutorial</AppText>
+            <AppText style={styles.actionBtnTextDelete}>{tutorial.source === 'youtube' ? 'Delete Video' : 'Delete Tutorial'}</AppText>
           </TouchableOpacity>
         </View>}
 

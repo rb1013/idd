@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   Image, ActivityIndicator, Alert, TextInput, Modal, ScrollView,
@@ -25,9 +25,12 @@ interface LinkedUser {
 
 export default function TutorialLibraryScreen() {
   const { params } = useRoute<RouteType>();
-  const linkedOnly = params?.linkedOnly ?? false;
   const { guardian } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<GuardianNavParamList>>();
+
+  const [activeTab, setActiveTab] = useState<'learner' | 'find'>(params?.linkedOnly ? 'learner' : 'find');
+  const activeTabRef = useRef<'learner' | 'find'>(params?.linkedOnly ? 'learner' : 'find');
+  const firstTabChange = useRef(true);
 
   const [tutorials, setTutorials] = useState<TutorialWithGuardian[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,8 +56,18 @@ export default function TutorialLibraryScreen() {
   const [togglingFeature, setTogglingFeature] = useState(false);
 
   useEffect(() => {
-    navigation.setOptions({ title: linkedOnly ? "Learner's Tutorials" : 'Search Tutorials' });
-  }, [linkedOnly]);
+    navigation.setOptions({ title: 'Tutorials' });
+  }, []);
+
+  // Keep ref in sync with state so loadTutorials always sees current tab
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+    if (firstTabChange.current) { firstTabChange.current = false; return; }
+    setSearch('');
+    setFilterSkills([]);
+    setFilterLevels([]);
+    loadTutorials();
+  }, [activeTab]);
 
   useFocusEffect(
     useCallback(() => {
@@ -71,12 +84,15 @@ export default function TutorialLibraryScreen() {
 
   async function loadTutorials() {
     setLoading(true);
-    const { data } = await supabase
+    const tab = activeTabRef.current;
+    let query = supabase
       .from('tutorials')
       .select('*, guardian:guardians!created_by_guardian_id(full_name)')
       .eq('status', 'approved')
-      .eq('is_public', true)
       .order('created_at', { ascending: false });
+    // Find tab: only public tutorials. Learner tab: include private (guardian's own)
+    if (tab !== 'learner') query = query.eq('is_public', true);
+    const { data } = await query;
     setTutorials((data as TutorialWithGuardian[]) || []);
     setLoading(false);
   }
@@ -191,7 +207,7 @@ export default function TutorialLibraryScreen() {
   // ── Rendering ──────────────────────────────────────────────────────────────
 
   const filtered = tutorials.filter(t => {
-    if (linkedOnly && !linkedTutorialIds.has(t.id)) return false;
+    if (activeTab === 'learner' && !linkedTutorialIds.has(t.id)) return false;
     const q = search.toLowerCase();
     const matchSearch = !q || t.title.toLowerCase().includes(q) || (t.topic ?? '').toLowerCase().includes(q) || t.category.toLowerCase().includes(q);
     const matchSkill = filterSkills.length === 0 || filterSkills.includes(t.category);
@@ -199,31 +215,26 @@ export default function TutorialLibraryScreen() {
     return matchSearch && matchSkill && matchLevel;
   });
 
-  // In linkedOnly mode, show a full empty state (no filters/search) until tutorials are loaded and confirmed empty
-  const showNoLinkedState = linkedOnly && linkedLoaded && linkedTutorialIds.size === 0;
-  const showFilters = !linkedOnly || (linkedLoaded && linkedTutorialIds.size > 0);
-
   return (
     <View style={styles.container}>
-      {showNoLinkedState ? (
-        <View style={styles.noLinkedState}>
-          <AppText style={styles.noLinkedEmoji}>📚</AppText>
-          <AppText style={styles.noLinkedTitle}>No tutorials added yet</AppText>
-          <AppText style={styles.noLinkedHint}>
-            Browse the tutorial library and add tutorials for your learner to watch.
-          </AppText>
+      {/* Tab bar */}
+      <View style={styles.tabBar}>
+        {(['learner', 'find'] as const).map(tab => (
           <TouchableOpacity
-            style={styles.noLinkedBtn}
-            onPress={() => navigation.navigate('TutorialLibrary', { linkedOnly: false })}
-            activeOpacity={0.8}
+            key={tab}
+            style={[styles.tab, activeTab === tab && styles.tabActive]}
+            onPress={() => setActiveTab(tab)}
+            activeOpacity={0.75}
           >
-            <AppText style={styles.noLinkedBtnText}>Browse Tutorials →</AppText>
+            <AppText style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+              {tab === 'learner' ? "Learner's Tutorials" : 'Find Tutorials'}
+            </AppText>
           </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-      {/* Search bar */}
-      {showFilters && (
+        ))}
+      </View>
+
+      {/* Search bar — Find tab only */}
+      {activeTab === 'find' && (
         <View style={styles.searchRow}>
           <TextInput
             style={styles.searchInput}
@@ -236,9 +247,8 @@ export default function TutorialLibraryScreen() {
         </View>
       )}
 
-      {/* Filter panel */}
-      {showFilters && (
-        <View style={styles.filterPanel}>
+      {/* Filter panel — Find tab only */}
+      {activeTab === 'find' && <View style={styles.filterPanel}>
           <TouchableOpacity style={styles.filterRow} onPress={() => setShowSkillPicker(true)} activeOpacity={0.75}>
             <AppText style={styles.filterLabel}>Skill</AppText>
             <AppText style={[styles.filterValue, filterSkills.length === 0 && styles.filterPlaceholder]} numberOfLines={1}>
@@ -264,8 +274,7 @@ export default function TutorialLibraryScreen() {
               : <AppText style={styles.filterChevron}>›</AppText>
             }
           </TouchableOpacity>
-        </View>
-      )}
+        </View>}
 
       {loading ? (
         <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>
@@ -312,10 +321,6 @@ export default function TutorialLibraryScreen() {
                   {t.guardian?.full_name && (
                     <AppText style={styles.cardCreator} numberOfLines={1}>by {t.guardian.full_name}</AppText>
                   )}
-                  <View style={styles.cardMetas}>
-                    <AppText style={styles.cardMetaChip}>{t.comprehension_level}</AppText>
-                    {t.duration_seconds ? <AppText style={styles.cardMetaChip}>{t.duration_seconds}s</AppText> : null}
-                  </View>
                   <TouchableOpacity
                     style={[styles.addBtn, isLinked && styles.addBtnLinked]}
                     onPress={() => toggleLink(t)}
@@ -323,7 +328,7 @@ export default function TutorialLibraryScreen() {
                     activeOpacity={0.75}
                   >
                     <AppText style={[styles.addBtnText, isLinked && styles.addBtnTextLinked]}>
-                      {toggling ? '…' : linkedOnly ? '✕ Remove' : isLinked ? '✓ Added' : '＋ Add to Learner'}
+                      {toggling ? '…' : activeTab === 'learner' ? '✕ Remove' : isLinked ? '✓ Added' : '＋ Add to Learner'}
                     </AppText>
                   </TouchableOpacity>
                 </View>
@@ -332,9 +337,17 @@ export default function TutorialLibraryScreen() {
           }}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <AppText style={styles.emptyEmoji}>{linkedOnly ? '📚' : '🔍'}</AppText>
-              <AppText style={styles.emptyText}>{linkedOnly ? 'No linked tutorials' : 'No tutorials found'}</AppText>
-              <AppText style={styles.emptyHint}>{linkedOnly ? 'Add tutorials from the Tutorials page' : 'Try adjusting your search or filters'}</AppText>
+              <AppText style={styles.emptyEmoji}>{activeTab === 'learner' ? '📚' : '🔍'}</AppText>
+              <AppText style={styles.emptyText}>{activeTab === 'learner' ? 'No linked tutorials' : 'No tutorials found'}</AppText>
+              {activeTab === 'learner' ? (
+                <AppText style={styles.emptyHint}>
+                  Switch to{' '}
+                  <AppText style={styles.emptyLink} onPress={() => setActiveTab('find')}>Find Tutorials</AppText>
+                  {' '}to add some
+                </AppText>
+              ) : (
+                <AppText style={styles.emptyHint}>Try adjusting your search or filters</AppText>
+              )}
             </View>
           }
         />
@@ -455,8 +468,6 @@ export default function TutorialLibraryScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
-        </>
-      )}
     </View>
   );
 }
@@ -464,6 +475,12 @@ export default function TutorialLibraryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bloomBody },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
+
+  tabBar: { flexDirection: 'row', backgroundColor: COLORS.bloomCard, borderBottomWidth: 1.5, borderBottomColor: COLORS.bloomBorder },
+  tab: { flex: 1, paddingVertical: 13, alignItems: 'center', borderBottomWidth: 2.5, borderBottomColor: 'transparent' },
+  tabActive: { borderBottomColor: COLORS.bloomAccent },
+  tabText: { fontSize: 14, fontWeight: '600', color: COLORS.bloomMuted },
+  tabTextActive: { color: COLORS.bloomAccent, fontWeight: '700' },
 
   searchRow: { padding: 14, paddingBottom: 8 },
   searchInput: {
@@ -552,16 +569,7 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 48 },
   emptyText: { fontSize: 18, fontWeight: '700', color: COLORS.bloomText },
   emptyHint: { fontSize: 13, color: COLORS.bloomMuted },
-
-  noLinkedState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 },
-  noLinkedEmoji: { fontSize: 56 },
-  noLinkedTitle: { fontSize: 20, fontWeight: '800', color: COLORS.bloomText, textAlign: 'center' },
-  noLinkedHint: { fontSize: 14, color: COLORS.bloomMuted, textAlign: 'center', lineHeight: 22 },
-  noLinkedBtn: {
-    marginTop: 8, backgroundColor: COLORS.bloomAccent, borderRadius: 16,
-    paddingVertical: 14, paddingHorizontal: 28,
-  },
-  noLinkedBtnText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 15 },
+  emptyLink: { fontSize: 13, color: COLORS.bloomAccent, fontWeight: '700', textDecorationLine: 'underline' },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   pickerCard: {

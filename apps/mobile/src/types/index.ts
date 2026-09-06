@@ -83,7 +83,7 @@ export interface Conversation {
 
 export type TutorialFormat = 'video' | 'slideshow';
 export type TutorialStatus = 'generating' | 'preview' | 'pending' | 'approved' | 'rejected';
-export type TutorialSource = 'admin_upload' | 'ai_generated';
+export type TutorialSource = 'admin_upload' | 'ai_generated' | 'youtube';
 
 export interface Tutorial {
   id: string;
@@ -115,6 +115,7 @@ export interface Tutorial {
   tone_label: string | null;
   background_audio: string | null;
   is_public: boolean;
+  tutorial_error_code: number | null;
 }
 
 export interface TutorialFrame {

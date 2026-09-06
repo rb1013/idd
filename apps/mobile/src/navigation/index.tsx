@@ -24,6 +24,7 @@ import GuardianNotificationsScreen from '../screens/guardian/GuardianNotificatio
 import GuardianAccountScreen from '../screens/guardian/GuardianAccountScreen';
 import GuardianTutorialsScreen from '../screens/guardian/GuardianTutorialsScreen';
 import CreateTutorialScreen from '../screens/guardian/CreateTutorialScreen';
+import LinkYoutubeScreen from '../screens/guardian/LinkYoutubeScreen';
 import TutorialPreviewScreen from '../screens/tutorials/TutorialPreviewScreen';
 import TutorialLibraryScreen from '../screens/tutorials/TutorialLibraryScreen';
 import GuardianActivitiesScreen from '../screens/guardian/GuardianActivitiesScreen';
@@ -74,6 +75,7 @@ export type GuardianNavParamList = {
   CreateUser: undefined;
   EditUser: { userId: string };
   CreateTutorial: undefined;
+  LinkYoutube: undefined;
   TutorialPreview: { tutorialId: string };
   TutorialLibrary: { userId?: string; linkedOnly?: boolean };
   LearnerDiscovery: undefined;
@@ -250,6 +252,7 @@ function GuardianTabs() {
       <GuardianNav.Screen name="CreateUser"      component={CreateUserScreen}            options={{ title: 'Create Profile' }} />
       <GuardianNav.Screen name="EditUser"        component={EditUserScreen}              options={{ title: 'Edit Profile' }} />
       <GuardianNav.Screen name="CreateTutorial"      component={CreateTutorialScreen}        options={{ title: 'Create Tutorial', headerRight: undefined }} />
+      <GuardianNav.Screen name="LinkYoutube"         component={LinkYoutubeScreen}           options={{ title: 'Link YouTube Video', headerRight: undefined }} />
       <GuardianNav.Screen name="TutorialPreview"    component={TutorialPreviewScreen}       options={{ title: 'Preview Tutorial', headerRight: undefined }} />
       <GuardianNav.Screen name="TutorialLibrary"    component={TutorialLibraryScreen}       options={{ title: 'Search Tutorials', headerRight: undefined }} />
       <GuardianNav.Screen name="LearnerDiscovery"   component={LearnerDiscoveryScreen}      options={{ title: 'Find Friends', headerRight: undefined }} />

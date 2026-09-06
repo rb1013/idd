@@ -10,7 +10,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS, TUTORIAL_COMPREHENSION } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
-import type { Tutorial, TutorialStatus } from '../../types';
+import type { Tutorial, TutorialStatus, TutorialSource } from '../../types';
 
 type TutorialWithGuardian = Tutorial & { guardian?: { full_name: string } | null };
 
@@ -34,6 +34,11 @@ const FORMAT_EMOJI: Record<string, string> = { video: '🎬', slideshow: '🖼' 
 
 type Tab = 'search' | 'my' | 'create';
 
+const MY_TYPE_OPTIONS: { key: TutorialSource; label: string }[] = [
+  { key: 'ai_generated', label: '✨ AI Generated' },
+  { key: 'youtube',      label: '▶️ YouTube' },
+];
+
 const MY_FILTER_OPTIONS: { key: TutorialStatus; label: string }[] = [
   { key: 'generating', label: 'Generating Tutorial' },
   { key: 'preview',    label: 'Preview' },
@@ -53,8 +58,10 @@ export default function GuardianTutorialsScreen() {
   const [myTutorials, setMyTutorials]   = useState<Tutorial[]>([]);
   const [loadingMy, setLoadingMy]       = useState(true);
   const [myFilters, setMyFilters]       = useState<TutorialStatus[]>([]);
+  const [myTypes, setMyTypes]           = useState<TutorialSource[]>([]);
   const [myVisibility, setMyVisibility] = useState<'all' | 'public' | 'private'>('all');
   const [showMyFilterPicker, setShowMyFilterPicker] = useState(false);
+  const [showMyTypePicker, setShowMyTypePicker]     = useState(false);
   const [quota, setQuota]               = useState<{ used: number; limit: number } | null>(null);
 
   // ── Search Tutorials tab ──────────────────────────────────────────────────
@@ -152,8 +159,9 @@ export default function GuardianTutorialsScreen() {
 
   const filteredMy = myTutorials.filter(t => {
     const matchStatus = myFilters.length === 0 || myFilters.includes(t.status as TutorialStatus);
-    const matchVis = myVisibility === 'all' || (myVisibility === 'public' ? t.is_public : !t.is_public);
-    return matchStatus && matchVis;
+    const matchType   = myTypes.length === 0   || myTypes.includes(t.source as TutorialSource);
+    const matchVis    = myVisibility === 'all' || (myVisibility === 'public' ? t.is_public : !t.is_public);
+    return matchStatus && matchType && matchVis;
   });
   const filteredSearch = approved.filter(t => {
     if (linkedIds.has(t.id)) return false;
@@ -233,35 +241,40 @@ export default function GuardianTutorialsScreen() {
             <FlatList
               data={filteredSearch}
               keyExtractor={t => t.id}
-              contentContainerStyle={styles.list}
+              numColumns={2}
+              columnWrapperStyle={styles.gridRow}
+              contentContainerStyle={styles.gridList}
               renderItem={({ item: t }) => {
                 const toggling = togglingId === t.id;
+                const isLinked = linkedIds.has(t.id);
                 return (
                   <TouchableOpacity
-                    style={styles.card}
+                    style={styles.gridCard}
                     onPress={() => navigation.navigate('TutorialPreview', { tutorialId: t.id })}
                     activeOpacity={0.85}
                   >
-                    <View style={styles.thumb}>
+                    <View>
                       {t.thumbnail_url
-                        ? <Image source={{ uri: t.thumbnail_url }} style={styles.thumbImage} />
-                        : <AppText style={styles.thumbEmoji}>{FORMAT_EMOJI[t.format] ?? '📚'}</AppText>
+                        ? <Image source={{ uri: t.thumbnail_url }} style={styles.gridThumb} />
+                        : <View style={[styles.gridThumb, styles.gridThumbPlaceholder]}>
+                            <AppText style={styles.gridThumbEmoji}>{FORMAT_EMOJI[t.format] ?? '📚'}</AppText>
+                          </View>
                       }
                     </View>
-                    <View style={styles.cardInfo}>
-                      <AppText style={styles.cardTitle} numberOfLines={2}>{t.display_name || t.category}</AppText>
-                      <AppText style={styles.cardSub}>{t.category}</AppText>
+                    <View style={styles.gridCardBody}>
+                      <AppText style={styles.gridCardTitle} numberOfLines={2}>{t.display_name || t.category}</AppText>
+                      <AppText style={styles.gridCardSub}>{t.category}</AppText>
                       {(t as TutorialWithGuardian).guardian?.full_name && (
-                        <AppText style={styles.cardCreator} numberOfLines={1}>by {(t as TutorialWithGuardian).guardian!.full_name}</AppText>
+                        <AppText style={styles.gridCardCreator} numberOfLines={1}>by {(t as TutorialWithGuardian).guardian!.full_name}</AppText>
                       )}
                       <TouchableOpacity
-                        style={styles.linkBtn}
+                        style={[styles.gridAddBtn, isLinked && styles.gridAddBtnLinked]}
                         onPress={() => toggleLink(t)}
                         disabled={toggling}
                         activeOpacity={0.75}
                       >
-                        <AppText style={styles.linkBtnText}>
-                          {toggling ? '…' : '＋ Add to Learner'}
+                        <AppText style={[styles.gridAddBtnText, isLinked && styles.gridAddBtnTextLinked]}>
+                          {toggling ? '…' : isLinked ? '✓ Added' : '＋ Add to Learner'}
                         </AppText>
                       </TouchableOpacity>
                     </View>
@@ -370,6 +383,19 @@ export default function GuardianTutorialsScreen() {
               }
             </TouchableOpacity>
             <View style={styles.filterDivider} />
+            <TouchableOpacity style={styles.filterRow} onPress={() => setShowMyTypePicker(true)} activeOpacity={0.75}>
+              <AppText style={styles.filterLabel}>Type</AppText>
+              <AppText style={[styles.filterValue, myTypes.length === 0 && styles.filterPlaceholder]} numberOfLines={1}>
+                {myTypes.length === 0 ? 'All Types' : myTypes.length === 1 ? MY_TYPE_OPTIONS.find(o => o.key === myTypes[0])?.label : `${myTypes.length} selected`}
+              </AppText>
+              {myTypes.length > 0
+                ? <TouchableOpacity onPress={() => setMyTypes([])} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <AppText style={styles.filterClear}>✕</AppText>
+                  </TouchableOpacity>
+                : <AppText style={styles.filterChevron}>›</AppText>
+              }
+            </TouchableOpacity>
+            <View style={styles.filterDivider} />
             <View style={styles.filterRow}>
               <AppText style={styles.filterLabel}>Show</AppText>
               <View style={styles.segmented}>
@@ -425,6 +451,41 @@ export default function GuardianTutorialsScreen() {
             </TouchableOpacity>
           </Modal>
 
+          {/* Type picker */}
+          <Modal visible={showMyTypePicker} transparent animationType="slide" onRequestClose={() => setShowMyTypePicker(false)}>
+            <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowMyTypePicker(false)}>
+              <View style={styles.sheet} onStartShouldSetResponder={() => true}>
+                <View style={styles.sheetHdr}>
+                  <AppText style={styles.sheetTitle}>Filter by Type</AppText>
+                  {myTypes.length > 0 && (
+                    <TouchableOpacity onPress={() => setMyTypes([])}>
+                      <AppText style={styles.filterClear}>Clear</AppText>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                {MY_TYPE_OPTIONS.map(o => {
+                  const selected = myTypes.includes(o.key);
+                  return (
+                    <TouchableOpacity
+                      key={o.key}
+                      style={[styles.sheetOption, selected && styles.sheetOptionActive]}
+                      onPress={() => setMyTypes(prev => selected ? prev.filter(k => k !== o.key) : [...prev, o.key])}
+                      activeOpacity={0.7}
+                    >
+                      <AppText style={[styles.sheetOptionText, selected && styles.sheetOptionTextActive]}>{o.label}</AppText>
+                      <View style={[styles.multiCheck, selected && styles.multiCheckActive]}>
+                        {selected && <AppText style={styles.multiCheckMark}>✓</AppText>}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+                <TouchableOpacity style={styles.sheetDone} onPress={() => setShowMyTypePicker(false)}>
+                  <AppText style={styles.sheetDoneText}>Done</AppText>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </Modal>
+
           {loadingMy ? (
             <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>
           ) : (
@@ -458,6 +519,18 @@ export default function GuardianTutorialsScreen() {
                     </View>
                     {t.status === 'generating' && (
                       <AppText style={styles.generatingHint}>May take 1–2 mins</AppText>
+                    )}
+                    {t.status === 'approved' && learnerUserId && (
+                      <TouchableOpacity
+                        style={[styles.linkBtn, linkedIds.has(t.id) && styles.linkBtnLinked]}
+                        onPress={() => toggleLink(t)}
+                        disabled={togglingId === t.id}
+                        activeOpacity={0.75}
+                      >
+                        <AppText style={[styles.linkBtnText, linkedIds.has(t.id) && styles.linkBtnTextLinked]}>
+                          {togglingId === t.id ? '…' : linkedIds.has(t.id) ? '✓ Added to Learner' : '＋ Add to Learner'}
+                        </AppText>
+                      </TouchableOpacity>
                     )}
                   </View>
                   {t.status !== 'generating' && (
@@ -499,23 +572,34 @@ export default function GuardianTutorialsScreen() {
             </View>
           )}
 
-          <View style={styles.createCard}>
+          <TouchableOpacity
+            style={[styles.createCard, quota?.used !== undefined && quota.used >= quota.limit && { opacity: 0.6 }]}
+            onPress={() => {
+              if (quota && quota.used >= quota.limit) { Alert.alert('Quota reached', `You have used all ${quota.limit} tutorials for this month.`); return; }
+              navigation.navigate('CreateTutorial');
+            }}
+            activeOpacity={0.85}
+          >
             <AppText style={styles.createEmoji}>✨</AppText>
-            <AppText style={styles.createHeading}>AI-Generated Tutorials</AppText>
-            <AppText style={styles.createBody}>
-              Describe what you'd like your learner to learn. Our AI will generate a personalised slideshow tutorial tailored to their needs.
-            </AppText>
-            <TouchableOpacity
-              style={[styles.createBtn, quota?.used !== undefined && quota.used >= quota.limit && styles.createBtnDisabled]}
-              onPress={() => {
-                if (quota && quota.used >= quota.limit) { Alert.alert('Quota reached', `You have used all ${quota.limit} tutorials for this month.`); return; }
-                navigation.navigate('CreateTutorial');
-              }}
-              activeOpacity={0.85}
-            >
-              <AppText style={styles.createBtnText}>✨  Create Tutorial</AppText>
-            </TouchableOpacity>
-          </View>
+            <View style={styles.createCardContent}>
+              <AppText style={styles.createHeading}>AI-Generated Tutorial</AppText>
+              <AppText style={styles.createBody}>AI creates a personalised slideshow for your learner.</AppText>
+            </View>
+            <AppText style={styles.createChevron}>›</AppText>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.createCard}
+            onPress={() => navigation.navigate('LinkYoutube')}
+            activeOpacity={0.85}
+          >
+            <AppText style={styles.createEmoji}>▶️</AppText>
+            <View style={styles.createCardContent}>
+              <AppText style={styles.createHeading}>Link YouTube Video</AppText>
+              <AppText style={styles.createBody}>Embed a YouTube video — plays inside the app. ⚠️ May show ads.</AppText>
+            </View>
+            <AppText style={styles.createChevron}>›</AppText>
+          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -550,6 +634,27 @@ const styles = StyleSheet.create({
   linkBtnLinked: { backgroundColor: COLORS.statusGreenLight },
   linkBtnText: { fontSize: 13, fontWeight: '800', color: COLORS.bloomOnAccent },
   linkBtnTextLinked: { color: COLORS.statusGreenDark },
+
+  // Search tab grid
+  gridList: { padding: 12, paddingBottom: 32 },
+  gridRow:  { gap: 12, marginBottom: 12 },
+  gridCard: {
+    flex: 1, backgroundColor: COLORS.bloomCard, borderRadius: 18,
+    borderWidth: 1.5, borderColor: COLORS.bloomBorder, overflow: 'hidden',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+  },
+  gridThumb:            { width: '100%', height: 120 },
+  gridThumbPlaceholder: { backgroundColor: COLORS.bloomActiveBg, justifyContent: 'center', alignItems: 'center' },
+  gridThumbEmoji:       { fontSize: 44 },
+  gridCardBody:         { padding: 12, gap: 4 },
+  gridCardTitle:        { fontSize: 15, fontWeight: '800', color: COLORS.bloomText, lineHeight: 20 },
+  gridCardSub:          { fontSize: 12, fontWeight: '500', color: COLORS.bloomMuted, marginBottom: 2 },
+  gridCardCreator:      { fontSize: 11, color: COLORS.bloomMuted, fontStyle: 'italic' },
+  gridAddBtn:           { backgroundColor: COLORS.bloomAccent, borderRadius: 10, paddingVertical: 9, alignItems: 'center', marginTop: 4 },
+  gridAddBtnLinked:     { backgroundColor: COLORS.statusGreenLight },
+  gridAddBtnText:       { fontSize: 12, fontWeight: '800', color: COLORS.bloomOnAccent },
+  gridAddBtnTextLinked: { color: COLORS.statusGreenDark },
 
   // Quota bar (shared)
   quotaBar: {
@@ -599,21 +704,18 @@ const styles = StyleSheet.create({
   // Create tab
   createPane: { flex: 1, padding: 0 },
   createCard: {
-    margin: 16, marginTop: 14,
-    backgroundColor: COLORS.bloomCard, borderRadius: 20,
-    padding: 24, alignItems: 'center', gap: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 3,
+    marginHorizontal: 16, marginTop: 12,
+    backgroundColor: COLORS.bloomCard, borderRadius: 18,
+    paddingVertical: 16, paddingHorizontal: 16,
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3,
   },
-  createEmoji:   { fontSize: 52 },
-  createHeading: { fontSize: 20, fontWeight: '800', color: COLORS.bloomText, textAlign: 'center' },
-  createBody:    { fontSize: 14, color: COLORS.bloomMuted, textAlign: 'center', lineHeight: 21 },
-  createBtn: {
-    marginTop: 8, backgroundColor: COLORS.bloomAccent, borderRadius: 16,
-    paddingVertical: 15, paddingHorizontal: 32, alignItems: 'center',
-    shadowColor: COLORS.bloomAccent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 5,
-  },
-  createBtnDisabled: { opacity: 0.45 },
-  createBtnText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 16 },
+  createEmoji:       { fontSize: 34 },
+  createCardContent: { flex: 1, gap: 3 },
+  createHeading:     { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
+  createBody:        { fontSize: 13, color: COLORS.bloomMuted, lineHeight: 18 },
+  createChevron:  { fontSize: 22, color: COLORS.bloomMuted, lineHeight: 28 },
+  createBtnText:  { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 16 },
 
   // Label-value filter panel (Search tab)
   filterPanel: {

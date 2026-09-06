@@ -7,6 +7,7 @@ import * as Speech from 'expo-speech';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useFocusEffect } from '@react-navigation/native';
 import { VideoView, useVideoPlayer } from 'expo-video';
+import YoutubePlayer from '../../components/YoutubePlayer';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
@@ -278,14 +279,19 @@ export default function TutorialsScreen() {
 }
 
 function VideoModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; onClose: () => void }) {
-  const player = useVideoPlayer(tutorial.video_url ?? null, p => { if (tutorial.video_url) p.play(); });
+  const isYoutube = tutorial.source === 'youtube';
+  const player = useVideoPlayer(!isYoutube ? (tutorial.video_url ?? null) : null, p => { if (!isYoutube && tutorial.video_url) p.play(); });
 
   useEffect(() => {
-    if (tutorial.video_url) {
+    if (!isYoutube && tutorial.video_url) {
       player.replace({ uri: tutorial.video_url });
       player.play();
     }
   }, [tutorial.video_url]);
+
+  const youtubeVideoId = isYoutube
+    ? tutorial.video_url?.match(/embed\/([a-zA-Z0-9_-]{11})/)?.[1] ?? null
+    : null;
 
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
@@ -293,7 +299,15 @@ function VideoModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; onClo
         <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
           <Text style={styles.closeBtnText}>✕ Close</Text>
         </TouchableOpacity>
-        {tutorial.video_url && (
+        {isYoutube && youtubeVideoId ? (
+          <>
+            <YoutubePlayer videoId={youtubeVideoId} height={Math.round(width * 9 / 16)} />
+            <View style={styles.videoInfo}>
+              <Text style={styles.videoTitle}>{tutorial.title}</Text>
+              <Text style={styles.videoDesc}>{tutorial.description}</Text>
+            </View>
+          </>
+        ) : tutorial.video_url ? (
           <>
             <VideoView player={player} style={styles.video} nativeControls contentFit="contain" />
             <View style={styles.videoInfo}>
@@ -301,7 +315,7 @@ function VideoModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; onClo
               <Text style={styles.videoDesc}>{tutorial.description}</Text>
             </View>
           </>
-        )}
+        ) : null}
       </View>
     </Modal>
   );
