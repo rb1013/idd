@@ -490,6 +490,11 @@ export default function GuardianTutorialsScreen() {
             <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>
           ) : (
             <FlatList
+              ListHeaderComponent={
+                filteredMy.length > 0
+                  ? <AppText style={styles.listCount}>{filteredMy.length} tutorial{filteredMy.length !== 1 ? 's' : ''}</AppText>
+                  : null
+              }
               data={filteredMy}
               keyExtractor={t => t.id}
               contentContainerStyle={styles.list}
@@ -692,6 +697,7 @@ const styles = StyleSheet.create({
   metaText:     { fontSize: 13, color: COLORS.bloomMuted, fontWeight: '500' },
   generatingHint: { fontSize: 11, color: COLORS.bloomMuted, marginTop: 4 },
   privateBadge:   { fontSize: 13 },
+  listCount: { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted, paddingHorizontal: 4, paddingBottom: 8 },
   deleteBtn:    { padding: 6 },
   deleteBtnText:{ fontSize: 22 },
 

@@ -229,11 +229,6 @@ export default function TutorialsScreen() {
             const color = categoryColor(section.category);
             return (
               <View key={section.category} style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionEmoji}>{categoryEmoji(section.category)}</Text>
-                  <Text style={styles.sectionTitle}>{section.category}</Text>
-                </View>
-
                 {section.data.map(item => (
                   <TouchableOpacity
                     key={item.id}
@@ -279,19 +274,43 @@ export default function TutorialsScreen() {
 }
 
 function VideoModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; onClose: () => void }) {
-  const isYoutube = tutorial.source === 'youtube';
-  const player = useVideoPlayer(!isYoutube ? (tutorial.video_url ?? null) : null, p => { if (!isYoutube && tutorial.video_url) p.play(); });
+  if (tutorial.source === 'youtube') {
+    return <YoutubeVideoModal tutorial={tutorial} onClose={onClose} />;
+  }
+  return <NativeVideoModal tutorial={tutorial} onClose={onClose} />;
+}
+
+function YoutubeVideoModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; onClose: () => void }) {
+  const videoId = tutorial.video_url?.match(/embed\/([a-zA-Z0-9_-]{11})/)?.[1] ?? null;
+  return (
+    <Modal visible animationType="slide" onRequestClose={onClose}>
+      <View style={styles.modalContainer}>
+        <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+          <Text style={styles.closeBtnText}>✕ Close</Text>
+        </TouchableOpacity>
+        {videoId && (
+          <>
+            <YoutubePlayer videoId={videoId} height={Math.round(width * 9 / 16)} />
+            <View style={styles.videoInfo}>
+              <Text style={styles.videoTitle}>{tutorial.title}</Text>
+              <Text style={styles.videoDesc}>{tutorial.description}</Text>
+            </View>
+          </>
+        )}
+      </View>
+    </Modal>
+  );
+}
+
+function NativeVideoModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; onClose: () => void }) {
+  const player = useVideoPlayer(tutorial.video_url ?? null, p => { if (tutorial.video_url) p.play(); });
 
   useEffect(() => {
-    if (!isYoutube && tutorial.video_url) {
+    if (tutorial.video_url) {
       player.replace({ uri: tutorial.video_url });
       player.play();
     }
   }, [tutorial.video_url]);
-
-  const youtubeVideoId = isYoutube
-    ? tutorial.video_url?.match(/embed\/([a-zA-Z0-9_-]{11})/)?.[1] ?? null
-    : null;
 
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
@@ -299,15 +318,7 @@ function VideoModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; onClo
         <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
           <Text style={styles.closeBtnText}>✕ Close</Text>
         </TouchableOpacity>
-        {isYoutube && youtubeVideoId ? (
-          <>
-            <YoutubePlayer videoId={youtubeVideoId} height={Math.round(width * 9 / 16)} />
-            <View style={styles.videoInfo}>
-              <Text style={styles.videoTitle}>{tutorial.title}</Text>
-              <Text style={styles.videoDesc}>{tutorial.description}</Text>
-            </View>
-          </>
-        ) : tutorial.video_url ? (
+        {tutorial.video_url && (
           <>
             <VideoView player={player} style={styles.video} nativeControls contentFit="contain" />
             <View style={styles.videoInfo}>
@@ -315,7 +326,7 @@ function VideoModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; onClo
               <Text style={styles.videoDesc}>{tutorial.description}</Text>
             </View>
           </>
-        ) : null}
+        )}
       </View>
     </Modal>
   );

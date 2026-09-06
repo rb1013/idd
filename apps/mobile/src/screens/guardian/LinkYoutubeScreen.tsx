@@ -89,7 +89,7 @@ export default function LinkYoutubeScreen() {
       return;
     }
     Alert.alert('Saved!', 'YouTube video added to your tutorials.', [
-      { text: 'OK', onPress: () => navigation.navigate('Learning', { initialTab: 'my' }) },
+      { text: 'OK', onPress: () => navigation.goBack() },
     ]);
   }
 

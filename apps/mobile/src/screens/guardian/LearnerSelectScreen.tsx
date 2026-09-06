@@ -183,7 +183,7 @@ export default function LearnerSelectScreen() {
 
         {/* Header */}
         <View style={s.header}>
-          <Image source={require('../../../assets/elis-logo3.png')} style={s.elisLogo} resizeMode="contain" />
+          <Image source={require('../../../assets/elis-5-transparent.png')} style={s.elisLogo} resizeMode="contain" />
           <AppText style={s.appName}>ELIS</AppText>
           <View style={s.taglinePill}>
             <AppText style={s.tagline}>Empathy · Learning · Inclusive · Support</AppText>
@@ -404,10 +404,12 @@ const s = StyleSheet.create({
     backgroundColor: COLORS.bloomAccent,
     paddingTop: 54, paddingBottom: 30,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 260,
     borderBottomLeftRadius: 36, borderBottomRightRadius: 36,
   },
-  elisLogo:  { width: 227, height: 124 },
-  appName:   { fontSize: 32, fontWeight: '900', color: COLORS.bloomOnAccent, letterSpacing: 3, marginTop: 4 },
+  elisLogo:  { width: 108, height: 108, transform: [{ translateX: 0 }, { translateY: 18 }] },
+  appName:   { fontSize: 32, fontWeight: '900', color: COLORS.bloomOnAccent, letterSpacing: 3, marginTop: 4, paddingLeft: 2 },
   taglinePill: {
     marginTop: 10, marginBottom: 16,
     backgroundColor: 'rgba(45,49,46,0.13)',
