@@ -407,7 +407,6 @@ function SlideshowModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; o
 
           <View style={styles.startInfo}>
             <Text style={styles.startTitle}>{tutorial.display_name || tutorial.category}</Text>
-            <Text style={styles.startMeta}>{frames.length} slides · {tutorial.category}</Text>
           </View>
 
           <TouchableOpacity
@@ -418,13 +417,13 @@ function SlideshowModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; o
             <Text style={styles.startBtnText}>▶  Start</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.startManualBtn}
             onPress={() => setStarted(true)}
             activeOpacity={0.85}
           >
             <Text style={styles.startManualBtnText}>Browse manually</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </SafeAreaView>
       </Modal>
     );
@@ -624,13 +623,13 @@ const styles = StyleSheet.create({
   startTitle: { fontSize: 24, fontWeight: '900', color: '#fff', lineHeight: 32 },
   startMeta: { fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: '500' },
   startBtn: {
-    marginTop: 32, marginHorizontal: 28, alignSelf: 'stretch',
-    borderRadius: 20, paddingVertical: 18, alignItems: 'center',
-    backgroundColor: COLORS.statusDeepPurple,
-    shadowColor: COLORS.statusDeepPurple, shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.55, shadowRadius: 20, elevation: 10,
+    marginTop: 24, marginHorizontal: 48, alignSelf: 'stretch',
+    borderRadius: 16, paddingVertical: 13, alignItems: 'center',
+    backgroundColor: '#C4693A',
+    shadowColor: '#C4693A', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45, shadowRadius: 14, elevation: 8,
   },
-  startBtnText: { color: '#fff', fontWeight: '900', fontSize: 20, letterSpacing: 0.5 },
+  startBtnText: { color: '#fff', fontWeight: '800', fontSize: 17, letterSpacing: 0.5 },
   startManualBtn: { marginTop: 14, marginBottom: 24, paddingVertical: 10 },
   startManualBtnText: { color: 'rgba(255,255,255,0.45)', fontSize: 14, fontWeight: '600' },
 

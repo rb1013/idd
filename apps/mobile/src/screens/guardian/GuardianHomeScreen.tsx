@@ -192,14 +192,17 @@ export default function GuardianHomeScreen() {
               onPress={() => navigation.navigate('EditUser', { userId: learners[0].id })}
               activeOpacity={0.8}
             >
-              {learners[0].photo_url ? (
-                <Image source={{ uri: learners[0].photo_url }} style={s.learnerAvatar} />
-              ) : (
-                <View style={[s.learnerAvatar, { backgroundColor: AVATAR_COLORS[0] }]}>
-                  <AppText style={s.learnerInitial}>{learners[0].name[0]?.toUpperCase()}</AppText>
-                </View>
-              )}
+              <View style={s.learnerAvatarRing}>
+                {learners[0].photo_url ? (
+                  <Image source={{ uri: learners[0].photo_url }} style={s.learnerAvatar} />
+                ) : (
+                  <View style={[s.learnerAvatar, { backgroundColor: AVATAR_COLORS[0] }]}>
+                    <AppText style={s.learnerInitial}>{learners[0].name[0]?.toUpperCase()}</AppText>
+                  </View>
+                )}
+              </View>
               <AppText style={s.learnerName} numberOfLines={1}>{learners[0].name.split(' ')[0]}</AppText>
+              <AppText style={s.learnerTag}>My Learner 💛</AppText>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -236,14 +239,14 @@ export default function GuardianHomeScreen() {
                 <AppText style={s.actionLabel}>Friend{'\n'}Requests</AppText>
               </TouchableOpacity>
 
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={s.actionTile}
                 onPress={() => navigation.navigate('FavouriteFriends')}
                 activeOpacity={0.78}
               >
                 <AppText style={s.actionEmoji}>⭐</AppText>
                 <AppText style={s.actionLabel}>Manage{'\n'}Friends</AppText>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
 
             <View style={[s.learnerActionGrid, { marginTop: 8 }]}>
@@ -394,25 +397,33 @@ const s = StyleSheet.create({
   actionBadgeText: { fontSize: 9, fontWeight: '800' },
 
   // Learner tile (single, centered)
-  learnerCenter: { alignItems: 'center', paddingVertical: 8 },
+  learnerCenter:  { alignItems: 'center', paddingVertical: 4 },
+  learnerStars:   { fontSize: 20, letterSpacing: 4, marginBottom: 8 },
   learnerActionGrid: { flexDirection: 'row', gap: 8, marginTop: 12 },
   learnerTile: {
-    width: 120, backgroundColor: COLORS.bloomCard,
-    borderRadius: 20, padding: 20,
-    alignItems: 'center', borderWidth: 1, borderColor: COLORS.bloomBorder,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    width: 130, backgroundColor: '#FFFBEA',
+    borderRadius: 20, paddingVertical: 14, paddingHorizontal: 14,
+    alignItems: 'center',
+    borderWidth: 2.5, borderColor: '#F59E0B',
+    shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28, shadowRadius: 10, elevation: 6,
+  },
+  learnerAvatarRing: {
+    padding: 3, borderRadius: 36,
+    borderWidth: 2.5, borderColor: '#F59E0B',
+    marginBottom: 8,
   },
   learnerAvatar: {
-    width: 68, height: 68, borderRadius: 34,
-    marginBottom: 10, justifyContent: 'center', alignItems: 'center',
+    width: 56, height: 56, borderRadius: 28,
+    justifyContent: 'center', alignItems: 'center',
   },
-  learnerInitial: { fontSize: 26, fontWeight: '700', color: '#fff' },
-  learnerName:    { fontSize: 14, fontWeight: '400', color: COLORS.bloomText, textAlign: 'center' },
+  learnerInitial: { fontSize: 22, fontWeight: '700', color: '#fff' },
+  learnerName:    { fontSize: 14, fontWeight: '700', color: COLORS.bloomText, textAlign: 'center' },
+  learnerTag:     { fontSize: 11, fontWeight: '600', color: '#D97706', marginTop: 2, textAlign: 'center' },
   addNewLabel:    { fontSize: 14, fontWeight: '400', color: COLORS.bloomText, textAlign: 'center' },
   learnerMeta:    { fontSize: 11, color: '#AAA', marginTop: 4, textAlign: 'center' },
   addAvatar: {
-    width: 68, height: 68, borderRadius: 34, marginBottom: 10,
+    width: 72, height: 72, borderRadius: 36, marginBottom: 10,
     borderWidth: 1.5, borderColor: '#C8D6E8', borderStyle: 'dashed',
     justifyContent: 'center', alignItems: 'center',
   },
