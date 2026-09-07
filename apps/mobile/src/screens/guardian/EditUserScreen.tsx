@@ -358,20 +358,27 @@ export default function EditUserScreen({ navigation, route }: Props) {
       </ScrollView>
 
       <View style={styles.navRow}>
-        {stepIndex > 0 && (
-          <TouchableOpacity style={styles.backBtn} onPress={() => setStep(steps[stepIndex - 1])}>
-            <AppText style={styles.backBtnText}>Back</AppText>
-          </TouchableOpacity>
-        )}
-        {stepIndex < steps.length - 1 ? (
-          <TouchableOpacity style={styles.nextBtn} onPress={() => setStep(steps[stepIndex + 1])}>
-            <AppText style={styles.nextBtnText}>Next</AppText>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.nextBtn} onPress={handleSave} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <AppText style={styles.nextBtnText}>Save Changes</AppText>}
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={[styles.arrowBtn, stepIndex === 0 && styles.arrowBtnHidden]}
+          onPress={() => stepIndex > 0 && setStep(steps[stepIndex - 1])}
+          disabled={stepIndex === 0}
+        >
+          <AppText style={styles.arrowText}>‹</AppText>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={loading}>
+          {loading
+            ? <ActivityIndicator color="#fff" />
+            : <AppText style={styles.saveBtnText}>Save</AppText>}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.arrowBtn, stepIndex === steps.length - 1 && styles.arrowBtnHidden]}
+          onPress={() => stepIndex < steps.length - 1 && setStep(steps[stepIndex + 1])}
+          disabled={stepIndex === steps.length - 1}
+        >
+          <AppText style={styles.arrowText}>›</AppText>
+        </TouchableOpacity>
       </View>
 
       {guardian && step === 'social' && (
@@ -468,13 +475,14 @@ const styles = StyleSheet.create({
   toggleOn: { backgroundColor: COLORS.bloomAccent },
   toggleThumb: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff' },
   toggleThumbOn: { alignSelf: 'flex-end' },
-  navRow: { flexDirection: 'row', gap: 12, padding: 16, paddingBottom: 32, backgroundColor: COLORS.bloomBody, borderTopWidth: 1, borderTopColor: COLORS.bloomBorder },
+  navRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 16, paddingBottom: 32, backgroundColor: COLORS.bloomBody, borderTopWidth: 1, borderTopColor: COLORS.bloomBorder },
   charCount: { fontSize: 12, color: COLORS.bloomMuted, textAlign: 'right', marginTop: 4 },
   emptyHint: { color: COLORS.bloomMuted, fontSize: 14, marginTop: 16, textAlign: 'center' },
-  backBtn: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.bloomBorder, alignItems: 'center' },
-  backBtnText: { color: COLORS.bloomText, fontSize: 16, fontWeight: '600' },
-  nextBtn: { flex: 2, backgroundColor: COLORS.bloomAccent, borderRadius: 12, padding: 16, alignItems: 'center' },
-  nextBtnText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '600' },
+  arrowBtn: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#2F6B4A', alignItems: 'center', justifyContent: 'center' },
+  arrowBtnHidden: { opacity: 0 },
+  arrowText: { fontSize: 28, color: COLORS.bloomText, lineHeight: 32, fontWeight: '700' },
+  saveBtn: { paddingVertical: 14, paddingHorizontal: 40, backgroundColor: COLORS.bloomAccent, borderRadius: 12, alignItems: 'center' },
+  saveBtnText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '700' },
   readonlyField: {
     backgroundColor: COLORS.bloomBorder + '60',
     borderWidth: 1,

@@ -28,8 +28,8 @@ export default function TutorialLibraryScreen() {
   const { guardian } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<GuardianNavParamList>>();
 
-  const [activeTab, setActiveTab] = useState<'learner' | 'find'>(params?.linkedOnly ? 'learner' : 'find');
-  const activeTabRef = useRef<'learner' | 'find'>(params?.linkedOnly ? 'learner' : 'find');
+  const [activeTab, setActiveTab] = useState<'learner' | 'find'>('learner');
+  const activeTabRef = useRef<'learner' | 'find'>('learner');
   const firstTabChange = useRef(true);
 
   const [tutorials, setTutorials] = useState<TutorialWithGuardian[]>([]);
@@ -217,8 +217,8 @@ export default function TutorialLibraryScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Tab bar */}
-      <View style={styles.tabBar}>
+      {/* Tab bar — Find Tutorials tab hidden for now, can be re-enabled later */}
+      {/* <View style={styles.tabBar}>
         {(['learner', 'find'] as const).map(tab => (
           <TouchableOpacity
             key={tab}
@@ -231,6 +231,14 @@ export default function TutorialLibraryScreen() {
             </AppText>
           </TouchableOpacity>
         ))}
+      </View> */}
+
+      {/* Info banner */}
+      <View style={styles.infoBanner}>
+        <AppText style={styles.infoIcon}>💡</AppText>
+        <AppText style={styles.infoText}>
+          To link tutorials to your learner, go to <AppText style={styles.infoLink} onPress={() => navigation.navigate('Learning', {} as any)}>Tutorials</AppText> on your dashboard, then use <AppText style={styles.infoHighlight}>Search</AppText> or <AppText style={styles.infoHighlight}>My Tutorials</AppText> to add them.
+        </AppText>
       </View>
 
       {/* Search bar — Find tab only */}
@@ -340,11 +348,12 @@ export default function TutorialLibraryScreen() {
               <AppText style={styles.emptyEmoji}>{activeTab === 'learner' ? '📚' : '🔍'}</AppText>
               <AppText style={styles.emptyText}>{activeTab === 'learner' ? 'No linked tutorials' : 'No tutorials found'}</AppText>
               {activeTab === 'learner' ? (
-                <AppText style={styles.emptyHint}>
+                null
+                /* <AppText style={styles.emptyHint}>
                   Switch to{' '}
                   <AppText style={styles.emptyLink} onPress={() => setActiveTab('find')}>Find Tutorials</AppText>
                   {' '}to add some
-                </AppText>
+                </AppText> */
               ) : (
                 <AppText style={styles.emptyHint}>Try adjusting your search or filters</AppText>
               )}
@@ -481,6 +490,17 @@ const styles = StyleSheet.create({
   tabActive: { borderBottomColor: COLORS.bloomAccent },
   tabText: { fontSize: 14, fontWeight: '600', color: COLORS.bloomMuted },
   tabTextActive: { color: COLORS.bloomAccent, fontWeight: '700' },
+
+  infoBanner: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+    margin: 14, marginBottom: 8, padding: 14,
+    backgroundColor: COLORS.bloomActiveBg, borderRadius: 14,
+    borderWidth: 1.5, borderColor: COLORS.bloomSageMid,
+  },
+  infoIcon:      { fontSize: 18, flexShrink: 0 },
+  infoText:      { flex: 1, fontSize: 13, color: COLORS.bloomText, lineHeight: 20 },
+  infoHighlight: { fontWeight: '700', color: COLORS.bloomAccent },
+  infoLink:      { fontWeight: '700', color: '#1D6FE8', textDecorationLine: 'underline' },
 
   searchRow: { padding: 14, paddingBottom: 8 },
   searchInput: {

@@ -11,7 +11,7 @@ import { decode } from 'base64-arraybuffer';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { saveBiometricUser } from '../../lib/biometricStore';
+import { saveBiometricUser, saveCredentialSnapshot } from '../../lib/biometricStore';
 import { COLORS, COMPREHENSION_LEVELS, GENDERS, LANGUAGES, US_STATES } from '../../constants';
 import DropdownPicker from '../../components/DropdownPicker';
 import { Category } from '../../types';
@@ -196,7 +196,7 @@ export default function CreateUserScreen({ navigation }: Props) {
       return;
     }
 
-    // Auto-save credentials so learner tile is biometric-ready immediately
+    // Auto-save credentials locally and to Supabase for cross-device sync
     await saveBiometricUser({
       id: userId,
       name,
@@ -204,6 +204,7 @@ export default function CreateUserScreen({ navigation }: Props) {
       email: fabricatedEmail,
       password: generatedPassword,
     });
+    await saveCredentialSnapshot(userId, fabricatedEmail, generatedPassword);
 
     setLoading(false);
     navigation.goBack();

@@ -12,6 +12,7 @@ import { COLORS } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import {
   loadBiometricUsers, promptBiometric, isBiometricAvailable, saveBiometricUser,
+  fetchAndCacheCredentials,
   type BiometricUser,
 } from '../../lib/biometricStore';
 
@@ -153,19 +154,28 @@ export default function LearnerSelectScreen() {
 
     setBiometricLoading(tile.id);
 
-    if (!tile.biometricUser) {
-      // Credentials not in store — shouldn't happen for new profiles
-      setBiometricLoading(null);
-      Alert.alert('Login not set up', 'Biometric login is not set up for this learner. Please edit their profile to configure it.');
-      return;
+    let biometricUser = tile.biometricUser;
+
+    if (!biometricUser) {
+      // No local credentials — try fetching from Supabase (cross-device sync)
+      const fetched = await fetchAndCacheCredentials(tile.id, tile.name, tile.photo_url);
+      if (!fetched) {
+        setBiometricLoading(null);
+        Alert.alert('Login not available', 'Please create this learner profile again to enable login on this device.');
+        return;
+      }
+      // Re-read from SecureStore after caching
+      const users = await loadBiometricUsers();
+      biometricUser = users.find(u => u.id === tile.id) ?? null;
+      if (!biometricUser) { setBiometricLoading(null); return; }
     }
 
     const passed = await promptBiometric(`Unlock app for ${tile.name}`);
     if (!passed) { setBiometricLoading(null); return; }
 
     const { error } = await supabase.auth.signInWithPassword({
-      email: tile.biometricUser.email,
-      password: tile.biometricUser.password,
+      email: biometricUser.email,
+      password: biometricUser.password,
     });
     setBiometricLoading(null);
     if (error) Alert.alert('Login failed', error.message);

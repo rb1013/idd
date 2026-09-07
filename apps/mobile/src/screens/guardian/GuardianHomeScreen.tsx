@@ -201,8 +201,7 @@ export default function GuardianHomeScreen() {
                   </View>
                 )}
               </View>
-              <AppText style={s.learnerName} numberOfLines={1}>{learners[0].name.split(' ')[0]}</AppText>
-              <AppText style={s.learnerTag}>My Learner 💛</AppText>
+              <AppText style={s.learnerName} numberOfLines={1}>{learners[0].name}</AppText>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
