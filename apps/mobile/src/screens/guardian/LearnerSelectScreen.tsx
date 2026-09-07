@@ -206,7 +206,6 @@ export default function LearnerSelectScreen() {
                   )}
                 </View>
                 <AppText style={s.userName}>{guardian?.full_name ?? 'Guardian'}</AppText>
-                <AppText style={[s.userSub, { color: COLORS.bloomAccent }]}>Guardian</AppText>
               </View>
             </TouchableOpacity>
 
@@ -216,7 +215,7 @@ export default function LearnerSelectScreen() {
                 return (
                   <TouchableOpacity
                     key={tile.id}
-                    style={[s.tile, { shadowColor: color }]}
+                    style={[s.tile, { shadowColor: color, borderWidth: 2, borderColor: color }]}
                     onPress={() => handleLearnerTap(tile)}
                     activeOpacity={0.85}
                     disabled={!!biometricLoading}
@@ -421,8 +420,9 @@ const s = StyleSheet.create({
     width: TILE_SIZE,
     backgroundColor: COLORS.bloomCard, borderRadius: 22,
     overflow: 'hidden', position: 'relative',
+    borderWidth: 2, borderColor: COLORS.bloomAccent,
     shadowColor: COLORS.bloomAccent, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15, shadowRadius: 10, elevation: 5,
+    shadowOpacity: 0.22, shadowRadius: 12, elevation: 6,
   },
   guardianTileBody: { paddingVertical: 20 },
   guardianRoleBadge: {
@@ -441,7 +441,7 @@ const s = StyleSheet.create({
     width: TILE_SIZE, backgroundColor: COLORS.bloomCard,
     borderRadius: 22, overflow: 'hidden',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15, shadowRadius: 10, elevation: 5,
+    shadowOpacity: 0.22, shadowRadius: 12, elevation: 6,
   },
   tileBar:  { height: 7 },
   tileBody: { padding: 16, alignItems: 'center', gap: 8 },
@@ -452,12 +452,13 @@ const s = StyleSheet.create({
   avatarInitial: { fontSize: 28, fontWeight: '900' },
 
   badge: {
-    position: 'absolute', bottom: -2, right: -2,
-    width: 26, height: 26, borderRadius: 13,
+    position: 'absolute', bottom: -4, right: -4,
+    width: 36, height: 36, borderRadius: 18,
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: '#fff',
+    borderWidth: 2.5, borderColor: '#fff',
+    backgroundColor: '#fff',
   },
-  badgeEmoji: { fontSize: 13 },
+  badgeEmoji: { fontSize: 18 },
 
   userName: { fontSize: 15, fontWeight: '800', color: COLORS.bloomText, textAlign: 'center' },
   userSub:  { fontSize: 12, fontWeight: '700' },

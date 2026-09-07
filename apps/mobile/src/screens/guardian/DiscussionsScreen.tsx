@@ -198,9 +198,9 @@ const s = StyleSheet.create({
     shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
   postTitle: { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
-  postBody:  { fontSize: 13, color: COLORS.bloomMuted, lineHeight: 18 },
+  postBody:  { fontSize: 13, color: '#4A5568', lineHeight: 18 },
   postMeta:  { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  metaText:  { fontSize: 12, color: COLORS.bloomMuted },
+  metaText:  { fontSize: 12, color: '#5A6470' },
   metaDot:   { fontSize: 12, color: COLORS.bloomBorder },
 
   fab: {

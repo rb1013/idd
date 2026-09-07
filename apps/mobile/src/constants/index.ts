@@ -110,7 +110,7 @@ export const USER_HEADER = {
   btnBackground:   'rgba(255,255,255,0.82)', // circular action button bg
   borderTopLeftRadius:  28,
   borderTopRightRadius: 28,
-  pageBackground:  '#E2DBD4',           // warm cream — learner page background
+  pageBackground:  '#FDFBF7',           // cream white — learner page background
 };
 
 // ── Learner tile palette — edit here to retheme all learner tile surfaces ──
