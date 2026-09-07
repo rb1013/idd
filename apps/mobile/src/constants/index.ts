@@ -74,6 +74,61 @@ export const COLORS = {
   statusDark: '#111827',
 };
 
+// ── Learner typography — change these to restyle all learner screens at once ──
+const TERRA        = '#C4693A';
+const TERRA_ACCENT = '#C4693A';
+const L_TEXT       = '#2C3E50';
+const L_MUTED      = '#7F8C8D';
+
+export const USER_TEXT = {
+  // Headings / names
+  heading:   { fontSize: 22, fontWeight: '600' as const, color: L_TEXT },
+  title:     { fontSize: 18, fontWeight: '600' as const, color: L_TEXT },
+  // Body
+  body:      { fontSize: 14, fontWeight: '400' as const, color: L_TEXT },
+  bodyBold:  { fontSize: 14, fontWeight: '600' as const, color: L_TEXT },
+  // Labels / captions
+  label:     { fontSize: 12, fontWeight: '600' as const, color: L_MUTED },
+  caption:   { fontSize: 11, fontWeight: '500' as const, color: L_MUTED },
+  // Accent — terracotta
+  accent:    { fontSize: 13, fontWeight: '600' as const, color: TERRA_ACCENT },
+  // Greeting in header
+  greeting:  { fontSize: 20, fontWeight: '700' as const, color: '#fff' },
+  // Tile title & subtitle
+  tileTitle: { fontSize: 16, fontWeight: '700' as const, color: L_TEXT },
+  tileSub:   { fontSize: 13, fontWeight: '500' as const, color: '#4A5568' },
+  // Schedule banner
+  bannerTitle: { fontSize: 15, fontWeight: '600' as const, color: L_TEXT },
+  bannerTime:  { fontSize: 11, fontWeight: '400' as const, color: '#4A5568' },
+  bannerUntil: { fontSize: 13, fontWeight: '600' as const, color: TERRA },
+};
+
+// ── Learner header theme — edit here to retheme all learner screen headers ──
+export const USER_HEADER = {
+  backgroundColor: '#CF8660',           // terracotta — header background
+  tintColor:       '#fff',              // text & icon color on the header
+  btnBackground:   'rgba(255,255,255,0.82)', // circular action button bg
+  borderTopLeftRadius:  28,
+  borderTopRightRadius: 28,
+  pageBackground:  '#E2DBD4',           // warm cream — learner page background
+};
+
+// ── Learner tile palette — edit here to retheme all learner tile surfaces ──
+export const USER_TILES = {
+  friends:    { backgroundColor: '#E8F0E4', borderColor: '#A8C4A0' },
+  activities: { backgroundColor: '#F5E4D8', borderColor: '#D4A888' },
+  mood:       { backgroundColor: '#FDF0D4', borderColor: '#D4B860' },
+  learn:      { backgroundColor: '#EAE4F4', borderColor: '#B4A8D8' },
+};
+
+// Ordered array — use for cycling tile colors across lists (index % 4)
+export const USER_TILE_CYCLE = [
+  USER_TILES.friends,
+  USER_TILES.activities,
+  USER_TILES.mood,
+  USER_TILES.learn,
+];
+
 export const DAYS_OF_WEEK = [
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
 ];

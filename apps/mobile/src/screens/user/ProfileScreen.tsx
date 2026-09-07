@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, StyleSheet, Image,
   TouchableOpacity, ActivityIndicator, Modal, Alert, Platform,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -30,7 +31,7 @@ export default function ProfileScreen() {
           style={{ paddingHorizontal: 12, paddingVertical: 6 }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={{ fontSize: 22, color: COLORS.text }}>⚙</Text>
+          <AppText style={{ fontSize: 22, color: COLORS.text }}>⚙</AppText>
         </TouchableOpacity>
       ),
     });
@@ -116,11 +117,11 @@ export default function ProfileScreen() {
             mood={activeUser!.current_mood}
             badgeSize={32}
           />
-          <Text style={styles.name}>{activeUser!.name}</Text>
-          <Text style={styles.meta}>{calcAge(activeUser!.date_of_birth) ?? activeUser!.age ?? '—'} yrs • {activeUser!.gender}</Text>
-          {locationParts ? <Text style={styles.metaLocation}>{locationParts}</Text> : null}
+          <AppText style={styles.name}>{activeUser!.name}</AppText>
+          <AppText style={styles.meta}>{calcAge(activeUser!.date_of_birth) ?? activeUser!.age ?? '—'} yrs • {activeUser!.gender}</AppText>
+          {locationParts ? <AppText style={styles.metaLocation}>{locationParts}</AppText> : null}
           {activeUser!.languages?.length > 0 && (
-            <Text style={styles.metaLanguages}>{activeUser!.languages.join(', ')}</Text>
+            <AppText style={styles.metaLanguages}>{activeUser!.languages.join(', ')}</AppText>
           )}
         </View>
 
@@ -160,7 +161,7 @@ export default function ProfileScreen() {
             <InfoRow label="Comprehension" value={chatPrefs.comprehension_level} />
             {chatPrefs.available_days?.length > 0 && (
               <View style={styles.daysRow}>
-                <Text style={styles.infoLabel}>Available days</Text>
+                <AppText style={styles.infoLabel}>Available days</AppText>
                 <View style={styles.daysChips}>
                   {chatPrefs.available_days.map((d: string) => (
                     <Chip key={d} label={d} color={COLORS.primary} />
@@ -175,8 +176,8 @@ export default function ProfileScreen() {
         {healthInfo?.willing_to_share && (
           <Section title="Health Information">
             {healthInfo.description
-              ? <Text style={styles.healthDesc}>{healthInfo.description}</Text>
-              : <Text style={styles.healthDesc}>No details provided.</Text>
+              ? <AppText style={styles.healthDesc}>{healthInfo.description}</AppText>
+              : <AppText style={styles.healthDesc}>No details provided.</AppText>
             }
           </Section>
         )}
@@ -188,7 +189,7 @@ export default function ProfileScreen() {
 function MenuItem({ label, color, onPress }: { label: string; color?: string; onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-      <Text style={[styles.menuItemText, color ? { color } : null]}>{label}</Text>
+      <AppText style={[styles.menuItemText, color ? { color } : null]}>{label}</AppText>
     </TouchableOpacity>
   );
 }
@@ -196,7 +197,7 @@ function MenuItem({ label, color, onPress }: { label: string; color?: string; on
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <AppText style={styles.sectionTitle}>{title}</AppText>
       {children}
     </View>
   );
@@ -205,8 +206,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
+      <AppText style={styles.infoLabel}>{label}</AppText>
+      <AppText style={styles.infoValue}>{value}</AppText>
     </View>
   );
 }
@@ -214,7 +215,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 function Chip({ label, color }: { label: string; color: string }) {
   return (
     <View style={[styles.chip, { borderColor: color }]}>
-      <Text style={[styles.chipText, { color }]}>{label}</Text>
+      <AppText style={[styles.chipText, { color }]}>{label}</AppText>
     </View>
   );
 }

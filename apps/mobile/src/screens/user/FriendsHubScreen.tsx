@@ -1,14 +1,17 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, Dimensions,
 } from 'react-native';
+
+const TILE_W = (Dimensions.get('window').width - 40 - 12) / 2; // 20px padding each side, 12px gap
+import AppText from '../../components/AppText';
 import * as Speech from 'expo-speech';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
+import { COLORS, USER_TILE_CYCLE, USER_HEADER } from '../../constants';
 import { UserStackParamList } from '../../navigation';
 import AvatarWithMood from '../../components/AvatarWithMood';
 
@@ -28,15 +31,15 @@ function NoFriendsEmptyState() {
 
   return (
     <View style={emptyStyles.container}>
-      <Text style={emptyStyles.emoji}>😊</Text>
-      <Text style={emptyStyles.message}>No friends added yet.</Text>
-      <Text style={emptyStyles.hint}>Ask your guardian to add friends for you!</Text>
+      <AppText style={emptyStyles.emoji}>😊</AppText>
+      <AppText style={emptyStyles.message}>No friends added yet.</AppText>
+      <AppText style={emptyStyles.hint}>Ask your guardian to add friends for you!</AppText>
       <TouchableOpacity
         style={emptyStyles.speakBtn}
         onPress={() => Speech.speak(EMPTY_MESSAGE, { rate: 0.8, pitch: 1.1 })}
         activeOpacity={0.75}
       >
-        <Text style={emptyStyles.speakBtnText}>🔊  Hear this again</Text>
+        <AppText style={emptyStyles.speakBtnText}>🔊  Hear this again</AppText>
       </TouchableOpacity>
     </View>
   );
@@ -49,10 +52,10 @@ const emptyStyles = StyleSheet.create({
   hint:      { fontSize: 16, color: COLORS.textLight, textAlign: 'center', lineHeight: 24 },
   speakBtn:  {
     marginTop: 16, paddingHorizontal: 24, paddingVertical: 12,
-    borderRadius: 20, backgroundColor: '#EFF6FF',
-    borderWidth: 1.5, borderColor: '#BFDBFE',
+    borderRadius: 20, backgroundColor: '#FDEADB',
+    borderWidth: 1.5, borderColor: '#D4A888',
   },
-  speakBtnText: { fontSize: 15, fontWeight: '700', color: '#2563EB' },
+  speakBtnText: { fontSize: 15, fontWeight: '700', color: '#C4693A' },
 });
 
 
@@ -88,7 +91,14 @@ export default function FriendsHubScreen() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useLayoutEffect(() => { navigation.setOptions({ headerRight: undefined }); }, [navigation]);
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerStyle:      { backgroundColor: USER_HEADER.backgroundColor },
+      headerTintColor:  USER_HEADER.tintColor,
+      headerTitleStyle: { color: USER_HEADER.tintColor, fontWeight: '900' as const, fontSize: 18 },
+      headerRight:      undefined,
+    });
+  }, [navigation]);
 
   useEffect(() => { if (activeUser) loadFriends(activeUser.id); }, [activeUser]);
 
@@ -160,86 +170,61 @@ export default function FriendsHubScreen() {
     return <NoFriendsEmptyState />;
   }
 
-  const sort = (list: Friend[]) => [...list].sort((a, b) => a.name.localeCompare(b.name));
-  const pinned  = sort(friends.filter(f => f.is_pinned));
-  const online  = sort(friends.filter(f => !f.is_pinned && isOnline(f.last_seen_at)));
-  const offline = sort(friends.filter(f => !f.is_pinned && !isOnline(f.last_seen_at)));
-
-  const sections: { emoji: string; title: string; data: Friend[] }[] = [
-    { emoji: '⭐', title: 'Favourites',    data: pinned  },
-    { emoji: '🟢', title: 'Online Now',    data: online  },
-    { emoji: '👥', title: 'All Friends',   data: offline },
-  ].filter(s => s.data.length > 0);
+  const sorted = [...friends].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {sections.map(section => (
-        <View key={section.title} style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionEmoji}>{section.emoji}</Text>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-          </View>
-
-          {section.data.map(friend => {
-            const color = avatarColor(friend.name);
-            const online = isOnline(friend.last_seen_at);
-            return (
+      <View style={styles.tileGrid}>
+        {sorted.map((friend, idx) => {
+          const tile = USER_TILE_CYCLE[idx % USER_TILE_CYCLE.length];
+          const online = isOnline(friend.last_seen_at);
+          return (
+            <TouchableOpacity
+              key={friend.id}
+              style={[styles.tile, { backgroundColor: tile.backgroundColor, borderColor: tile.borderColor }]}
+              onPress={() => openChat(friend)}
+              activeOpacity={0.8}
+            >
               <TouchableOpacity
-                key={friend.id}
-                style={[styles.card, { borderLeftColor: color, backgroundColor: color + '12' }]}
-                onPress={() => openChat(friend)}
-                activeOpacity={0.8}
+                style={styles.tileSpeakCorner}
+                onPress={() => speakFriend(friend)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                {/* Avatar with mood badge; online dot sits on top-right */}
-                <View style={styles.avatarWrap}>
-                  <AvatarWithMood name={friend.name} photo={friend.photo_url} size={64} mood={friend.current_mood} />
-                  <View style={[styles.statusDot, online ? styles.dotOnline : styles.dotOffline]} />
-                </View>
-
-                {/* Info */}
-                <View style={styles.info}>
-                  <Text style={styles.name}>{friend.name}</Text>
-                  {friend.likes.length > 0 && (
-                    <View style={styles.emojiRow}>
-                      <Text style={styles.emojiLabel}>👍</Text>
-                      {friend.likes.map(like => (
-                        <Text key={like.name} style={styles.likeEmoji}>{like.emoji}</Text>
-                      ))}
-                    </View>
-                  )}
-                  {friend.dislikes.length > 0 && (
-                    <View style={styles.emojiRow}>
-                      <Text style={styles.emojiLabel}>👎</Text>
-                      {friend.dislikes.map(dislike => (
-                        <Text key={dislike.name} style={styles.dislikeEmoji}>{dislike.emoji}</Text>
-                      ))}
-                    </View>
-                  )}
-                </View>
-
-                {/* Speak button */}
-                <TouchableOpacity
-                  style={styles.speakBtn}
-                  onPress={() => speakFriend(friend)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Text style={styles.speakIcon}>📢</Text>
-                </TouchableOpacity>
-
-                <Text style={[styles.arrow, { color }]}>›</Text>
+                <AppText style={styles.tileSpeakIcon}>🔊</AppText>
               </TouchableOpacity>
-            );
-          })}
-        </View>
-      ))}
+              <View style={styles.tileAvatarWrap}>
+                <AvatarWithMood name={friend.name} photo={friend.photo_url} size={68} mood={friend.current_mood} />
+                <View style={[styles.statusDot, online ? styles.dotOnline : styles.dotOffline]} />
+              </View>
+              <AppText style={styles.tileName} numberOfLines={2}>{friend.name}</AppText>
+              {friend.likes.length > 0 && (
+                <View style={styles.tileLikesRow}>
+                  <AppText style={styles.tileEmojiLabel}>👍</AppText>
+                  {friend.likes.slice(0, 3).map(like => (
+                    <AppText key={like.name} style={styles.tileLikeEmoji}>{like.emoji}</AppText>
+                  ))}
+                </View>
+              )}
+              {friend.dislikes.length > 0 && (
+                <View style={styles.tileLikesRow}>
+                  <AppText style={styles.tileEmojiLabel}>👎</AppText>
+                  {friend.dislikes.slice(0, 3).map(dislike => (
+                    <AppText key={dislike.name} style={styles.tileLikeEmoji}>{dislike.emoji}</AppText>
+                  ))}
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: USER_HEADER.pageBackground },
   content: { padding: 20, gap: 28, paddingBottom: 48 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background, padding: 32, gap: 12 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: USER_HEADER.pageBackground, padding: 32, gap: 12 },
   emptyEmoji: { fontSize: 72 },
   emptyText: { fontSize: 24, fontWeight: '900', color: COLORS.text },
   emptyHint: { fontSize: 16, color: COLORS.textLight, textAlign: 'center' },
@@ -247,7 +232,7 @@ const styles = StyleSheet.create({
   section: { gap: 16 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   sectionEmoji: { fontSize: 26 },
-  sectionTitle: { fontSize: 22, fontWeight: '900', color: COLORS.text },
+  sectionTitle: { fontSize: 22, fontWeight: '700', color: COLORS.text },
 
   card: {
     flexDirection: 'row', alignItems: 'center', gap: 16,
@@ -260,7 +245,7 @@ const styles = StyleSheet.create({
   statusDot: {
     position: 'absolute', top: 1, right: 1,
     width: 14, height: 14, borderRadius: 7,
-    borderWidth: 2, borderColor: COLORS.background,
+    borderWidth: 2, borderColor: USER_HEADER.pageBackground,
   },
   dotOnline:  { backgroundColor: '#5CBB7A' },
   dotOffline: { backgroundColor: '#BDC3C7' },
@@ -272,11 +257,24 @@ const styles = StyleSheet.create({
   likeEmoji: { fontSize: 22 },
   dislikeEmoji: { fontSize: 22, opacity: 0.7 },
 
-  speakBtn: {
-    width: 42, height: 42, borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.06)',
-    justifyContent: 'center', alignItems: 'center', flexShrink: 0,
+  tileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  tile: {
+    width: TILE_W, borderRadius: 22, borderWidth: 2,
+    alignItems: 'center', paddingVertical: 18, paddingHorizontal: 10, gap: 8,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08, shadowRadius: 10, elevation: 3,
   },
-  speakIcon: { fontSize: 20 },
-  arrow: { fontSize: 28, fontWeight: '900', flexShrink: 0 },
+  tileAvatarWrap: { position: 'relative' },
+  tileName: { fontSize: 15, fontWeight: '600', color: COLORS.text, textAlign: 'center' },
+  tileLikesRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  tileEmojiLabel: { fontSize: 14 },
+  tileLikeEmoji: { fontSize: 18 },
+  tileSpeakCorner: {
+    position: 'absolute', top: 8, right: 8,
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    justifyContent: 'center', alignItems: 'center',
+    zIndex: 1,
+  },
+  tileSpeakIcon: { fontSize: 13 },
 });

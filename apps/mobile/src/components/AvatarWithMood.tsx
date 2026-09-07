@@ -21,14 +21,14 @@ interface Props {
 export default function AvatarWithMood({ name, photo, size, mood, badgeSize }: Props) {
   const radius = size / 2;
   const badge = badgeSize ?? Math.round(size * 0.36);
-  const badgeOffset = -Math.round(badge * 0.2);
+  const overhang = Math.round(badge * 0.25);
 
   return (
-    <View style={{ width: size, height: size }}>
+    <View style={{ width: size + overhang, height: size + overhang }}>
       {photo ? (
-        <Image source={{ uri: photo }} style={{ width: size, height: size, borderRadius: radius }} />
+        <Image source={{ uri: photo }} style={{ width: size, height: size, borderRadius: radius, borderWidth: 2.5, borderColor: '#fff' }} />
       ) : (
-        <View style={[styles.placeholder, { width: size, height: size, borderRadius: radius, backgroundColor: avatarColor(name) }]}>
+        <View style={[styles.placeholder, { width: size, height: size, borderRadius: radius, backgroundColor: avatarColor(name), borderWidth: 2.5, borderColor: '#fff' }]}>
           <Text style={{ fontSize: size * 0.38, fontWeight: '800', color: '#fff' }}>{name[0]}</Text>
         </View>
       )}
@@ -38,7 +38,7 @@ export default function AvatarWithMood({ name, photo, size, mood, badgeSize }: P
           styles.badge,
           {
             width: badge, height: badge, borderRadius: badge / 2,
-            bottom: badgeOffset, right: badgeOffset,
+            bottom: 0, right: 0,
           },
         ]}>
           <Text style={{ fontSize: badge * 0.7, lineHeight: badge }}>{mood}</Text>
@@ -53,14 +53,14 @@ const styles = StyleSheet.create({
   badge: {
     position: 'absolute',
     backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: COLORS.background,
+    borderWidth: 2.5,
+    borderColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
   },
 });

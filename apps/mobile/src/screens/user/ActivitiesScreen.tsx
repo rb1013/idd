@@ -1,13 +1,14 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   ScrollView, ActivityIndicator,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import * as Speech from 'expo-speech';
-import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
+import { COLORS, USER_HEADER, USER_TILE_CYCLE } from '../../constants';
 import { PRESET_MAP } from '../../lib/activityPresets';
 
 interface ActivityItem {
@@ -32,33 +33,33 @@ function NoActivitiesState() {
 
   return (
     <View style={noActStyles.container}>
-      <Text style={noActStyles.emoji}>😊</Text>
-      <Text style={noActStyles.title}>No activities yet!</Text>
-      <Text style={noActStyles.hint}>Ask your guardian to add some fun activities for you!</Text>
+      <AppText style={noActStyles.emoji}>😊</AppText>
+      <AppText style={noActStyles.title}>No activities yet!</AppText>
+      <AppText style={noActStyles.hint}>Ask your guardian to add some fun activities for you!</AppText>
       <TouchableOpacity
         style={noActStyles.speakBtn}
         onPress={() => Speech.speak(NO_ACTIVITIES_MSG, { rate: 0.8, pitch: 1.1 })}
         activeOpacity={0.75}
       >
-        <Text style={noActStyles.speakIcon}>🔊</Text>
-        <Text style={noActStyles.speakText}>Hear this again</Text>
+        <AppText style={noActStyles.speakIcon}>🔊</AppText>
+        <AppText style={noActStyles.speakText}>Hear this again</AppText>
       </TouchableOpacity>
     </View>
   );
 }
 
 const noActStyles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, gap: 14, backgroundColor: COLORS.background },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, gap: 14, backgroundColor: USER_HEADER.pageBackground },
   emoji:    { fontSize: 80 },
   title:    { fontSize: 24, fontWeight: '900', color: COLORS.text, textAlign: 'center' },
   hint:     { fontSize: 16, color: COLORS.textLight, textAlign: 'center', lineHeight: 24 },
   speakBtn: {
     marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingHorizontal: 22, paddingVertical: 12, borderRadius: 24,
-    backgroundColor: '#EFF6FF', borderWidth: 1.5, borderColor: '#BFDBFE',
+    backgroundColor: '#FDEADB', borderWidth: 1.5, borderColor: '#D4A888',
   },
   speakIcon: { fontSize: 18 },
-  speakText: { fontSize: 15, fontWeight: '700', color: '#2563EB' },
+  speakText: { fontSize: 15, fontWeight: '700', color: USER_HEADER.backgroundColor },
 });
 
 function todayLabel(): string {
@@ -66,9 +67,18 @@ function todayLabel(): string {
 }
 
 export default function ActivitiesScreen() {
+  const navigation = useNavigation();
   const { activeUser } = useAuth();
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerStyle:      { backgroundColor: USER_HEADER.backgroundColor },
+      headerTintColor:  USER_HEADER.tintColor,
+      headerTitleStyle: { color: USER_HEADER.tintColor, fontWeight: '900' as const, fontSize: 18 },
+    });
+  }, [navigation]);
 
   const load = useCallback(async () => {
     if (!activeUser) return;
@@ -116,12 +126,12 @@ export default function ActivitiesScreen() {
 
       {/* Progress header */}
       <View style={styles.progressCard}>
-        <Text style={styles.progressDate}>{todayLabel()}</Text>
+        <AppText style={styles.progressDate}>{todayLabel()}</AppText>
         <View style={styles.progressRow}>
-          <Text style={styles.progressLabel}>
+          <AppText style={styles.progressLabel}>
             {allDone ? '🎉 All done!' : `${done} of ${total} done`}
-          </Text>
-          <Text style={styles.progressFraction}>{done}/{total}</Text>
+          </AppText>
+<AppText style={styles.progressFraction}>{done}/{total}</AppText>
         </View>
         <View style={styles.barBg}>
           <View style={[styles.barFill, { width: `${pct * 100}%` }]} />
@@ -130,40 +140,49 @@ export default function ActivitiesScreen() {
 
       {allDone && (
         <View style={styles.doneBanner}>
-          <Text style={styles.doneBannerText}>🌟 Amazing job today! Keep it up!</Text>
+          <AppText style={styles.doneBannerText}>🌟 Amazing job today! Keep it up!</AppText>
         </View>
       )}
 
       {/* Activity cards */}
-      {activities.map(item => {
+      {activities.map((item, idx) => {
         const preset = PRESET_MAP[item.preset_key];
         if (!preset) return null;
+        const tile = USER_TILE_CYCLE[idx % USER_TILE_CYCLE.length];
         return (
           <TouchableOpacity
             key={item.activity_id}
             style={[
               styles.card,
-              { backgroundColor: preset.bgColor, borderLeftColor: preset.color },
+              { backgroundColor: tile.backgroundColor, borderLeftColor: tile.borderColor },
               item.completed && styles.cardDone,
             ]}
             onPress={() => toggle(item)}
             activeOpacity={0.8}
           >
-            <View style={[styles.iconWrap, { backgroundColor: preset.color + '25' }]}>
-              <Text style={styles.icon}>{preset.emoji}</Text>
+            <View style={[styles.iconWrap, { backgroundColor: tile.borderColor + '40' }]}>
+              <AppText style={styles.icon}>{preset.emoji}</AppText>
             </View>
 
-            <Text style={[styles.name, item.completed && styles.nameDone]}>
+            <AppText style={[styles.name, item.completed && styles.nameDone]}>
               {preset.name}
-            </Text>
+            </AppText>
+
+            <TouchableOpacity
+              style={styles.speakBtn}
+              onPress={() => Speech.speak(preset.name, { rate: 0.8, pitch: 1.1 })}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <AppText style={styles.speakIcon}>🔊</AppText>
+            </TouchableOpacity>
 
             <View style={[
               styles.checkbox,
               item.completed
                 ? { backgroundColor: '#5CBB7A', borderColor: '#5CBB7A' }
-                : { borderColor: preset.color },
+                : { borderColor: tile.borderColor },
             ]}>
-              {item.completed && <Text style={styles.checkmark}>✓</Text>}
+              {item.completed && <AppText style={styles.checkmark}>✓</AppText>}
             </View>
           </TouchableOpacity>
         );
@@ -174,11 +193,11 @@ export default function ActivitiesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: USER_HEADER.pageBackground },
   content: { padding: 16, gap: 12, paddingBottom: 40 },
   center: {
     flex: 1, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: COLORS.background, padding: 32, gap: 12,
+    backgroundColor: USER_HEADER.pageBackground, padding: 32, gap: 12,
   },
   emptyEmoji: { fontSize: 64 },
   emptyTitle: { fontSize: 22, fontWeight: '900', color: COLORS.text },
@@ -190,8 +209,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.07, shadowRadius: 10, elevation: 3, gap: 10,
   },
   progressDate: { fontSize: 13, fontWeight: '600', color: COLORS.textLight },
-  progressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  progressLabel: { fontSize: 20, fontWeight: '900', color: COLORS.text },
+  progressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  progressSpeakBtn: { backgroundColor: 'rgba(0,0,0,0.07)', borderRadius: 14, paddingHorizontal: 10, paddingVertical: 4 },
+  progressSpeakIcon: { fontSize: 15 },
+  progressLabel: { fontSize: 20, fontWeight: '600', color: COLORS.text },
   progressFraction: { fontSize: 16, fontWeight: '700', color: COLORS.textLight },
   barBg: { height: 10, backgroundColor: COLORS.border, borderRadius: 5, overflow: 'hidden' },
   barFill: {
@@ -202,28 +223,34 @@ const styles = StyleSheet.create({
   doneBanner: {
     backgroundColor: '#5CBB7A', borderRadius: 16, padding: 14, alignItems: 'center',
   },
-  doneBannerText: { fontSize: 17, fontWeight: '800', color: '#fff' },
+  doneBannerText: { fontSize: 17, fontWeight: '600', color: '#fff' },
 
   card: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    borderRadius: 20, padding: 16, borderLeftWidth: 6,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    borderRadius: 16, paddingVertical: 10, paddingHorizontal: 14, borderLeftWidth: 5,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
   },
   cardDone: { opacity: 0.6 },
 
   iconWrap: {
-    width: 64, height: 64, borderRadius: 18,
+    width: 46, height: 46, borderRadius: 13,
     justifyContent: 'center', alignItems: 'center', flexShrink: 0,
   },
-  icon: { fontSize: 36 },
+  icon: { fontSize: 26 },
 
-  name: { flex: 1, fontSize: 20, fontWeight: '900', color: COLORS.text },
+  name: { flex: 1, fontSize: 17, fontWeight: '600', color: COLORS.text },
   nameDone: { textDecorationLine: 'line-through', color: COLORS.textLight },
 
+  speakBtn: {
+    backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 14,
+    paddingHorizontal: 10, paddingVertical: 3, flexShrink: 0,
+  },
+  speakIcon: { fontSize: 14 },
+
   checkbox: {
-    width: 40, height: 40, borderRadius: 20, borderWidth: 3,
+    width: 32, height: 32, borderRadius: 16, borderWidth: 2.5,
     justifyContent: 'center', alignItems: 'center', flexShrink: 0,
   },
-  checkmark: { fontSize: 20, fontWeight: '900', color: '#fff' },
+  checkmark: { fontSize: 16, fontWeight: '900', color: '#fff' },
 });

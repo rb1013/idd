@@ -3,13 +3,14 @@ import {
   View, Text, TouchableOpacity, Pressable, StyleSheet, Image, SafeAreaView,
   Modal, Dimensions, ScrollView, Animated,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import * as Speech from 'expo-speech';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { loadGuardianCredentials } from '../../lib/biometricStore';
-import { COLORS } from '../../constants';
+import { COLORS, USER_TEXT, USER_TILES, USER_HEADER } from '../../constants';
 import { UserStackParamList } from '../../navigation';
 import { ScheduleItem } from '../../types';
 import { refreshScheduleNotifications } from '../../lib/scheduleNotifications';
@@ -152,7 +153,6 @@ export default function UserHomeScreen() {
 
   function openUserCard() {
     Speech.speak(`Hi ${activeUser?.name ?? firstName}`, { rate: 0.85, pitch: 1.0 });
-    setShowUserCard(true);
   }
 
   async function selectMood(m: { emoji: string; label: string }) {
@@ -170,10 +170,10 @@ export default function UserHomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.homeBtn} onPress={handleReturnHome} activeOpacity={0.75}>
-          <Text style={styles.homeIcon}>🏠</Text>
+          <AppText style={styles.homeIcon}>🏠</AppText>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.greeting}>Hi, {firstName}! 👋</Text>
+          <AppText style={styles.greeting}>Hi, {firstName}</AppText>
         </View>
         <TouchableOpacity style={styles.avatarBtn} onPress={openUserCard} activeOpacity={0.85}>
           <AvatarWithMood
@@ -201,50 +201,59 @@ export default function UserHomeScreen() {
             activeOpacity={0.88}
           >
             <View style={styles.scheduleLeft}>
-              <Text style={styles.scheduleEmoji}>{nextClass.item.emoji}</Text>
+              <AppText style={styles.scheduleEmoji}>{nextClass.item.emoji}</AppText>
               <View>
-                <Text style={styles.scheduleTitle}>{nextClass.item.title}</Text>
-                <Text style={styles.scheduleTime}>
+                <AppText style={styles.scheduleTitle}>{nextClass.item.title}</AppText>
+                <AppText style={styles.scheduleTime}>
                   {formatTime(nextClass.item.start_time)} – {formatTime(nextClass.item.end_time)}
-                </Text>
+                </AppText>
               </View>
             </View>
             <View style={styles.scheduleRight}>
               {nextClass.state === 'now' ? (
                 <View style={styles.nowBadge}>
                   <Animated.View style={[styles.nowDot, { opacity: pulseAnim }]} />
-                  <Text style={styles.nowBadgeTxt}>Now</Text>
+                  <AppText style={styles.nowBadgeTxt}>Now</AppText>
                 </View>
               ) : (
-                <Text style={styles.untilTxt}>{timeUntil(nextClass.item.start_time)}</Text>
+                <AppText style={styles.untilTxt}>{timeUntil(nextClass.item.start_time)}</AppText>
               )}
+              <Pressable
+                style={styles.scheduleSpeakBtn}
+                hitSlop={10}
+                onPress={() => {
+                  const when = nextClass.state === 'now' ? 'right now' : `today at ${formatTime(nextClass.item.start_time)}`;
+                  Speech.speak(`${nextClass.item.title}, ${when}`, { rate: 0.85, pitch: 1.0 });
+                }}
+              >
+                <AppText style={styles.scheduleSpeakIcon}>🔊</AppText>
+              </Pressable>
             </View>
           </TouchableOpacity>
         )}
 
         {/* Explore section */}
-        <Text style={styles.sectionLabel}>🌈  Explore</Text>
 
         <View style={styles.grid}>
           <TouchableOpacity style={[styles.tile, styles.friendsTile]} onPress={() => navigation.navigate('FriendsHub')} activeOpacity={0.85}>
-            <Text style={styles.tileEmoji}>🤝</Text>
-            <Text style={styles.tileTitle}>Friends</Text>
-            <Text style={styles.tileSub}>Meet new people{'\n'}and connect</Text>
+            <AppText style={styles.tileEmoji}>🤝</AppText>
+            <AppText style={styles.tileTitle}>Friends</AppText>
+            <AppText style={styles.tileSub}>Meet new people{'\n'}and connect</AppText>
             <Pressable style={styles.tileSpeakBtn} onPress={() => Speech.speak('Friends. Meet new people and connect.', { rate: 0.8, pitch: 1.1 })}>
-              <Text style={styles.tileSpeakIcon}>🔊</Text>
+              <AppText style={styles.tileSpeakIcon}>🔊</AppText>
             </Pressable>
           </TouchableOpacity>
 
           {/* Activities tile */}
           <TouchableOpacity style={[styles.tile, styles.activitiesTile]} onPress={() => navigation.navigate('Activities')} activeOpacity={0.85}>
-            <Text style={styles.tileEmoji}>✅</Text>
-            <Text style={styles.tileTitle}>Activities</Text>
+            <AppText style={styles.tileEmoji}>✅</AppText>
+            <AppText style={styles.tileTitle}>Activities</AppText>
             {activityProgress.total > 0 ? (
-              <Text style={styles.actProgress}>
+              <AppText style={styles.actProgress}>
                 {activityProgress.done === activityProgress.total ? '🎉 All done!' : `${activityProgress.done}/${activityProgress.total} done`}
-              </Text>
+              </AppText>
             ) : (
-              <Text style={styles.tileSub}>Your daily{'\n'}activities</Text>
+              <AppText style={styles.tileSub}>Your daily{'\n'}activities</AppText>
             )}
             <Pressable style={styles.tileSpeakBtn} onPress={() => Speech.speak(
               activityProgress.total > 0
@@ -252,33 +261,33 @@ export default function UserHomeScreen() {
                 : 'Activities. Your daily activities.',
               { rate: 0.8, pitch: 1.1 }
             )}>
-              <Text style={styles.tileSpeakIcon}>🔊</Text>
+              <AppText style={styles.tileSpeakIcon}>🔊</AppText>
             </Pressable>
           </TouchableOpacity>
 
           {/* Messages tile removed — messaging is accessible inside Friends
           <TouchableOpacity style={[styles.tile, styles.messagesTile]} onPress={() => navigation.navigate('Messages')} activeOpacity={0.85}>
-            <Text style={styles.tileEmoji}>💬</Text>
-            <Text style={styles.tileTitle}>Messages</Text>
-            <Text style={styles.tileSub}>Chat with{'\n'}your friends</Text>
+            <AppText style={styles.tileEmoji}>💬</AppText>
+            <AppText style={styles.tileTitle}>Messages</AppText>
+            <AppText style={styles.tileSub}>Chat with{'\n'}your friends</AppText>
           </TouchableOpacity>
           */}
 
           <TouchableOpacity style={[styles.tile, styles.moodTile]} onPress={() => setShowMoodPicker(true)} activeOpacity={0.85}>
-            <Text style={styles.tileEmoji}>{activeUser?.current_mood ?? '😊'}</Text>
-            <Text style={styles.tileTitle}>My Mood</Text>
-            <Text style={styles.tileSub}>How are you{'\n'}feeling today?</Text>
+            <AppText style={styles.tileEmoji}>{activeUser?.current_mood ?? '😊'}</AppText>
+            <AppText style={styles.tileTitle}>My Mood</AppText>
+            <AppText style={styles.tileSub}>How are you{'\n'}feeling today?</AppText>
             <Pressable style={styles.tileSpeakBtn} onPress={() => Speech.speak('My Mood. How are you feeling today?', { rate: 0.8, pitch: 1.1 })}>
-              <Text style={styles.tileSpeakIcon}>🔊</Text>
+              <AppText style={styles.tileSpeakIcon}>🔊</AppText>
             </Pressable>
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.tile, styles.learnTile]} onPress={() => navigation.navigate('Tutorials')} activeOpacity={0.85}>
-            <Text style={styles.tileEmoji}>📚</Text>
-            <Text style={styles.tileTitle}>Learn</Text>
-            <Text style={styles.tileSub}>Watch videos and{'\n'}discover new things</Text>
+            <AppText style={styles.tileEmoji}>📚</AppText>
+            <AppText style={styles.tileTitle}>Learn</AppText>
+            <AppText style={styles.tileSub}>Watch videos and{'\n'}discover new things</AppText>
             <Pressable style={styles.tileSpeakBtn} onPress={() => Speech.speak('Learn. Watch videos and discover new things.', { rate: 0.8, pitch: 1.1 })}>
-              <Text style={styles.tileSpeakIcon}>🔊</Text>
+              <AppText style={styles.tileSpeakIcon}>🔊</AppText>
             </Pressable>
           </TouchableOpacity>
         </View>
@@ -295,7 +304,7 @@ export default function UserHomeScreen() {
               onPress={() => setShowUserCard(false)}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Text style={styles.closeBtnText}>✕</Text>
+              <AppText style={styles.closeBtnText}>✕</AppText>
             </TouchableOpacity>
             <AvatarWithMood
               name={activeUser?.name ?? '?'}
@@ -303,7 +312,7 @@ export default function UserHomeScreen() {
               size={88}
               mood={activeUser?.current_mood}
             />
-            <Text style={styles.userCardName}>Hi, {activeUser?.name}!</Text>
+            <AppText style={styles.userCardName}>Hi, {activeUser?.name}!</AppText>
             <TouchableOpacity
               style={styles.logoutBtn}
               onPress={signOut}
@@ -326,9 +335,9 @@ export default function UserHomeScreen() {
               onPress={() => setShowMoodPicker(false)}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Text style={styles.closeBtnText}>✕</Text>
+              <AppText style={styles.closeBtnText}>✕</AppText>
             </TouchableOpacity>
-            <Text style={styles.pickerTitle}>How are you feeling?</Text>
+            <AppText style={styles.pickerTitle}>How are you feeling?</AppText>
             <View style={styles.moodRow}>
               {MOODS.map(m => (
                 <TouchableOpacity
@@ -339,7 +348,7 @@ export default function UserHomeScreen() {
                   delayLongPress={400}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.moodEmoji}>{m.emoji}</Text>
+                  <AppText style={styles.moodEmoji}>{m.emoji}</AppText>
                 </TouchableOpacity>
               ))}
             </View>
@@ -351,7 +360,7 @@ export default function UserHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: USER_HEADER.pageBackground },
 
   header: {
     flexDirection: 'row',
@@ -359,19 +368,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 20,
-    paddingBottom: 12,
+    paddingBottom: 20,
     gap: 8,
+    backgroundColor: USER_HEADER.backgroundColor,
+    borderTopLeftRadius:  USER_HEADER.borderTopLeftRadius,
+    borderTopRightRadius: USER_HEADER.borderTopRightRadius,
   },
   homeBtn: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: USER_HEADER.btnBackground,
     justifyContent: 'center', alignItems: 'center',
     flexShrink: 0,
   },
   homeIcon: { fontSize: 22 },
   headerCenter: { flex: 1 },
-  greeting: { fontSize: 22, fontWeight: '800', color: COLORS.text },
-  subGreeting: { fontSize: 13, color: COLORS.textLight, marginTop: 3 },
+  greeting: { ...USER_TEXT.greeting },
+  subGreeting: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 3 },
 
   avatarBtn: { position: 'relative' },
   avatar: { width: 68, height: 68, borderRadius: 34 },
@@ -391,37 +403,40 @@ const styles = StyleSheet.create({
   },
   moodBadgeEmoji: { fontSize: 16 },
 
-  scrollContent: { paddingHorizontal: 16, paddingBottom: 16, gap: 14 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 16, gap: 14 },
 
   // Schedule tile
   scheduleTile: {
-    borderRadius: 22,
-    padding: 18,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderLeftWidth: 5,
+    borderLeftWidth: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
   },
-  scheduleTileUpcoming: { backgroundColor: '#EDE9FE', borderLeftColor: '#7C3AED' },
+  scheduleTileUpcoming: { backgroundColor: '#FDEADB', borderLeftColor: USER_HEADER.backgroundColor },
   scheduleTileNow:      { backgroundColor: '#D1FAE5', borderLeftColor: '#059669' },
   scheduleLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
   scheduleEmoji: { fontSize: 36 },
-  scheduleTitle: { fontSize: 17, fontWeight: '800', color: COLORS.text, marginBottom: 2 },
-  scheduleTime:  { fontSize: 12, color: COLORS.textLight },
-  scheduleRight: { alignItems: 'flex-end', paddingLeft: 8 },
-  untilTxt: { fontSize: 13, fontWeight: '700', color: '#7C3AED' },
+  scheduleTitle: { ...USER_TEXT.bannerTitle, marginBottom: 2 },
+  scheduleTime:  { ...USER_TEXT.bannerTime },
+  scheduleRight: { alignItems: 'flex-end', paddingLeft: 8, gap: 8 },
+  scheduleSpeakBtn: { padding: 4, backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 14, width: 28, height: 28, justifyContent: 'center', alignItems: 'center' },
+  scheduleSpeakIcon: { fontSize: 14 },
+  untilTxt: { ...USER_TEXT.bannerUntil },
   nowBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#A7F3D0', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   nowDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#059669' },
   nowBadgeTxt: { fontSize: 13, fontWeight: '800', color: '#065F46' },
 
   // Activities tile
-  activitiesTile: { backgroundColor: '#2563EB' },
-  actProgress:    { fontSize: 15, fontWeight: '800', color: '#fff', marginTop: 4 },
+  activitiesTile: { ...USER_TILES.activities, borderWidth: 2 },
+  actProgress:    { fontSize: 15, fontWeight: '800', color: '#5A2E14', marginTop: 4 },
 
   // Section label
   sectionLabel: { fontSize: 20, fontWeight: '800', color: COLORS.text, paddingLeft: 4, marginTop: 10 },
@@ -445,15 +460,14 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
   },
-  friendsTile:  { backgroundColor: '#5CBB7A' },
-  // messagesTile: { backgroundColor: '#4A90E2' }, // Messages tile removed
-  moodTile:     { backgroundColor: '#F5A623' },
-  learnTile:    { backgroundColor: '#9B59B6' },
+  friendsTile:  { ...USER_TILES.friends,    borderWidth: 2 },
+  moodTile:     { ...USER_TILES.mood,       borderWidth: 2 },
+  learnTile:    { ...USER_TILES.learn,      borderWidth: 2 },
   tileEmoji: { fontSize: 40, marginBottom: 8 },
-  tileTitle: { fontSize: 18, fontWeight: '800', color: '#fff', marginBottom: 4 },
-  tileSub:   { fontSize: 12, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 16 },
+  tileTitle: { ...USER_TEXT.tileTitle, marginBottom: 4 },
+  tileSub:   { ...USER_TEXT.tileSub, textAlign: 'center', lineHeight: 16 },
   tileSpeakBtn: {
-    marginTop: 10, backgroundColor: 'rgba(255,255,255,0.2)',
+    marginTop: 10, backgroundColor: 'rgba(0,0,0,0.08)',
     borderRadius: 16, paddingHorizontal: 12, paddingVertical: 4,
   },
   tileSpeakIcon: { fontSize: 15 },
@@ -474,7 +488,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', marginBottom: 16,
   },
   userCardAvatarText: { fontSize: 36, fontWeight: '800', color: COLORS.primary },
-  userCardName: { fontSize: 22, fontWeight: '800', color: COLORS.text, marginBottom: 28 },
+  userCardName: { ...USER_TEXT.heading, marginBottom: 28 },
   logoutBtn: {
     width: 72, height: 72, borderRadius: 36,
     backgroundColor: '#E53E3E',
@@ -497,7 +511,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border, marginBottom: 8,
   },
   closeBtnText: { fontSize: 20, fontWeight: '900', color: COLORS.text, lineHeight: 22 },
-  pickerTitle: { fontSize: 20, fontWeight: '800', color: COLORS.text, marginBottom: 20 },
+  pickerTitle: { ...USER_TEXT.heading, marginBottom: 20 },
   moodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
   moodOption: {
     alignItems: 'center', gap: 4, padding: 10, borderRadius: 16, width: 72,

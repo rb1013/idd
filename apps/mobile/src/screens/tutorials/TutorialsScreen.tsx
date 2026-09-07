@@ -1,19 +1,20 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Image, ActivityIndicator, Modal, Dimensions, SafeAreaView, Platform,
 } from 'react-native';
 import * as Speech from 'expo-speech';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import YoutubePlayer from '../../components/YoutubePlayer';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
+import { COLORS, USER_HEADER, USER_TILE_CYCLE } from '../../constants';
 import type { Tutorial, TutorialFrame } from '../../types';
 
 const { width } = Dimensions.get('window');
+const TILE_W = (width - 40 - 12) / 2; // 20px padding each side, 12px gap
 
 const FORMAT_EMOJI: Record<string, string> = { video: '🎬', slideshow: '🖼' };
 
@@ -71,6 +72,7 @@ function NoTutorialsState() {
 }
 
 export default function TutorialsScreen() {
+  const navigation = useNavigation();
   const { activeUser } = useAuth();
   const [tutorials, setTutorials] = useState<TutorialWithFrames[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,6 +80,14 @@ export default function TutorialsScreen() {
   const [categories, setCategories] = useState<string[]>([]);
   const [playing, setPlaying] = useState<TutorialWithFrames | null>(null);
   const [categoryOpen, setCategoryOpen] = useState(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerStyle:      { backgroundColor: USER_HEADER.backgroundColor },
+      headerTintColor:  USER_HEADER.tintColor,
+      headerTitleStyle: { color: USER_HEADER.tintColor, fontWeight: '900' as const, fontSize: 18 },
+    });
+  }, [navigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -125,19 +135,6 @@ export default function TutorialsScreen() {
   const featuredItems = tutorials.filter(t => t.is_featured);
   const regularItems = tutorials.filter(t => !t.is_featured);
 
-  const filtered = selectedCategory && selectedCategory !== 'All'
-    ? regularItems.filter(t => t.category === selectedCategory)
-    : regularItems;
-
-  // Build sections: when filtering by category show one section, else group all
-  const sections = selectedCategory && selectedCategory !== 'All'
-    ? [{ category: selectedCategory, data: filtered }]
-    : [...new Set(regularItems.map(t => t.category))].map(cat => ({
-        category: cat,
-        data: regularItems.filter(t => t.category === cat),
-      }));
-
-  const activeLabel = selectedCategory ?? 'All Categories';
 
   return (
     <View style={styles.container}>
@@ -224,43 +221,34 @@ export default function TutorialsScreen() {
             </View>
           )}
 
-          {/* Regular category sections */}
-          {sections.map(section => {
-            const color = categoryColor(section.category);
-            return (
-              <View key={section.category} style={styles.section}>
-                {section.data.map(item => (
+          {/* All tutorials flat grid */}
+          {regularItems.length > 0 && (
+            <View style={styles.tileGrid}>
+              {regularItems.map((item, idx) => {
+                const tile = USER_TILE_CYCLE[idx % USER_TILE_CYCLE.length];
+                return (
                   <TouchableOpacity
                     key={item.id}
-                    style={[styles.card, { borderLeftColor: color, backgroundColor: color + '12' }]}
+                    style={[styles.tile, { backgroundColor: tile.backgroundColor, borderColor: tile.borderColor }]}
                     onPress={() => setPlaying(item)}
-                    activeOpacity={0.8}
+                    activeOpacity={0.85}
                   >
-                    <View style={styles.thumbWrap}>
-                      {item.thumbnail_url
-                        ? <Image source={{ uri: item.thumbnail_url }} style={styles.thumb} />
-                        : (
-                          <View style={[styles.thumb, styles.thumbPlaceholder]}>
-                            <Text style={styles.thumbEmoji}>{FORMAT_EMOJI[item.format] ?? '📚'}</Text>
-                          </View>
-                        )
-                      }
+                    {item.thumbnail_url
+                      ? <Image source={{ uri: item.thumbnail_url }} style={styles.tileThumb} resizeMode="cover" />
+                      : (
+                        <View style={[styles.tileThumb, { backgroundColor: tile.borderColor + '40', justifyContent: 'center', alignItems: 'center' }]}>
+                          <Text style={{ fontSize: 36 }}>{FORMAT_EMOJI[item.format] ?? '📚'}</Text>
+                        </View>
+                      )
+                    }
+                    <View style={styles.tileBody}>
+                      <Text style={styles.tileTitleText} numberOfLines={2}>{item.display_name || item.category}</Text>
                     </View>
-                    <View style={styles.info}>
-                      <Text style={styles.cardTitle} numberOfLines={2}>{item.display_name || item.category}</Text>
-                      <View style={styles.cardMeta}>
-                        <Text style={[styles.cardFormat, { color }]}>{FORMAT_EMOJI[item.format] ?? '📚'} {item.format}</Text>
-                        {item.frames?.length > 0 && (
-                          <Text style={styles.cardFrames}>{item.frames.length} slides</Text>
-                        )}
-                      </View>
-                    </View>
-                    <Text style={[styles.arrow, { color }]}>›</Text>
                   </TouchableOpacity>
-                ))}
-              </View>
-            );
-          })}
+                );
+              })}
+            </View>
+          )}
         </ScrollView>
       )}
 
@@ -518,7 +506,7 @@ function SlideshowModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; o
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: USER_HEADER.pageBackground },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   filterBar: {
     paddingHorizontal: 20, paddingVertical: 12,
@@ -580,7 +568,7 @@ const styles = StyleSheet.create({
   },
   featuredBadgeText: { fontSize: 13, fontWeight: '800', color: '#fff' },
   featuredBody: { padding: 18, gap: 6 },
-  featuredTitle: { fontSize: 22, fontWeight: '900', color: '#1A1A2E', lineHeight: 28 },
+  featuredTitle: { fontSize: 22, fontWeight: '700', color: '#1A1A2E', lineHeight: 28 },
   featuredMeta: { fontSize: 14, color: COLORS.statusAmberDark, fontWeight: '600' },
   featuredPlayBtn: {
     marginTop: 10, backgroundColor: COLORS.statusDeepPurple, borderRadius: 16,
@@ -594,33 +582,28 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   sectionEmoji: { fontSize: 26 },
   sectionTitle: { fontSize: 22, fontWeight: '900', color: COLORS.text },
-  card: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    borderRadius: 22, padding: 14, borderLeftWidth: 6,
+
+  tileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  tile: {
+    width: TILE_W, borderRadius: 20, overflow: 'hidden', borderWidth: 2,
     shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.07, shadowRadius: 10, elevation: 3,
   },
-  thumbWrap: { flexShrink: 0 },
-  thumb: { width: 72, height: 72, borderRadius: 16 },
-  thumbPlaceholder: { backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center' },
-  thumbEmoji: { fontSize: 30 },
-  info: { flex: 1, minWidth: 0 },
-  cardTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
-  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cardFormat: { fontSize: 13, fontWeight: '600', textTransform: 'capitalize' },
-  cardFrames: { fontSize: 13, color: COLORS.textLight },
-  arrow: { fontSize: 28, fontWeight: '900', flexShrink: 0 },
+  tileThumb: { width: '100%', aspectRatio: 1 },
+  tileBody: { padding: 10, gap: 4 },
+  tileTitleText: { fontSize: 14, fontWeight: '600', color: COLORS.text, lineHeight: 20 },
+  tileFormat: { fontSize: 12, fontWeight: '600', textTransform: 'capitalize' as const },
 
-  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 12 },
+  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 12, backgroundColor: USER_HEADER.pageBackground },
   emptyEmoji: { fontSize: 72 },
   emptyText: { fontSize: 24, fontWeight: '900', color: COLORS.text },
   emptyHint: { fontSize: 16, color: COLORS.textLight, textAlign: 'center', paddingHorizontal: 32 },
   emptySpeakBtn: {
     marginTop: 8, paddingHorizontal: 24, paddingVertical: 12,
-    borderRadius: 20, backgroundColor: '#EFF6FF',
-    borderWidth: 1.5, borderColor: '#BFDBFE',
+    borderRadius: 20, backgroundColor: '#FDEADB',
+    borderWidth: 1.5, borderColor: '#D4A888',
   },
-  emptySpeakBtnText: { fontSize: 15, fontWeight: '700', color: '#2563EB' },
+  emptySpeakBtnText: { fontSize: 15, fontWeight: '700', color: USER_HEADER.backgroundColor },
 
   // Video modal (unchanged)
   modalContainer: { flex: 1, backgroundColor: '#000' },
