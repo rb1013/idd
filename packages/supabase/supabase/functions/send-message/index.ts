@@ -1,0 +1,115 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    const { conversation_id, sender_id, content } = await req.json();
+
+    if (!conversation_id || !sender_id || !content?.trim()) {
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${serviceRoleKey}` } },
+    });
+
+    // Verify caller is authenticated
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user: callerUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    console.log('auth user:', callerUser?.id, 'authError:', authError?.message);
+    if (!callerUser) {
+      return new Response(JSON.stringify({ error: 'Invalid token' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Verify sender_id belongs to the authenticated user
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('id')
+      .eq('id', sender_id)
+      .eq('auth_user_id', callerUser.id)
+      .single();
+    console.log('profile:', profile?.id, 'profileError:', profileError?.message);
+
+    if (!profile) {
+      return new Response(JSON.stringify({ error: 'Access denied', detail: profileError?.message }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Verify sender is a participant in the conversation
+    const { data: participant, error: participantError } = await supabaseAdmin
+      .from('conversation_participants')
+      .select('user_id')
+      .eq('conversation_id', conversation_id)
+      .eq('user_id', sender_id)
+      .single();
+    console.log('participant:', participant?.id, 'participantError:', participantError?.message);
+
+    if (!participant) {
+      return new Response(JSON.stringify({ error: 'Not a participant', detail: participantError?.message }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Layer 2: check custom blocked_words table
+    const { data: blockedWords } = await supabaseAdmin
+      .from('blocked_words')
+      .select('word');
+
+    if (blockedWords && blockedWords.length > 0) {
+      const lowerContent = content.toLowerCase();
+      const isBlocked = blockedWords.some(({ word }: { word: string }) =>
+        lowerContent.includes(word.toLowerCase())
+      );
+      if (isBlocked) {
+        return new Response(JSON.stringify({ error: 'blocked' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Insert message
+    const { data: message, error: insertError } = await supabaseAdmin
+      .from('messages')
+      .insert({ conversation_id, sender_id, content: content.trim() })
+      .select()
+      .single();
+
+    if (insertError) {
+      return new Response(JSON.stringify({ error: insertError.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({ message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: String(err) }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});

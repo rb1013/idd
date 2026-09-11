@@ -4,8 +4,11 @@ import {
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
   Alert, Image,
 } from 'react-native';
+import { Filter } from 'bad-words';
+import wordConfig from '../../lib/badWordsList.json';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Speech from 'expo-speech';
+// import { Audio } from 'expo-av'; // requires native rebuild — enable when running npx expo run:ios
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -26,7 +29,7 @@ function avatarColor(name: string) {
 }
 
 export default function ChatScreen() {
-  const { activeUser } = useAuth();
+  const { activeUser, session } = useAuth();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const navigation = useNavigation<NativeStackNavigationProp<UserStackParamList>>();
@@ -38,7 +41,28 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(true);
   const [friendLastSeen, setFriendLastSeen] = useState<string | null>(null);
   const [boardVisible, setBoardVisible] = useState(false);
+  const [blockedVisible, setBlockedVisible] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  function playBlockedFeedback() {
+    // TODO: play gentle-chime.wav before TTS once expo-av is enabled (requires npx expo run:ios)
+    // const { sound } = await Audio.Sound.createAsync(require('../../../assets/sounds/gentle-chime.wav'));
+    // await sound.playAsync();
+    // sound.setOnPlaybackStatusUpdate(status => {
+    //   if ('didJustFinish' in status && status.didJustFinish) {
+    //     sound.unloadAsync();
+    //     Speech.speak("Let's use kind words!", { rate: 0.75, pitch: 1.1 });
+    //   }
+    // });
+    Speech.speak("Let's use kind words!", { rate: 0.75, pitch: 1.1 });
+  }
+
+  const wordFilter = useRef<Filter | null>(null);
+  if (!wordFilter.current) {
+    const f = new Filter();
+    if (wordConfig.add.length) f.addWords(...wordConfig.add);
+    if (wordConfig.remove.length) f.removeWords(...wordConfig.remove);
+    wordFilter.current = f;
+  }
 
   const isOnline = friendLastSeen
     ? Date.now() - new Date(friendLastSeen).getTime() < 5 * 60 * 1000
@@ -131,21 +155,42 @@ export default function ChatScreen() {
   async function sendMessage(content: string, fromInput = false) {
     const trimmed = content.trim();
     if (!trimmed || !activeUser) return;
-    if (fromInput) setText('');
 
-    const { data, error } = await supabase
-      .from('messages')
-      .insert({ conversation_id: conversationId, sender_id: activeUser.id, content: trimmed })
-      .select()
-      .single();
-
-    if (error) {
-      Alert.alert('Send error', error.message);
-      if (fromInput) setText(trimmed);
+    // Layer 1: client-side profanity check
+    if (wordFilter.current?.isProfane(trimmed)) {
+      setBlockedVisible(true);
+      playBlockedFeedback();
       return;
     }
-    if (data) {
-      setMessages(prev => prev.some(m => m.id === data.id) ? prev : [...prev, data as Message]);
+
+    if (fromInput) setText('');
+    setBlockedVisible(false);
+
+    // Layer 2: edge function validates against custom list then inserts
+    const { data, error } = await supabase.functions.invoke('send-message', {
+      body: { conversation_id: conversationId, sender_id: activeUser.id, content: trimmed },
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+    });
+
+    if (error || data?.error) {
+      if (data?.error === 'blocked') {
+        setBlockedVisible(true);
+        playBlockedFeedback();
+        if (fromInput) setText(trimmed);
+      } else {
+        let detail = data?.error ?? error?.message ?? 'Failed to send';
+        try {
+          const body = await (error as any)?.context?.json?.();
+          if (body?.error) detail = `${body.error}${body.detail ? ': ' + body.detail : ''}`;
+        } catch {}
+        Alert.alert('Send error', detail);
+        if (fromInput) setText(trimmed);
+      }
+      return;
+    }
+
+    if (data?.message) {
+      setMessages(prev => prev.some(m => m.id === data.message.id) ? prev : [...prev, data.message as Message]);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }
   }
@@ -208,6 +253,13 @@ export default function ChatScreen() {
         }}
       />
 
+      {/* Blocked word banner */}
+      {blockedVisible && (
+        <View style={styles.blockedBanner}>
+          <Text style={styles.blockedBannerText}>Let's use kind words 😊</Text>
+        </View>
+      )}
+
       {/* Bottom controls */}
       <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom + 8, 16) }]}>
         <View style={styles.inputRow}>
@@ -222,7 +274,7 @@ export default function ChatScreen() {
           <TextInput
             style={styles.input}
             value={text}
-            onChangeText={setText}
+            onChangeText={(val) => { setText(val); if (blockedVisible) setBlockedVisible(false); }}
             placeholder="Type a message…"
             placeholderTextColor={COLORS.textLight}
             returnKeyType="send"
@@ -298,6 +350,17 @@ const styles = StyleSheet.create({
   timestamp: { fontSize: 11 },
   timestampThem: { color: COLORS.textLight, marginLeft: 6 },
   timestampMine: { color: COLORS.textLight, marginRight: 6 },
+
+  // Blocked word banner
+  blockedBanner: {
+    backgroundColor: '#FEF3C7',
+    borderTopWidth: 1.5, borderTopColor: '#F59E0B',
+    paddingVertical: 10, paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  blockedBannerText: {
+    fontSize: 16, fontWeight: '700', color: '#92400E',
+  },
 
   // Bottom panel
   bottom: {
