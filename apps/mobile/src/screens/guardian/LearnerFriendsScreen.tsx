@@ -13,7 +13,7 @@ import { COLORS, COMPREHENSION_LEVELS, calcAge } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
-type Tab = 'friends' | 'requests' | 'find';
+type Tab = 'friends' | 'requests' | 'find' | 'blocked';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 const AVATAR_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, COLORS.statusAmber, COLORS.statusBlue, COLORS.statusPink];
@@ -59,6 +59,15 @@ interface FriendRequest {
   myLearnerId: string;
   myLearnerName: string;
   direction: 'incoming' | 'outgoing';
+}
+
+interface BlockedUser {
+  blockId: string;
+  learnerId: string;
+  blockedLearnerId: string;
+  blockedLearnerName: string;
+  blockedLearnerPhoto: string | null;
+  reason: string | null;
 }
 
 interface LearnerResult {
@@ -148,6 +157,8 @@ export default function LearnerFriendsScreen() {
   const [catDislikes,   setCatDislikes]   = useState<string[]>([]);
   const [catAbilities,  setCatAbilities]  = useState<string[]>([]);
   const [catMedical,    setCatMedical]    = useState<string[]>([]);
+  const [blockedUsers,  setBlockedUsers]  = useState<BlockedUser[]>([]);
+  const blockedIds = useMemo(() => new Set(blockedUsers.map(b => b.blockedLearnerId)), [blockedUsers]);
   const [sending,       setSending]       = useState<string | null>(null);
   const [searchName,    setSearchName]    = useState('');
   const [searchCity,    setSearchCity]    = useState('');
@@ -186,9 +197,44 @@ export default function LearnerFriendsScreen() {
       loadFriends(myIds, guardianId),
       loadRequests(myIds, myMap),
       loadDiscovery(myIds, guardianId),
+      loadBlocked(myIds),
     ]);
 
     setLoading(false);
+  }
+
+  // ── Blocked tab loader ─────────────────────────────────────────────────────
+
+  async function loadBlocked(myIds: string[]) {
+    if (myIds.length === 0) { setBlockedUsers([]); return; }
+    const { data } = await supabase
+      .from('blocked_learners')
+      .select('id, learner_id, blocked_learner_id, reason')
+      .in('learner_id', myIds);
+    if (!data || data.length === 0) { setBlockedUsers([]); return; }
+    const blockedProfileIds = data.map((b: any) => b.blocked_learner_id);
+    const { data: profiles } = await supabase
+      .from('user_profiles').select('id, name, photo_url').in('id', blockedProfileIds);
+    const profileMap: Record<string, any> = {};
+    (profiles ?? []).forEach((p: any) => { profileMap[p.id] = p; });
+    setBlockedUsers(data.map((b: any) => ({
+      blockId: b.id,
+      learnerId: b.learner_id,
+      blockedLearnerId: b.blocked_learner_id,
+      blockedLearnerName: profileMap[b.blocked_learner_id]?.name ?? 'Unknown',
+      blockedLearnerPhoto: profileMap[b.blocked_learner_id]?.photo_url ?? null,
+      reason: b.reason,
+    })));
+  }
+
+  async function unblock(blockId: string) {
+    Alert.alert('Unblock', 'Are you sure you want to unblock this person?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Unblock', onPress: async () => {
+        await supabase.from('blocked_learners').delete().eq('id', blockId);
+        setBlockedUsers(prev => prev.filter(b => b.blockId !== blockId));
+      }},
+    ]);
   }
 
   // ── Friends tab loader ─────────────────────────────────────────────────────
@@ -504,6 +550,7 @@ export default function LearnerFriendsScreen() {
 
   function applyFilters(list: LearnerResult[]) {
     return list.filter(l => {
+      if (blockedIds.has(l.id)) return false;
       if (l.connectionStatus === 'accepted' || l.connectionStatus === 'pending_received') return false;
       if (searchName && !l.name.toLowerCase().includes(searchName.toLowerCase())) return false;
       if (searchCity && !l.city.toLowerCase().includes(searchCity.toLowerCase()))  return false;
@@ -519,6 +566,7 @@ export default function LearnerFriendsScreen() {
 
   function applyDraftFilters(list: LearnerResult[]) {
     return list.filter(l => {
+      if (blockedIds.has(l.id)) return false;
       if (l.connectionStatus === 'accepted' || l.connectionStatus === 'pending_received') return false;
       if (draftAgeGroups.length > 0 && !draftAgeGroups.includes(getAgeGroup(l.date_of_birth) ?? '')) return false;
       if (draftLevels.length > 0 && !draftLevels.some(fl => fl.toLowerCase() === l.comprehension_level)) return false;
@@ -549,10 +597,10 @@ export default function LearnerFriendsScreen() {
 
       {/* Tab bar */}
       <View style={s.tabBar}>
-        {(['friends', 'requests', 'find'] as Tab[]).map(t => (
+        {(['friends', 'requests', 'find', 'blocked'] as Tab[]).map(t => (
           <TouchableOpacity key={t} style={[s.tabBtn, tab === t && s.tabBtnActive]} onPress={() => setTab(t)} activeOpacity={0.7}>
             <AppText style={[s.tabLabel, tab === t && s.tabLabelActive]}>
-              {t === 'friends' ? '👥 Friends' : t === 'requests' ? '🤝 Requests' : '🔍 Find'}
+              {t === 'friends' ? '👥 Friends' : t === 'requests' ? '🤝 Requests' : t === 'find' ? '🔍 Find' : '🚫 Blocked'}
             </AppText>
             {t === 'requests' && pendingCount > 0 && (
               <View style={s.tabBadge}><AppText style={s.tabBadgeTxt}>{pendingCount}</AppText></View>
@@ -562,8 +610,9 @@ export default function LearnerFriendsScreen() {
       </View>
 
       {/* ── Friends tab ──────────────────────────────────────────────────────── */}
-      {tab === 'friends' && (
-        friends.length === 0 ? (
+      {tab === 'friends' && (() => {
+        const visibleFriends = friends.filter(f => !blockedIds.has(f.learnerId));
+        return visibleFriends.length === 0 ? (
           <View style={s.center}>
             <AppText style={s.emptyEmoji}>👥</AppText>
             <AppText style={s.emptyText}>No friends yet</AppText>
@@ -571,7 +620,7 @@ export default function LearnerFriendsScreen() {
           </View>
         ) : (
           <FlatList
-            data={friends}
+            data={visibleFriends}
             keyExtractor={f => f.friendshipId}
             contentContainerStyle={s.listContent}
             renderItem={({ item: f }) => (
@@ -594,8 +643,8 @@ export default function LearnerFriendsScreen() {
               </TouchableOpacity>
             )}
           />
-        )
-      )}
+        );
+      })()}
 
       {/* ── Requests tab ─────────────────────────────────────────────────────── */}
       {tab === 'requests' && (
@@ -775,6 +824,35 @@ export default function LearnerFriendsScreen() {
         </View>
       )}
 
+      {/* ── Blocked tab ──────────────────────────────────────────────────────── */}
+      {tab === 'blocked' && (
+        blockedUsers.length === 0 ? (
+          <View style={s.center}>
+            <AppText style={s.emptyEmoji}>🚫</AppText>
+            <AppText style={s.emptyText}>No blocked users</AppText>
+            <AppText style={s.emptyHint}>Blocked learners will appear here</AppText>
+          </View>
+        ) : (
+          <FlatList
+            data={blockedUsers}
+            keyExtractor={b => b.blockId}
+            contentContainerStyle={s.listContent}
+            renderItem={({ item: b }) => (
+              <View style={s.card}>
+                <Avatar name={b.blockedLearnerName} photo={b.blockedLearnerPhoto} size={52} />
+                <View style={s.cardInfo}>
+                  <AppText style={s.cardName}>{b.blockedLearnerName}</AppText>
+                  {b.reason && <AppText style={s.cardMeta}>Reason: {b.reason}</AppText>}
+                </View>
+                <TouchableOpacity style={s.unblockBtn} onPress={() => unblock(b.blockId)} activeOpacity={0.8}>
+                  <AppText style={s.unblockBtnTxt}>Unblock</AppText>
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+        )
+      )}
+
       {/* Filter sheet */}
       <Modal visible={sheetOpen} transparent animationType="slide" onRequestClose={() => setSheetOpen(false)}>
         <TouchableOpacity style={s.sheetOverlay} activeOpacity={1} onPress={() => setSheetOpen(false)}>
@@ -950,4 +1028,8 @@ const s = StyleSheet.create({
   optCheckMark: { color: COLORS.bloomOnAccent, fontSize: 11, fontWeight: '900' },
   sheetApply:   { marginHorizontal: 18, marginTop: 10, backgroundColor: COLORS.bloomAccent, borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
   sheetApplyTxt: { color: COLORS.bloomOnAccent, fontWeight: '900', fontSize: 15 },
+
+  // Blocked tab
+  unblockBtn: { backgroundColor: '#FEF2F2', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: '#FECACA' },
+  unblockBtnTxt: { fontSize: 12, fontWeight: '700', color: '#DC2626' },
 });

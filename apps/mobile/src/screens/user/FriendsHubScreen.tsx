@@ -100,7 +100,22 @@ export default function FriendsHubScreen() {
     });
   }, [navigation]);
 
-  useEffect(() => { if (activeUser) loadFriends(activeUser.id); }, [activeUser]);
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => { if (activeUser) { loadFriends(activeUser.id); loadBlocked(activeUser.id); } }, [activeUser]);
+
+  async function loadBlocked(userId: string) {
+    const { data } = await supabase
+      .from('blocked_learners')
+      .select('learner_id, blocked_learner_id')
+      .or(`learner_id.eq.${userId},blocked_learner_id.eq.${userId}`);
+    const ids = new Set<string>();
+    (data ?? []).forEach((row: any) => {
+      if (row.learner_id !== userId) ids.add(row.learner_id);
+      if (row.blocked_learner_id !== userId) ids.add(row.blocked_learner_id);
+    });
+    setBlockedIds(ids);
+  }
 
   async function loadFriends(userId: string) {
     const { data, error } = await supabase
@@ -170,7 +185,7 @@ export default function FriendsHubScreen() {
     return <NoFriendsEmptyState />;
   }
 
-  const sorted = [...friends].sort((a, b) => a.name.localeCompare(b.name));
+  const sorted = [...friends].filter(f => !blockedIds.has(f.id)).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
