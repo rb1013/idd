@@ -33,6 +33,7 @@ import UserScheduleScreen from '../screens/guardian/UserScheduleScreen';
 import LearnerDiscoveryScreen from '../screens/guardian/LearnerDiscoveryScreen';
 import LearnerPublicProfileScreen from '../screens/guardian/LearnerPublicProfileScreen';
 import LearnerFriendRequestsScreen from '../screens/guardian/LearnerFriendRequestsScreen';
+import LearnerFriendsScreen from '../screens/guardian/LearnerFriendsScreen';
 import GuardianConnectionsScreen from '../screens/guardian/GuardianConnectionsScreen';
 import DiscussionsScreen from '../screens/guardian/DiscussionsScreen';
 import DiscussionDetailScreen from '../screens/guardian/DiscussionDetailScreen';
@@ -81,6 +82,7 @@ export type GuardianNavParamList = {
   LearnerDiscovery: undefined;
   LearnerPublicProfile: { learnerId: string };
   LearnerFriendRequests: undefined;
+  LearnerFriends: undefined;
   GuardianConnections: undefined;
   Discussions: undefined;
   DiscussionDetail: { postId: string };
@@ -255,6 +257,7 @@ function GuardianTabs() {
       <GuardianNav.Screen name="LinkYoutube"         component={LinkYoutubeScreen}           options={{ title: 'Link YouTube Video', headerRight: undefined }} />
       <GuardianNav.Screen name="TutorialPreview"    component={TutorialPreviewScreen}       options={{ title: 'Preview Tutorial', headerRight: undefined }} />
       <GuardianNav.Screen name="TutorialLibrary"    component={TutorialLibraryScreen}       options={{ title: 'Search Tutorials', headerRight: undefined }} />
+      <GuardianNav.Screen name="LearnerFriends"      component={LearnerFriendsScreen}        options={{ title: 'Friends', headerRight: undefined }} />
       <GuardianNav.Screen name="LearnerDiscovery"   component={LearnerDiscoveryScreen}      options={{ title: 'Find Friends', headerRight: undefined }} />
       <GuardianNav.Screen name="LearnerPublicProfile" component={LearnerPublicProfileScreen} options={{ title: 'Learner Profile', headerRight: undefined }} />
       <GuardianNav.Screen name="LearnerFriendRequests" component={LearnerFriendRequestsScreen} options={{ title: 'Friend Requests', headerRight: undefined }} />

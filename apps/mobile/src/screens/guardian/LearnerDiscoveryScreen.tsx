@@ -401,7 +401,7 @@ export default function LearnerDiscoveryScreen() {
           ))}
         </ScrollView>
         <TouchableOpacity style={s.filterBtn} onPress={openSheet} activeOpacity={0.8}>
-          <AppText style={s.filterBtnTxt}>Filters</AppText>
+          <AppText style={s.filterBtnTxt}>More Filters</AppText>
           {totalActive > 0 && (
             <View style={s.filterBadge}><AppText style={s.filterBadgeTxt}>{totalActive}</AppText></View>
           )}
@@ -592,7 +592,7 @@ const s = StyleSheet.create({
     backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomAccent,
     borderRadius: 18, paddingHorizontal: 12, paddingVertical: 7,
   },
-  filterBtnTxt:  { fontSize: 12, fontWeight: '800', color: COLORS.bloomAccent },
+  filterBtnTxt:  { fontSize: 12, fontWeight: '800', color: COLORS.bloomActiveText },
   filterBadge:   { backgroundColor: COLORS.bloomAccent, borderRadius: 9, paddingHorizontal: 6, paddingVertical: 1 },
   filterBadgeTxt: { fontSize: 10, fontWeight: '900', color: COLORS.bloomOnAccent },
 

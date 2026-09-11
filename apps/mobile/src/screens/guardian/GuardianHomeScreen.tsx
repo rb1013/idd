@@ -222,30 +222,21 @@ export default function GuardianHomeScreen() {
             <View style={s.learnerActionGrid}>
               <TouchableOpacity
                 style={s.actionTile}
-                onPress={() => navigation.navigate('LearnerDiscovery')}
+                onPress={() => navigation.navigate('LearnerFriends')}
                 activeOpacity={0.78}
               >
-                <AppText style={s.actionEmoji}>🔍</AppText>
-                <AppText style={s.actionLabel}>Find{'\n'}Friends</AppText>
+                <AppText style={s.actionEmoji}>👥</AppText>
+                <AppText style={s.actionLabel}>Friends</AppText>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={s.actionTile}
-                onPress={() => navigation.navigate('LearnerFriendRequests')}
+                onPress={() => navigation.navigate('TutorialLibrary', { linkedOnly: true })}
                 activeOpacity={0.78}
               >
-                <AppText style={s.actionEmoji}>🤝</AppText>
-                <AppText style={s.actionLabel}>Friend{'\n'}Requests</AppText>
+                <AppText style={s.actionEmoji}>📚</AppText>
+                <AppText style={s.actionLabel}>Learn</AppText>
               </TouchableOpacity>
-
-              {/* <TouchableOpacity
-                style={s.actionTile}
-                onPress={() => navigation.navigate('FavouriteFriends')}
-                activeOpacity={0.78}
-              >
-                <AppText style={s.actionEmoji}>⭐</AppText>
-                <AppText style={s.actionLabel}>Manage{'\n'}Friends</AppText>
-              </TouchableOpacity> */}
             </View>
 
             <View style={[s.learnerActionGrid, { marginTop: 8 }]}>
@@ -270,15 +261,6 @@ export default function GuardianHomeScreen() {
               >
                 <AppText style={s.actionEmoji}>📅</AppText>
                 <AppText style={s.actionLabel}>Schedule</AppText>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={s.actionTile}
-                onPress={() => navigation.navigate('TutorialLibrary', { linkedOnly: true })}
-                activeOpacity={0.78}
-              >
-                <AppText style={s.actionEmoji}>📚</AppText>
-                <AppText style={s.actionLabel}>Learn</AppText>
               </TouchableOpacity>
             </View>
           </>

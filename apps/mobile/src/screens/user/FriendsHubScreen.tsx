@@ -194,7 +194,6 @@ export default function FriendsHubScreen() {
               </TouchableOpacity>
               <View style={styles.tileAvatarWrap}>
                 <AvatarWithMood name={friend.name} photo={friend.photo_url} size={68} mood={friend.current_mood} />
-                <View style={[styles.statusDot, online ? styles.dotOnline : styles.dotOffline]} />
               </View>
               <AppText style={styles.tileName} numberOfLines={2}>{friend.name}</AppText>
               {friend.likes.length > 0 && (

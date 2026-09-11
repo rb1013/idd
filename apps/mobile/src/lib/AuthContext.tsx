@@ -27,7 +27,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   activeUserRef.current = activeUser;
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) { setLoading(false); return; }
       setSession(session);
       if (session) {
         currentUserIdRef.current = session.user.id;
@@ -35,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setLoading(false);
       }
-    });
+    }).catch(() => setLoading(false));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);

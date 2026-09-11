@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, Pressable, StyleSheet, Image, SafeAreaView,
-  Modal, Dimensions, ScrollView, Animated,
+  Modal, Dimensions, ScrollView, Animated, StatusBar,
 } from 'react-native';
 import AppText from '../../components/AppText';
 import * as Speech from 'expo-speech';
@@ -167,7 +167,9 @@ export default function UserHomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={USER_HEADER.backgroundColor} />
+      <SafeAreaView style={styles.safeHeader}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.homeBtn} onPress={handleReturnHome} activeOpacity={0.75}>
           <AppText style={styles.homeIcon}>🏠</AppText>
@@ -184,6 +186,7 @@ export default function UserHomeScreen() {
           />
         </TouchableOpacity>
       </View>
+      </SafeAreaView>
 
       <ScrollView
         style={{ flex: 1 }}
@@ -355,24 +358,23 @@ export default function UserHomeScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: USER_HEADER.pageBackground },
+  container:  { flex: 1, backgroundColor: USER_HEADER.pageBackground },
+  safeHeader: { backgroundColor: USER_HEADER.backgroundColor },
 
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingTop: 12,
     paddingBottom: 20,
     gap: 8,
     backgroundColor: USER_HEADER.backgroundColor,
-    borderTopLeftRadius:  USER_HEADER.borderTopLeftRadius,
-    borderTopRightRadius: USER_HEADER.borderTopRightRadius,
   },
   homeBtn: {
     width: 44, height: 44, borderRadius: 22,
