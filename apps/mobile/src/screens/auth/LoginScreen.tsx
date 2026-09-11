@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ScrollView, Image,
+  KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
 import AppText from '../../components/AppText';
+import AppLogo from '../../components/AppLogo';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { saveGuardianCredentials } from '../../lib/biometricStore';
@@ -35,11 +36,7 @@ export default function LoginScreen({ navigation }: Props) {
       >
         {/* Branded header */}
         <View style={s.header}>
-          <Image source={require('../../../assets/elis-5-transparent.png')} style={s.elisLogo} resizeMode="contain" />
-          <AppText style={s.appName}>ELIS</AppText>
-          <View style={s.taglinePill}>
-            <AppText style={s.tagline}>Empathy · Learning · Inclusive · Support</AppText>
-          </View>
+          <AppLogo />
         </View>
 
         {/* Form */}
@@ -109,14 +106,6 @@ const s = StyleSheet.create({
     minHeight: 260,
     borderBottomLeftRadius: 36, borderBottomRightRadius: 36,
   },
-  elisLogo:    { width: 108, height: 108, transform: [{ translateX: 0 }, { translateY: 18 }] },
-  appName:     { fontSize: 32, fontWeight: '900', color: COLORS.bloomOnAccent, letterSpacing: 3, marginTop: 4, paddingLeft: 2 },
-  taglinePill: {
-    marginTop: 10,
-    backgroundColor: 'rgba(45,49,46,0.13)',
-    borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6,
-  },
-  tagline:     { fontSize: 13, fontWeight: '700', color: COLORS.bloomOnAccent, letterSpacing: 1.5 },
 
   form:     { padding: 24, paddingTop: 32 },
   title:    { fontSize: 22, fontWeight: '900', color: COLORS.bloomText, marginBottom: 4 },

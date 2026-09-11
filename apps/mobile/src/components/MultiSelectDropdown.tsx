@@ -96,11 +96,12 @@ const s = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6, marginBottom: 4 },
   chip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#DAEAFF', borderRadius: 20,
+    backgroundColor: COLORS.bloomActiveBg, borderRadius: 20,
+    borderWidth: 1, borderColor: COLORS.bloomSageMid,
     paddingHorizontal: 10, paddingVertical: 5,
   },
-  chipText: { fontSize: 13, color: COLORS.bloomAccent, fontWeight: '600' },
-  chipX:    { fontSize: 14, color: COLORS.bloomAccent, fontWeight: '700', lineHeight: 16 },
+  chipText: { fontSize: 13, color: COLORS.bloomActiveText, fontWeight: '600' },
+  chipX:    { fontSize: 14, color: COLORS.bloomActiveText, fontWeight: '700', lineHeight: 16 },
 
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: {
@@ -111,15 +112,15 @@ const s = StyleSheet.create({
     padding: 16, borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
   },
   sheetTitle: { fontSize: 16, fontWeight: '700', color: COLORS.bloomText },
-  done:       { fontSize: 16, color: COLORS.bloomAccent, fontWeight: '600' },
+  done:       { fontSize: 16, color: COLORS.bloomActiveText, fontWeight: '700' },
 
   option: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 14,
     borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
   },
-  optionText:   { fontSize: 15, color: COLORS.bloomText, flex: 1 },
-  optionTextOn: { color: COLORS.bloomAccent, fontWeight: '600' },
+  optionText:   { fontSize: 15, color: COLORS.bloomText, flex: 1, fontWeight: '400' },
+  optionTextOn: { color: COLORS.bloomActiveText, fontWeight: '700' },
 
   checkbox: {
     width: 22, height: 22, borderRadius: 6,

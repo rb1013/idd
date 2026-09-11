@@ -368,7 +368,7 @@ export default function CreateUserScreen({ navigation }: Props) {
 
             <View style={styles.disclaimer}>
               <AppText style={styles.disclaimerText}>
-                ⚠️  This information will <AppText style={styles.disclaimerBold}>not</AppText> be displayed on the learner's profile. It will only be used for finding compatible friends.{'\n\n'}
+                ⚠️  This information will <AppText style={styles.disclaimerBold}>not</AppText> be displayed on the learner's profile. It will only be used by guardians to find compatible friends.{'\n\n'}
                 If you do not find your learner's medical condition in the list, please contact the admin at{' '}
                 <AppText style={styles.disclaimerEmail}>reyaansh.bansal@gmail.com</AppText>
                 . The admin will add it and let you know when it is available in this dropdown.
