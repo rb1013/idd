@@ -49,7 +49,7 @@ function NoTutorialsState() {
   useFocusEffect(useCallback(() => {
     if (!spokenRef.current) {
       spokenRef.current = true;
-      const t = setTimeout(() => Speech.speak(NO_TUTORIALS_MSG, { rate: 0.8, pitch: 1.1 }), 600);
+      const t = setTimeout(() => Speech.speak(NO_TUTORIALS_MSG, { rate: 0.65, pitch: 1.0 }), 600);
       return () => { clearTimeout(t); Speech.stop(); };
     }
     return () => { Speech.stop(); };
@@ -62,7 +62,7 @@ function NoTutorialsState() {
       <Text style={styles.emptyHint}>Ask your Guardian to add learning videos for you</Text>
       <TouchableOpacity
         style={styles.emptySpeakBtn}
-        onPress={() => Speech.speak(NO_TUTORIALS_MSG, { rate: 0.8, pitch: 1.1 })}
+        onPress={() => Speech.speak(NO_TUTORIALS_MSG, { rate: 0.65, pitch: 1.0 })}
         activeOpacity={0.75}
       >
         <Text style={styles.emptySpeakBtnText}>🔊  Hear this again</Text>
@@ -353,7 +353,7 @@ function SlideshowModal({ tutorial, onClose }: { tutorial: TutorialWithFrames; o
     } else if (currentFrame?.tts_text) {
       setSpeaking(true);
       Speech.speak(currentFrame.tts_text, {
-        rate: 0.8, pitch: 1.0,
+        rate: 0.65, pitch: 1.0,
         onDone: () => {
           setSpeaking(false);
           if (autoPlayRef.current && !isLast) setIndex(i => i + 1);

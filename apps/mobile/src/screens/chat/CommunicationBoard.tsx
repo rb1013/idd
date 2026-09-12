@@ -42,7 +42,7 @@ export default function CommunicationBoard({ visible, onClose, onSend }: Props) 
                 <TouchableOpacity
                   key={p.phrase}
                   style={styles.phraseCell}
-                  onPressIn={() => Speech.speak(p.label, { rate: 0.85, pitch: 1.0 })}
+                  onPressIn={() => Speech.speak(p.label, { rate: 0.65, pitch: 1.0 })}
                   onPress={() => { onSend(p.phrase); onClose(); }}
                   activeOpacity={0.7}
                 >
@@ -69,7 +69,7 @@ export default function CommunicationBoard({ visible, onClose, onSend }: Props) 
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={styles.cell}
-                    onPressIn={() => Speech.speak(item.name, { rate: 0.85, pitch: 1.0 })}
+                    onPressIn={() => Speech.speak(item.name, { rate: 0.65, pitch: 1.0 })}
                     onPress={() => { onSend(item.imageUrl); onClose(); }}
                     activeOpacity={0.7}
                   >

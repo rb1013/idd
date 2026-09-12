@@ -23,7 +23,7 @@ function NoFriendsEmptyState() {
   useFocusEffect(useCallback(() => {
     if (!spokenRef.current) {
       spokenRef.current = true;
-      const t = setTimeout(() => Speech.speak(EMPTY_MESSAGE, { rate: 0.8, pitch: 1.1 }), 600);
+      const t = setTimeout(() => Speech.speak(EMPTY_MESSAGE, { rate: 0.65, pitch: 1.0 }), 600);
       return () => { clearTimeout(t); Speech.stop(); };
     }
     return () => { Speech.stop(); };
@@ -36,7 +36,7 @@ function NoFriendsEmptyState() {
       <AppText style={emptyStyles.hint}>Ask your guardian to add friends for you!</AppText>
       <TouchableOpacity
         style={emptyStyles.speakBtn}
-        onPress={() => Speech.speak(EMPTY_MESSAGE, { rate: 0.8, pitch: 1.1 })}
+        onPress={() => Speech.speak(EMPTY_MESSAGE, { rate: 0.65, pitch: 1.0 })}
         activeOpacity={0.75}
       >
         <AppText style={emptyStyles.speakBtnText}>🔊  Hear this again</AppText>
@@ -102,18 +102,29 @@ export default function FriendsHubScreen() {
 
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => { if (activeUser) { loadFriends(activeUser.id); loadBlocked(activeUser.id); } }, [activeUser]);
+  useEffect(() => { if (activeUser) loadFriends(activeUser.id); }, [activeUser]);
 
-  async function loadBlocked(userId: string) {
-    const { data } = await supabase
-      .from('blocked_learners')
-      .select('learner_id, blocked_learner_id')
-      .or(`learner_id.eq.${userId},blocked_learner_id.eq.${userId}`);
+  useFocusEffect(useCallback(() => {
+    if (activeUser) loadHidden(activeUser.id);
+  }, [activeUser]));
+
+  async function loadHidden(userId: string) {
+    const [{ data: blockedData }, { data: reportedData }] = await Promise.all([
+      supabase
+        .from('blocked_learners')
+        .select('learner_id, blocked_learner_id')
+        .or(`learner_id.eq.${userId},blocked_learner_id.eq.${userId}`),
+      supabase
+        .from('reports')
+        .select('reported_learner_id')
+        .eq('learner_id', userId),
+    ]);
     const ids = new Set<string>();
-    (data ?? []).forEach((row: any) => {
+    (blockedData ?? []).forEach((row: any) => {
       if (row.learner_id !== userId) ids.add(row.learner_id);
       if (row.blocked_learner_id !== userId) ids.add(row.blocked_learner_id);
     });
+    (reportedData ?? []).forEach((row: any) => ids.add(row.reported_learner_id));
     setBlockedIds(ids);
   }
 
@@ -176,16 +187,16 @@ export default function FriendsHubScreen() {
     const parts: string[] = [friend.name];
     if (friend.likes.length) parts.push(`Likes: ${friend.likes.map(l => l.name).join(', ')}`);
     if (friend.dislikes.length) parts.push(`Dislikes: ${friend.dislikes.map(d => d.name).join(', ')}`);
-    Speech.speak(parts.join('. '), { rate: 0.85, pitch: 1.0 });
+    Speech.speak(parts.join('. '), { rate: 0.65, pitch: 1.0 });
   }
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
-  if (friends.length === 0) {
+  const sorted = [...friends].filter(f => !blockedIds.has(f.id)).sort((a, b) => a.name.localeCompare(b.name));
+
+  if (sorted.length === 0) {
     return <NoFriendsEmptyState />;
   }
-
-  const sorted = [...friends].filter(f => !blockedIds.has(f.id)).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

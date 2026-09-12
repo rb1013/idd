@@ -11,5 +11,17 @@ CREATE TABLE IF NOT EXISTS reports (
 
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 
+-- Service role: full access (used by edge functions)
 CREATE POLICY "service_role_all_reports" ON reports
   USING (true) WITH CHECK (true);
+
+-- Table-level grants
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.reports TO service_role;
+GRANT SELECT ON public.reports TO authenticated;
+
+-- Learner can read their own report records (to filter reported users from friends list)
+-- Uses auth_user_id subquery because user_profiles.id != auth.uid()
+CREATE POLICY "learner_select_own_reports" ON reports
+  FOR SELECT USING (
+    learner_id = (SELECT id FROM user_profiles WHERE auth_user_id = auth.uid())
+  );

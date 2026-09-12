@@ -25,7 +25,7 @@ function NoActivitiesState() {
   useFocusEffect(useCallback(() => {
     if (!spokenRef.current) {
       spokenRef.current = true;
-      const t = setTimeout(() => Speech.speak(NO_ACTIVITIES_MSG, { rate: 0.8, pitch: 1.1 }), 600);
+      const t = setTimeout(() => Speech.speak(NO_ACTIVITIES_MSG, { rate: 0.65, pitch: 1.0 }), 600);
       return () => { clearTimeout(t); Speech.stop(); };
     }
     return () => { Speech.stop(); };
@@ -38,7 +38,7 @@ function NoActivitiesState() {
       <AppText style={noActStyles.hint}>Ask your guardian to add some fun activities for you!</AppText>
       <TouchableOpacity
         style={noActStyles.speakBtn}
-        onPress={() => Speech.speak(NO_ACTIVITIES_MSG, { rate: 0.8, pitch: 1.1 })}
+        onPress={() => Speech.speak(NO_ACTIVITIES_MSG, { rate: 0.65, pitch: 1.0 })}
         activeOpacity={0.75}
       >
         <AppText style={noActStyles.speakIcon}>🔊</AppText>
@@ -170,7 +170,7 @@ export default function ActivitiesScreen() {
 
             <TouchableOpacity
               style={styles.speakBtn}
-              onPress={() => Speech.speak(preset.name, { rate: 0.8, pitch: 1.1 })}
+              onPress={() => Speech.speak(preset.name, { rate: 0.65, pitch: 1.0 })}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <AppText style={styles.speakIcon}>🔊</AppText>

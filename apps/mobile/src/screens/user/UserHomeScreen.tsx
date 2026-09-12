@@ -152,7 +152,7 @@ export default function UserHomeScreen() {
   }
 
   function openUserCard() {
-    Speech.speak(`Hi ${activeUser?.name ?? firstName}`, { rate: 0.85, pitch: 1.0 });
+    Speech.speak(`Hi ${activeUser?.name ?? firstName}`, { rate: 0.65, pitch: 1.0 });
   }
 
   async function selectMood(m: { emoji: string; label: string }) {
@@ -163,7 +163,7 @@ export default function UserHomeScreen() {
   }
 
   function speakMood(label: string) {
-    Speech.speak(label, { rate: 0.8, pitch: 1.0, volume: 0.7 });
+    Speech.speak(label, { rate: 0.65, pitch: 1.0, volume: 0.7 });
   }
 
   return (
@@ -226,7 +226,7 @@ export default function UserHomeScreen() {
                 hitSlop={10}
                 onPress={() => {
                   const when = nextClass.state === 'now' ? 'right now' : `today at ${formatTime(nextClass.item.start_time)}`;
-                  Speech.speak(`${nextClass.item.title}, ${when}`, { rate: 0.85, pitch: 1.0 });
+                  Speech.speak(`${nextClass.item.title}, ${when}`, { rate: 0.65, pitch: 1.0 });
                 }}
               >
                 <AppText style={styles.scheduleSpeakIcon}>🔊</AppText>
@@ -242,7 +242,7 @@ export default function UserHomeScreen() {
             <AppText style={styles.tileEmoji}>🤝</AppText>
             <AppText style={styles.tileTitle}>Friends</AppText>
             <AppText style={styles.tileSub}>Meet new people{'\n'}and connect</AppText>
-            <Pressable style={styles.tileSpeakBtn} onPress={() => Speech.speak('Friends. Meet new people and connect.', { rate: 0.8, pitch: 1.1 })}>
+            <Pressable style={styles.tileSpeakBtn} onPress={() => Speech.speak('Friends. Meet new people and connect.', { rate: 0.65, pitch: 1.0 })}>
               <AppText style={styles.tileSpeakIcon}>🔊</AppText>
             </Pressable>
           </TouchableOpacity>
@@ -262,7 +262,7 @@ export default function UserHomeScreen() {
               activityProgress.total > 0
                 ? `Activities. ${activityProgress.done} of ${activityProgress.total} done.`
                 : 'Activities. Your daily activities.',
-              { rate: 0.8, pitch: 1.1 }
+              { rate: 0.65, pitch: 1.0 }
             )}>
               <AppText style={styles.tileSpeakIcon}>🔊</AppText>
             </Pressable>
@@ -280,7 +280,7 @@ export default function UserHomeScreen() {
             <AppText style={styles.tileEmoji}>{activeUser?.current_mood ?? '😊'}</AppText>
             <AppText style={styles.tileTitle}>My Mood</AppText>
             <AppText style={styles.tileSub}>How are you{'\n'}feeling today?</AppText>
-            <Pressable style={styles.tileSpeakBtn} onPress={() => Speech.speak('My Mood. How are you feeling today?', { rate: 0.8, pitch: 1.1 })}>
+            <Pressable style={styles.tileSpeakBtn} onPress={() => Speech.speak('My Mood. How are you feeling today?', { rate: 0.65, pitch: 1.0 })}>
               <AppText style={styles.tileSpeakIcon}>🔊</AppText>
             </Pressable>
           </TouchableOpacity>
@@ -289,7 +289,7 @@ export default function UserHomeScreen() {
             <AppText style={styles.tileEmoji}>📚</AppText>
             <AppText style={styles.tileTitle}>Learn</AppText>
             <AppText style={styles.tileSub}>Watch videos and{'\n'}discover new things</AppText>
-            <Pressable style={styles.tileSpeakBtn} onPress={() => Speech.speak('Learn. Watch videos and discover new things.', { rate: 0.8, pitch: 1.1 })}>
+            <Pressable style={styles.tileSpeakBtn} onPress={() => Speech.speak('Learn. Watch videos and discover new things.', { rate: 0.65, pitch: 1.0 })}>
               <AppText style={styles.tileSpeakIcon}>🔊</AppText>
             </Pressable>
           </TouchableOpacity>
@@ -319,7 +319,7 @@ export default function UserHomeScreen() {
             <TouchableOpacity
               style={styles.logoutBtn}
               onPress={signOut}
-              onLongPress={() => Speech.speak('Log out', { rate: 0.85, pitch: 1.0 })}
+              onLongPress={() => Speech.speak('Log out', { rate: 0.65, pitch: 1.0 })}
               delayLongPress={400}
               activeOpacity={0.8}
             >

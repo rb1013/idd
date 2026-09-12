@@ -75,10 +75,10 @@ export default function ChatScreen() {
     // sound.setOnPlaybackStatusUpdate(status => {
     //   if ('didJustFinish' in status && status.didJustFinish) {
     //     sound.unloadAsync();
-    //     Speech.speak("Let's use kind words!", { rate: 0.75, pitch: 1.1 });
+    //     Speech.speak("Let's use kind words!", { rate: 0.65, pitch: 1.0 });
     //   }
     // });
-    Speech.speak("Let's use kind words!", { rate: 0.75, pitch: 1.1 });
+    Speech.speak("Let's use kind words!", { rate: 0.65, pitch: 1.0 });
   }
 
   const wordFilter = useRef<Filter | null>(null);
@@ -160,10 +160,9 @@ export default function ChatScreen() {
       } else {
         setGuardianModalVisible(false);
         resetGuardianModal();
-        if (selectedAction !== 'block_user' && selectedAction !== 'report_user') {
-          setMessages([]);
-        }
-        Alert.alert('Done', 'Action completed successfully.');
+        Alert.alert('Done', 'Action completed successfully.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
       }
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Something went wrong');
@@ -187,7 +186,7 @@ export default function ChatScreen() {
       headerTitle: () => (
         <TouchableOpacity
           style={styles.headerTitle}
-          onPress={() => Speech.speak(participantName, { rate: 0.85, pitch: 1.0 })}
+          onPress={() => Speech.speak(participantName, { rate: 0.65, pitch: 1.0 })}
           activeOpacity={0.75}
         >
           <View style={styles.headerPhotoRow}>
@@ -353,7 +352,7 @@ export default function ChatScreen() {
                 </View>
                 <TouchableOpacity
                   style={styles.speakMsgBtn}
-                  onPress={() => Speech.speak(isSymbol ? item.content.split('/').pop()?.split('.')[0]?.replace(/_/g, ' ') ?? '' : item.content, { rate: 0.85, pitch: 1.0 })}
+                  onPress={() => Speech.speak(isSymbol ? item.content.split('/').pop()?.split('.')[0]?.replace(/_/g, ' ') ?? '' : item.content, { rate: 0.65, pitch: 1.0 })}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.speakMsgIcon}>📢</Text>
