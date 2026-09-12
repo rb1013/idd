@@ -32,6 +32,7 @@ interface LearnerProfile {
   languages: string[];
   comprehension_level: string | null;
   open_to_online_chat: boolean;
+  medicalConditions: string[];
   connectionStatus: ConnectionStatus;
 }
 
@@ -56,6 +57,7 @@ export default function LearnerPublicProfileScreen() {
       { data: dislikes },
       { data: abilities },
       { data: chat },
+      { data: medicalData },
     ] = await Promise.all([
       supabase.from('user_profiles').select('id, name, date_of_birth, photo_url, city, region, country, languages').eq('id', learnerId).single(),
       supabase.from('user_profiles').select('id').eq('guardian_id', guardianId),
@@ -63,6 +65,7 @@ export default function LearnerPublicProfileScreen() {
       supabase.from('user_dislikes').select('categories(name)').eq('user_id', learnerId),
       supabase.from('user_abilities').select('categories(name)').eq('user_id', learnerId),
       supabase.from('chat_preferences').select('comprehension_level, open_to_online_chat').eq('user_id', learnerId).single(),
+      supabase.from('user_medical_conditions').select('medical_conditions(label)').eq('user_id', learnerId),
     ]);
 
     if (!p) { setLoading(false); return; }
@@ -102,6 +105,7 @@ export default function LearnerPublicProfileScreen() {
       languages: p.languages ?? [],
       comprehension_level: chat?.comprehension_level ?? null,
       open_to_online_chat: chat?.open_to_online_chat ?? false,
+      medicalConditions: (medicalData ?? []).map((r: any) => r.medical_conditions?.label).filter(Boolean),
       connectionStatus,
     });
     setLoading(false);
@@ -172,6 +176,7 @@ export default function LearnerPublicProfileScreen() {
         <InfoRow label="What I Can Do"       value={profile.abilities.join(', ')}    fallback="None added" />
         <InfoRow label="Languages"           value={profile.languages.join(', ')}    fallback="Not set" />
         <InfoRow label="Comprehension Level" value={profile.comprehension_level}     fallback="Not set" />
+        <InfoRow label="Medical Conditions"  value={profile.medicalConditions.join(', ')} fallback="None recorded" />
       </View>
 
       {/* Connect action — pinned to bottom */}

@@ -16,6 +16,7 @@ const TOP_ITEMS = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/tutorials',  label: 'Tutorials' },
   { to: '/users',      label: 'Users' },
+  { to: '/reports',    label: 'Reports' },
   { to: '/settings',   label: 'Settings' },
 ];
 

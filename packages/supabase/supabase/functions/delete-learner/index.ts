@@ -15,7 +15,6 @@ serve(async (req) => {
   );
 
   try {
-    // Verify caller is an authenticated guardian
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
@@ -31,7 +30,16 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'learner_id required' }), { status: 400, headers: corsHeaders });
     }
 
-    // Verify this learner belongs to the calling guardian
+    // Check if caller is an admin
+    const { data: admin } = await supabaseAdmin
+      .from('admins')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+
+    const isAdmin = !!admin;
+
+    // Fetch profile
     const { data: profile, error: profileErr } = await supabaseAdmin
       .from('user_profiles')
       .select('id, auth_user_id, guardian_id')
@@ -42,11 +50,12 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Learner not found' }), { status: 404, headers: corsHeaders });
     }
 
-    if (profile.guardian_id !== user.id) {
+    // Admins can delete any learner; guardians can only delete their own
+    if (!isAdmin && profile.guardian_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
     }
 
-    // Delete auth user first (SET NULL FK means profile row stays, then we delete it)
+    // Delete auth user first (FK is SET NULL so profile row stays, then we delete it explicitly)
     if (profile.auth_user_id) {
       await supabaseAdmin.auth.admin.deleteUser(profile.auth_user_id);
     }

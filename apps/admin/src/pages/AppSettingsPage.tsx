@@ -22,12 +22,17 @@ export default function AppSettingsPage() {
   const [savingFrames, setSavingFrames] = useState(false);
   const [savedFrames, setSavedFrames]   = useState(false);
 
+  const [snapshotLimit, setSnapshotLimit]       = useState<number>(20);
+  const [draftSnapshot, setDraftSnapshot]       = useState<string>('20');
+  const [savingSnapshot, setSavingSnapshot]     = useState(false);
+  const [savedSnapshot, setSavedSnapshot]       = useState(false);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { load(); }, []);
 
   async function load() {
-    const { data } = await supabase.from('app_settings').select('tutorial_quota_limit, tutorial_default_duration, tutorial_image_timeout_ms, tutorial_max_frames').single();
+    const { data } = await supabase.from('app_settings').select('tutorial_quota_limit, tutorial_default_duration, tutorial_image_timeout_ms, tutorial_max_frames, report_snapshot_limit').single();
     if (data) {
       setQuotaLimit(data.tutorial_quota_limit);
       setDraftQuota(String(data.tutorial_quota_limit));
@@ -37,8 +42,22 @@ export default function AppSettingsPage() {
       setDraftTimeout(String(data.tutorial_image_timeout_ms ?? 65000));
       setMaxFrames(data.tutorial_max_frames ?? 4);
       setDraftFrames(String(data.tutorial_max_frames ?? 4));
+      setSnapshotLimit(data.report_snapshot_limit ?? 20);
+      setDraftSnapshot(String(data.report_snapshot_limit ?? 20));
     }
     setLoading(false);
+  }
+
+  async function saveSnapshotLimit(e: React.FormEvent) {
+    e.preventDefault();
+    const val = parseInt(draftSnapshot, 10);
+    if (isNaN(val) || val < 1) return;
+    setSavingSnapshot(true);
+    await supabase.from('app_settings').update({ report_snapshot_limit: val, updated_at: new Date().toISOString() }).eq('id', 1);
+    setSnapshotLimit(val);
+    setSavingSnapshot(false);
+    setSavedSnapshot(true);
+    setTimeout(() => setSavedSnapshot(false), 2500);
   }
 
   async function saveQuota(e: React.FormEvent) {
@@ -95,6 +114,7 @@ export default function AppSettingsPage() {
   const dirtyDuration = parseInt(draftDuration, 10) !== defaultDuration;
   const dirtyTimeout  = parseInt(draftTimeout, 10) !== imageTimeout;
   const dirtyFrames   = parseInt(draftFrames, 10) !== maxFrames;
+  const dirtySnapshot = parseInt(draftSnapshot, 10) !== snapshotLimit;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -179,6 +199,34 @@ export default function AppSettingsPage() {
           </div>
           {savedFrames && <p style={styles.savedMsg}>✓ Saved successfully</p>}
           {dirtyFrames && !savedFrames && <p style={styles.hint}>Changed from {maxFrames} → {draftFrames} frames</p>}
+        </form>
+      </div>
+
+      <div style={styles.card}>
+        <h2 style={styles.cardTitle}>Report Message Snapshot Limit</h2>
+        <p style={styles.cardDesc}>
+          Number of recent messages saved as evidence when a guardian reports a user.
+          Higher values give moderators more context but use more storage.
+          Currently set to <strong>{snapshotLimit} messages</strong>.
+        </p>
+        <form onSubmit={saveSnapshotLimit} style={styles.form}>
+          <label style={styles.label}>Messages to snapshot</label>
+          <div style={styles.inputRow}>
+            <input
+              type="number" min={1} max={100}
+              value={draftSnapshot} onChange={e => setDraftSnapshot(e.target.value)}
+              style={styles.input}
+            />
+            <button
+              type="submit"
+              disabled={savingSnapshot || !dirtySnapshot || parseInt(draftSnapshot, 10) < 1 || isNaN(parseInt(draftSnapshot, 10))}
+              style={{ ...styles.btn, ...(savingSnapshot || !dirtySnapshot ? styles.btnDisabled : {}) }}
+            >
+              {savingSnapshot ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+          {savedSnapshot && <p style={styles.savedMsg}>✓ Saved successfully</p>}
+          {dirtySnapshot && !savedSnapshot && <p style={styles.hint}>Changed from {snapshotLimit} → {draftSnapshot} messages</p>}
         </form>
       </div>
 

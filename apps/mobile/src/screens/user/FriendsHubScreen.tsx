@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Alert, Dimensions,
@@ -18,17 +18,6 @@ import AvatarWithMood from '../../components/AvatarWithMood';
 const EMPTY_MESSAGE = 'No friends added yet. Ask your guardian to add friends for you!';
 
 function NoFriendsEmptyState() {
-  const spokenRef = useRef(false);
-
-  useFocusEffect(useCallback(() => {
-    if (!spokenRef.current) {
-      spokenRef.current = true;
-      const t = setTimeout(() => Speech.speak(EMPTY_MESSAGE, { rate: 0.65, pitch: 1.0 }), 600);
-      return () => { clearTimeout(t); Speech.stop(); };
-    }
-    return () => { Speech.stop(); };
-  }, []));
-
   return (
     <View style={emptyStyles.container}>
       <AppText style={emptyStyles.emoji}>😊</AppText>
@@ -39,7 +28,7 @@ function NoFriendsEmptyState() {
         onPress={() => Speech.speak(EMPTY_MESSAGE, { rate: 0.65, pitch: 1.0 })}
         activeOpacity={0.75}
       >
-        <AppText style={emptyStyles.speakBtnText}>🔊  Hear this again</AppText>
+        <AppText style={emptyStyles.speakBtnText}>🔊</AppText>
       </TouchableOpacity>
     </View>
   );

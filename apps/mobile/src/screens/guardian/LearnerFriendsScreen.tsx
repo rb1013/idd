@@ -45,6 +45,7 @@ interface Friend {
   learnerRegion: string;
   learnerAge: number | null;
   guardianName: string | null;
+  medicalConditions: string[];
 }
 
 interface FriendRequest {
@@ -56,6 +57,7 @@ interface FriendRequest {
   requesterCity: string;
   requesterRegion: string;
   requesterGuardianName: string | null;
+  medicalConditions: string[];
   myLearnerId: string;
   myLearnerName: string;
   direction: 'incoming' | 'outgoing';
@@ -158,8 +160,13 @@ export default function LearnerFriendsScreen() {
   const [catAbilities,  setCatAbilities]  = useState<string[]>([]);
   const [catMedical,    setCatMedical]    = useState<string[]>([]);
   const [blockedUsers,  setBlockedUsers]  = useState<BlockedUser[]>([]);
-  const blockedIds = useMemo(() => new Set(blockedUsers.map(b => b.blockedLearnerId)), [blockedUsers]);
+  const [reportedMap,   setReportedMap]   = useState<Map<string, string | null>>(new Map());
+  const [reasonModal,   setReasonModal]   = useState<{ name: string; reason: string | null } | null>(null);
+  const blockedIds  = useMemo(() => new Set(blockedUsers.map(b => b.blockedLearnerId)), [blockedUsers]);
+  const reportedIds = useMemo(() => new Set(reportedMap.keys()), [reportedMap]);
+  const hiddenIds   = useMemo(() => new Set([...blockedIds, ...reportedIds]), [blockedIds, reportedIds]);
   const [sending,       setSending]       = useState<string | null>(null);
+  const [removing,      setRemoving]      = useState<string | null>(null);
   const [searchName,    setSearchName]    = useState('');
   const [searchCity,    setSearchCity]    = useState('');
   const [filterAgeGroups, setFilterAgeGroups] = useState<string[]>([]);
@@ -198,6 +205,7 @@ export default function LearnerFriendsScreen() {
       loadRequests(myIds, myMap),
       loadDiscovery(myIds, guardianId),
       loadBlocked(myIds),
+      loadReported(myIds),
     ]);
 
     setLoading(false);
@@ -227,6 +235,20 @@ export default function LearnerFriendsScreen() {
     })));
   }
 
+  async function loadReported(myIds: string[]) {
+    if (myIds.length === 0) { setReportedMap(new Map()); return; }
+    const { data } = await supabase
+      .from('reports')
+      .select('reported_learner_id, reason')
+      .in('learner_id', myIds)
+      .order('created_at', { ascending: false });
+    const map = new Map<string, string | null>();
+    (data ?? []).forEach((r: any) => {
+      if (!map.has(r.reported_learner_id)) map.set(r.reported_learner_id, r.reason ?? null);
+    });
+    setReportedMap(map);
+  }
+
   async function unblock(blockId: string) {
     Alert.alert('Unblock', 'Are you sure you want to unblock this person?', [
       { text: 'Cancel', style: 'cancel' },
@@ -235,6 +257,23 @@ export default function LearnerFriendsScreen() {
         setBlockedUsers(prev => prev.filter(b => b.blockId !== blockId));
       }},
     ]);
+  }
+
+  async function removeFriend(friendshipId: string, learnerName: string) {
+    Alert.alert(
+      'Remove friend',
+      `Remove ${learnerName} from your learner's friends?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: async () => {
+          setRemoving(friendshipId);
+          const { error } = await supabase.from('friendships').delete().eq('id', friendshipId);
+          setRemoving(null);
+          if (error) { Alert.alert('Error', error.message); return; }
+          setFriends(prev => prev.filter(f => f.friendshipId !== friendshipId));
+        }},
+      ]
+    );
   }
 
   // ── Friends tab loader ─────────────────────────────────────────────────────
@@ -270,6 +309,16 @@ export default function LearnerFriendsScreen() {
     const profileMap: Record<string, any> = {};
     (profiles ?? []).forEach((p: any) => { profileMap[p.id] = p; });
 
+    const { data: medicalData } = otherIds.length > 0
+      ? await supabase.from('user_medical_conditions').select('user_id, medical_conditions(label)').in('user_id', otherIds)
+      : { data: [] };
+
+    const medicalMap: Record<string, string[]> = {};
+    (medicalData ?? []).forEach((r: any) => {
+      if (!medicalMap[r.user_id]) medicalMap[r.user_id] = [];
+      if (r.medical_conditions?.label) medicalMap[r.user_id].push(r.medical_conditions.label);
+    });
+
     const list: Friend[] = accepted.map((f: any) => {
       const otherId = myIds.includes(f.requester_id) ? f.addressee_id : f.requester_id;
       const p = profileMap[otherId];
@@ -282,6 +331,7 @@ export default function LearnerFriendsScreen() {
         learnerRegion:p?.region ?? '',
         learnerAge:   calcAge(p?.date_of_birth ?? null),
         guardianName: p?.guardian_id ? (guardianNameMap[p.guardian_id] ?? null) : null,
+        medicalConditions: medicalMap[otherId] ?? [],
       };
     });
 
@@ -307,7 +357,7 @@ export default function LearnerFriendsScreen() {
 
     const { data: otherProfiles } = await supabase
       .from('user_profiles')
-      .select('id, name, age, photo_url, city, region, guardian_id')
+      .select('id, name, date_of_birth, photo_url, city, region, guardian_id')
       .in('id', otherIds);
 
     const otherGuardianIds = [...new Set((otherProfiles ?? []).map((p: any) => p.guardian_id).filter(Boolean))];
@@ -321,6 +371,15 @@ export default function LearnerFriendsScreen() {
     const profileMap: Record<string, any> = {};
     (otherProfiles ?? []).forEach((p: any) => { profileMap[p.id] = p; });
 
+    const { data: reqMedicalData } = otherIds.length > 0
+      ? await supabase.from('user_medical_conditions').select('user_id, medical_conditions(label)').in('user_id', otherIds)
+      : { data: [] };
+    const reqMedicalMap: Record<string, string[]> = {};
+    (reqMedicalData ?? []).forEach((r: any) => {
+      if (!reqMedicalMap[r.user_id]) reqMedicalMap[r.user_id] = [];
+      if (r.medical_conditions?.label) reqMedicalMap[r.user_id].push(r.medical_conditions.label);
+    });
+
     setRequests(friendships.map((f: any) => {
       const iAmRequester = myIds.includes(f.requester_id);
       const myLearnerId  = iAmRequester ? f.requester_id : f.addressee_id;
@@ -331,10 +390,11 @@ export default function LearnerFriendsScreen() {
         requesterId: otherId,
         requesterName: other?.name ?? 'Unknown',
         requesterPhoto: other?.photo_url ?? null,
-        requesterAge: other?.age ?? 0,
+        requesterAge: calcAge(other?.date_of_birth) ?? 0,
         requesterCity: other?.city ?? '',
         requesterRegion: other?.region ?? '',
         requesterGuardianName: other?.guardian_id ? (guardianNameMap[other.guardian_id] ?? null) : null,
+        medicalConditions: reqMedicalMap[otherId] ?? [],
         myLearnerId,
         myLearnerName: myMap[myLearnerId] ?? '',
         direction: iAmRequester ? 'outgoing' : 'incoming',
@@ -550,7 +610,7 @@ export default function LearnerFriendsScreen() {
 
   function applyFilters(list: LearnerResult[]) {
     return list.filter(l => {
-      if (blockedIds.has(l.id)) return false;
+      if (hiddenIds.has(l.id)) return false;
       if (l.connectionStatus === 'accepted' || l.connectionStatus === 'pending_received') return false;
       if (searchName && !l.name.toLowerCase().includes(searchName.toLowerCase())) return false;
       if (searchCity && !l.city.toLowerCase().includes(searchCity.toLowerCase()))  return false;
@@ -566,7 +626,7 @@ export default function LearnerFriendsScreen() {
 
   function applyDraftFilters(list: LearnerResult[]) {
     return list.filter(l => {
-      if (blockedIds.has(l.id)) return false;
+      if (hiddenIds.has(l.id)) return false;
       if (l.connectionStatus === 'accepted' || l.connectionStatus === 'pending_received') return false;
       if (draftAgeGroups.length > 0 && !draftAgeGroups.includes(getAgeGroup(l.date_of_birth) ?? '')) return false;
       if (draftLevels.length > 0 && !draftLevels.some(fl => fl.toLowerCase() === l.comprehension_level)) return false;
@@ -623,25 +683,60 @@ export default function LearnerFriendsScreen() {
             data={visibleFriends}
             keyExtractor={f => f.friendshipId}
             contentContainerStyle={s.listContent}
-            renderItem={({ item: f }) => (
-              <TouchableOpacity
-                style={s.card}
-                onPress={() => navigation.navigate('LearnerPublicProfile', { learnerId: f.learnerId })}
-                activeOpacity={0.85}
-              >
-                <Avatar name={f.learnerName} photo={f.learnerPhoto} size={52} />
-                <View style={s.cardInfo}>
-                  <AppText style={s.cardName}>{f.learnerName}</AppText>
-                  <AppText style={s.cardMeta}>
-                    {f.learnerAge != null ? `${f.learnerAge} yrs · ` : ''}{f.learnerCity}{f.learnerRegion ? `, ${f.learnerRegion}` : ''}
-                  </AppText>
-                  {f.guardianName && (
-                    <AppText style={s.cardGuardian}>Guardian: {f.guardianName}</AppText>
-                  )}
-                </View>
-                <View style={s.friendBadge}><AppText style={s.friendBadgeTxt}>✓ Friends</AppText></View>
-              </TouchableOpacity>
-            )}
+            renderItem={({ item: f }) => {
+              const isReported = reportedMap.has(f.learnerId);
+              const reportReason = reportedMap.get(f.learnerId) ?? null;
+              return (
+                <TouchableOpacity
+                  style={s.card}
+                  onPress={() => navigation.navigate('LearnerPublicProfile', { learnerId: f.learnerId })}
+                  activeOpacity={0.85}
+                >
+                  <Avatar name={f.learnerName} photo={f.learnerPhoto} size={52} />
+                  <View style={s.cardInfo}>
+                    <AppText style={s.cardName}>{f.learnerName}</AppText>
+                    <AppText style={s.cardMeta}>
+                      {f.learnerAge != null ? `${f.learnerAge} yrs · ` : ''}{f.learnerCity}{f.learnerRegion ? `, ${f.learnerRegion}` : ''}
+                    </AppText>
+                    {f.guardianName && (
+                      <AppText style={s.cardMeta}>Guardian: {f.guardianName}</AppText>
+                    )}
+                    {f.medicalConditions.length > 0 && (
+                      <AppText style={s.cardMedical}>🏥 {f.medicalConditions.join(', ')}</AppText>
+                    )}
+                  </View>
+                  <View style={s.friendCardRight}>
+                    {isReported && (
+                      <View style={s.reportedRow}>
+                        <View style={s.reportedPill}>
+                          <AppText style={s.reportedPillTxt}>⚠️ Reported</AppText>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => setReasonModal({ name: f.learnerName, reason: reportReason })}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <AppText style={s.infoIcon}>ℹ️</AppText>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                    {!isReported && (
+                      <View style={s.friendBadge}><AppText style={s.friendBadgeTxt}>✓ Friends</AppText></View>
+                    )}
+                    {removing === f.friendshipId ? (
+                      <ActivityIndicator size="small" color={COLORS.statusRed} />
+                    ) : (
+                      <TouchableOpacity
+                        style={s.removeBtn}
+                        onPress={() => removeFriend(f.friendshipId, f.learnerName)}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      >
+                        <AppText style={s.removeBtnTxt}>Remove</AppText>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
           />
         );
       })()}
@@ -672,7 +767,8 @@ export default function LearnerFriendsScreen() {
                           <View style={s.cardInfo}>
                             <AppText style={s.cardName}>{req.requesterName}</AppText>
                             <AppText style={s.cardMeta}>{req.requesterAge} yrs · {req.requesterCity}, {req.requesterRegion}</AppText>
-                            {req.requesterGuardianName && <AppText style={s.cardGuardian}>Guardian: {req.requesterGuardianName}</AppText>}
+                            {req.requesterGuardianName && <AppText style={s.cardMeta}>Guardian: {req.requesterGuardianName}</AppText>}
+                            {req.medicalConditions.length > 0 && <AppText style={s.cardMedical}>🏥 {req.medicalConditions.join(', ')}</AppText>}
                           </View>
                           <View style={s.reqActions}>
                             {isProcessing ? <ActivityIndicator color={COLORS.bloomAccent} /> : (
@@ -704,7 +800,8 @@ export default function LearnerFriendsScreen() {
                           <View style={s.cardInfo}>
                             <AppText style={s.cardName}>{req.requesterName}</AppText>
                             <AppText style={s.cardMeta}>{req.requesterAge} yrs · {req.requesterCity}, {req.requesterRegion}</AppText>
-                            {req.requesterGuardianName && <AppText style={s.cardGuardian}>Guardian: {req.requesterGuardianName}</AppText>}
+                            {req.requesterGuardianName && <AppText style={s.cardMeta}>Guardian: {req.requesterGuardianName}</AppText>}
+                            {req.medicalConditions.length > 0 && <AppText style={s.cardMedical}>🏥 {req.medicalConditions.join(', ')}</AppText>}
                           </View>
                           <View style={s.reqActions}>
                             {isProcessing ? <ActivityIndicator color={COLORS.bloomMuted} /> : (
@@ -789,6 +886,9 @@ export default function LearnerFriendsScreen() {
                     <AppText style={s.cardMeta} numberOfLines={1}>
                       {calcAge(l.date_of_birth) ?? '—'} yrs · {l.city}{l.region ? `, ${l.region}` : ''}
                     </AppText>
+                    {l.medicalConditions.length > 0 && (
+                      <AppText style={s.cardMedical}>🏥 {l.medicalConditions.join(', ')}</AppText>
+                    )}
                   </View>
                   {l.connectionStatus === 'accepted' && (
                     <View style={s.friendBadge}><AppText style={s.friendBadgeTxt}>✓ Friends</AppText></View>
@@ -852,6 +952,21 @@ export default function LearnerFriendsScreen() {
           />
         )
       )}
+
+      {/* Report reason nudge */}
+      <Modal visible={!!reasonModal} transparent animationType="fade" onRequestClose={() => setReasonModal(null)}>
+        <TouchableOpacity style={s.nudgeOverlay} activeOpacity={1} onPress={() => setReasonModal(null)}>
+          <View style={s.nudge} onStartShouldSetResponder={() => true}>
+            <AppText style={s.nudgeTitle}>Reason for reporting this user</AppText>
+            <AppText style={s.nudgeBody}>
+              {reasonModal?.reason ?? 'No reason was recorded for this report.'}
+            </AppText>
+            <TouchableOpacity style={s.nudgeClose} onPress={() => setReasonModal(null)} activeOpacity={0.8}>
+              <AppText style={s.nudgeCloseTxt}>Close</AppText>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Filter sheet */}
       <Modal visible={sheetOpen} transparent animationType="slide" onRequestClose={() => setSheetOpen(false)}>
@@ -930,7 +1045,7 @@ const s = StyleSheet.create({
   cardInfo:    { flex: 1, minWidth: 0, gap: 2 },
   cardName:    { fontSize: 15, fontWeight: '800', color: COLORS.bloomText },
   cardMeta:    { fontSize: 12, color: COLORS.bloomMuted },
-  cardGuardian:{ fontSize: 12, color: COLORS.bloomAccent, fontWeight: '600' },
+  cardMedical: { fontSize: 12, color: COLORS.bloomMuted, fontWeight: '500' },
 
   sectionTitle: { fontSize: 11, fontWeight: '900', color: COLORS.bloomMuted, letterSpacing: 1.2, marginBottom: 12 },
 
@@ -1028,6 +1143,41 @@ const s = StyleSheet.create({
   optCheckMark: { color: COLORS.bloomOnAccent, fontSize: 11, fontWeight: '900' },
   sheetApply:   { marginHorizontal: 18, marginTop: 10, backgroundColor: COLORS.bloomAccent, borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
   sheetApplyTxt: { color: COLORS.bloomOnAccent, fontWeight: '900', fontSize: 15 },
+
+  // Friends tab right column
+  friendCardRight: { alignItems: 'flex-end', gap: 6 },
+  reportedRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  infoIcon: { fontSize: 16 },
+  removeBtn: {
+    backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',
+    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
+  },
+  removeBtnTxt: { fontSize: 11, fontWeight: '700', color: '#DC2626' },
+  reportedPill: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: '#FED7AA',
+    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
+  },
+  reportedPillTxt: { fontSize: 11, fontWeight: '700', color: '#C2410C' },
+
+  // Report reason nudge modal
+  nudgeOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center', alignItems: 'center', padding: 32,
+  },
+  nudge: {
+    backgroundColor: COLORS.bloomCard, borderRadius: 20,
+    padding: 24, width: '100%', gap: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18, shadowRadius: 20, elevation: 10,
+  },
+  nudgeTitle: { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
+  nudgeBody:  { fontSize: 14, color: COLORS.bloomMuted, lineHeight: 22 },
+  nudgeClose: {
+    alignSelf: 'flex-end', backgroundColor: COLORS.bloomAccent,
+    borderRadius: 10, paddingHorizontal: 20, paddingVertical: 9,
+  },
+  nudgeCloseTxt: { fontSize: 14, fontWeight: '700', color: COLORS.bloomOnAccent },
 
   // Blocked tab
   unblockBtn: { backgroundColor: '#FEF2F2', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: '#FECACA' },

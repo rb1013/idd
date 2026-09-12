@@ -45,16 +45,6 @@ interface TutorialWithFrames extends Tutorial {
 const NO_TUTORIALS_MSG = "No tutorials yet! Ask your Guardian to add learning videos for you!";
 
 function NoTutorialsState() {
-  const spokenRef = useRef(false);
-  useFocusEffect(useCallback(() => {
-    if (!spokenRef.current) {
-      spokenRef.current = true;
-      const t = setTimeout(() => Speech.speak(NO_TUTORIALS_MSG, { rate: 0.65, pitch: 1.0 }), 600);
-      return () => { clearTimeout(t); Speech.stop(); };
-    }
-    return () => { Speech.stop(); };
-  }, []));
-
   return (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyEmoji}>📚</Text>
@@ -65,7 +55,7 @@ function NoTutorialsState() {
         onPress={() => Speech.speak(NO_TUTORIALS_MSG, { rate: 0.65, pitch: 1.0 })}
         activeOpacity={0.75}
       >
-        <Text style={styles.emptySpeakBtnText}>🔊  Hear this again</Text>
+        <Text style={styles.emptySpeakBtnText}>🔊</Text>
       </TouchableOpacity>
     </View>
   );

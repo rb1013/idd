@@ -31,7 +31,7 @@ export const COLORS = {
   bloomBody: '#FDFBF7',    // Cream white — page background
   bloomCard: '#FFFFFF',    // White — card surfaces
   bloomBorder: '#E4E1DB',  // Warm stone border
-  bloomMuted: '#7A847B',   // Warm muted green-grey
+  bloomMuted: '#525A53',   // Warm muted green-grey
   bloomText: '#2D312E',    // Charcoal — body text
 
   // ELIS active/selected state tints

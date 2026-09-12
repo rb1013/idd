@@ -65,7 +65,7 @@ export default function ChatScreen() {
     { type: 'block_user',           label: 'Block User',                     icon: '🚫',  needsDelete: false },
     { type: 'report_user',          label: 'Report User',                    icon: '📢',  needsDelete: false },
     { type: 'block_delete',         label: 'Block & Delete Chat',            icon: '🔒',  needsDelete: true },
-    { type: 'block_delete_report',  label: 'Block, Delete Chat & Report',    icon: '⛔',  needsDelete: true },
+    // { type: 'block_delete_report',  label: 'Block, Delete Chat & Report',    icon: '⛔',  needsDelete: true },
   ];
   const flatListRef = useRef<FlatList>(null);
   function playBlockedFeedback() {
@@ -489,7 +489,7 @@ export default function ChatScreen() {
             {/* Step: reason */}
             {actionStep === 'reason' && (
               <>
-                <Text style={guardianStyles.sheetTitle}>Reason (optional)</Text>
+                <Text style={guardianStyles.sheetTitle}>Reason</Text>
                 <Text style={guardianStyles.sheetSub}>Why are you taking this action?</Text>
                 <TextInput
                   style={guardianStyles.reasonInput}
@@ -499,12 +499,18 @@ export default function ChatScreen() {
                   placeholderTextColor="#9CA3AF"
                   multiline
                   maxLength={300}
+                  autoFocus
                 />
                 <View style={guardianStyles.btnRow}>
                   <TouchableOpacity style={guardianStyles.backBtn} onPress={() => setActionStep('menu')} activeOpacity={0.8}>
                     <Text style={guardianStyles.backBtnTxt}>Back</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={guardianStyles.nextBtn} onPress={afterReason} activeOpacity={0.8}>
+                  <TouchableOpacity
+                    style={[guardianStyles.nextBtn, !actionReason.trim() && { opacity: 0.4 }]}
+                    onPress={afterReason}
+                    disabled={!actionReason.trim()}
+                    activeOpacity={0.8}
+                  >
                     <Text style={guardianStyles.nextBtnTxt}>Next</Text>
                   </TouchableOpacity>
                 </View>
