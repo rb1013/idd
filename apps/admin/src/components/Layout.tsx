@@ -16,8 +16,9 @@ const TOP_ITEMS = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/tutorials',  label: 'Tutorials' },
   { to: '/users',      label: 'Users' },
-  { to: '/reports',    label: 'Reports' },
-  { to: '/settings',   label: 'Settings' },
+  { to: '/reports',       label: 'Reports' },
+  { to: '/blocked-words', label: 'Blocked Words' },
+  { to: '/settings',      label: 'Settings' },
 ];
 
 export default function Layout() {

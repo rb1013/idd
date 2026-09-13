@@ -6,14 +6,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system/legacy';
-import { decode } from 'base64-arraybuffer';
+import * as SecureStore from 'expo-secure-store';
 import AppText from '../../components/AppText';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { COLORS } from '../../constants';
 import { US_STATES } from '../../constants/usStates';
 
 export default function RegisterScreen() {
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const [fullName, setFullName]   = useState('');
   const [email, setEmail]         = useState('');
@@ -55,17 +56,6 @@ export default function RegisterScreen() {
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   }
 
-  async function uploadPhoto(uri: string, userId: string): Promise<string | null> {
-    const ext = (uri.split('.').pop() || 'jpg').toLowerCase();
-    const fileName = `guardian-${userId}-${Date.now()}.${ext}`;
-    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-    const { data, error } = await supabase.storage
-      .from('avatars')
-      .upload(fileName, decode(base64), { contentType: `image/${ext}`, upsert: true });
-    if (error || !data) return null;
-    return supabase.storage.from('avatars').getPublicUrl(data.path).data.publicUrl;
-  }
-
   async function handleRegister() {
     if (!fullName || !email || !password) { Alert.alert('Please fill in all required fields'); return; }
     if (password !== confirm)             { Alert.alert('Passwords do not match'); return; }
@@ -74,35 +64,26 @@ export default function RegisterScreen() {
     if (pin !== confirmPin)              { Alert.alert('PINs do not match'); return; }
 
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: 'nicoidd://auth/callback' },
+    });
     if (error) { Alert.alert('Registration failed', error.message); setLoading(false); return; }
 
-    if (data.user) {
-      const { error: profileError } = await supabase.from('guardians').insert({
-        id: data.user.id,
-        email,
-        full_name: fullName,
-        phone: phone || null,
-        city: city.trim() || null,
-        state: state || null,
-        country: 'USA',
-        situation_tags: selectedTags,
-      });
-      if (profileError) {
-        Alert.alert('Profile setup failed', profileError.message);
-        setLoading(false);
-        return;
-      }
-      if (photoUri) {
-        const publicUrl = await uploadPhoto(photoUri, data.user.id);
-        if (publicUrl) {
-          await supabase.from('guardians').update({ photo_url: publicUrl }).eq('id', data.user.id);
-        }
-      }
-      await supabase.rpc('set_guardian_pin', { pin_input: pin });
-      await supabase.auth.refreshSession();
-    }
+    await SecureStore.setItemAsync('pending_guardian_registration', JSON.stringify({
+      email: email.toLowerCase().trim(),
+      fullName,
+      phone: phone || null,
+      city: city.trim() || null,
+      state: state || null,
+      selectedTags,
+      pin,
+      photoUri: photoUri || null,
+    }));
+
     setLoading(false);
+    navigation.navigate('EmailVerificationPending', { email: email.toLowerCase().trim() });
   }
 
   return (

@@ -36,8 +36,7 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user: callerUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    console.log('auth user:', callerUser?.id, 'authError:', authError?.message);
+    const { data: { user: callerUser } } = await supabaseAdmin.auth.getUser(token);
     if (!callerUser) {
       return new Response(JSON.stringify({ error: 'Invalid token' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -45,13 +44,12 @@ Deno.serve(async (req) => {
     }
 
     // Verify sender_id belongs to the authenticated user
-    const { data: profile, error: profileError } = await supabaseAdmin
+    const { data: profile } = await supabaseAdmin
       .from('user_profiles')
       .select('id')
       .eq('id', sender_id)
       .eq('auth_user_id', callerUser.id)
       .single();
-    console.log('profile:', profile?.id, 'profileError:', profileError?.message);
 
     if (!profile) {
       return new Response(JSON.stringify({ error: 'Access denied', detail: profileError?.message }), {
@@ -60,13 +58,12 @@ Deno.serve(async (req) => {
     }
 
     // Verify sender is a participant in the conversation
-    const { data: participant, error: participantError } = await supabaseAdmin
+    const { data: participant } = await supabaseAdmin
       .from('conversation_participants')
       .select('user_id')
       .eq('conversation_id', conversation_id)
       .eq('user_id', sender_id)
       .single();
-    console.log('participant:', participant?.id, 'participantError:', participantError?.message);
 
     if (!participant) {
       return new Response(JSON.stringify({ error: 'Not a participant', detail: participantError?.message }), {

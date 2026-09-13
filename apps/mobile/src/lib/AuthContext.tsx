@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
+import * as SecureStore from 'expo-secure-store';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 import { supabase } from './supabase';
 import { saveGuardianProfile } from './biometricStore';
 import { Guardian, UserProfile } from '../types';
@@ -95,6 +98,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         supabase.from('user_profiles')
           .update({ last_seen_at: new Date().toISOString() })
           .eq('id', profileData.id);
+        return;
+      }
+
+      // First sign-in after email verification — complete pending registration
+      const raw = await SecureStore.getItemAsync('pending_guardian_registration');
+      if (raw) {
+        const p = JSON.parse(raw);
+        await supabase.from('guardians').insert({
+          id: userId,
+          email: p.email,
+          full_name: p.fullName,
+          phone: p.phone,
+          city: p.city,
+          state: p.state,
+          country: 'USA',
+          situation_tags: p.selectedTags,
+        });
+        await supabase.rpc('set_guardian_pin', { pin_input: p.pin });
+        if (p.photoUri) {
+          try {
+            const ext = (p.photoUri.split('.').pop() || 'jpg').toLowerCase();
+            const fileName = `guardian-${userId}-${Date.now()}.${ext}`;
+            const base64 = await FileSystem.readAsStringAsync(p.photoUri, { encoding: FileSystem.EncodingType.Base64 });
+            const { data: uploadData } = await supabase.storage
+              .from('avatars')
+              .upload(fileName, decode(base64), { contentType: `image/${ext}`, upsert: true });
+            if (uploadData) {
+              const publicUrl = supabase.storage.from('avatars').getPublicUrl(uploadData.path).data.publicUrl;
+              await supabase.from('guardians').update({ photo_url: publicUrl }).eq('id', userId);
+            }
+          } catch {
+            // Photo upload failed (e.g. temp file expired) — proceed without photo
+          }
+        }
+        await SecureStore.deleteItemAsync('pending_guardian_registration');
+        const { data: newGuardian } = await supabase.from('guardians').select('*').eq('id', userId).single();
+        if (newGuardian) {
+          setGuardian(newGuardian);
+          setActiveUser(null);
+          saveGuardianProfile({ name: newGuardian.full_name, photo_url: newGuardian.photo_url ?? null });
+        }
       }
     } finally {
       clearTimeout(timeout);

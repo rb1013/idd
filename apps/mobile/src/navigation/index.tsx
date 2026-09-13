@@ -14,6 +14,7 @@ import { COLORS } from '../constants';
 // Auth screens
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
+import EmailVerificationPendingScreen from '../screens/auth/EmailVerificationPendingScreen';
 
 // Guardian screens
 import GuardianHomeScreen from '../screens/guardian/GuardianHomeScreen';
@@ -319,6 +320,8 @@ export default function Navigation() {
             <Stack.Screen name="Login"           component={LoginScreen} />
             <Stack.Screen name="GuardianRegister" component={RegisterScreen}
               options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Guardian Registration' }} />
+            <Stack.Screen name="EmailVerificationPending" component={EmailVerificationPendingScreen}
+              options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Verify your email', headerBackVisible: false }} />
           </>
         ) : guardian ? (
           <Stack.Screen name="GuardianTabs" component={GuardianTabs} />

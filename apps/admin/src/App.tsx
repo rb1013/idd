@@ -13,6 +13,7 @@ import EventCategoriesPage from './pages/EventCategoriesPage';
 import TutorialSkillsPage from './pages/TutorialSkillsPage';
 import AppSettingsPage from './pages/AppSettingsPage';
 import ReportsPage from './pages/ReportsPage';
+import BlockedWordsPage from './pages/BlockedWordsPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
@@ -48,6 +49,7 @@ function App() {
             <Route path="/tutorial-skills" element={<TutorialSkillsPage />} />
             <Route path="/settings" element={<AppSettingsPage />} />
             <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/blocked-words" element={<BlockedWordsPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

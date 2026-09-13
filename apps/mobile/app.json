@@ -1,16 +1,18 @@
 {
   "expo": {
-    "name": "Ray",
-    "slug": "ray",
+    "name": "nico",
+    "slug": "nico",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "nicoidd",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.mobile"
+      "bundleIdentifier": "com.yia.nico"
     },
     "android": {
+      "package": "com.yia.nico",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
