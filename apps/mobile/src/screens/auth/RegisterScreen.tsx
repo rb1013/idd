@@ -64,6 +64,21 @@ export default function RegisterScreen() {
     if (pin !== confirmPin)              { Alert.alert('PINs do not match'); return; }
 
     setLoading(true);
+
+    // Check for existing account before signUp — Supabase silently fake-succeeds on duplicate emails
+    try {
+      const { data: checkData, error: checkError } = await supabase.functions.invoke('check-email', {
+        body: { email: email.trim().toLowerCase() },
+      });
+      if (!checkError && checkData?.exists) {
+        Alert.alert('Account already exists', 'An account with this email already exists. Please sign in instead.');
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // If the check fails for any reason, proceed with signUp and let Supabase handle it
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -83,7 +98,7 @@ export default function RegisterScreen() {
     }));
 
     setLoading(false);
-    navigation.navigate('EmailVerificationPending', { email: email.toLowerCase().trim() });
+    navigation.navigate('OTPVerification', { email: email.toLowerCase().trim() });
   }
 
   return (
