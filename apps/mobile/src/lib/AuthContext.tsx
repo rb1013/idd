@@ -13,6 +13,7 @@ interface AuthContextType {
   guardian: Guardian | null;
   activeUser: UserProfile | null;
   loading: boolean;
+  pendingPasswordReset: boolean;
   setActiveUser: (user: UserProfile | null) => void;
   refreshGuardian: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [guardian, setGuardian] = useState<Guardian | null>(null);
   const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pendingPasswordReset, setPendingPasswordReset] = useState(false);
   const activeUserRef = useRef<UserProfile | null>(null);
   const currentUserIdRef = useRef<string | null>(null);
   activeUserRef.current = activeUser;
@@ -41,8 +43,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }).catch(() => setLoading(false));
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setSession(session);
+        setPendingPasswordReset(true);
+        setLoading(false);
+        return;
+      }
       setSession(session);
+      setPendingPasswordReset(false);
       if (session) {
         if (session.user.id !== currentUserIdRef.current) setLoading(true);
         currentUserIdRef.current = session.user.id;
@@ -160,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, guardian, activeUser, loading, setActiveUser, refreshGuardian, signOut }}>
+    <AuthContext.Provider value={{ session, guardian, activeUser, loading, pendingPasswordReset, setActiveUser, refreshGuardian, signOut }}>
       {children}
     </AuthContext.Provider>
   );

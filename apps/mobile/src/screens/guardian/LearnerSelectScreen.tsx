@@ -20,7 +20,7 @@ import {
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
 const { width } = Dimensions.get('window');
-const TILE_SIZE  = (width - 48 - 14) / 2;
+const TILE_SIZE  = width - 56;
 const USER_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, '#FF922B', '#339AF0', '#F06595', '#74C0FC'];
 
 type LearnerTile = {
@@ -144,14 +144,16 @@ export default function LearnerSelectScreen() {
   // ── Learner biometric login ───────────────────────────────────────────────
 
   async function handleLearnerTap(tile: LearnerTile) {
-    const available = await isBiometricAvailable();
-    if (!available) {
-      Alert.alert(
-        'Biometrics not set up',
-        'Please set up Face ID or fingerprint in your device Settings first.',
-      );
-      return;
-    }
+    // Biometric check removed — guardian session is sufficient authentication.
+    // The code below is preserved and can be re-enabled if biometric is needed in future.
+    // const available = await isBiometricAvailable();
+    // if (!available) {
+    //   Alert.alert(
+    //     'Biometrics not set up',
+    //     'Please set up Face ID or fingerprint in your device Settings first.',
+    //   );
+    //   return;
+    // }
 
     setBiometricLoading(tile.id);
 
@@ -171,8 +173,9 @@ export default function LearnerSelectScreen() {
       if (!biometricUser) { setBiometricLoading(null); return; }
     }
 
-    const passed = await promptBiometric(`Unlock app for ${tile.name}`);
-    if (!passed) { setBiometricLoading(null); return; }
+    // Biometric prompt removed — tap goes directly to sign-in.
+    // const passed = await promptBiometric(`Unlock app for ${tile.name}`);
+    // if (!passed) { setBiometricLoading(null); return; }
 
     const { error } = await supabase.auth.signInWithPassword({
       email: biometricUser.email,
@@ -238,7 +241,7 @@ export default function LearnerSelectScreen() {
                           </View>
                         )}
                       </View>
-                      <AppText style={s.userName} numberOfLines={2}>{tile.name}</AppText>
+                      <AppText style={s.userName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.6}>{tile.name}</AppText>
                     </View>
                   </TouchableOpacity>
                 );

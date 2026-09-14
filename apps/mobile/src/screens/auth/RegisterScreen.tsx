@@ -80,7 +80,7 @@ export default function RegisterScreen() {
     }
 
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: email.trim().toLowerCase(),
       password,
       options: { emailRedirectTo: 'nicoidd://auth/callback' },
     });
@@ -105,7 +105,7 @@ export default function RegisterScreen() {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={[styles.inner, { paddingBottom: Math.max(insets.bottom + 24, 48) }]} keyboardShouldPersistTaps="handled">
         <AppText style={styles.title}>Create Account</AppText>
-        <AppText style={styles.subtitle}>Set up your ELIS account</AppText>
+        <AppText style={styles.subtitle}>Set up your NICO account</AppText>
 
         {/* Profile photo */}
         <TouchableOpacity style={styles.photoPicker} onPress={pickPhoto} activeOpacity={0.8}>
@@ -226,7 +226,7 @@ export default function RegisterScreen() {
         <View style={styles.pinSection}>
           <AppText style={styles.pinSectionTitle}>🔐  Guardian PIN</AppText>
           <AppText style={styles.pinSectionHint}>
-            You'll use this 6-digit PIN to access Guardian mode from the ELIS home screen.
+            You'll use this 6-digit PIN to access Guardian mode from the NICO home screen.
           </AppText>
           <AppText style={styles.label}>PIN *</AppText>
           <TextInput

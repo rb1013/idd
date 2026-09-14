@@ -16,6 +16,9 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import EmailVerificationPendingScreen from '../screens/auth/EmailVerificationPendingScreen';
 import OTPVerificationScreen from '../screens/auth/OTPVerificationScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import ResetOTPScreen from '../screens/auth/ResetOTPScreen';
+import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 
 // Guardian screens
 import GuardianHomeScreen from '../screens/guardian/GuardianHomeScreen';
@@ -303,7 +306,8 @@ function UserNavigator() {
 // ── Root ──────────────────────────────────────────────────────────────────
 
 export default function Navigation() {
-  const { session, guardian, activeUser, loading } = useAuth();
+  const { session, guardian, activeUser, loading, pendingPasswordReset } = useAuth();
+
 
   if (loading) {
     return (
@@ -316,7 +320,10 @@ export default function Navigation() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!session ? (
+        {pendingPasswordReset ? (
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen}
+            options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Set new password', headerBackVisible: false }} />
+        ) : !session ? (
           <>
             <Stack.Screen name="Login"           component={LoginScreen} />
             <Stack.Screen name="GuardianRegister" component={RegisterScreen}
@@ -325,6 +332,10 @@ export default function Navigation() {
               options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Verify your email', headerBackVisible: false }} />
             <Stack.Screen name="OTPVerification" component={OTPVerificationScreen}
               options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Verify your email', headerBackVisible: false }} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen}
+              options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Reset password' }} />
+            <Stack.Screen name="ResetOTP" component={ResetOTPScreen}
+              options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Enter reset code', headerBackVisible: false }} />
           </>
         ) : guardian ? (
           <Stack.Screen name="GuardianTabs" component={GuardianTabs} />

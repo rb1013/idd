@@ -164,7 +164,7 @@ export default function LinkYoutubeScreen() {
       <View style={styles.infoCard}>
         <AppText style={styles.infoTitle}>How this works</AppText>
         <AppText style={styles.infoText}>• The video is not downloaded or stored — only the YouTube link is saved.</AppText>
-        <AppText style={styles.infoText}>• The video plays inside the ELIS app using YouTube's embedded player.</AppText>
+        <AppText style={styles.infoText}>• The video plays inside the NICO app using YouTube's embedded player.</AppText>
         <AppText style={styles.infoText}>• Saved as private — visible only to you and your learner.</AppText>
         <AppText style={styles.infoText}>• No admin review needed for YouTube links.</AppText>
         <AppText style={styles.infoText}>• Only <AppText style={styles.infoTextBold}>public</AppText> YouTube videos can be linked. Private, unlisted, or age-restricted videos will not work.</AppText>

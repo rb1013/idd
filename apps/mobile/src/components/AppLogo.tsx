@@ -3,7 +3,7 @@ import { Image, View, StyleSheet } from 'react-native';
 import { COLORS } from '../constants';
 import AppText from './AppText';
 
-export const ELIS_APP_NAME = 'ELIS';
+export const ELIS_APP_NAME = 'NICO';
 export const ELIS_TAGLINE = 'Empathy · Learning · Inclusive · Support';
 export const ELIS_LOGO = require('../../assets/elis-5-transparent.png');
 

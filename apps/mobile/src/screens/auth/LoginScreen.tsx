@@ -42,7 +42,7 @@ export default function LoginScreen({ navigation }: Props) {
         {/* Form */}
         <View style={s.form}>
           <Text style={s.title}>Welcome back</Text>
-          <Text style={s.subtitle}>Sign in to your ELIS account</Text>
+          <Text style={s.subtitle}>Sign in to your NICO account</Text>
 
           <TextInput
             style={s.input}
@@ -74,9 +74,13 @@ export default function LoginScreen({ navigation }: Props) {
             }
           </TouchableOpacity>
 
+          <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} activeOpacity={0.7} style={s.forgotBtn}>
+            <Text style={s.forgotText}>Forgot password?</Text>
+          </TouchableOpacity>
+
           <View style={s.dividerRow}>
             <View style={s.dividerLine} />
-            <Text style={s.dividerText}>NEW TO ELIS?</Text>
+            <Text style={s.dividerText}>NEW TO NICO?</Text>
             <View style={s.dividerLine} />
           </View>
 
@@ -119,10 +123,13 @@ const s = StyleSheet.create({
 
   btn: {
     backgroundColor: COLORS.bloomAccent, borderRadius: 14,
-    paddingVertical: 16, alignItems: 'center', marginTop: 4, marginBottom: 28,
+    paddingVertical: 16, alignItems: 'center', marginTop: 4,
+    alignSelf: 'center', width: '70%',
   },
   btnText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '800' },
 
+  forgotBtn:  { alignSelf: 'center', marginTop: 12, marginBottom: 20 },
+  forgotText: { fontSize: 14, color: COLORS.bloomText, fontWeight: '700', textDecorationLine: 'underline' },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
   dividerLine:{ flex: 1, height: 1, backgroundColor: COLORS.bloomBorder },
   dividerText:{ fontSize: 11, fontWeight: '700', color: COLORS.bloomMuted, letterSpacing: 0.5 },

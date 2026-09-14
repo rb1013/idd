@@ -133,7 +133,7 @@ export default function CreateUserScreen({ navigation }: Props) {
     }
 
     const trimmedUsername = username.trim().toLowerCase();
-    const fabricatedEmail = `${trimmedUsername}@bloom.app`;
+    const fabricatedEmail = `${trimmedUsername}@nico.app`;
     const generatedPassword = generatePassword();
 
     const { data: userProfile, error } = await supabase.from('user_profiles').insert({
@@ -241,7 +241,7 @@ export default function CreateUserScreen({ navigation }: Props) {
               }
             </TouchableOpacity>
 
-            <Field label="Name *" value={name} onChangeText={setName} placeholder="First name" />
+            <Field label="Name *" value={name} onChangeText={setName} placeholder="First name" maxLength={20} />
             <AppText style={styles.label}>Date of Birth<AppText style={styles.required}> *</AppText></AppText>
             <TouchableOpacity
               style={styles.pickerBtn}
@@ -258,7 +258,6 @@ export default function CreateUserScreen({ navigation }: Props) {
             <MultiSelectChips options={GENDERS.filter(g => g !== 'Prefer not to say')} selected={gender ? [gender] : []} onToggle={(v) => setGender(v[0] || '')} single />
 
             <AppText style={styles.label}>Username<AppText style={styles.required}> *</AppText></AppText>
-            <AppText style={styles.usernameHint}>Select a username. Learner will set up biometrics when they first sign in on their device.</AppText>
             <TextInput
               style={[styles.input, usernameError ? styles.inputError : null]}
               value={username}
@@ -370,7 +369,7 @@ export default function CreateUserScreen({ navigation }: Props) {
               <AppText style={styles.disclaimerText}>
                 ⚠️  This information will <AppText style={styles.disclaimerBold}>not</AppText> be displayed on the learner's profile. It will only be used by guardians to find compatible friends.{'\n\n'}
                 If you do not find your learner's medical condition in the list, please contact the admin at{' '}
-                <AppText style={styles.disclaimerEmail}>reyaansh.bansal@gmail.com</AppText>
+                <AppText style={styles.disclaimerEmail}>nicosupport@gmail.com</AppText>
                 . The admin will add it and let you know when it is available in this dropdown.
               </AppText>
             </View>
