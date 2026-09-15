@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, StatusBar, Image, Platform, Modal, Alert,
+  ScrollView, StatusBar, Image, Platform, Modal, Alert, ActivityIndicator,
 } from 'react-native';
 import AppText from '../../components/AppText';
 import { SafeAreaView } from 'react-native';
@@ -35,9 +35,11 @@ const ACTIONS: {
 export default function GuardianHomeScreen() {
   const navigation = useNavigation<Nav>();
   const { guardian, signOut } = useAuth();
-  const [learners, setLearners]   = useState<Learner[]>([]);
-  const [stats, setStats]         = useState<Stats>({ learners: 0, tutorials: 0, activities: 0 });
-  const [showMenu, setShowMenu]   = useState(false);
+  const [learners, setLearners]         = useState<Learner[]>([]);
+  const [stats, setStats]               = useState<Stats>({ learners: 0, tutorials: 0, activities: 0 });
+  const [showMenu, setShowMenu]         = useState(false);
+  const [messagingDisabled, setMessagingDisabled] = useState(false);
+  const [togglingMsg, setTogglingMsg]   = useState(false);
   const insets = useSafeAreaInsets();
 
   function handleSignOut() {
@@ -85,6 +87,11 @@ export default function GuardianHomeScreen() {
       tutorials:  tutorialCount  ?? 0,
       activities: activityCount  ?? 0,
     });
+
+    if (profileList.length > 0) {
+      supabase.from('user_profiles').select('messaging_disabled').eq('id', profileList[0].id).single()
+        .then(({ data }) => { if (data) setMessagingDisabled(!!data.messaging_disabled); });
+    }
   }
 
   async function registerPushToken(guardianId: string) {
@@ -98,6 +105,15 @@ export default function GuardianHomeScreen() {
     } catch {
       // Requires EAS project — skip silently
     }
+  }
+
+  async function toggleMessaging() {
+    if (!learners[0]) return;
+    setTogglingMsg(true);
+    const newVal = !messagingDisabled;
+    await supabase.from('user_profiles').update({ messaging_disabled: newVal }).eq('id', learners[0].id);
+    setMessagingDisabled(newVal);
+    setTogglingMsg(false);
   }
 
   const initial = guardian?.full_name?.[0]?.toUpperCase() ?? 'G';
@@ -263,6 +279,23 @@ export default function GuardianHomeScreen() {
                 <AppText style={s.actionLabel}>Schedule</AppText>
               </TouchableOpacity>
             </View>
+
+            {/* For your learner */}
+            <AppText style={s.sectionLabel}>For your learner</AppText>
+            <TouchableOpacity style={s.settingRow} onPress={toggleMessaging} activeOpacity={0.8} disabled={togglingMsg}>
+              <View style={s.settingInfo}>
+                <AppText style={s.settingLabel}>Disable Messaging</AppText>
+                <AppText style={s.settingHint}>Your learner cannot send or receive messages</AppText>
+              </View>
+              {togglingMsg
+                ? <ActivityIndicator size="small" color={COLORS.primary} />
+                : (
+                  <View style={[s.toggle, messagingDisabled && s.toggleOn]}>
+                    <View style={[s.toggleThumb, messagingDisabled && s.toggleThumbOn]} />
+                  </View>
+                )
+              }
+            </TouchableOpacity>
           </>
         )}
 
@@ -441,4 +474,21 @@ const s = StyleSheet.create({
   menuItemIcon: { fontSize: 18 },
   menuItemText: { flex: 1, fontSize: 15, fontWeight: '600', color: COLORS.bloomText },
   menuItemArr:  { fontSize: 18, color: '#C8D6E8' },
+
+  sectionLabel: { fontSize: 12, fontWeight: '700', color: COLORS.textLight, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 28, marginBottom: 10 },
+  settingRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: COLORS.surface, borderRadius: 14,
+    borderWidth: 1, borderColor: COLORS.border, padding: 16,
+  },
+  settingInfo: { flex: 1 },
+  settingLabel: { fontSize: 15, fontWeight: '700', color: COLORS.text },
+  settingHint:  { fontSize: 12, color: COLORS.textLight, marginTop: 2 },
+  toggle: {
+    width: 46, height: 26, borderRadius: 13,
+    backgroundColor: COLORS.border, justifyContent: 'center', padding: 2,
+  },
+  toggleOn:      { backgroundColor: COLORS.primary },
+  toggleThumb:   { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff' },
+  toggleThumbOn: { alignSelf: 'flex-end' },
 });

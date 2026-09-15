@@ -79,6 +79,7 @@ export default function FriendsHubScreen() {
   const { activeUser } = useAuth();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
+  const [messagingDisabled, setMessagingDisabled] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -91,7 +92,12 @@ export default function FriendsHubScreen() {
 
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => { if (activeUser) loadFriends(activeUser.id); }, [activeUser]);
+  useEffect(() => {
+    if (!activeUser) return;
+    loadFriends(activeUser.id);
+    supabase.from('user_profiles').select('messaging_disabled').eq('id', activeUser.id).single()
+      .then(({ data }) => { if (data) setMessagingDisabled(!!data.messaging_disabled); });
+  }, [activeUser]);
 
   useFocusEffect(useCallback(() => {
     if (activeUser) loadHidden(activeUser.id);
@@ -165,6 +171,7 @@ export default function FriendsHubScreen() {
 
   async function openChat(friend: Friend) {
     if (!activeUser) return;
+    if (messagingDisabled) return;
     const { data: convId, error } = await supabase.rpc('find_or_create_conversation', {
       p_user_a: activeUser.id, p_user_b: friend.id,
     });

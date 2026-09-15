@@ -32,6 +32,7 @@ export interface UserProfile {
   auth_user_id?: string;
   created_at: string;
   current_mood?: string | null;
+  messaging_disabled?: boolean;
 }
 
 export interface ChatPreferences {

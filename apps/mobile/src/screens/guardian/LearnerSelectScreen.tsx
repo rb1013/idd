@@ -20,7 +20,7 @@ import {
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
 const { width } = Dimensions.get('window');
-const TILE_SIZE  = width - 56;
+const TILE_SIZE  = (width - 56) * 0.7;
 const USER_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, '#FF922B', '#339AF0', '#F06595', '#74C0FC'];
 
 type LearnerTile = {

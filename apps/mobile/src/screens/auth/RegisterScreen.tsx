@@ -131,6 +131,7 @@ export default function RegisterScreen() {
           onChangeText={setFullName}
           placeholder="Your full name"
           placeholderTextColor={COLORS.bloomMuted}
+          maxLength={20}
         />
 
         <AppText style={styles.label}>Email *</AppText>
@@ -195,6 +196,7 @@ export default function RegisterScreen() {
           onChangeText={setCity}
           placeholder="e.g. Austin"
           placeholderTextColor={COLORS.bloomMuted}
+          maxLength={20}
         />
 
         {/* Situation tags */}
