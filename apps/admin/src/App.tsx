@@ -10,6 +10,7 @@ import UsersPage from './pages/UsersPage';
 import SituationTagsPage from './pages/SituationTagsPage';
 import MedicalConditionsPage from './pages/MedicalConditionsPage';
 import EventCategoriesPage from './pages/EventCategoriesPage';
+import DiscussionCategoriesPage from './pages/DiscussionCategoriesPage';
 import TutorialSkillsPage from './pages/TutorialSkillsPage';
 import AppSettingsPage from './pages/AppSettingsPage';
 import ReportsPage from './pages/ReportsPage';
@@ -46,6 +47,7 @@ function App() {
             <Route path="/situation-tags" element={<SituationTagsPage />} />
             <Route path="/medical-conditions" element={<MedicalConditionsPage />} />
             <Route path="/event-categories" element={<EventCategoriesPage />} />
+            <Route path="/discussion-categories" element={<DiscussionCategoriesPage />} />
             <Route path="/tutorial-skills" element={<TutorialSkillsPage />} />
             <Route path="/settings" element={<AppSettingsPage />} />
             <Route path="/reports" element={<ReportsPage />} />

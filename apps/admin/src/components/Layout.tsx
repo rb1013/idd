@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 
-const METADATA_PATHS = ['/categories', '/situation-tags', '/event-categories', '/medical-conditions', '/tutorial-skills'];
+const METADATA_PATHS = ['/categories', '/situation-tags', '/event-categories', '/medical-conditions', '/tutorial-skills', '/discussion-categories'];
 
 const METADATA_ITEMS = [
   { to: '/categories',       label: 'Learner Categories' },
   { to: '/situation-tags',   label: 'Situation Tags' },
-  { to: '/event-categories', label: 'Event Categories' },
+  { to: '/event-categories',      label: 'Event Categories' },
+  { to: '/discussion-categories', label: 'Discussion Categories' },
   { to: '/tutorial-skills',  label: 'Tutorial Skills' },
   { to: '/medical-conditions', label: 'Medical Conditions' },
 ];
