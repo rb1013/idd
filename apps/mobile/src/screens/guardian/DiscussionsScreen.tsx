@@ -12,6 +12,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
+import { useVisibleCount } from '../../hooks/useVisibleCount';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
@@ -123,10 +124,6 @@ export default function DiscussionsScreen() {
     setSubmitting(false);
   }
 
-  if (loading) {
-    return <View style={s.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
-  }
-
   const filteredPosts = posts.filter(p => {
     if (filterTitle && !p.title.toLowerCase().includes(filterTitle.toLowerCase())) return false;
     if (filterGuardian && !p.guardianName.toLowerCase().includes(filterGuardian.toLowerCase())) return false;
@@ -144,8 +141,13 @@ export default function DiscussionsScreen() {
 
   const fmtDate = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   const moreFiltersActive = !!(filterGuardian || filterDateFrom || filterDateTo);
-  const anyFilterActive = !!(filterTitle || filterCategory || filterGuardian || filterDateFrom || filterDateTo);
-  const displayedPosts = anyFilterActive ? filteredPosts : filteredPosts.slice(0, 10);
+
+  const resetKey = `${filterTitle}|${filterCategory?.id ?? ''}|${filterGuardian}|${filterDateFrom?.toISOString() ?? ''}|${filterDateTo?.toISOString() ?? ''}`;
+  const { visible: displayedPosts, showLoadMore, loadMore, showCapMessage } = useVisibleCount(filteredPosts, resetKey);
+
+  if (loading) {
+    return <View style={s.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
+  }
 
   const filterHeader = (
     <View style={s.filterOuter}>
@@ -293,11 +295,22 @@ export default function DiscussionsScreen() {
             </View>
           </TouchableOpacity>
         )}
+        ListFooterComponent={
+          showLoadMore ? (
+            <TouchableOpacity style={s.loadMoreBtn} onPress={loadMore} activeOpacity={0.7}>
+              <AppText style={s.loadMoreText}>Load 10 more</AppText>
+            </TouchableOpacity>
+          ) : showCapMessage ? (
+            <View style={s.capMessage}>
+              <AppText style={s.capMessageText}>Use filters to search records</AppText>
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={s.empty}>
             <AppText style={s.emptyEmoji}>💬</AppText>
             <AppText style={s.emptyText}>{posts.length === 0 ? 'No discussions yet' : 'No results'}</AppText>
-            <AppText style={s.emptyHint}>{posts.length === 0 ? 'Start the first conversation' : anyFilterActive ? 'Try adjusting your filters' : ''}</AppText>
+            <AppText style={s.emptyHint}>{posts.length === 0 ? 'Start the first conversation' : 'Try adjusting your filters'}</AppText>
           </View>
         }
       />
@@ -378,7 +391,7 @@ export default function DiscussionsScreen() {
 
             {categories.length > 0 && (
               <>
-                <AppText style={s.fieldLabel}>Category</AppText>
+                <AppText style={s.fieldLabel}>Category <AppText style={s.fieldRequired}>*</AppText></AppText>
                 <TouchableOpacity style={s.pickerBtn} onPress={() => setShowCategoryPicker(o => !o)} activeOpacity={0.7}>
                   <AppText style={[s.pickerBtnText, !selectedCategory && { color: COLORS.bloomMuted }]}>
                     {selectedCategory?.label ?? 'Select a category…'}
@@ -419,9 +432,9 @@ export default function DiscussionsScreen() {
             />
 
             <TouchableOpacity
-              style={[s.submitBtn, (!newTitle.trim() || !newBody.trim() || submitting) && { opacity: 0.5 }]}
+              style={[s.submitBtn, (!newTitle.trim() || !newBody.trim() || (categories.length > 0 && !selectedCategory) || submitting) && { opacity: 0.5 }]}
               onPress={submitPost}
-              disabled={!newTitle.trim() || !newBody.trim() || submitting}
+              disabled={!newTitle.trim() || !newBody.trim() || (categories.length > 0 && !selectedCategory) || submitting}
             >
               {submitting
                 ? <ActivityIndicator color="#fff" />
@@ -536,7 +549,8 @@ const s = StyleSheet.create({
   modalTitle:    { fontSize: 20, fontWeight: '900', color: COLORS.bloomText },
   modalClose:    { fontSize: 18, color: COLORS.bloomMuted, fontWeight: '600' },
 
-  fieldLabel: { fontSize: 12, fontWeight: '700', color: COLORS.bloomMuted, letterSpacing: 0.5, marginBottom: -4 },
+  fieldLabel:    { fontSize: 12, fontWeight: '700', color: COLORS.bloomMuted, letterSpacing: 0.5, marginBottom: -4 },
+  fieldRequired: { color: '#E53E3E' },
   fieldInput: {
     backgroundColor: COLORS.bloomBody, borderRadius: 14, borderWidth: 1.5,
     borderColor: COLORS.bloomBorder, padding: 14,
@@ -569,6 +583,15 @@ const s = StyleSheet.create({
   dropdownItemTextSelected: { fontWeight: '700', color: COLORS.bloomAccent },
   dropdownCheck:  { fontSize: 15, color: COLORS.bloomAccent, fontWeight: '700' },
   dropdownClearText: { fontSize: 14, color: '#E53E3E', fontWeight: '600' },
+
+  loadMoreBtn: {
+    alignItems: 'center', paddingVertical: 14, marginTop: 4,
+    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+    borderRadius: 14, backgroundColor: COLORS.bloomCard,
+  },
+  loadMoreText: { fontSize: 14, fontWeight: '700', color: COLORS.bloomNavy },
+  capMessage: { alignItems: 'center', paddingVertical: 16 },
+  capMessageText: { fontSize: 13, color: COLORS.bloomMuted, fontStyle: 'italic' },
 
   categoryBadge: {
     alignSelf: 'flex-start',

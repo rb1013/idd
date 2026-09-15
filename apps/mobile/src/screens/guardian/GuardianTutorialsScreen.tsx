@@ -11,6 +11,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { COLORS, TUTORIAL_COMPREHENSION } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import type { Tutorial, TutorialStatus, TutorialSource } from '../../types';
+import { useVisibleCount } from '../../hooks/useVisibleCount';
 
 type TutorialWithGuardian = Tutorial & { guardian?: { full_name: string } | null };
 
@@ -172,6 +173,12 @@ export default function GuardianTutorialsScreen() {
     return matchSearch && matchSkill && matchLevel;
   });
 
+  const resetKeySearch = `${searchQuery}|${filterSkills.join(',')}|${filterLevels.join(',')}`;
+  const { visible: visibleSearch, showLoadMore: showLoadMoreSearch, loadMore: loadMoreSearch, showCapMessage: showCapSearch } = useVisibleCount(filteredSearch, resetKeySearch);
+
+  const resetKeyMy = `${myFilters.join(',')}|${myTypes.join(',')}|${myVisibility}`;
+  const { visible: visibleMy, showLoadMore: showLoadMoreMy, loadMore: loadMoreMy, showCapMessage: showCapMy } = useVisibleCount(filteredMy, resetKeyMy);
+
   return (
     <View style={styles.container}>
       {/* Tab bar */}
@@ -239,11 +246,22 @@ export default function GuardianTutorialsScreen() {
             <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>
           ) : (
             <FlatList
-              data={filteredSearch}
+              data={visibleSearch}
               keyExtractor={t => t.id}
               numColumns={2}
               columnWrapperStyle={styles.gridRow}
               contentContainerStyle={styles.gridList}
+              ListFooterComponent={
+                showLoadMoreSearch ? (
+                  <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreSearch} activeOpacity={0.7}>
+                    <AppText style={styles.loadMoreText}>Load 10 more</AppText>
+                  </TouchableOpacity>
+                ) : showCapSearch ? (
+                  <View style={styles.capMessage}>
+                    <AppText style={styles.capMessageText}>Use filters to search records</AppText>
+                  </View>
+                ) : null
+              }
               renderItem={({ item: t }) => {
                 const toggling = togglingId === t.id;
                 const isLinked = linkedIds.has(t.id);
@@ -495,7 +513,18 @@ export default function GuardianTutorialsScreen() {
                   ? <AppText style={styles.listCount}>{filteredMy.length} tutorial{filteredMy.length !== 1 ? 's' : ''}</AppText>
                   : null
               }
-              data={filteredMy}
+              ListFooterComponent={
+                showLoadMoreMy ? (
+                  <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreMy} activeOpacity={0.7}>
+                    <AppText style={styles.loadMoreText}>Load 10 more</AppText>
+                  </TouchableOpacity>
+                ) : showCapMy ? (
+                  <View style={styles.capMessage}>
+                    <AppText style={styles.capMessageText}>Use filters to search records</AppText>
+                  </View>
+                ) : null
+              }
+              data={visibleMy}
               keyExtractor={t => t.id}
               contentContainerStyle={styles.list}
               renderItem={({ item: t }) => (
@@ -702,6 +731,15 @@ const styles = StyleSheet.create({
   deleteBtnText:{ fontSize: 22 },
 
   // Empty state
+  loadMoreBtn: {
+    alignItems: 'center', paddingVertical: 14, marginTop: 4,
+    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+    borderRadius: 14, backgroundColor: COLORS.bloomCard,
+  },
+  loadMoreText:   { fontSize: 14, fontWeight: '700', color: COLORS.bloomNavy },
+  capMessage:     { alignItems: 'center', paddingVertical: 16 },
+  capMessageText: { fontSize: 13, color: COLORS.bloomMuted, fontStyle: 'italic' },
+
   empty:      { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyEmoji: { fontSize: 72 },
   emptyText:  { fontSize: 22, fontWeight: '800', color: COLORS.bloomText },

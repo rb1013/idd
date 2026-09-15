@@ -11,6 +11,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { COLORS, TUTORIAL_COMPREHENSION } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import type { Tutorial } from '../../types';
+import { useVisibleCount } from '../../hooks/useVisibleCount';
 
 type RouteType = RouteProp<GuardianNavParamList, 'TutorialLibrary'>;
 type TutorialWithGuardian = Tutorial & { guardian?: { full_name: string } | null };
@@ -215,6 +216,9 @@ export default function TutorialLibraryScreen() {
     return matchSearch && matchSkill && matchLevel;
   });
 
+  const resetKey = `${activeTab}|${search}|${filterSkills.join(',')}|${filterLevels.join(',')}`;
+  const { visible: visibleTutorials, showLoadMore, loadMore, showCapMessage } = useVisibleCount(filtered, resetKey);
+
   return (
     <View style={styles.container}>
       {/* Tab bar — Find Tutorials tab hidden for now, can be re-enabled later */}
@@ -288,11 +292,22 @@ export default function TutorialLibraryScreen() {
         <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>
       ) : (
         <FlatList
-          data={filtered}
+          data={visibleTutorials}
           keyExtractor={t => t.id}
           contentContainerStyle={styles.list}
           numColumns={2}
           columnWrapperStyle={styles.row}
+          ListFooterComponent={
+            showLoadMore ? (
+              <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore} activeOpacity={0.7}>
+                <AppText style={styles.loadMoreText}>Load 10 more</AppText>
+              </TouchableOpacity>
+            ) : showCapMessage ? (
+              <View style={styles.capMessage}>
+                <AppText style={styles.capMessageText}>Use filters to search records</AppText>
+              </View>
+            ) : null
+          }
           renderItem={({ item: t }) => {
             const isFeaturedForAny = Object.values(featuredMap).some(s => s.has(t.id));
             const isLinked = linkedTutorialIds.has(t.id);
@@ -584,6 +599,15 @@ const styles = StyleSheet.create({
   addBtnLinked: { backgroundColor: COLORS.bloomAccent },
   addBtnText: { fontSize: 13, fontWeight: '800', color: COLORS.bloomOnAccent },
   addBtnTextLinked: { color: COLORS.bloomOnAccent },
+
+  loadMoreBtn: {
+    alignItems: 'center', paddingVertical: 14, marginTop: 4,
+    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+    borderRadius: 14, backgroundColor: COLORS.bloomCard,
+  },
+  loadMoreText:    { fontSize: 14, fontWeight: '700', color: COLORS.bloomNavy },
+  capMessage:      { alignItems: 'center', paddingVertical: 16 },
+  capMessageText:  { fontSize: 13, color: COLORS.bloomMuted, fontStyle: 'italic' },
 
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
   emptyEmoji: { fontSize: 48 },

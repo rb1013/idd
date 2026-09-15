@@ -27,12 +27,17 @@ export default function AppSettingsPage() {
   const [savingSnapshot, setSavingSnapshot]     = useState(false);
   const [savedSnapshot, setSavedSnapshot]       = useState(false);
 
+  const [pageSize, setPageSize]         = useState<number>(10);
+  const [draftPageSize, setDraftPageSize] = useState<string>('10');
+  const [savingPageSize, setSavingPageSize] = useState(false);
+  const [savedPageSize, setSavedPageSize]   = useState(false);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { load(); }, []);
 
   async function load() {
-    const { data } = await supabase.from('app_settings').select('tutorial_quota_limit, tutorial_default_duration, tutorial_image_timeout_ms, tutorial_max_frames, report_snapshot_limit').single();
+    const { data } = await supabase.from('app_settings').select('tutorial_quota_limit, tutorial_default_duration, tutorial_image_timeout_ms, tutorial_max_frames, report_snapshot_limit, pagination_page_size').single();
     if (data) {
       setQuotaLimit(data.tutorial_quota_limit);
       setDraftQuota(String(data.tutorial_quota_limit));
@@ -44,6 +49,8 @@ export default function AppSettingsPage() {
       setDraftFrames(String(data.tutorial_max_frames ?? 4));
       setSnapshotLimit(data.report_snapshot_limit ?? 20);
       setDraftSnapshot(String(data.report_snapshot_limit ?? 20));
+      setPageSize(data.pagination_page_size ?? 10);
+      setDraftPageSize(String(data.pagination_page_size ?? 10));
     }
     setLoading(false);
   }
@@ -108,6 +115,18 @@ export default function AppSettingsPage() {
     setTimeout(() => setSavedTimeout(false), 2500);
   }
 
+  async function savePageSize(e: React.FormEvent) {
+    e.preventDefault();
+    const val = parseInt(draftPageSize, 10);
+    if (isNaN(val) || val < 1) return;
+    setSavingPageSize(true);
+    await supabase.from('app_settings').update({ pagination_page_size: val, updated_at: new Date().toISOString() }).eq('id', 1);
+    setPageSize(val);
+    setSavingPageSize(false);
+    setSavedPageSize(true);
+    setTimeout(() => setSavedPageSize(false), 2500);
+  }
+
   if (loading) return <div style={{ padding: 32 }}>Loading…</div>;
 
   const dirtyQuota    = parseInt(draftQuota, 10) !== quotaLimit;
@@ -115,6 +134,7 @@ export default function AppSettingsPage() {
   const dirtyTimeout  = parseInt(draftTimeout, 10) !== imageTimeout;
   const dirtyFrames   = parseInt(draftFrames, 10) !== maxFrames;
   const dirtySnapshot = parseInt(draftSnapshot, 10) !== snapshotLimit;
+  const dirtyPageSize = parseInt(draftPageSize, 10) !== pageSize;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -227,6 +247,34 @@ export default function AppSettingsPage() {
           </div>
           {savedSnapshot && <p style={styles.savedMsg}>✓ Saved successfully</p>}
           {dirtySnapshot && !savedSnapshot && <p style={styles.hint}>Changed from {snapshotLimit} → {draftSnapshot} messages</p>}
+        </form>
+      </div>
+
+      <div style={styles.card}>
+        <h2 style={styles.cardTitle}>List Pagination Size</h2>
+        <p style={styles.cardDesc}>
+          Number of records shown per page in the mobile app (discussions, tutorials, etc.).
+          Users can load up to 3 pages before being prompted to use filters.
+          Currently set to <strong>{pageSize} records</strong> (max {pageSize * 3} before filters nudge).
+        </p>
+        <form onSubmit={savePageSize} style={styles.form}>
+          <label style={styles.label}>Records per page</label>
+          <div style={styles.inputRow}>
+            <input
+              type="number" min={1} max={50}
+              value={draftPageSize} onChange={e => setDraftPageSize(e.target.value)}
+              style={styles.input}
+            />
+            <button
+              type="submit"
+              disabled={savingPageSize || !dirtyPageSize || parseInt(draftPageSize, 10) < 1 || isNaN(parseInt(draftPageSize, 10))}
+              style={{ ...styles.btn, ...(savingPageSize || !dirtyPageSize ? styles.btnDisabled : {}) }}
+            >
+              {savingPageSize ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+          {savedPageSize && <p style={styles.savedMsg}>✓ Saved successfully</p>}
+          {dirtyPageSize && !savedPageSize && <p style={styles.hint}>Changed from {pageSize} → {draftPageSize} records</p>}
         </form>
       </div>
 
