@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS } from '../../constants';
 import { US_STATES } from '../../constants/usStates';
+import { validatePhone, buildE164 } from '../../constants/countryCodes';
 import { useNavigation } from '@react-navigation/native';
 
 export default function GuardianEditAccountScreen() {
@@ -15,12 +16,15 @@ export default function GuardianEditAccountScreen() {
   const navigation = useNavigation();
 
   const [name, setName]   = useState(guardian?.full_name ?? '');
-  const [phone, setPhone] = useState(guardian?.phone ?? '');
-  const [state, setState] = useState(guardian?.state ?? '');
-  const [city, setCity]   = useState(guardian?.city ?? '');
+  const [phone, setPhone] = useState(() => {
+    const raw = guardian?.phone ?? '';
+    return raw.startsWith('+1') ? raw.slice(2) : raw.replace(/\D/g, '');
+  });
+  const [state, setState]         = useState(guardian?.state ?? '');
+  const [city, setCity]           = useState(guardian?.city ?? '');
   const [selectedTags, setSelectedTags] = useState<string[]>(guardian?.situation_tags ?? []);
 
-  const [tagOptions, setTagOptions]       = useState<string[]>([]);
+  const [tagOptions, setTagOptions]           = useState<string[]>([]);
   const [showStatePicker, setShowStatePicker] = useState(false);
   const [showTagPicker, setShowTagPicker]     = useState(false);
   const [saving, setSaving] = useState(false);
@@ -38,10 +42,14 @@ export default function GuardianEditAccountScreen() {
   async function handleSave() {
     if (!guardian) return;
     if (!name.trim()) { Alert.alert('Name cannot be empty'); return; }
+
+    const phoneError = validatePhone('+1', phone);
+    if (phoneError) { Alert.alert('Invalid phone number', phoneError); return; }
+
     setSaving(true);
     const { error } = await supabase.from('guardians').update({
       full_name:      name.trim(),
-      phone:          phone.trim() || null,
+      phone:          buildE164('+1', phone),
       state:          state || null,
       city:           city.trim() || null,
       country:        'USA',
@@ -69,15 +77,21 @@ export default function GuardianEditAccountScreen() {
       </View>
 
       <View style={styles.field}>
-        <AppText style={styles.label}>Phone</AppText>
-        <TextInput
-          style={styles.input}
-          value={phone}
-          onChangeText={setPhone}
-          placeholder="e.g. +1 555 000 0000"
-          placeholderTextColor={COLORS.textLight}
-          keyboardType="phone-pad"
-        />
+        <AppText style={styles.label}>Phone *</AppText>
+        <View style={styles.phoneRow}>
+          <View style={styles.countryCodeBtn}>
+            <AppText style={styles.countryFlag}>🇺🇸</AppText>
+            <AppText style={styles.countryCodeText}>+1</AppText>
+          </View>
+          <TextInput
+            style={styles.phoneInput}
+            value={phone}
+            onChangeText={v => setPhone(v.replace(/[^\d\s\-]/g, ''))}
+            placeholder="555 000 0000"
+            keyboardType="phone-pad"
+            placeholderTextColor={COLORS.textLight}
+          />
+        </View>
       </View>
 
       <View style={styles.field}>
@@ -233,6 +247,22 @@ const styles = StyleSheet.create({
     borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
     fontSize: 15, color: COLORS.text,
   },
+
+  phoneRow: { flexDirection: 'row', gap: 8 },
+  countryCodeBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: 12, paddingHorizontal: 12, paddingVertical: 14,
+  },
+  countryFlag:     { fontSize: 20 },
+  countryCodeText: { fontSize: 15, fontWeight: '700', color: COLORS.text },
+  countryChevron:  { fontSize: 11, color: COLORS.textLight },
+  phoneInput: {
+    flex: 1, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
+    fontSize: 15, color: COLORS.text,
+  },
+
   pickerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
@@ -265,10 +295,10 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 17, fontWeight: '700', color: COLORS.text },
   modalClose: { fontSize: 16, fontWeight: '600', color: COLORS.primary },
 
-  stateItem:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
+  stateItem:             { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, gap: 10 },
   stateItemSelected:     { backgroundColor: '#EEF4FF' },
-  stateItemText:         { fontSize: 16, color: COLORS.text },
+  stateItemText:         { flex: 1, fontSize: 15, color: COLORS.text },
   stateItemTextSelected: { fontWeight: '700', color: COLORS.primary },
-  stateCheck:    { fontSize: 16, color: COLORS.primary, fontWeight: '700' },
-  stateDivider:  { height: 1, backgroundColor: COLORS.border, marginHorizontal: 20 },
+  stateCheck:            { fontSize: 16, color: COLORS.primary, fontWeight: '700' },
+  stateDivider:          { height: 1, backgroundColor: COLORS.border, marginHorizontal: 20 },
 });

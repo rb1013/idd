@@ -12,13 +12,14 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { COLORS } from '../../constants';
 import { US_STATES } from '../../constants/usStates';
+import { validatePhone, buildE164 } from '../../constants/countryCodes';
 
 export default function RegisterScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const [fullName, setFullName]   = useState('');
   const [email, setEmail]         = useState('');
-  const [phone, setPhone]         = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword]   = useState('');
   const [confirm, setConfirm]     = useState('');
   const [city, setCity]           = useState('');
@@ -63,9 +64,11 @@ export default function RegisterScreen() {
     if (pin.length !== 6)                { Alert.alert('Please create a 6-digit PIN'); return; }
     if (pin !== confirmPin)              { Alert.alert('PINs do not match'); return; }
 
+    const phoneError = validatePhone('+1', phone);
+    if (phoneError) { Alert.alert('Invalid phone number', phoneError); return; }
+
     setLoading(true);
 
-    // Check for existing account before signUp — Supabase silently fake-succeeds on duplicate emails
     try {
       const { data: checkData, error: checkError } = await supabase.functions.invoke('check-email', {
         body: { email: email.trim().toLowerCase() },
@@ -76,7 +79,7 @@ export default function RegisterScreen() {
         return;
       }
     } catch {
-      // If the check fails for any reason, proceed with signUp and let Supabase handle it
+      // proceed if check fails
     }
 
     const { data, error } = await supabase.auth.signUp({
@@ -89,7 +92,7 @@ export default function RegisterScreen() {
     await SecureStore.setItemAsync('pending_guardian_registration', JSON.stringify({
       email: email.toLowerCase().trim(),
       fullName,
-      phone: phone || null,
+      phone: buildE164('+1', phone),
       city: city.trim() || null,
       state: state || null,
       selectedTags,
@@ -100,6 +103,7 @@ export default function RegisterScreen() {
     setLoading(false);
     navigation.navigate('OTPVerification', { email: email.toLowerCase().trim() });
   }
+
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -145,15 +149,21 @@ export default function RegisterScreen() {
           placeholderTextColor={COLORS.bloomMuted}
         />
 
-        <AppText style={styles.label}>Phone (optional)</AppText>
-        <TextInput
-          style={styles.input}
-          value={phone}
-          onChangeText={setPhone}
-          placeholder="+1 555 000 0000"
-          keyboardType="phone-pad"
-          placeholderTextColor={COLORS.bloomMuted}
-        />
+        <AppText style={styles.label}>Phone *</AppText>
+        <View style={styles.phoneRow}>
+          <View style={styles.countryCodeBtn}>
+            <AppText style={styles.countryFlag}>🇺🇸</AppText>
+            <AppText style={styles.countryCodeText}>+1</AppText>
+          </View>
+          <TextInput
+            style={styles.phoneInput}
+            value={phone}
+            onChangeText={v => setPhone(v.replace(/[^\d\s\-]/g, ''))}
+            placeholder="555 000 0000"
+            keyboardType="phone-pad"
+            placeholderTextColor={COLORS.bloomMuted}
+          />
+        </View>
 
         <AppText style={styles.label}>Password *</AppText>
         <TextInput
@@ -373,6 +383,23 @@ const styles = StyleSheet.create({
   readOnly:     { backgroundColor: COLORS.bloomActiveBg, justifyContent: 'center' },
   readOnlyText: { fontSize: 16, color: COLORS.bloomMuted },
 
+  phoneRow: {
+    flexDirection: 'row', gap: 8, marginBottom: 16,
+  },
+  countryCodeBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+    borderRadius: 12, paddingHorizontal: 12, paddingVertical: 16,
+  },
+  countryFlag:     { fontSize: 20 },
+  countryCodeText: { fontSize: 15, fontWeight: '700', color: COLORS.bloomText },
+  countryChevron:  { fontSize: 11, color: COLORS.bloomMuted },
+  phoneInput: {
+    flex: 1, backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16,
+    fontSize: 16, color: COLORS.bloomText,
+  },
+
   pickerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
@@ -405,7 +432,6 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '700' },
 
-  // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalCard: {
     backgroundColor: COLORS.bloomCard, borderTopLeftRadius: 24, borderTopRightRadius: 24,
@@ -418,12 +444,15 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 17, fontWeight: '700', color: COLORS.bloomText },
   modalClose: { fontSize: 16, fontWeight: '600', color: COLORS.bloomAccent },
 
-  listItem:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
+  listItem:             { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, gap: 10 },
   listItemSelected:     { backgroundColor: COLORS.bloomActiveBg },
-  listItemText:         { fontSize: 16, color: COLORS.bloomText },
+  listItemFlag:         { fontSize: 22 },
+  listItemText:         { flex: 1, fontSize: 15, color: COLORS.bloomText },
   listItemTextSelected: { fontWeight: '700', color: COLORS.bloomActiveText },
-  listCheck:    { fontSize: 16, color: COLORS.bloomActiveText, fontWeight: '700' },
-  listDivider:  { height: 1, backgroundColor: COLORS.bloomBorder, marginHorizontal: 20 },
+  listItemCode:         { fontSize: 14, color: COLORS.bloomMuted, fontWeight: '600' },
+  listItemCodeSelected: { color: COLORS.bloomActiveText },
+  listCheck:            { fontSize: 16, color: COLORS.bloomActiveText, fontWeight: '700' },
+  listDivider:          { height: 1, backgroundColor: COLORS.bloomBorder, marginHorizontal: 20 },
 
   emptyTags:     { padding: 40, alignItems: 'center' },
   emptyTagsText: { fontSize: 15, color: COLORS.bloomMuted },
