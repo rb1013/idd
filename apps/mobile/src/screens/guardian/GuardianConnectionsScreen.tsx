@@ -8,6 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS, calcAge } from '../../constants';
+import { useVisibleCount } from '../../hooks/useVisibleCount';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -299,6 +300,16 @@ export default function GuardianConnectionsScreen() {
     });
   }, [results, searchName, searchCity, filterAgeGroups, filterTags, filterGenders]);
 
+  // ── Pagination ──────────────────────────────────────────────────────────────
+
+  const resetKeyConnected  = String(connected.length);
+  const { visible: visibleConnected, showLoadMore: showLoadMoreConnected, loadMore: loadMoreConnected, showCapMessage: showCapConnected, pageSize } =
+    useVisibleCount(connected, resetKeyConnected);
+
+  const resetKeyDiscover = `${searchName}|${searchCity}|${filterAgeGroups.join(',')}|${filterTags.join(',')}|${filterGenders.join(',')}`;
+  const { visible: visibleDiscovered, showLoadMore: showLoadMoreDiscovered, loadMore: loadMoreDiscovered, showCapMessage: showCapDiscovered, pageSize: pageSizeDiscover } =
+    useVisibleCount(discovered, resetKeyDiscover);
+
   // ── Card renderers ──────────────────────────────────────────────────────────
 
   function avatarColor(name: string) {
@@ -464,7 +475,17 @@ export default function GuardianConnectionsScreen() {
                   <AppText style={[s.sectionHeader, pendingReceived.length > 0 && { marginTop: 20 }]}>
                     Connected  ·  {connected.length}
                   </AppText>
-                  {connected.map(item => renderConnectedCard(item))}
+                  {visibleConnected.map(item => renderConnectedCard(item))}
+                  {showLoadMoreConnected && (
+                    <TouchableOpacity style={s.loadMoreBtn} onPress={loadMoreConnected} activeOpacity={0.7}>
+                      <AppText style={s.loadMoreText}>Load {pageSize} more</AppText>
+                    </TouchableOpacity>
+                  )}
+                  {showCapConnected && (
+                    <View style={s.capMessage}>
+                      <AppText style={s.capMessageText}>Use filters to search records</AppText>
+                    </View>
+                  )}
                 </>
               )}
             </>
@@ -503,10 +524,21 @@ export default function GuardianConnectionsScreen() {
           </View>
 
           <FlatList
-            data={discovered}
+            data={visibleDiscovered}
             keyExtractor={r => r.guardianId}
             contentContainerStyle={s.list}
             renderItem={({ item }) => renderDiscoverCard(item)}
+            ListFooterComponent={
+              showLoadMoreDiscovered ? (
+                <TouchableOpacity style={s.loadMoreBtn} onPress={loadMoreDiscovered} activeOpacity={0.7}>
+                  <AppText style={s.loadMoreText}>Load {pageSizeDiscover} more</AppText>
+                </TouchableOpacity>
+              ) : showCapDiscovered ? (
+                <View style={s.capMessage}>
+                  <AppText style={s.capMessageText}>Use filters to search records</AppText>
+                </View>
+              ) : null
+            }
             ListEmptyComponent={
               <View style={s.empty}>
                 <AppText style={s.emptyEmoji}>🔍</AppText>
@@ -729,6 +761,15 @@ const s = StyleSheet.create({
   acceptText:     { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 12 },
   declineBtn:     { backgroundColor: COLORS.statusRedLight, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
   declineText:    { color: '#B91C1C', fontWeight: '700', fontSize: 12 },
+
+  loadMoreBtn: {
+    alignItems: 'center', paddingVertical: 14, marginTop: 8,
+    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+    borderRadius: 14, backgroundColor: COLORS.bloomCard,
+  },
+  loadMoreText:   { fontSize: 14, fontWeight: '700', color: COLORS.bloomNavy },
+  capMessage:     { alignItems: 'center', paddingVertical: 16 },
+  capMessageText: { fontSize: 13, color: COLORS.bloomMuted, fontStyle: 'italic' },
 
   empty:      { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyEmoji: { fontSize: 56 },

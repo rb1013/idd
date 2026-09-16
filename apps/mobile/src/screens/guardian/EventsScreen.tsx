@@ -1,16 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert,
-  Modal, ScrollView, Image,
+  Modal, ScrollView, Image, TextInput,
 } from 'react-native';
 import AppText from '../../components/AppText';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS, calcAge } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
+import { useVisibleCount } from '../../hooks/useVisibleCount';
 
 type Nav  = NativeStackNavigationProp<GuardianNavParamList>;
 type Rsvp = 'going' | 'interested' | 'not_going';
@@ -42,6 +43,7 @@ interface EventItem {
   guardianName: string;
   guardianId: string;
   goingCount: number;
+  createdAt: string;
 }
 
 function formatTime(timeStr: string): string {
@@ -66,18 +68,22 @@ function formatFullDate(dateStr: string, timeStr?: string | null): string {
   return `${date} at ${hours % 12 || 12}:${m} ${hours >= 12 ? 'PM' : 'AM'}`;
 }
 
+type EventsRoute = RouteProp<GuardianNavParamList, 'Events'>;
+
 export default function EventsScreen() {
   const navigation = useNavigation<Nav>();
+  const route = useRoute<EventsRoute>();
   const { guardian } = useAuth();
 
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'upcoming' | 'mine'>('upcoming');
+  const [tab, setTab] = useState<'upcoming' | 'mine'>(route.params?.tab ?? 'upcoming');
   const [selectedEvent, setSelectedEvent]       = useState<EventItem | null>(null);
   const [nudgeRsvp, setNudgeRsvp]               = useState<Rsvp | null>(null);
 
-  // Upcoming tab filters
+  // Shared filters (both tabs)
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [filterName, setFilterName]             = useState('');
   const [filterCategory, setFilterCategory]     = useState('');
   const [filterDateFrom, setFilterDateFrom]     = useState<Date | null>(null);
   const [filterDateTo, setFilterDateTo]         = useState<Date | null>(null);
@@ -86,7 +92,6 @@ export default function EventsScreen() {
   const [tempDateFrom, setTempDateFrom]         = useState(new Date());
   const [tempDateTo, setTempDateTo]             = useState(new Date());
   const [showCategorySheet, setShowCategorySheet] = useState(false);
-  const [visibleCount, setVisibleCount]           = useState(10);
   const [nudgeRsvping, setNudgeRsvping]         = useState(false);
   const [guardianSheet, setGuardianSheet]       = useState<GuardianProfile | null>(null);
   const [loadingGuardianSheet, setLoadingGuardianSheet] = useState(false);
@@ -104,7 +109,7 @@ export default function EventsScreen() {
 
     const { data } = await supabase
       .from('events')
-      .select('id, name, description, category, event_date, event_time, venue, guardian_id, guardians!events_guardian_id_fkey(full_name), event_participants(guardian_id, rsvp)')
+      .select('id, name, description, category, event_date, event_time, venue, guardian_id, created_at, guardians!events_guardian_id_fkey(full_name), event_participants(guardian_id, rsvp)')
       .gte('event_date', today)
       .order('event_date', { ascending: true });
 
@@ -120,25 +125,30 @@ export default function EventsScreen() {
         guardianName: e.guardians?.full_name ?? 'Unknown',
         guardianId: e.guardian_id,
         goingCount: (e.event_participants ?? []).filter((p: any) => p.rsvp === 'going').length,
+        createdAt: e.created_at ?? '',
       }))
     );
     setLoading(false);
   }
 
-  // Reset pagination when tab or filters change
-  useEffect(() => { setVisibleCount(10); }, [tab, filterCategory, filterDateFrom, filterDateTo]);
+  const filterResetKey = `${filterName}|${filterCategory}|${filterDateFrom?.toISOString() ?? ''}|${filterDateTo?.toISOString() ?? ''}`;
 
-  const allFiltered = (() => {
-    if (tab === 'mine') return events.filter(e => e.guardianId === guardian?.id);
-    let list = events;
+  const applyFilters = (list: EventItem[]) => {
+    if (filterName.trim()) list = list.filter(e => e.name.toLowerCase().includes(filterName.trim().toLowerCase()));
     if (filterCategory) list = list.filter(e => e.category === filterCategory);
     if (filterDateFrom) list = list.filter(e => e.eventDate >= toLocalDateStr(filterDateFrom));
     if (filterDateTo)   list = list.filter(e => e.eventDate <= toLocalDateStr(filterDateTo));
     return list;
-  })();
+  };
 
-  const filtered = allFiltered.slice(0, visibleCount);
-  const hasMore  = allFiltered.length > visibleCount;
+  const upcomingFiltered = applyFilters([...events]);
+  const mineFiltered = applyFilters(events.filter(e => e.guardianId === guardian?.id))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const { visible: visibleUpcoming, showLoadMore: showLoadMoreUpcoming, loadMore: loadMoreUpcoming, showCapMessage: showCapUpcoming, pageSize: pageSizeUpcoming } = useVisibleCount(upcomingFiltered, filterResetKey);
+  const { visible: visibleMine,     showLoadMore: showLoadMoreMine,     loadMore: loadMoreMine,     showCapMessage: showCapMine,     pageSize: pageSizeMine     } = useVisibleCount(mineFiltered,     filterResetKey);
+
+  const filtered = tab === 'mine' ? visibleMine : visibleUpcoming;
 
   useEffect(() => {
     if (!selectedEvent || !guardian) { setNudgeRsvp(null); return; }
@@ -229,46 +239,62 @@ export default function EventsScreen() {
         ))}
       </View>
 
-      {/* Upcoming tab inline filters */}
-      {tab === 'upcoming' && (
-        <View style={s.filterPanel}>
-          {/* Date from */}
-          <TouchableOpacity
-            style={s.filterRow}
-            onPress={() => { setTempDateFrom(filterDateFrom ?? new Date()); setShowDateFromPicker(true); }}
-            activeOpacity={0.7}
-          >
-            <AppText style={s.filterLabel}>From</AppText>
-            <AppText style={[s.filterValue, filterDateFrom && s.filterValueActive]}>
-              {filterDateFrom
-                ? filterDateFrom.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-                : 'Any date'}
-            </AppText>
-            {filterDateFrom
-              ? <TouchableOpacity onPress={() => setFilterDateFrom(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><AppText style={s.filterClear}>✕</AppText></TouchableOpacity>
-              : <AppText style={s.filterArrow}>›</AppText>
-            }
-          </TouchableOpacity>
+      {/* Shared filters */}
+      <View style={s.filterPanel}>
+          {/* Event name */}
+          <View style={s.filterRow}>
+            <AppText style={s.filterLabel}>Name</AppText>
+            <TextInput
+              style={s.filterTextInput}
+              placeholder="Search by name"
+              placeholderTextColor={COLORS.bloomMuted}
+              value={filterName}
+              onChangeText={setFilterName}
+            />
+            {filterName.length > 0 && (
+              <TouchableOpacity onPress={() => setFilterName('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <AppText style={s.filterClear}>✕</AppText>
+              </TouchableOpacity>
+            )}
+          </View>
 
           <View style={s.filterDivider} />
 
-          {/* Date to */}
-          <TouchableOpacity
-            style={s.filterRow}
-            onPress={() => { setTempDateTo(filterDateTo ?? new Date()); setShowDateToPicker(true); }}
-            activeOpacity={0.7}
-          >
-            <AppText style={s.filterLabel}>To</AppText>
-            <AppText style={[s.filterValue, filterDateTo && s.filterValueActive]}>
+          {/* Date range — From and To in one row */}
+          <View style={s.filterRow}>
+            <AppText style={s.filterLabel}>Dates</AppText>
+            <TouchableOpacity
+              style={s.dateRangeBtn}
+              onPress={() => { setTempDateFrom(filterDateFrom ?? new Date()); setShowDateFromPicker(true); }}
+              activeOpacity={0.7}
+            >
+              <AppText style={[s.dateRangeText, filterDateFrom && s.filterValueActive]}>
+                {filterDateFrom
+                  ? filterDateFrom.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                  : 'From'}
+              </AppText>
+              {filterDateFrom
+                ? <TouchableOpacity onPress={() => setFilterDateFrom(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><AppText style={s.filterClear}>✕</AppText></TouchableOpacity>
+                : <AppText style={s.filterArrow}>›</AppText>
+              }
+            </TouchableOpacity>
+            <AppText style={s.dateRangeSep}>–</AppText>
+            <TouchableOpacity
+              style={s.dateRangeBtn}
+              onPress={() => { setTempDateTo(filterDateTo ?? new Date()); setShowDateToPicker(true); }}
+              activeOpacity={0.7}
+            >
+              <AppText style={[s.dateRangeText, filterDateTo && s.filterValueActive]}>
+                {filterDateTo
+                  ? filterDateTo.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                  : 'To'}
+              </AppText>
               {filterDateTo
-                ? filterDateTo.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-                : 'Any date'}
-            </AppText>
-            {filterDateTo
-              ? <TouchableOpacity onPress={() => setFilterDateTo(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><AppText style={s.filterClear}>✕</AppText></TouchableOpacity>
-              : <AppText style={s.filterArrow}>›</AppText>
-            }
-          </TouchableOpacity>
+                ? <TouchableOpacity onPress={() => setFilterDateTo(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><AppText style={s.filterClear}>✕</AppText></TouchableOpacity>
+                : <AppText style={s.filterArrow}>›</AppText>
+              }
+            </TouchableOpacity>
+          </View>
 
           {availableCategories.length > 0 && (
             <>
@@ -290,7 +316,6 @@ export default function EventsScreen() {
             </>
           )}
         </View>
-      )}
 
       <FlatList
         data={filtered}
@@ -360,17 +385,23 @@ export default function EventsScreen() {
             </View>
           );
         }}
-        ListFooterComponent={hasMore ? (
-          <TouchableOpacity
-            style={s.loadMoreBtn}
-            onPress={() => setVisibleCount(c => c + 10)}
-            activeOpacity={0.75}
-          >
-            <AppText style={s.loadMoreText}>
-              Show more ({allFiltered.length - visibleCount} remaining)
-            </AppText>
-          </TouchableOpacity>
-        ) : null}
+        ListFooterComponent={(() => {
+          const showMore = tab === 'mine' ? showLoadMoreMine : showLoadMoreUpcoming;
+          const doPaginate = tab === 'mine' ? loadMoreMine : loadMoreUpcoming;
+          const ps = tab === 'mine' ? pageSizeMine : pageSizeUpcoming;
+          const showCap = tab === 'mine' ? showCapMine : showCapUpcoming;
+          if (showMore) return (
+            <TouchableOpacity style={s.loadMoreBtn} onPress={doPaginate} activeOpacity={0.75}>
+              <AppText style={s.loadMoreText}>Load {ps} more</AppText>
+            </TouchableOpacity>
+          );
+          if (showCap) return (
+            <View style={s.capMessage}>
+              <AppText style={s.capMessageText}>Use filters to search records</AppText>
+            </View>
+          );
+          return null;
+        })()}
         ListEmptyComponent={
           <View style={s.empty}>
             <AppText style={s.emptyEmoji}>🎉</AppText>
@@ -681,7 +712,9 @@ const s = StyleSheet.create({
     borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
     alignItems: 'center', backgroundColor: COLORS.bloomCard,
   },
-  loadMoreText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomNavy },
+  loadMoreText:   { fontSize: 13, fontWeight: '700', color: COLORS.bloomNavy },
+  capMessage:     { alignItems: 'center', paddingVertical: 16 },
+  capMessageText: { fontSize: 13, color: COLORS.bloomMuted, fontStyle: 'italic' },
 
   empty:      { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyEmoji: { fontSize: 56 },
@@ -713,6 +746,10 @@ const s = StyleSheet.create({
   filterArrow:      { fontSize: 18, color: COLORS.bloomMuted, lineHeight: 20 },
   filterClear:      { fontSize: 13, color: COLORS.bloomNavy, fontWeight: '700' },
   filterDivider:    { height: 1, backgroundColor: COLORS.bloomBorder, marginLeft: 16 },
+  filterTextInput:  { flex: 1, fontSize: 13, color: COLORS.bloomText, paddingVertical: 0 },
+  dateRangeBtn:     { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  dateRangeText:    { flex: 1, fontSize: 13, color: COLORS.bloomMuted },
+  dateRangeSep:     { fontSize: 13, color: COLORS.bloomMuted, marginHorizontal: 4 },
 
   filterPickerHdr: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

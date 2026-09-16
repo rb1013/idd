@@ -53,5 +53,5 @@ export function useVisibleCount<T>(list: T[], resetKey?: string | number) {
   const showCapMessage = count >= hardCap && list.length > hardCap;
   const loadMore       = () => setCount(c => Math.min(c + pageSize, hardCap));
 
-  return { visible, showLoadMore, loadMore, showCapMessage };
+  return { visible, showLoadMore, loadMore, showCapMessage, pageSize };
 }

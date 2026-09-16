@@ -33,6 +33,7 @@ interface Post {
   title: string;
   body: string;
   createdAt: string;
+  guardianId: string;
   guardianName: string;
   replyCount: number;
   categoryLabel?: string;
@@ -46,6 +47,7 @@ export default function DiscussionsScreen() {
 
   const [posts, setPosts]             = useState<Post[]>([]);
   const [loading, setLoading]         = useState(true);
+  const [tab, setTab]                 = useState<'all' | 'mine'>('all');
   const [showCreate, setShowCreate]   = useState(false);
   const [newTitle, setNewTitle]       = useState('');
   const [newBody, setNewBody]         = useState('');
@@ -54,7 +56,7 @@ export default function DiscussionsScreen() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
-  // Filters
+  // Shared filters (both tabs)
   const [filterTitle, setFilterTitle]       = useState('');
   const [filterGuardian, setFilterGuardian] = useState('');
   const [filterDateFrom, setFilterDateFrom] = useState<Date | null>(null);
@@ -86,7 +88,7 @@ export default function DiscussionsScreen() {
     setLoading(true);
     const { data } = await supabase
       .from('discussion_posts')
-      .select('id, title, body, created_at, category_id, guardians(full_name), discussion_replies(id), discussion_category_options(label)')
+      .select('id, title, body, created_at, guardian_id, category_id, guardians(full_name), discussion_replies(id), discussion_category_options(label)')
       .order('created_at', { ascending: false });
 
     setPosts(
@@ -95,6 +97,7 @@ export default function DiscussionsScreen() {
         title: p.title,
         body: p.body,
         createdAt: p.created_at,
+        guardianId: p.guardian_id,
         guardianName: p.guardians?.full_name ?? 'Unknown',
         replyCount: (p.discussion_replies ?? []).length,
         categoryLabel: p.discussion_category_options?.label ?? undefined,
@@ -124,26 +127,32 @@ export default function DiscussionsScreen() {
     setSubmitting(false);
   }
 
-  const filteredPosts = posts.filter(p => {
-    if (filterTitle && !p.title.toLowerCase().includes(filterTitle.toLowerCase())) return false;
-    if (filterGuardian && !p.guardianName.toLowerCase().includes(filterGuardian.toLowerCase())) return false;
-    if (filterCategory && p.categoryLabel !== filterCategory.label) return false;
+  const applyFilters = (list: Post[]) => {
+    if (filterTitle.trim()) list = list.filter(p => p.title.toLowerCase().includes(filterTitle.trim().toLowerCase()));
+    if (filterGuardian.trim()) list = list.filter(p => p.guardianName.toLowerCase().includes(filterGuardian.trim().toLowerCase()));
+    if (filterCategory) list = list.filter(p => p.categoryLabel === filterCategory.label);
     if (filterDateFrom) {
       const from = new Date(filterDateFrom); from.setHours(0, 0, 0, 0);
-      if (new Date(p.createdAt) < from) return false;
+      list = list.filter(p => new Date(p.createdAt) >= from);
     }
     if (filterDateTo) {
       const to = new Date(filterDateTo); to.setHours(23, 59, 59, 999);
-      if (new Date(p.createdAt) > to) return false;
+      list = list.filter(p => new Date(p.createdAt) <= to);
     }
-    return true;
-  });
+    return list;
+  };
+
+  const allFiltered  = applyFilters([...posts]);
+  const mineFiltered = applyFilters(posts.filter(p => p.guardianId === guardian?.id));
 
   const fmtDate = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   const moreFiltersActive = !!(filterGuardian || filterDateFrom || filterDateTo);
 
-  const resetKey = `${filterTitle}|${filterCategory?.id ?? ''}|${filterGuardian}|${filterDateFrom?.toISOString() ?? ''}|${filterDateTo?.toISOString() ?? ''}`;
-  const { visible: displayedPosts, showLoadMore, loadMore, showCapMessage } = useVisibleCount(filteredPosts, resetKey);
+  const filterResetKey = `${filterTitle}|${filterCategory?.id ?? ''}|${filterGuardian}|${filterDateFrom?.toISOString() ?? ''}|${filterDateTo?.toISOString() ?? ''}`;
+  const { visible: visibleAll,  showLoadMore: showLoadMoreAll,  loadMore: loadMoreAll,  showCapMessage: showCapAll,  pageSize: pageSizeAll  } = useVisibleCount(allFiltered,  filterResetKey);
+  const { visible: visibleMine, showLoadMore: showLoadMoreMine, loadMore: loadMoreMine, showCapMessage: showCapMine, pageSize: pageSizeMine } = useVisibleCount(mineFiltered, filterResetKey);
+
+  const displayedPosts = tab === 'mine' ? visibleMine : visibleAll;
 
   if (loading) {
     return <View style={s.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
@@ -210,7 +219,7 @@ export default function DiscussionsScreen() {
         <AppText style={s.moreFiltersChevron}>{showMoreFilters ? '▴' : '▾'}</AppText>
       </TouchableOpacity>
 
-      {/* Expanded: Guardian + Date range */}
+      {/* Expanded: Guardian + Date range in one row */}
       {showMoreFilters && (
         <View style={s.filterPanel}>
           <TextInput
@@ -223,48 +232,67 @@ export default function DiscussionsScreen() {
 
           <View style={s.filterDivider} />
 
-          <TouchableOpacity
-            style={s.filterRow}
-            onPress={() => { setTempDateFrom(filterDateFrom ?? new Date()); setShowDateFromPicker(true); }}
-            activeOpacity={0.7}
-          >
-            <AppText style={s.filterLabel}>From</AppText>
-            <AppText style={[s.filterValue, filterDateFrom && s.filterValueActive]}>
-              {filterDateFrom ? fmtDate(filterDateFrom) : 'Any date'}
-            </AppText>
-            {filterDateFrom
-              ? <TouchableOpacity onPress={() => setFilterDateFrom(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <AppText style={s.filterClear}>✕</AppText>
-                </TouchableOpacity>
-              : <AppText style={s.filterArrow}>›</AppText>
-            }
-          </TouchableOpacity>
-
-          <View style={s.filterDivider} />
-
-          <TouchableOpacity
-            style={s.filterRow}
-            onPress={() => { setTempDateTo(filterDateTo ?? new Date()); setShowDateToPicker(true); }}
-            activeOpacity={0.7}
-          >
-            <AppText style={s.filterLabel}>To</AppText>
-            <AppText style={[s.filterValue, filterDateTo && s.filterValueActive]}>
-              {filterDateTo ? fmtDate(filterDateTo) : 'Any date'}
-            </AppText>
-            {filterDateTo
-              ? <TouchableOpacity onPress={() => setFilterDateTo(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <AppText style={s.filterClear}>✕</AppText>
-                </TouchableOpacity>
-              : <AppText style={s.filterArrow}>›</AppText>
-            }
-          </TouchableOpacity>
+          <View style={s.filterRow}>
+            <AppText style={s.filterLabel}>Dates</AppText>
+            <TouchableOpacity
+              style={s.dateRangeBtn}
+              onPress={() => { setTempDateFrom(filterDateFrom ?? new Date()); setShowDateFromPicker(true); }}
+              activeOpacity={0.7}
+            >
+              <AppText style={[s.dateRangeText, filterDateFrom && s.filterValueActive]}>
+                {filterDateFrom ? fmtDate(filterDateFrom) : 'From'}
+              </AppText>
+              {filterDateFrom
+                ? <TouchableOpacity onPress={() => setFilterDateFrom(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <AppText style={s.filterClear}>✕</AppText>
+                  </TouchableOpacity>
+                : <AppText style={s.filterArrow}>›</AppText>
+              }
+            </TouchableOpacity>
+            <AppText style={s.dateRangeSep}>–</AppText>
+            <TouchableOpacity
+              style={s.dateRangeBtn}
+              onPress={() => { setTempDateTo(filterDateTo ?? new Date()); setShowDateToPicker(true); }}
+              activeOpacity={0.7}
+            >
+              <AppText style={[s.dateRangeText, filterDateTo && s.filterValueActive]}>
+                {filterDateTo ? fmtDate(filterDateTo) : 'To'}
+              </AppText>
+              {filterDateTo
+                ? <TouchableOpacity onPress={() => setFilterDateTo(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <AppText style={s.filterClear}>✕</AppText>
+                  </TouchableOpacity>
+                : <AppText style={s.filterArrow}>›</AppText>
+              }
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </View>
   );
 
+  const showMore = tab === 'mine' ? showLoadMoreMine : showLoadMoreAll;
+  const doPaginate = tab === 'mine' ? loadMoreMine : loadMoreAll;
+  const ps = tab === 'mine' ? pageSizeMine : pageSizeAll;
+  const showCap = tab === 'mine' ? showCapMine : showCapAll;
+
   return (
     <View style={s.container}>
+      {/* Tabs */}
+      <View style={s.tabs}>
+        {(['all', 'mine'] as const).map(t => (
+          <TouchableOpacity
+            key={t}
+            style={[s.tab, tab === t && s.tabActive]}
+            onPress={() => setTab(t)}
+          >
+            <AppText style={[s.tabText, tab === t && s.tabTextActive]}>
+              {t === 'all' ? 'All Discussions' : 'My Discussions'}
+            </AppText>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <FlatList
         data={displayedPosts}
         keyExtractor={p => p.id}
@@ -296,11 +324,11 @@ export default function DiscussionsScreen() {
           </TouchableOpacity>
         )}
         ListFooterComponent={
-          showLoadMore ? (
-            <TouchableOpacity style={s.loadMoreBtn} onPress={loadMore} activeOpacity={0.7}>
-              <AppText style={s.loadMoreText}>Load 10 more</AppText>
+          showMore ? (
+            <TouchableOpacity style={s.loadMoreBtn} onPress={doPaginate} activeOpacity={0.7}>
+              <AppText style={s.loadMoreText}>Load {ps} more</AppText>
             </TouchableOpacity>
-          ) : showCapMessage ? (
+          ) : showCap ? (
             <View style={s.capMessage}>
               <AppText style={s.capMessageText}>Use filters to search records</AppText>
             </View>
@@ -309,8 +337,16 @@ export default function DiscussionsScreen() {
         ListEmptyComponent={
           <View style={s.empty}>
             <AppText style={s.emptyEmoji}>💬</AppText>
-            <AppText style={s.emptyText}>{posts.length === 0 ? 'No discussions yet' : 'No results'}</AppText>
-            <AppText style={s.emptyHint}>{posts.length === 0 ? 'Start the first conversation' : 'Try adjusting your filters'}</AppText>
+            <AppText style={s.emptyText}>
+              {tab === 'mine'
+                ? (posts.filter(p => p.guardianId === guardian?.id).length === 0 ? "You haven't started any discussions" : 'No results')
+                : (posts.length === 0 ? 'No discussions yet' : 'No results')}
+            </AppText>
+            <AppText style={s.emptyHint}>
+              {tab === 'mine' && posts.filter(p => p.guardianId === guardian?.id).length === 0
+                ? 'Start the first conversation'
+                : 'Try adjusting your filters'}
+            </AppText>
           </View>
         }
       />
@@ -454,6 +490,15 @@ const s = StyleSheet.create({
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list:      { padding: 16, paddingBottom: 100, gap: 10 },
 
+  tabs: {
+    flexDirection: 'row', margin: 14, marginBottom: 4,
+    backgroundColor: COLORS.bloomBorder, borderRadius: 14, padding: 3,
+  },
+  tab:          { flex: 1, paddingVertical: 9, borderRadius: 11, alignItems: 'center' },
+  tabActive:    { backgroundColor: COLORS.bloomCard },
+  tabText:      { fontSize: 14, fontWeight: '600', color: COLORS.bloomMuted },
+  tabTextActive:{ color: COLORS.bloomNavy, fontWeight: '800' },
+
   card: {
     backgroundColor: COLORS.bloomCard, borderRadius: 18, padding: 16, gap: 6,
     borderWidth: 1, borderColor: COLORS.bloomBorder,
@@ -477,7 +522,7 @@ const s = StyleSheet.create({
 
   empty:      { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyEmoji: { fontSize: 56 },
-  emptyText:  { fontSize: 20, fontWeight: '800', color: COLORS.bloomText },
+  emptyText:  { fontSize: 20, fontWeight: '800', color: COLORS.bloomText, textAlign: 'center' },
   emptyHint:  { fontSize: 14, color: COLORS.bloomMuted },
 
   modalOverlay:  { flex: 1, justifyContent: 'flex-end' },
@@ -514,6 +559,9 @@ const s = StyleSheet.create({
   filterCatOption:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 13 },
   filterDividerItem:{ borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder },
   filterCatOptionSelected: { backgroundColor: COLORS.bloomAccent + '10' },
+  dateRangeBtn:  { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  dateRangeText: { flex: 1, fontSize: 13, color: COLORS.bloomMuted },
+  dateRangeSep:  { fontSize: 13, color: COLORS.bloomMuted, marginHorizontal: 4 },
 
   moreFiltersBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',

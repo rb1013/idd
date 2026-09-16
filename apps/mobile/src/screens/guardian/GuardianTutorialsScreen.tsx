@@ -174,10 +174,10 @@ export default function GuardianTutorialsScreen() {
   });
 
   const resetKeySearch = `${searchQuery}|${filterSkills.join(',')}|${filterLevels.join(',')}`;
-  const { visible: visibleSearch, showLoadMore: showLoadMoreSearch, loadMore: loadMoreSearch, showCapMessage: showCapSearch } = useVisibleCount(filteredSearch, resetKeySearch);
+  const { visible: visibleSearch, showLoadMore: showLoadMoreSearch, loadMore: loadMoreSearch, showCapMessage: showCapSearch, pageSize: pageSizeSearch } = useVisibleCount(filteredSearch, resetKeySearch);
 
   const resetKeyMy = `${myFilters.join(',')}|${myTypes.join(',')}|${myVisibility}`;
-  const { visible: visibleMy, showLoadMore: showLoadMoreMy, loadMore: loadMoreMy, showCapMessage: showCapMy } = useVisibleCount(filteredMy, resetKeyMy);
+  const { visible: visibleMy, showLoadMore: showLoadMoreMy, loadMore: loadMoreMy, showCapMessage: showCapMy, pageSize: pageSizeMy } = useVisibleCount(filteredMy, resetKeyMy);
 
   return (
     <View style={styles.container}>
@@ -254,7 +254,7 @@ export default function GuardianTutorialsScreen() {
               ListFooterComponent={
                 showLoadMoreSearch ? (
                   <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreSearch} activeOpacity={0.7}>
-                    <AppText style={styles.loadMoreText}>Load 10 more</AppText>
+                    <AppText style={styles.loadMoreText}>Load {pageSizeSearch} more</AppText>
                   </TouchableOpacity>
                 ) : showCapSearch ? (
                   <View style={styles.capMessage}>
@@ -516,7 +516,7 @@ export default function GuardianTutorialsScreen() {
               ListFooterComponent={
                 showLoadMoreMy ? (
                   <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreMy} activeOpacity={0.7}>
-                    <AppText style={styles.loadMoreText}>Load 10 more</AppText>
+                    <AppText style={styles.loadMoreText}>Load {pageSizeMy} more</AppText>
                   </TouchableOpacity>
                 ) : showCapMy ? (
                   <View style={styles.capMessage}>

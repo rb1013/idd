@@ -92,7 +92,7 @@ export default function CreateEventScreen() {
         guardian_id: guardian.id,
         rsvp: 'going',
       });
-      navigation.replace('EventDetail', { eventId: data.id });
+      navigation.replace('Events', { tab: 'mine' });
     }
     setSubmitting(false);
   }

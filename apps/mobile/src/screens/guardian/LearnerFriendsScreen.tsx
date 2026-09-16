@@ -11,6 +11,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS, COMPREHENSION_LEVELS, calcAge } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
+import { useVisibleCount } from '../../hooks/useVisibleCount';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 type Tab = 'friends' | 'requests' | 'find' | 'blocked';
@@ -642,6 +643,9 @@ export default function LearnerFriendsScreen() {
   const draftPreview = useMemo(() => applyDraftFilters(learners), [learners, draftAgeGroups, draftLevels, draftLikes, draftDislikes, draftAbilities, draftMedical]);
   const levelLabels  = COMPREHENSION_LEVELS.map((c: any) => c.label as string);
 
+  const findResetKey = `${searchName}|${searchCity}|${filterAgeGroups.join(',')}|${filterLevels.join(',')}|${filterLikes.join(',')}|${filterDislikes.join(',')}|${filterAbilities.join(',')}|${filterMedical.join(',')}`;
+  const { visible: visibleFind, showLoadMore: showLoadMoreFind, loadMore: loadMoreFind, showCapMessage: showCapFind, pageSize: pageSizeFind } = useVisibleCount(filtered, findResetKey);
+
   const incomingRequests = requests.filter(r => r.direction === 'incoming');
   const outgoingRequests = requests.filter(r => r.direction === 'outgoing');
   const pendingCount     = incomingRequests.length;
@@ -869,7 +873,7 @@ export default function LearnerFriendsScreen() {
           </View>
 
           <FlatList
-            data={filtered}
+            data={visibleFind}
             keyExtractor={l => l.id}
             contentContainerStyle={s.listContent}
             renderItem={({ item: l, index }) => {
@@ -913,6 +917,17 @@ export default function LearnerFriendsScreen() {
                 </TouchableOpacity>
               );
             }}
+            ListFooterComponent={
+              showLoadMoreFind ? (
+                <TouchableOpacity style={s.loadMoreBtn} onPress={loadMoreFind} activeOpacity={0.75}>
+                  <AppText style={s.loadMoreText}>Load {pageSizeFind} more</AppText>
+                </TouchableOpacity>
+              ) : showCapFind ? (
+                <View style={s.capMessage}>
+                  <AppText style={s.capMessageText}>Use filters to search records</AppText>
+                </View>
+              ) : null
+            }
             ListEmptyComponent={
               <View style={s.center}>
                 <AppText style={s.emptyEmoji}>🔍</AppText>
@@ -1182,4 +1197,13 @@ const s = StyleSheet.create({
   // Blocked tab
   unblockBtn: { backgroundColor: '#FEF2F2', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: '#FECACA' },
   unblockBtnTxt: { fontSize: 12, fontWeight: '700', color: '#DC2626' },
+
+  loadMoreBtn: {
+    marginHorizontal: 16, marginBottom: 16, paddingVertical: 14,
+    borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+    alignItems: 'center', backgroundColor: COLORS.bloomCard,
+  },
+  loadMoreText:   { fontSize: 13, fontWeight: '700', color: COLORS.bloomNavy },
+  capMessage:     { alignItems: 'center', paddingVertical: 16 },
+  capMessageText: { fontSize: 13, color: COLORS.bloomMuted, fontStyle: 'italic' },
 });

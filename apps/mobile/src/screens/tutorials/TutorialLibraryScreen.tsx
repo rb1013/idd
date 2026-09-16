@@ -217,7 +217,7 @@ export default function TutorialLibraryScreen() {
   });
 
   const resetKey = `${activeTab}|${search}|${filterSkills.join(',')}|${filterLevels.join(',')}`;
-  const { visible: visibleTutorials, showLoadMore, loadMore, showCapMessage } = useVisibleCount(filtered, resetKey);
+  const { visible: visibleTutorials, showLoadMore, loadMore, showCapMessage, pageSize } = useVisibleCount(filtered, resetKey);
 
   return (
     <View style={styles.container}>
@@ -300,7 +300,7 @@ export default function TutorialLibraryScreen() {
           ListFooterComponent={
             showLoadMore ? (
               <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore} activeOpacity={0.7}>
-                <AppText style={styles.loadMoreText}>Load 10 more</AppText>
+                <AppText style={styles.loadMoreText}>Load {pageSize} more</AppText>
               </TouchableOpacity>
             ) : showCapMessage ? (
               <View style={styles.capMessage}>

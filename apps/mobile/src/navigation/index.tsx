@@ -93,7 +93,7 @@ export type GuardianNavParamList = {
   GuardianConnections: undefined;
   Discussions: undefined;
   DiscussionDetail: { postId: string };
-  Events: undefined;
+  Events: { tab?: 'mine' | 'upcoming' } | undefined;
   EventDetail: { eventId: string };
   CreateEvent: undefined;
   EditEvent: { eventId: string };
