@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import AppText from '../../components/AppText';
 import { supabase } from '../../lib/supabase';
+import { emailError } from '../../lib/validators';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, INPUT, BTN_SIZE, BTN_VARIANT, BUTTERFLY_BORDER,
 } from '../../constants/theme';
@@ -18,7 +19,8 @@ export default function ForgotPasswordScreen() {
 
   async function handleSend() {
     const normalised = email.trim().toLowerCase();
-    if (!normalised) { Alert.alert('Please enter your email address'); return; }
+    const errMsg = emailError(normalised);
+    if (errMsg) { Alert.alert('Invalid email', errMsg); return; }
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(normalised, {
       redirectTo: 'nicoidd://auth/callback',
@@ -41,7 +43,7 @@ export default function ForgotPasswordScreen() {
         <View style={s.content}>
           <AppText style={s.title}>Forgot Password?</AppText>
           <AppText style={s.subtitle}>
-            Enter your email and we'll send you a reset link.
+            Enter your email and we'll send you a reset code
           </AppText>
 
           <LinearGradient

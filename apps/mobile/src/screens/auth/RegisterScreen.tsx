@@ -13,6 +13,7 @@ import { supabase } from '../../lib/supabase';
 import { COLORS } from '../../constants';
 import { US_STATES } from '../../constants/usStates';
 import { validatePhone, buildE164 } from '../../constants/countryCodes';
+import { emailError, passwordError, passwordMatchError } from '../../lib/validators';
 
 export default function RegisterScreen() {
   const navigation = useNavigation<any>();
@@ -59,8 +60,12 @@ export default function RegisterScreen() {
 
   async function handleRegister() {
     if (!fullName || !email || !password) { Alert.alert('Please fill in all required fields'); return; }
-    if (password !== confirm)             { Alert.alert('Passwords do not match'); return; }
-    if (password.length < 6)             { Alert.alert('Password must be at least 6 characters'); return; }
+    const emailErr = emailError(email);
+    if (emailErr) { Alert.alert('Invalid email', emailErr); return; }
+    const pwdErr = passwordError(password);
+    if (pwdErr) { Alert.alert('Invalid password', pwdErr); return; }
+    const matchErr = passwordMatchError(password, confirm);
+    if (matchErr) { Alert.alert('Password mismatch', matchErr); return; }
     if (pin.length !== 6)                { Alert.alert('Please create a 6-digit PIN'); return; }
     if (pin !== confirmPin)              { Alert.alert('PINs do not match'); return; }
 
