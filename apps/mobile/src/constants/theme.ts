@@ -210,8 +210,8 @@ export const TEXT_STYLE = {
   // ── Interactive ───────────────────────────────────────────────────────
   buttonPrimary: { fontSize: FONT_SIZE.xl,   fontWeight: FONT_WEIGHT.extraBold, color: NICO.textOnAccent },
   buttonSmall:   { fontSize: FONT_SIZE.lg,   fontWeight: FONT_WEIGHT.extraBold, color: NICO.textOnAccent },
-  link:          { fontSize: FONT_SIZE.lg,   fontWeight: FONT_WEIGHT.bold,      color: NICO.primary },
-  linkSmall:     { fontSize: FONT_SIZE.sm,   fontWeight: FONT_WEIGHT.bold,      color: NICO.primary },
+  link:          { fontSize: FONT_SIZE.lg,   fontWeight: FONT_WEIGHT.bold,      color: NICO.primary, textDecorationLine: 'underline' as const },
+  linkSmall:     { fontSize: FONT_SIZE.sm,   fontWeight: FONT_WEIGHT.bold,      color: NICO.primary, textDecorationLine: 'underline' as const },
 
   // ── Form ──────────────────────────────────────────────────────────────
   fieldLabel:   { fontSize: FONT_SIZE.lg,  fontWeight: FONT_WEIGHT.bold,    color: NICO.text },

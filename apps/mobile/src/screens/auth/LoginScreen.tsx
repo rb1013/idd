@@ -187,5 +187,5 @@ const s = StyleSheet.create({
     gap:             SPACING.sm,
   },
   registerHint: { ...TEXT_STYLE.hint, textAlign: 'center' },
-  registerLink: { ...TEXT_STYLE.link, fontWeight: '900' },
+  registerLink: { ...TEXT_STYLE.link },
 });

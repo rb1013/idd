@@ -336,7 +336,7 @@ export default function Navigation() {
             <Stack.Screen name="OTPVerification" component={OTPVerificationScreen}
               options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Verify your email', headerBackVisible: false }} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen}
-              options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Reset password' }} />
+              options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Reset password', headerBackVisible: false }} />
             <Stack.Screen name="ResetOTP" component={ResetOTPScreen}
               options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Enter reset code', headerBackVisible: false }} />
           </>
