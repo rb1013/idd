@@ -1,27 +1,37 @@
 import React from 'react';
-import { Image, View, StyleSheet } from 'react-native';
-import { COLORS } from '../constants';
+import { Image, StyleSheet, View } from 'react-native';
 import AppText from './AppText';
+import { NICO, FONT_SIZE, FONT_WEIGHT, SPACING } from '../constants/theme';
 
-export const ELIS_APP_NAME = 'NICO';
-export const ELIS_TAGLINE = 'Empathy · Learning · Inclusive · Support';
-export const ELIS_LOGO = require('../../assets/elis-5-transparent.png');
+export const ELIS_TAGLINE = 'Network for Inclusion, Connectivity & Opportunity';
+export const ELIS_LOGO    = require('../../assets/nico-trans-2.png');
 
 export default function AppLogo() {
   return (
     <>
-      <Image source={ELIS_LOGO} style={s.elisLogo} resizeMode="contain" />
-      <AppText style={s.appName}>{ELIS_APP_NAME}</AppText>
-      <View style={s.taglinePill}>
-        <AppText style={s.tagline}>{ELIS_TAGLINE}</AppText>
+      <View style={s.logoWrapper}>
+        <Image source={ELIS_LOGO} style={s.logo} resizeMode="contain" />
       </View>
+      <AppText style={s.tagline}>{ELIS_TAGLINE}</AppText>
     </>
   );
 }
 
 const s = StyleSheet.create({
-  elisLogo:    { width: 108, height: 108, transform: [{ translateX: 0 }, { translateY: 18 }] },
-  appName:     { fontSize: 32, fontWeight: '900', color: COLORS.bloomOnAccent, letterSpacing: 3, marginTop: 4, paddingLeft: 2 },
-  taglinePill: { marginTop: 10, backgroundColor: 'rgba(45,49,46,0.13)', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6 },
-  tagline:     { fontSize: 13, fontWeight: '700', color: COLORS.bloomOnAccent, letterSpacing: 1.5 },
+  logoWrapper: {
+    backgroundColor: 'transparent',
+    alignItems:      'center',
+  },
+  logo: {
+    width:  162,
+    height: 147,
+  },
+  tagline: {
+    fontSize:   FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.bold,
+    color:      NICO.textMuted,
+    textAlign:  'center',
+    marginTop:  SPACING.xs,
+    paddingHorizontal: SPACING.lg,
+  },
 });

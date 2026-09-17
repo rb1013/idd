@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
 import AppLogo from '../../components/AppLogo';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { saveGuardianCredentials } from '../../lib/biometricStore';
-import { COLORS } from '../../constants';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, INPUT, BTN_SIZE, BTN_VARIANT, BUTTERFLY_BORDER,
+} from '../../constants/theme';
 import { RootStackParamList } from '../../navigation';
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'Login'> };
@@ -34,53 +37,78 @@ export default function LoginScreen({ navigation }: Props) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Branded header */}
-        <View style={s.header}>
-          <AppLogo />
-        </View>
+        {/* Logo + tagline with butterfly gradient border */}
+        <LinearGradient
+          colors={[...BUTTERFLY_BORDER.colors]}
+          start={BUTTERFLY_BORDER.start}
+          end={BUTTERFLY_BORDER.end}
+          style={s.logoBorder}
+        >
+          <View style={s.logoSection}>
+            <AppLogo />
+          </View>
+        </LinearGradient>
 
         {/* Form */}
         <View style={s.form}>
-          <Text style={s.title}>Welcome back</Text>
-          <Text style={s.subtitle}>Sign in to your NICO account</Text>
+          <AppText style={s.title}>Welcome</AppText>
+          <AppText style={s.subtitle}>Sign in to your NICO account</AppText>
 
-          <TextInput
-            style={s.input}
-            placeholder="Email address"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholderTextColor={COLORS.bloomMuted}
-          />
-          <TextInput
-            style={s.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            placeholderTextColor={COLORS.bloomMuted}
-          />
+          <LinearGradient
+            colors={[...BUTTERFLY_BORDER.colors]}
+            start={BUTTERFLY_BORDER.start}
+            end={BUTTERFLY_BORDER.end}
+            style={s.emailBorder}
+          >
+            <TextInput
+              style={s.emailInput}
+              placeholder="Email address"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholderTextColor={NICO.textMuted}
+            />
+          </LinearGradient>
+          <LinearGradient
+            colors={[...BUTTERFLY_BORDER.colors]}
+            start={BUTTERFLY_BORDER.start}
+            end={BUTTERFLY_BORDER.end}
+            style={s.emailBorder}
+          >
+            <TextInput
+              style={s.emailInput}
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              placeholderTextColor={NICO.textMuted}
+            />
+          </LinearGradient>
 
           <TouchableOpacity
-            style={[s.btn, loading && { opacity: 0.7 }]}
+            style={[s.btn, loading && s.btnLoading]}
             onPress={handleLogin}
             disabled={loading}
             activeOpacity={0.85}
           >
             {loading
-              ? <ActivityIndicator color={COLORS.bloomOnAccent} />
-              : <Text style={s.btnText}>Sign In</Text>
+              ? <ActivityIndicator color={NICO.textOnAccent} />
+              : <AppText style={s.btnText}>Sign In</AppText>
             }
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} activeOpacity={0.7} style={s.forgotBtn}>
-            <Text style={s.forgotText}>Forgot password?</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ForgotPassword')}
+            activeOpacity={0.7}
+            style={s.forgotBtn}
+          >
+            <AppText style={s.forgotText}>Forgot Password?</AppText>
           </TouchableOpacity>
 
           <View style={s.dividerRow}>
             <View style={s.dividerLine} />
-            <Text style={s.dividerText}>NEW TO NICO?</Text>
+            <AppText style={s.dividerText}>NEW TO NICO?</AppText>
             <View style={s.dividerLine} />
           </View>
 
@@ -89,8 +117,8 @@ export default function LoginScreen({ navigation }: Props) {
             onPress={() => navigation.navigate('GuardianRegister')}
             activeOpacity={0.85}
           >
-            <Text style={s.registerHint}>Create your free account to get started</Text>
-            <Text style={s.registerBtn}>Create Account →</Text>
+            <AppText style={s.registerHint}>Create your account to get started</AppText>
+            <AppText style={s.registerLink}>Create Account</AppText>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -99,45 +127,65 @@ export default function LoginScreen({ navigation }: Props) {
 }
 
 const s = StyleSheet.create({
-  root:      { flex: 1, backgroundColor: COLORS.bloomBody },
+  root:      { flex: 1, backgroundColor: NICO.surface },
   container: { flexGrow: 1 },
 
-  header: {
-    backgroundColor: COLORS.bloomAccent,
-    paddingTop: 54, paddingBottom: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 260,
-    borderBottomLeftRadius: 36, borderBottomRightRadius: 36,
+  logoBorder: {
+    paddingBottom:           BUTTERFLY_BORDER.width,
+    paddingHorizontal:       BUTTERFLY_BORDER.width,
+    borderBottomLeftRadius:  RADIUS['2xl'] + BUTTERFLY_BORDER.width,
+    borderBottomRightRadius: RADIUS['2xl'] + BUTTERFLY_BORDER.width,
+  },
+  logoSection: {
+    alignItems:              'center',
+    paddingTop:              SPACING['3xl'] + SPACING.base,
+    paddingBottom:           SPACING['3xl'],
+    backgroundColor:         NICO.background,
+    borderBottomLeftRadius:  RADIUS['2xl'],
+    borderBottomRightRadius: RADIUS['2xl'],
   },
 
-  form:     { padding: 24, paddingTop: 32 },
-  title:    { fontSize: 22, fontWeight: '900', color: COLORS.bloomText, marginBottom: 4 },
-  subtitle: { fontSize: 13, color: COLORS.bloomMuted, marginBottom: 28 },
-
-  input: {
-    backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    borderRadius: 14, paddingHorizontal: 16, paddingVertical: 15,
-    fontSize: 15, color: COLORS.bloomText, marginBottom: 12,
+  form: {
+    paddingHorizontal: SPACING.base,
+    paddingTop:        SPACING['2xl'],
+    paddingBottom:     SPACING['2xl'],
   },
 
-  btn: {
-    backgroundColor: COLORS.bloomAccent, borderRadius: 14,
-    paddingVertical: 16, alignItems: 'center', marginTop: 4,
-    alignSelf: 'center', width: '70%',
-  },
-  btnText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '800' },
+  title:    { ...TEXT_STYLE.screenTitle, marginBottom: SPACING.xs, textAlign: 'center' },
+  subtitle: { ...TEXT_STYLE.hint, marginBottom: SPACING.xl, textAlign: 'center' },
 
-  forgotBtn:  { alignSelf: 'center', marginTop: 12, marginBottom: 20 },
-  forgotText: { fontSize: 14, color: COLORS.bloomText, fontWeight: '700', textDecorationLine: 'underline' },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
-  dividerLine:{ flex: 1, height: 1, backgroundColor: COLORS.bloomBorder },
-  dividerText:{ fontSize: 11, fontWeight: '700', color: COLORS.bloomMuted, letterSpacing: 0.5 },
+  input:      { ...INPUT.base, marginBottom: SPACING.md },
+
+  emailBorder: {
+    borderRadius:      RADIUS.md + BUTTERFLY_BORDER.width,
+    padding:           BUTTERFLY_BORDER.width,
+    marginBottom:      SPACING.md,
+  },
+  emailInput: {
+    ...INPUT.base,
+    borderWidth: 0,
+  },
+
+  btn:        { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.xs },
+  btnLoading: { opacity: 0.7 },
+  btnText:    { ...TEXT_STYLE.buttonPrimary },
+
+  forgotBtn:  { alignSelf: 'center', marginTop: SPACING.md, marginBottom: SPACING.lg },
+  forgotText: { ...TEXT_STYLE.link },
+
+  dividerRow:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.lg },
+  dividerLine: { flex: 1, height: 1, backgroundColor: NICO.border },
+  dividerText: { ...TEXT_STYLE.caption },
 
   registerBox: {
-    backgroundColor: COLORS.bloomActiveBg, borderWidth: 1.5, borderColor: COLORS.bloomSageMid,
-    borderRadius: 16, padding: 18, alignItems: 'center', gap: 10,
+    backgroundColor: NICO.background,
+    borderWidth:     1,
+    borderColor:     NICO.border,
+    borderRadius:    RADIUS.xl,
+    padding:         SPACING.base,
+    alignItems:      'center',
+    gap:             SPACING.sm,
   },
-  registerHint: { fontSize: 13, color: COLORS.bloomMuted, textAlign: 'center' },
-  registerBtn:  { fontSize: 14, fontWeight: '900', color: COLORS.bloomActiveText },
+  registerHint: { ...TEXT_STYLE.hint, textAlign: 'center' },
+  registerLink: { ...TEXT_STYLE.link, fontWeight: '900' },
 });

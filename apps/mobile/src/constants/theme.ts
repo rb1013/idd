@@ -57,7 +57,7 @@ export const NICO = {
   // ── Primary interactive ─────────────────────────────────────────────────
   // Used for: buttons, nav active state, links, active tab underline, FAB.
   // Currently: slate grey. Change here to retheme all interactive elements.
-  primary:      '#5B6B7C',   // ← adjust this to change the primary color
+  primary:      '#5B656F',   // ← adjust this to change the primary color
   primaryLight: '#ECEEF1',   // tinted background — chips, active rows, badges
   primaryDark:  '#3E4E5C',   // pressed / focus state
 
@@ -82,7 +82,7 @@ export const NICO = {
   purpleLight: '#EDE6F7',
 
   // ── Backgrounds & surfaces ──────────────────────────────────────────────
-  background:  '#F4F3F1',   // page background — warm off-white
+  background:  '#E8E7E5',   // page background — warm off-white
   surface:     '#FFFFFF',   // card, sheet, input surface
   surfaceAlt:  '#FDFBF7',   // slightly warmer surface (learner screens)
 
@@ -92,7 +92,7 @@ export const NICO = {
 
   // ── Typography ──────────────────────────────────────────────────────────
   text:        '#1C2B39',   // primary text — deep navy-charcoal
-  textMuted:   '#7E8D9C',   // secondary text, placeholders, captions
+  textMuted:   '#4D5760',   // secondary text, placeholders, captions
   textOnAccent:'#FFFFFF',   // text on primary/teal/orange/purple backgrounds
 
   // ── Semantic ────────────────────────────────────────────────────────────
@@ -106,6 +106,8 @@ export const NICO = {
   // ── Learner identity ────────────────────────────────────────────────────
   // The learner header/hero keeps its terracotta — it gives learner screens
   // a warm, distinctive feel separate from the guardian grey.
+  heroPill:           'rgba(255,255,255,0.20)',  // frosted pill bg on coloured hero headers
+
   learnerHeader:      '#CF8660',
   learnerHeaderLight: '#FDEADB',
   learnerHeaderBtn:   'rgba(255,255,255,0.82)',
@@ -129,6 +131,21 @@ export const BUTTERFLY_TILES = [
 
 // Cycle shorthand: index % 6
 export const LEARNER_TILE_CYCLE = BUTTERFLY_TILES;
+
+/**
+ * Gradient border using all 6 butterfly hues, left → right.
+ * Usage: wrap target View in a LinearGradient with paddingBottom/sides = width,
+ * then place the content View (with matching borderRadius) inside.
+ * Import BUTTERFLY_BORDER from theme and spread colors into LinearGradient.
+ */
+export const BUTTERFLY_BORDER = {
+  colors: [
+    NICO.teal, NICO.green, NICO.orange, NICO.coral, NICO.pink, NICO.purple,
+  ] as const,
+  width: 3,
+  start: { x: 0, y: 0 } as const,
+  end:   { x: 1, y: 0 } as const,
+};
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -311,10 +328,10 @@ export const BTN_SIZE = {
   },
   /** Large — primary CTA (Sign In, Save Changes, Create Event) */
   lg: {
-    paddingVertical:   SPACING.base,    // 16 (20 tablet)
-    paddingHorizontal: scale(52),       // generous horizontal — button sizes to content, not container
+    paddingVertical:   SPACING.sm,      // 8 (10 tablet)
+    paddingHorizontal: scale(36),       // content-width pill
     borderRadius:      RADIUS['2xl'],   // 22 — matches FAB/New Discussion style
-    minHeight:         scale(52),
+    minHeight:         scale(38),
     alignSelf:         'center' as const,
   },
 };
