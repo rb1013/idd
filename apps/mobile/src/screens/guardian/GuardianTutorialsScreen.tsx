@@ -18,7 +18,7 @@ import useNicoHeader from '../../hooks/useNicoHeader';
 import RainbowDivider from '../../components/RainbowDivider';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
-  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, CARD_BTN_ALIGN,
+  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, CARD_BTN_ALIGN, scale, IS_TABLET,
 } from '../../constants/theme';
 
 type TutorialWithGuardian = Tutorial & { guardian?: { full_name: string } | null };
@@ -48,16 +48,29 @@ const STATUS_RIBBON_LABELS: Record<TutorialStatus, string> = {
 };
 
 const GRID_CARD = {
-  // Diagonal ribbon (top-left of thumbnail)
-  ribbonTop:     16,
-  ribbonLeft:    -38,
-  ribbonWidth:   120,
-  ribbonPadding: 5,
+  // Diagonal ribbon (top-left of thumbnail) — scaled so text fits on tablet
+  ribbonTop:     scale(16),
+  ribbonLeft:    scale(-38),
+  ribbonWidth:   scale(120),
+  ribbonPadding: scale(5),
   // Delete button (top-right of thumbnail)
-  deleteBg:    NICO.errorLight,
-  deleteColor: NICO.error,
-  deleteIcon:  '✕',
-} as const;
+  deleteBg:     'white',
+  deleteBorder: NICO.error,
+  deleteColor:  NICO.error,
+  deleteIcon:   '✕',
+  deleteSize:   scale(28),
+  // Card title truncation
+  titleMaxChars:   60,   // enforced at creation; full name stored in DB
+  titlePhoneChars: 17,   // phone cards are narrow — truncate to keep 1 line
+};
+
+/** Returns the card title: full text on tablet, truncated on phone. */
+function cardTitle(name: string): string {
+  if (IS_TABLET) return name;
+  return name.length > GRID_CARD.titlePhoneChars
+    ? name.slice(0, GRID_CARD.titlePhoneChars) + '…'
+    : name;
+}
 
 const FORMAT_EMOJI: Record<string, string> = { video: '🎬', slideshow: '🖼' };
 
@@ -350,7 +363,7 @@ export default function GuardianTutorialsScreen() {
                       }
                     </View>
                     <View style={styles.gridCardBody}>
-                      <AppText style={styles.gridCardTitle} numberOfLines={2}>{t.display_name || t.category}</AppText>
+                      <AppText style={styles.gridCardTitle} numberOfLines={IS_TABLET ? 2 : 1}>{cardTitle(t.display_name || t.category)}</AppText>
                       <AppText style={styles.gridCardSub}>{t.category}</AppText>
                       {(t as TutorialWithGuardian).guardian?.full_name && (
                         <AppText style={styles.gridCardCreator} numberOfLines={1}>by {(t as TutorialWithGuardian).guardian!.full_name}</AppText>
@@ -560,7 +573,7 @@ export default function GuardianTutorialsScreen() {
                     )}
                   </View>
                   <View style={styles.gridCardBody}>
-                    <AppText style={styles.gridCardTitle} numberOfLines={2}>{t.display_name || t.category}</AppText>
+                    <AppText style={styles.gridCardTitle} numberOfLines={IS_TABLET ? 2 : 1}>{cardTitle(t.display_name || t.category)}</AppText>
                     <AppText style={styles.gridCardSub}>{t.category}</AppText>
                     {t.status === 'generating' && <AppText style={styles.generatingHint}>May take 1–2 mins</AppText>}
                     {t.status === 'approved' && learnerUserId && (
@@ -719,7 +732,7 @@ export default function GuardianTutorialsScreen() {
                     )}
                   </View>
                   <View style={styles.gridCardBody}>
-                    <AppText style={styles.gridCardTitle} numberOfLines={2}>{t.display_name || t.category}</AppText>
+                    <AppText style={styles.gridCardTitle} numberOfLines={IS_TABLET ? 2 : 1}>{cardTitle(t.display_name || t.category)}</AppText>
                     <AppText style={styles.gridCardSub}>{t.category}</AppText>
                     {t.status === 'generating' && <AppText style={styles.generatingHint}>May take 1–2 mins</AppText>}
                   </View>
@@ -850,8 +863,10 @@ const styles = StyleSheet.create({
   gridCardCreator:      { ...TEXT_STYLE.labelSmall, fontStyle: 'italic' },
   gridDeleteBtn: {
     position: 'absolute', top: SPACING.xs, right: SPACING.xs,
-    backgroundColor: GRID_CARD.deleteBg, borderRadius: RADIUS.full,
-    width: 28, height: 28, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: GRID_CARD.deleteBg,
+    borderWidth: 1.5, borderColor: GRID_CARD.deleteBorder,
+    borderRadius: RADIUS.full,
+    width: GRID_CARD.deleteSize, height: GRID_CARD.deleteSize, justifyContent: 'center', alignItems: 'center',
     ...SHADOW.sm,
   },
   gridDeleteIcon: { fontSize: FONT_SIZE.md, color: GRID_CARD.deleteColor, fontWeight: FONT_WEIGHT.bold },

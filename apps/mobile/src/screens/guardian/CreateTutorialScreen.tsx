@@ -148,10 +148,10 @@ export default function CreateTutorialScreen() {
           <TextInput
             style={styles.input}
             value={displayName}
-            onChangeText={t => setDisplayName(t.slice(0, 40))}
+            onChangeText={t => setDisplayName(t.slice(0, 60))}
             placeholder="Give it a name your user will recognise…"
             placeholderTextColor={COLORS.bloomMuted}
-            maxLength={40}
+            maxLength={60}
             returnKeyType="done"
           />
           <AppText style={styles.charCount}>{displayName.length}/40</AppText>
