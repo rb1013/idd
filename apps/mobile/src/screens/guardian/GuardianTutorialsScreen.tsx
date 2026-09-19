@@ -276,7 +276,7 @@ export default function GuardianTutorialsScreen() {
 
       {/* ── Search Tutorials tab ─────────────────────────────────────────── */}
       {activeTab === 'search' && (
-        <View style={{ flex: 1 }}>
+        <View style={styles.tabPane}>
           <View style={styles.searchRow}>
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={styles.searchGradient}>
               <TextInput
@@ -416,7 +416,7 @@ export default function GuardianTutorialsScreen() {
 
       {/* ── My Tutorials tab ─────────────────────────────────────────────── */}
       {activeTab === 'my' && (
-        <View style={{ flex: 1 }}>
+        <View style={styles.tabPane}>
           <View style={styles.searchRow}>
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={styles.searchGradient}>
               <TextInput
@@ -605,7 +605,7 @@ export default function GuardianTutorialsScreen() {
 
       {/* ── Pending tab ──────────────────────────────────────────────────── */}
       {activeTab === 'pending' && (
-        <View style={{ flex: 1 }}>
+        <View style={styles.tabPane}>
           <View style={styles.searchRow}>
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={styles.searchGradient}>
               <TextInput
@@ -752,22 +752,29 @@ export default function GuardianTutorialsScreen() {
 
       {/* ── Create Tutorial tab ───────────────────────────────────────────── */}
       {activeTab === 'create' && (
-        <View style={styles.createPane}>
+        <View style={styles.tabPane}>
           {quota && (
-            <View style={styles.quotaBar}>
-              <View style={styles.quotaHeader}>
-                <AppText style={styles.quotaLabel}>Monthly quota</AppText>
-                <AppText style={[styles.quotaCount, quota.used >= quota.limit && { color: NICO.error }]}>
-                  {quota.used} / {quota.limit} used
-                </AppText>
+            <LinearGradient
+              colors={[...BUTTERFLY_BORDER.colors]}
+              start={BUTTERFLY_BORDER.start}
+              end={BUTTERFLY_BORDER.end}
+              style={styles.quotaGradient}
+            >
+              <View style={styles.quotaBar}>
+                <View style={styles.quotaHeader}>
+                  <AppText style={styles.quotaLabel}>Monthly quota</AppText>
+                  <AppText style={[styles.quotaCount, quota.used >= quota.limit && { color: NICO.error }]}>
+                    {quota.used} / {quota.limit} used
+                  </AppText>
+                </View>
+                <View style={styles.quotaTrack}>
+                  <View style={[styles.quotaFill, {
+                    width: `${Math.min((quota.used / quota.limit) * 100, 100)}%` as any,
+                    backgroundColor: quota.used >= quota.limit ? NICO.error : NICO.primary,
+                  }]} />
+                </View>
               </View>
-              <View style={styles.quotaTrack}>
-                <View style={[styles.quotaFill, {
-                  width: `${Math.min((quota.used / quota.limit) * 100, 100)}%` as any,
-                  backgroundColor: quota.used >= quota.limit ? NICO.error : NICO.primary,
-                }]} />
-              </View>
-            </View>
+            </LinearGradient>
           )}
 
           <TouchableOpacity
@@ -842,7 +849,7 @@ const styles = StyleSheet.create({
   gridList: { padding: SPACING.md, paddingBottom: SPACING['2xl'] },
   gridRow:  { gap: SPACING.md, marginBottom: SPACING.md },
   gridCard: {
-    flex: 1, backgroundColor: NICO.surface, borderRadius: RADIUS.xl,
+    flex: 1, backgroundColor: 'white', borderRadius: RADIUS.xl,
     borderWidth: 1, borderColor: NICO.border, overflow: 'hidden',
     ...SHADOW.md,
   },
@@ -876,12 +883,15 @@ const styles = StyleSheet.create({
   gridAddBtnTextLinked: { ...TEXT_STYLE.buttonSmall, color: NICO.success },
 
   // Quota bar (Create tab)
-  quotaBar: {
-    marginHorizontal: SPACING.base, marginTop: SPACING.base,
-    backgroundColor: NICO.surface, borderRadius: RADIUS.lg,
-    borderWidth: 1, borderColor: NICO.border,
-    padding: SPACING.base, gap: SPACING.sm,
+  quotaGradient: {
+    marginHorizontal: SPACING.base, marginTop: SPACING.base, marginBottom: SPACING.xs,
+    borderRadius: RADIUS.lg + BUTTERFLY_BORDER.width,
+    padding: BUTTERFLY_BORDER.width,
     ...SHADOW.sm,
+  },
+  quotaBar: {
+    backgroundColor: NICO.surface, borderRadius: RADIUS.lg,
+    padding: SPACING.base, gap: SPACING.sm,
   },
   quotaHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   quotaLabel:  { ...TEXT_STYLE.bodyMedium },
@@ -930,10 +940,10 @@ const styles = StyleSheet.create({
   emptyHint:  { ...TEXT_STYLE.hint },
 
   // Create tab
-  createPane: { flex: 1 },
+  tabPane: { flex: 1, backgroundColor: NICO.background },
   createCard: {
     marginHorizontal: SPACING.base, marginTop: SPACING.md,
-    backgroundColor: NICO.surface, borderRadius: RADIUS.xl,
+    backgroundColor: 'white', borderRadius: RADIUS.xl,
     borderWidth: 1, borderColor: NICO.border,
     paddingVertical: SPACING.base, paddingHorizontal: SPACING.base,
     flexDirection: 'row', alignItems: 'center', gap: SPACING.md,
