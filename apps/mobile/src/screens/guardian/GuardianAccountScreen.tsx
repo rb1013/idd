@@ -1,26 +1,38 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import {
   View, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator,
   Image, Alert,
 } from 'react-native';
 import AppText from '../../components/AppText';
+import ContentContainer from '../../components/ContentContainer';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { GuardianNavParamList } from '../../navigation';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, BTN_SIZE, BTN_VARIANT, FONT_SIZE, FONT_WEIGHT,
+} from '../../constants/theme';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
 export default function GuardianAccountScreen() {
-  const { guardian, signOut, refreshGuardian } = useAuth();
+  const { guardian, refreshGuardian } = useAuth();
   const navigation = useNavigation<Nav>();
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoUri, setPhotoUri]   = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerStyle:       { backgroundColor: NICO.background },
+      headerTitleStyle:  { color: NICO.text },
+      headerTintColor:   NICO.text,
+      headerShadowVisible: false,
+    });
+  }, [navigation]);
 
   async function pickPhoto() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -79,10 +91,7 @@ export default function GuardianAccountScreen() {
 
   async function confirmDeleteAccount() {
     const { error } = await supabase.functions.invoke('delete-guardian');
-    if (error) {
-      Alert.alert('Failed to delete account', error.message);
-      return;
-    }
+    if (error) { Alert.alert('Failed to delete account', error.message); return; }
     await supabase.auth.signOut();
   }
 
@@ -90,134 +99,130 @@ export default function GuardianAccountScreen() {
   const tags = guardian?.situation_tags ?? [];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.inner}>
-      {/* Profile photo */}
-      <TouchableOpacity style={styles.avatarWrap} onPress={pickPhoto} activeOpacity={0.8} disabled={uploading}>
-        {photoSource
-          ? <Image source={{ uri: photoSource }} style={styles.avatar} />
-          : (
-            <View style={[styles.avatar, styles.avatarPlaceholder]}>
-              <AppText style={styles.avatarInitial}>{guardian?.full_name[0]?.toUpperCase()}</AppText>
+    <ScrollView style={s.root} contentContainerStyle={s.inner} showsVerticalScrollIndicator={false}>
+      <ContentContainer>
+
+        {/* Avatar */}
+        <TouchableOpacity style={s.avatarWrap} onPress={pickPhoto} activeOpacity={0.8} disabled={uploading}>
+          {photoSource ? (
+            <Image source={{ uri: photoSource }} style={s.avatar} />
+          ) : (
+            <View style={[s.avatar, s.avatarFallback]}>
+              <AppText style={s.avatarInitial}>{guardian?.full_name[0]?.toUpperCase()}</AppText>
             </View>
-          )
-        }
-        <View style={styles.avatarEditBadge}>
-          {uploading
-            ? <ActivityIndicator size={14} color="#fff" />
-            : <AppText style={styles.avatarEditIcon}>✏️</AppText>
-          }
-        </View>
-      </TouchableOpacity>
-      <AppText style={styles.avatarHint}>Tap to change photo</AppText>
-
-      {/* Info card */}
-      <View style={styles.card}>
-        <InfoRow label="Name"    value={guardian?.full_name ?? '—'} />
-        <View style={styles.divider} />
-        <InfoRow label="Email"   value={guardian?.email ?? '—'} />
-        <View style={styles.divider} />
-        <InfoRow label="Phone"   value={guardian?.phone || '—'} />
-        <View style={styles.divider} />
-        <InfoRow label="Country" value="USA" />
-        <View style={styles.divider} />
-        <InfoRow label="State"   value={guardian?.state || '—'} />
-        <View style={styles.divider} />
-        <InfoRow label="City"    value={guardian?.city || '—'} />
-      </View>
-
-      {/* Situation Tags */}
-      <View style={[styles.card, { marginTop: 12 }]}>
-        <View style={styles.infoRow}>
-          <AppText style={styles.infoLabel}>Situation Tags</AppText>
-        </View>
-        {tags.length === 0 ? (
-          <View style={styles.tagsEmpty}>
-            <AppText style={styles.infoValue}>None selected</AppText>
+          )}
+          <View style={s.avatarBadge}>
+            {uploading
+              ? <ActivityIndicator size={14} color={NICO.textOnAccent} />
+              : <AppText style={s.avatarBadgeIcon}>✏️</AppText>
+            }
           </View>
-        ) : (
-          <View style={styles.tagChipRow}>
-            {tags.map(tag => (
-              <View key={tag} style={styles.tagChip}>
-                <AppText style={styles.tagChipText}>{tag}</AppText>
-              </View>
-            ))}
+        </TouchableOpacity>
+        <AppText style={s.avatarHint}>Tap to change photo</AppText>
+
+        {/* Info card */}
+        <View style={s.card}>
+          <InfoRow label="Name"    value={guardian?.full_name ?? '—'} />
+          <View style={s.divider} />
+          <InfoRow label="Email"   value={guardian?.email ?? '—'} />
+          <View style={s.divider} />
+          <InfoRow label="Phone"   value={guardian?.phone || '—'} />
+          <View style={s.divider} />
+          <InfoRow label="Country" value="USA" />
+          <View style={s.divider} />
+          <InfoRow label="State"   value={guardian?.state || '—'} />
+          <View style={s.divider} />
+          <InfoRow label="City"    value={guardian?.city || '—'} />
+        </View>
+
+        {/* Situation Tags */}
+        <View style={[s.card, { marginTop: SPACING.md }]}>
+          <View style={s.infoRow}>
+            <AppText style={s.infoLabel}>Situation Tags</AppText>
           </View>
-        )}
-      </View>
+          {tags.length === 0 ? (
+            <View style={s.tagsEmpty}>
+              <AppText style={s.infoValue}>None selected</AppText>
+            </View>
+          ) : (
+            <View style={s.tagRow}>
+              {tags.map(tag => (
+                <View key={tag} style={s.tag}>
+                  <AppText style={s.tagText}>{tag}</AppText>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
 
-      {/* Edit button */}
-      <TouchableOpacity
-        style={styles.editBtn}
-        onPress={() => navigation.navigate('EditAccount')}
-        activeOpacity={0.85}
-      >
-        <AppText style={styles.editBtnText}>Edit Profile</AppText>
-      </TouchableOpacity>
+        {/* Edit Profile */}
+        <TouchableOpacity
+          style={s.editBtn}
+          onPress={() => navigation.navigate('EditAccount')}
+          activeOpacity={0.85}
+        >
+          <AppText style={s.editBtnText}>Edit Profile</AppText>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.signOutBtn} onPress={signOut}>
-        <AppText style={styles.signOutText}>Sign Out</AppText>
-      </TouchableOpacity>
+        {/* Delete Account */}
+        <TouchableOpacity style={s.deleteBtn} onPress={handleDeleteAccount} activeOpacity={0.7}>
+          <AppText style={s.deleteBtnText}>Delete Account</AppText>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.deleteBtn} onPress={handleDeleteAccount} activeOpacity={0.7}>
-        <AppText style={styles.deleteBtnText}>Delete Account</AppText>
-      </TouchableOpacity>
+      </ContentContainer>
     </ScrollView>
   );
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <View style={styles.infoRow}>
-      <AppText style={styles.infoLabel}>{label}</AppText>
-      <AppText style={styles.infoValue}>{value}</AppText>
+    <View style={s.infoRow}>
+      <AppText style={s.infoLabel}>{label}</AppText>
+      <AppText style={s.infoValue} numberOfLines={1}>{value}</AppText>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  inner: { padding: 20, paddingBottom: 48, alignItems: 'stretch' },
+const s = StyleSheet.create({
+  root:  { flex: 1, backgroundColor: NICO.screenBg },
+  inner: { padding: SPACING.base, paddingBottom: SPACING['3xl'], alignItems: 'stretch' },
 
-  deleteBtn: { marginTop: 8, padding: 16, alignItems: 'center' },
-  deleteBtnText: { color: '#DC2626', fontSize: 15, fontWeight: '600' },
-
-  avatarWrap: { alignSelf: 'center', position: 'relative', marginTop: 8, marginBottom: 8 },
-  avatar: { width: 96, height: 96, borderRadius: 48 },
-  avatarPlaceholder: { backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center' },
-  avatarInitial: { fontSize: 38, fontWeight: '800', color: COLORS.primary },
-  avatarEditBadge: {
-    position: 'absolute', bottom: 0, right: 0,
-    width: 30, height: 30, borderRadius: 15,
-    backgroundColor: COLORS.primary,
+  avatarWrap: { alignSelf: 'center', position: 'relative', marginTop: SPACING.md, marginBottom: SPACING.xs },
+  avatar:     { width: 96, height: 96, borderRadius: 48 },
+  avatarFallback: {
+    backgroundColor: NICO.primaryLight,
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: COLORS.background,
   },
-  avatarEditIcon: { fontSize: 14 },
-  avatarHint: { textAlign: 'center', fontSize: 12, color: COLORS.textLight, marginBottom: 24 },
-
-  card: { backgroundColor: COLORS.surface, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border },
-  divider: { height: 1, backgroundColor: COLORS.border },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 },
-  infoLabel: { fontSize: 15, color: COLORS.text, fontWeight: '600' },
-  infoValue: { fontSize: 15, color: COLORS.text, fontWeight: '400', flexShrink: 1, textAlign: 'right', marginLeft: 12 },
-
-  tagsEmpty: { paddingHorizontal: 16, paddingBottom: 16 },
-  tagChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingBottom: 16 },
-  tagChip: {
-    backgroundColor: COLORS.primary + '12', borderWidth: 1, borderColor: COLORS.primary + '60',
-    borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5,
+  avatarInitial: { fontSize: FONT_SIZE['3xl'], fontWeight: FONT_WEIGHT.black, color: NICO.primary },
+  avatarBadge: {
+    position: 'absolute', bottom: 0, right: 0,
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: NICO.primary,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: NICO.screenBg,
   },
-  tagChipText: { fontSize: 13, color: COLORS.primary, fontWeight: '600' },
+  avatarBadgeIcon: { fontSize: 13 },
+  avatarHint: { ...TEXT_STYLE.hint, textAlign: 'center', marginBottom: SPACING.xl },
 
-  editBtn: {
-    marginTop: 24,
-    backgroundColor: COLORS.primary,
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
+  card:    { backgroundColor: NICO.surface, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: NICO.border, ...SHADOW.sm },
+  divider: { height: 1, backgroundColor: NICO.border },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.base },
+  infoLabel: { ...TEXT_STYLE.bodyMedium },
+  infoValue: { ...TEXT_STYLE.body, color: NICO.textMuted, flexShrink: 1, textAlign: 'right', marginLeft: SPACING.md },
+
+  tagsEmpty: { paddingHorizontal: SPACING.base, paddingBottom: SPACING.base },
+  tagRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, paddingHorizontal: SPACING.base, paddingBottom: SPACING.base },
+  tag: {
+    backgroundColor: NICO.primaryLight,
+    borderWidth: 1, borderColor: NICO.borderStrong,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs,
   },
-  editBtnText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '800' },
+  tagText: { ...TEXT_STYLE.caption, color: NICO.primary },
 
-  signOutBtn: { marginTop: 16, padding: 16, alignItems: 'center' },
-  signOutText: { color: COLORS.textLight, fontSize: 15 },
+  editBtn:     { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.xl },
+  editBtnText: { ...TEXT_STYLE.buttonPrimary },
+
+  deleteBtn:     { marginTop: SPACING.md, padding: SPACING.base, alignItems: 'center' },
+  deleteBtnText: { ...TEXT_STYLE.labelSmall, color: NICO.error },
 });

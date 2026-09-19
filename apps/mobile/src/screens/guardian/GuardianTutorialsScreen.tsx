@@ -1,26 +1,34 @@
 import React, { useCallback, useState } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
-  Image, ActivityIndicator, Alert, TextInput, Modal, ScrollView,
+  View, FlatList, TouchableOpacity, StyleSheet,
+  Image, ActivityIndicator, Alert, TextInput, ScrollView,
 } from 'react-native';
 import AppText from '../../components/AppText';
+import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS, TUTORIAL_COMPREHENSION } from '../../constants';
+import { TUTORIAL_COMPREHENSION } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import type { Tutorial, TutorialStatus, TutorialSource } from '../../types';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
+import useNicoHeader from '../../hooks/useNicoHeader';
+import RainbowDivider from '../../components/RainbowDivider';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, CARD_BTN_ALIGN,
+} from '../../constants/theme';
 
 type TutorialWithGuardian = Tutorial & { guardian?: { full_name: string } | null };
 
 const STATUS_COLORS: Record<TutorialStatus, { bg: string; text: string }> = {
-  generating: { bg: '#E8ECEF', text: '#5D6D7E' },
-  preview:    { bg: '#FEF3CD', text: '#B7791F' },
-  pending:    { bg: '#DBEAFE', text: '#1D4ED8' },
-  approved:   { bg: COLORS.statusGreenLight, text: COLORS.statusGreenDark },
-  rejected:   { bg: COLORS.statusRedLight, text: '#991B1B' },
+  generating: { bg: NICO.background,   text: NICO.textMuted  },
+  preview:    { bg: NICO.warningLight,  text: NICO.warning    },
+  pending:    { bg: NICO.primaryLight,  text: NICO.primary    },
+  approved:   { bg: NICO.successLight,  text: NICO.success    },
+  rejected:   { bg: NICO.errorLight,    text: NICO.error      },
 };
 
 const STATUS_LABELS: Record<TutorialStatus, string> = {
@@ -31,9 +39,29 @@ const STATUS_LABELS: Record<TutorialStatus, string> = {
   rejected:   'Rejected',
 };
 
+const STATUS_RIBBON_LABELS: Record<TutorialStatus, string> = {
+  generating: 'Generating',
+  preview:    'Preview',
+  pending:    'Pending',
+  approved:   'Approved',
+  rejected:   'Rejected',
+};
+
+const GRID_CARD = {
+  // Diagonal ribbon (top-left of thumbnail)
+  ribbonTop:     16,
+  ribbonLeft:    -38,
+  ribbonWidth:   120,
+  ribbonPadding: 5,
+  // Delete button (top-right of thumbnail)
+  deleteBg:    NICO.errorLight,
+  deleteColor: NICO.error,
+  deleteIcon:  '✕',
+} as const;
+
 const FORMAT_EMOJI: Record<string, string> = { video: '🎬', slideshow: '🖼' };
 
-type Tab = 'search' | 'my' | 'create';
+type Tab = 'search' | 'my' | 'pending' | 'create';
 
 const MY_TYPE_OPTIONS: { key: TutorialSource; label: string }[] = [
   { key: 'ai_generated', label: '✨ AI Generated' },
@@ -41,12 +69,18 @@ const MY_TYPE_OPTIONS: { key: TutorialSource; label: string }[] = [
 ];
 
 const MY_FILTER_OPTIONS: { key: TutorialStatus; label: string }[] = [
-  { key: 'generating', label: 'Generating Tutorial' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'rejected', label: 'Rejected' },
+];
+
+const PENDING_STATUS_OPTIONS: { key: TutorialStatus; label: string }[] = [
+  { key: 'generating', label: 'Generating…' },
   { key: 'preview',    label: 'Preview' },
   { key: 'pending',    label: 'Pending Approval' },
-  { key: 'approved',   label: 'Approved' },
-  { key: 'rejected',   label: 'Rejected' },
 ];
+
+const MY_STATUSES: TutorialStatus[]      = ['approved', 'rejected'];
+const PENDING_STATUSES: TutorialStatus[] = ['generating', 'preview', 'pending'];
 
 export default function GuardianTutorialsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<GuardianNavParamList>>();
@@ -55,28 +89,38 @@ export default function GuardianTutorialsScreen() {
 
   const [activeTab, setActiveTab] = useState<Tab>(route.params?.initialTab ?? 'search');
 
+  useNicoHeader(navigation);
+
   // ── My Tutorials tab ──────────────────────────────────────────────────────
   const [myTutorials, setMyTutorials]   = useState<Tutorial[]>([]);
   const [loadingMy, setLoadingMy]       = useState(true);
   const [myFilters, setMyFilters]       = useState<TutorialStatus[]>([]);
   const [myTypes, setMyTypes]           = useState<TutorialSource[]>([]);
   const [myVisibility, setMyVisibility] = useState<'all' | 'public' | 'private'>('all');
-  const [showMyFilterPicker, setShowMyFilterPicker] = useState(false);
-  const [showMyTypePicker, setShowMyTypePicker]     = useState(false);
+  const [mySearchQuery, setMySearchQuery]         = useState('');
+  const [myFilterSkills, setMyFilterSkills]       = useState<string[]>([]);
+  const [myFilterLevels, setMyFilterLevels]       = useState<string[]>([]);
+  const [showMyMoreFilters, setShowMyMoreFilters] = useState(false);
   const [quota, setQuota]               = useState<{ used: number; limit: number } | null>(null);
 
+  // ── Pending tab ───────────────────────────────────────────────────────────
+  const [pendingSearch, setPendingSearch]             = useState('');
+  const [pendingStatusFilter, setPendingStatusFilter] = useState<TutorialStatus[]>([]);
+  const [pendingFilterSkills, setPendingFilterSkills] = useState<string[]>([]);
+  const [pendingFilterLevels, setPendingFilterLevels] = useState<string[]>([]);
+  const [showPendingMoreFilters, setShowPendingMoreFilters] = useState(false);
+
   // ── Search Tutorials tab ──────────────────────────────────────────────────
-  const [approved, setApproved]         = useState<TutorialWithGuardian[]>([]);
+  const [approved, setApproved]           = useState<TutorialWithGuardian[]>([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
-  const [searchQuery, setSearchQuery]   = useState('');
-  const [linkedIds, setLinkedIds]       = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery]     = useState('');
+  const [linkedIds, setLinkedIds]         = useState<Set<string>>(new Set());
   const [learnerUserId, setLearnerUserId] = useState<string | null>(null);
-  const [togglingId, setTogglingId]     = useState<string | null>(null);
-  const [skillOptions, setSkillOptions] = useState<string[]>([]);
-  const [filterSkills, setFilterSkills] = useState<string[]>([]);
-  const [filterLevels, setFilterLevels] = useState<string[]>([]);
-  const [showSkillPicker, setShowSkillPicker] = useState(false);
-  const [showLevelPicker, setShowLevelPicker] = useState(false);
+  const [togglingId, setTogglingId]       = useState<string | null>(null);
+  const [skillOptions, setSkillOptions]   = useState<string[]>([]);
+  const [filterSkills, setFilterSkills]   = useState<string[]>([]);
+  const [filterLevels, setFilterLevels]   = useState<string[]>([]);
+  const [showSearchMoreFilters, setShowSearchMoreFilters] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -159,10 +203,24 @@ export default function GuardianTutorialsScreen() {
   }
 
   const filteredMy = myTutorials.filter(t => {
+    if (!MY_STATUSES.includes(t.status as TutorialStatus)) return false;
     const matchStatus = myFilters.length === 0 || myFilters.includes(t.status as TutorialStatus);
     const matchType   = myTypes.length === 0   || myTypes.includes(t.source as TutorialSource);
     const matchVis    = myVisibility === 'all' || (myVisibility === 'public' ? t.is_public : !t.is_public);
-    return matchStatus && matchType && matchVis;
+    const q = mySearchQuery.toLowerCase();
+    const matchSearch = !q || (t.display_name ?? '').toLowerCase().includes(q) || (t.category ?? '').toLowerCase().includes(q);
+    const matchSkill  = myFilterSkills.length === 0 || myFilterSkills.includes(t.category);
+    const matchLevel  = myFilterLevels.length === 0 || myFilterLevels.includes(t.comprehension_level);
+    return matchStatus && matchType && matchVis && matchSearch && matchSkill && matchLevel;
+  });
+  const filteredPending = myTutorials.filter(t => {
+    if (!PENDING_STATUSES.includes(t.status as TutorialStatus)) return false;
+    const matchStatus = pendingStatusFilter.length === 0 || pendingStatusFilter.includes(t.status as TutorialStatus);
+    const q = pendingSearch.toLowerCase();
+    const matchName  = !q || (t.display_name ?? '').toLowerCase().includes(q) || (t.category ?? '').toLowerCase().includes(q);
+    const matchSkill = pendingFilterSkills.length === 0 || pendingFilterSkills.includes(t.category);
+    const matchLevel = pendingFilterLevels.length === 0 || pendingFilterLevels.includes(t.comprehension_level);
+    return matchStatus && matchName && matchSkill && matchLevel;
   });
   const filteredSearch = approved.filter(t => {
     if (linkedIds.has(t.id)) return false;
@@ -176,15 +234,19 @@ export default function GuardianTutorialsScreen() {
   const resetKeySearch = `${searchQuery}|${filterSkills.join(',')}|${filterLevels.join(',')}`;
   const { visible: visibleSearch, showLoadMore: showLoadMoreSearch, loadMore: loadMoreSearch, showCapMessage: showCapSearch, pageSize: pageSizeSearch } = useVisibleCount(filteredSearch, resetKeySearch);
 
-  const resetKeyMy = `${myFilters.join(',')}|${myTypes.join(',')}|${myVisibility}`;
+  const resetKeyMy = `${mySearchQuery}|${myFilters.join(',')}|${myTypes.join(',')}|${myVisibility}|${myFilterSkills.join(',')}|${myFilterLevels.join(',')}`;
   const { visible: visibleMy, showLoadMore: showLoadMoreMy, loadMore: loadMoreMy, showCapMessage: showCapMy, pageSize: pageSizeMy } = useVisibleCount(filteredMy, resetKeyMy);
+
+  const resetKeyPending = `${pendingSearch}|${pendingStatusFilter.join(',')}|${pendingFilterSkills.join(',')}|${pendingFilterLevels.join(',')}`;
+  const { visible: visiblePending, showLoadMore: showLoadMorePending, loadMore: loadMorePending, pageSize: pageSizePending } = useVisibleCount(filteredPending, resetKeyPending);
 
   return (
     <View style={styles.container}>
+      <RainbowDivider />
       {/* Tab bar */}
       <View style={styles.tabBar}>
-        {(['search', 'my', 'create'] as Tab[]).map(tab => {
-          const labels: Record<Tab, string> = { search: 'Search', my: 'My Tutorials', create: 'Create' };
+        {(['search', 'my', 'pending', 'create'] as Tab[]).map(tab => {
+          const labels: Record<Tab, string> = { search: 'Search', my: 'My Tutorials', pending: 'Pending', create: 'Create' };
           const active = activeTab === tab;
           return (
             <TouchableOpacity
@@ -203,47 +265,55 @@ export default function GuardianTutorialsScreen() {
       {activeTab === 'search' && (
         <View style={{ flex: 1 }}>
           <View style={styles.searchRow}>
-            <TextInput
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search tutorials…"
-              placeholderTextColor={COLORS.bloomMuted}
-              clearButtonMode="while-editing"
-            />
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={styles.searchGradient}>
+              <TextInput
+                style={styles.searchInput}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Search by name…"
+                placeholderTextColor={NICO.textMuted}
+                clearButtonMode="while-editing"
+              />
+            </LinearGradient>
           </View>
 
-          {/* Skill & Level filters */}
-          <View style={styles.filterPanel}>
-            <TouchableOpacity style={styles.filterRow} onPress={() => setShowSkillPicker(true)} activeOpacity={0.75}>
-              <AppText style={styles.filterLabel}>Skill</AppText>
-              <AppText style={[styles.filterValue, filterSkills.length === 0 && styles.filterPlaceholder]} numberOfLines={1}>
-                {filterSkills.length === 0 ? 'All Skills' : filterSkills.length === 1 ? filterSkills[0] : `${filterSkills.length} selected`}
-              </AppText>
-              {filterSkills.length > 0
-                ? <TouchableOpacity onPress={() => setFilterSkills([])} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <AppText style={styles.filterClear}>✕</AppText>
-                  </TouchableOpacity>
-                : <AppText style={styles.filterChevron}>›</AppText>
-              }
-            </TouchableOpacity>
-            <View style={styles.filterDivider} />
-            <TouchableOpacity style={styles.filterRow} onPress={() => setShowLevelPicker(true)} activeOpacity={0.75}>
-              <AppText style={styles.filterLabel}>Level</AppText>
-              <AppText style={[styles.filterValue, filterLevels.length === 0 && styles.filterPlaceholder, { textTransform: 'capitalize' }]} numberOfLines={1}>
-                {filterLevels.length === 0 ? 'All Levels' : filterLevels.length === 1 ? filterLevels[0] : `${filterLevels.length} selected`}
-              </AppText>
-              {filterLevels.length > 0
-                ? <TouchableOpacity onPress={() => setFilterLevels([])} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <AppText style={styles.filterClear}>✕</AppText>
-                  </TouchableOpacity>
-                : <AppText style={styles.filterChevron}>›</AppText>
-              }
-            </TouchableOpacity>
-          </View>
+          {/* Filter bar: More Filters */}
+          {(() => {
+            const hasSearchMore = filterSkills.length + filterLevels.length > 0;
+            return (
+              <>
+                <View style={styles.filterBar}>
+                  <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={styles.moreBtnGradient}>
+                    <TouchableOpacity style={[styles.moreBtn, hasSearchMore && styles.moreBtnActive]} onPress={() => setShowSearchMoreFilters(true)} activeOpacity={0.75}>
+                      <AppText style={[styles.moreBtnText, hasSearchMore && styles.moreBtnTextActive]}>More Filters</AppText>
+                    </TouchableOpacity>
+                  </LinearGradient>
+                </View>
+                {hasSearchMore && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={styles.chipsContent}>
+                    {filterSkills.map(s => (
+                      <TouchableOpacity key={`skill-${s}`} style={styles.chip} onPress={() => setFilterSkills(p => p.filter(x => x !== s))} activeOpacity={0.75}>
+                        <AppText style={styles.chipText}>{s}</AppText>
+                        <AppText style={styles.chipX}>×</AppText>
+                      </TouchableOpacity>
+                    ))}
+                    {filterLevels.map(l => (
+                      <TouchableOpacity key={`level-${l}`} style={styles.chip} onPress={() => setFilterLevels(p => p.filter(x => x !== l))} activeOpacity={0.75}>
+                        <AppText style={styles.chipText}>{l}</AppText>
+                        <AppText style={styles.chipX}>×</AppText>
+                      </TouchableOpacity>
+                    ))}
+                    <TouchableOpacity style={styles.clearAllChip} onPress={() => { setFilterSkills([]); setFilterLevels([]); }} activeOpacity={0.75}>
+                      <AppText style={styles.clearAllChipText}>Clear all</AppText>
+                    </TouchableOpacity>
+                  </ScrollView>
+                )}
+              </>
+            );
+          })()}
 
           {loadingSearch ? (
-            <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>
+            <View style={styles.center}><ActivityIndicator size="large" color={NICO.primary} /></View>
           ) : (
             <FlatList
               data={visibleSearch}
@@ -271,7 +341,7 @@ export default function GuardianTutorialsScreen() {
                     onPress={() => navigation.navigate('TutorialPreview', { tutorialId: t.id })}
                     activeOpacity={0.85}
                   >
-                    <View>
+                    <View style={styles.thumbWrap}>
                       {t.thumbnail_url
                         ? <Image source={{ uri: t.thumbnail_url }} style={styles.gridThumb} />
                         : <View style={[styles.gridThumb, styles.gridThumbPlaceholder]}>
@@ -309,205 +379,148 @@ export default function GuardianTutorialsScreen() {
             />
           )}
 
-          {/* Skill picker */}
-          <Modal visible={showSkillPicker} transparent animationType="slide" onRequestClose={() => setShowSkillPicker(false)}>
-            <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowSkillPicker(false)}>
-              <View style={styles.sheet} onStartShouldSetResponder={() => true}>
-                <View style={styles.sheetHdr}>
-                  <AppText style={styles.sheetTitle}>Target Skill</AppText>
-                  {filterSkills.length > 0 && (
-                    <TouchableOpacity onPress={() => setFilterSkills([])}>
-                      <AppText style={styles.sheetClear}>Clear all</AppText>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                <ScrollView style={{ maxHeight: 340 }}>
-                  {skillOptions.map(s => {
-                    const selected = filterSkills.includes(s);
-                    return (
-                      <TouchableOpacity
-                        key={s}
-                        style={[styles.sheetOption, selected && styles.sheetOptionActive]}
-                        onPress={() => setFilterSkills(prev => selected ? prev.filter(x => x !== s) : [...prev, s])}
-                        activeOpacity={0.7}
-                      >
-                        <AppText style={[styles.sheetOptionText, selected && styles.sheetOptionTextActive]}>{s}</AppText>
-                        <View style={[styles.multiCheck, selected && styles.multiCheckActive]}>
-                          {selected && <AppText style={styles.multiCheckMark}>✓</AppText>}
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-                <TouchableOpacity style={styles.sheetDone} onPress={() => setShowSkillPicker(false)}>
-                  <AppText style={styles.sheetDoneText}>Done</AppText>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          </Modal>
-
-          {/* Level picker */}
-          <Modal visible={showLevelPicker} transparent animationType="slide" onRequestClose={() => setShowLevelPicker(false)}>
-            <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowLevelPicker(false)}>
-              <View style={styles.sheet} onStartShouldSetResponder={() => true}>
-                <View style={styles.sheetHdr}>
-                  <AppText style={styles.sheetTitle}>Comprehension Level</AppText>
-                  {filterLevels.length > 0 && (
-                    <TouchableOpacity onPress={() => setFilterLevels([])}>
-                      <AppText style={styles.sheetClear}>Clear all</AppText>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                {(TUTORIAL_COMPREHENSION as string[]).map(l => {
-                  const selected = filterLevels.includes(l);
-                  return (
-                    <TouchableOpacity
-                      key={l}
-                      style={[styles.sheetOption, selected && styles.sheetOptionActive]}
-                      onPress={() => setFilterLevels(prev => selected ? prev.filter(x => x !== l) : [...prev, l])}
-                      activeOpacity={0.7}
-                    >
-                      <AppText style={[styles.sheetOptionText, selected && styles.sheetOptionTextActive, { textTransform: 'capitalize' }]}>{l}</AppText>
-                      <View style={[styles.multiCheck, selected && styles.multiCheckActive]}>
-                        {selected && <AppText style={styles.multiCheckMark}>✓</AppText>}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-                <TouchableOpacity style={styles.sheetDone} onPress={() => setShowLevelPicker(false)}>
-                  <AppText style={styles.sheetDoneText}>Done</AppText>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          </Modal>
+          <FilterSheet
+            visible={showSearchMoreFilters}
+            sections={[
+              {
+                key: 'skill', title: 'Skill',
+                options: skillOptions.map(s => ({ key: s, label: s })),
+                selected: filterSkills,
+                onToggle: s => setFilterSkills(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]),
+              },
+              {
+                key: 'level', title: 'Comprehension Level',
+                options: (TUTORIAL_COMPREHENSION as string[]).map(l => ({ key: l, label: l, capitalize: true })),
+                selected: filterLevels,
+                onToggle: l => setFilterLevels(prev => prev.includes(l) ? prev.filter(x => x !== l) : [...prev, l]),
+              },
+            ] satisfies FilterSheetSection[]}
+            onClearAll={() => { setFilterSkills([]); setFilterLevels([]); }}
+            onDone={() => setShowSearchMoreFilters(false)}
+          />
         </View>
       )}
 
       {/* ── My Tutorials tab ─────────────────────────────────────────────── */}
       {activeTab === 'my' && (
         <View style={{ flex: 1 }}>
-          {/* Status + Visibility filters */}
-          <View style={styles.filterPanel}>
-            <TouchableOpacity style={styles.filterRow} onPress={() => setShowMyFilterPicker(true)} activeOpacity={0.75}>
-              <AppText style={styles.filterLabel}>Status</AppText>
-              <AppText style={[styles.filterValue, myFilters.length === 0 && styles.filterPlaceholder]} numberOfLines={1}>
-                {myFilters.length === 0 ? 'All Statuses' : myFilters.length === 1 ? MY_FILTER_OPTIONS.find(o => o.key === myFilters[0])?.label : `${myFilters.length} selected`}
-              </AppText>
-              {myFilters.length > 0
-                ? <TouchableOpacity onPress={() => setMyFilters([])} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <AppText style={styles.filterClear}>✕</AppText>
-                  </TouchableOpacity>
-                : <AppText style={styles.filterChevron}>›</AppText>
-              }
-            </TouchableOpacity>
-            <View style={styles.filterDivider} />
-            <TouchableOpacity style={styles.filterRow} onPress={() => setShowMyTypePicker(true)} activeOpacity={0.75}>
-              <AppText style={styles.filterLabel}>Type</AppText>
-              <AppText style={[styles.filterValue, myTypes.length === 0 && styles.filterPlaceholder]} numberOfLines={1}>
-                {myTypes.length === 0 ? 'All Types' : myTypes.length === 1 ? MY_TYPE_OPTIONS.find(o => o.key === myTypes[0])?.label : `${myTypes.length} selected`}
-              </AppText>
-              {myTypes.length > 0
-                ? <TouchableOpacity onPress={() => setMyTypes([])} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <AppText style={styles.filterClear}>✕</AppText>
-                  </TouchableOpacity>
-                : <AppText style={styles.filterChevron}>›</AppText>
-              }
-            </TouchableOpacity>
-            <View style={styles.filterDivider} />
-            <View style={styles.filterRow}>
-              <AppText style={styles.filterLabel}>Show</AppText>
-              <View style={styles.segmented}>
-                {(['all', 'public', 'private'] as const).map(v => (
-                  <TouchableOpacity
-                    key={v}
-                    style={[styles.segment, myVisibility === v && styles.segmentActive]}
-                    onPress={() => setMyVisibility(v)}
-                    activeOpacity={0.7}
-                  >
-                    <AppText style={[styles.segmentText, myVisibility === v && styles.segmentTextActive]}>
-                      {v === 'all' ? 'All' : v === 'public' ? '🌐 Public' : '🔒 Private'}
-                    </AppText>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+          <View style={styles.searchRow}>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={styles.searchGradient}>
+              <TextInput
+                style={styles.searchInput}
+                value={mySearchQuery}
+                onChangeText={setMySearchQuery}
+                placeholder="Search by name…"
+                placeholderTextColor={NICO.textMuted}
+                clearButtonMode="while-editing"
+              />
+            </LinearGradient>
           </View>
 
-          <Modal visible={showMyFilterPicker} transparent animationType="slide" onRequestClose={() => setShowMyFilterPicker(false)}>
-            <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowMyFilterPicker(false)}>
-              <View style={styles.sheet} onStartShouldSetResponder={() => true}>
-                <View style={styles.sheetHdr}>
-                  <AppText style={styles.sheetTitle}>Filter by Status</AppText>
-                  {myFilters.length > 0 && (
-                    <TouchableOpacity onPress={() => setMyFilters([])}>
-                      <AppText style={styles.filterClear}>Clear</AppText>
+          {/* Filter bar: More Filters */}
+          {(() => {
+            const hasMyMore = myFilterSkills.length + myFilterLevels.length + myFilters.length + myTypes.length + (myVisibility !== 'all' ? 1 : 0) > 0;
+            return (
+              <>
+                <View style={styles.filterBar}>
+                  <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={styles.moreBtnGradient}>
+                    <TouchableOpacity style={[styles.moreBtn, hasMyMore && styles.moreBtnActive]} onPress={() => setShowMyMoreFilters(true)} activeOpacity={0.75}>
+                      <AppText style={[styles.moreBtnText, hasMyMore && styles.moreBtnTextActive]}>More Filters</AppText>
                     </TouchableOpacity>
-                  )}
+                  </LinearGradient>
                 </View>
-                <ScrollView style={{ maxHeight: 340 }}>
-                  {MY_FILTER_OPTIONS.map(o => {
-                    const selected = myFilters.includes(o.key);
-                    return (
-                      <TouchableOpacity
-                        key={o.key}
-                        style={[styles.sheetOption, selected && styles.sheetOptionActive]}
-                        onPress={() => setMyFilters(prev => selected ? prev.filter(k => k !== o.key) : [...prev, o.key])}
-                        activeOpacity={0.7}
-                      >
-                        <AppText style={[styles.sheetOptionText, selected && styles.sheetOptionTextActive]}>{o.label}</AppText>
-                        <View style={[styles.multiCheck, selected && styles.multiCheckActive]}>
-                          {selected && <AppText style={styles.multiCheckMark}>✓</AppText>}
-                        </View>
+                {hasMyMore && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={styles.chipsContent}>
+                    {myFilterSkills.map(s => (
+                      <TouchableOpacity key={`skill-${s}`} style={styles.chip} onPress={() => setMyFilterSkills(p => p.filter(x => x !== s))} activeOpacity={0.75}>
+                        <AppText style={styles.chipText}>{s}</AppText>
+                        <AppText style={styles.chipX}>×</AppText>
                       </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-                <TouchableOpacity style={styles.sheetDone} onPress={() => setShowMyFilterPicker(false)}>
-                  <AppText style={styles.sheetDoneText}>Done</AppText>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          </Modal>
+                    ))}
+                    {myFilterLevels.map(l => (
+                      <TouchableOpacity key={`level-${l}`} style={styles.chip} onPress={() => setMyFilterLevels(p => p.filter(x => x !== l))} activeOpacity={0.75}>
+                        <AppText style={styles.chipText}>{l}</AppText>
+                        <AppText style={styles.chipX}>×</AppText>
+                      </TouchableOpacity>
+                    ))}
+                    {myFilters.map(s => (
+                      <TouchableOpacity key={`status-${s}`} style={styles.chip} onPress={() => setMyFilters(p => p.filter(x => x !== s))} activeOpacity={0.75}>
+                        <AppText style={styles.chipText}>{MY_FILTER_OPTIONS.find(o => o.key === s)?.label ?? s}</AppText>
+                        <AppText style={styles.chipX}>×</AppText>
+                      </TouchableOpacity>
+                    ))}
+                    {myTypes.map(t => (
+                      <TouchableOpacity key={`type-${t}`} style={styles.chip} onPress={() => setMyTypes(p => p.filter(x => x !== t))} activeOpacity={0.75}>
+                        <AppText style={styles.chipText}>{MY_TYPE_OPTIONS.find(o => o.key === t)?.label ?? t}</AppText>
+                        <AppText style={styles.chipX}>×</AppText>
+                      </TouchableOpacity>
+                    ))}
+                    {myVisibility !== 'all' && (
+                      <TouchableOpacity style={styles.chip} onPress={() => setMyVisibility('all')} activeOpacity={0.75}>
+                        <AppText style={styles.chipText}>{myVisibility === 'public' ? '🌐 Public' : '🔒 Private'}</AppText>
+                        <AppText style={styles.chipX}>×</AppText>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity style={styles.clearAllChip} onPress={() => { setMyFilterSkills([]); setMyFilterLevels([]); setMyFilters([]); setMyTypes([]); setMyVisibility('all'); }} activeOpacity={0.75}>
+                      <AppText style={styles.clearAllChipText}>Clear all</AppText>
+                    </TouchableOpacity>
+                  </ScrollView>
+                )}
+              </>
+            );
+          })()}
 
-          {/* Type picker */}
-          <Modal visible={showMyTypePicker} transparent animationType="slide" onRequestClose={() => setShowMyTypePicker(false)}>
-            <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowMyTypePicker(false)}>
-              <View style={styles.sheet} onStartShouldSetResponder={() => true}>
-                <View style={styles.sheetHdr}>
-                  <AppText style={styles.sheetTitle}>Filter by Type</AppText>
-                  {myTypes.length > 0 && (
-                    <TouchableOpacity onPress={() => setMyTypes([])}>
-                      <AppText style={styles.filterClear}>Clear</AppText>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                {MY_TYPE_OPTIONS.map(o => {
-                  const selected = myTypes.includes(o.key);
-                  return (
-                    <TouchableOpacity
-                      key={o.key}
-                      style={[styles.sheetOption, selected && styles.sheetOptionActive]}
-                      onPress={() => setMyTypes(prev => selected ? prev.filter(k => k !== o.key) : [...prev, o.key])}
-                      activeOpacity={0.7}
-                    >
-                      <AppText style={[styles.sheetOptionText, selected && styles.sheetOptionTextActive]}>{o.label}</AppText>
-                      <View style={[styles.multiCheck, selected && styles.multiCheckActive]}>
-                        {selected && <AppText style={styles.multiCheckMark}>✓</AppText>}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-                <TouchableOpacity style={styles.sheetDone} onPress={() => setShowMyTypePicker(false)}>
-                  <AppText style={styles.sheetDoneText}>Done</AppText>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          </Modal>
+          <FilterSheet
+            visible={showMyMoreFilters}
+            sections={[
+              {
+                key: 'skill', title: 'Skill',
+                options: skillOptions.map(s => ({ key: s, label: s })),
+                selected: myFilterSkills,
+                onToggle: s => setMyFilterSkills(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]),
+              },
+              {
+                key: 'level', title: 'Comprehension Level',
+                options: (TUTORIAL_COMPREHENSION as string[]).map(l => ({ key: l, label: l, capitalize: true })),
+                selected: myFilterLevels,
+                onToggle: l => setMyFilterLevels(prev => prev.includes(l) ? prev.filter(x => x !== l) : [...prev, l]),
+              },
+              {
+                key: 'status', title: 'Status',
+                options: MY_FILTER_OPTIONS.map(o => ({ key: o.key, label: o.label })),
+                selected: myFilters,
+                onToggle: k => setMyFilters(prev => prev.includes(k as TutorialStatus) ? prev.filter(x => x !== k) : [...prev, k as TutorialStatus]),
+              },
+              {
+                key: 'type', title: 'Type',
+                options: MY_TYPE_OPTIONS.map(o => ({ key: o.key, label: o.label })),
+                selected: myTypes,
+                onToggle: k => setMyTypes(prev => prev.includes(k as TutorialSource) ? prev.filter(x => x !== k) : [...prev, k as TutorialSource]),
+              },
+              {
+                key: 'visibility', title: 'Visibility', type: 'single',
+                options: [
+                  { key: 'all', label: 'All' },
+                  { key: 'public', label: '🌐 Public' },
+                  { key: 'private', label: '🔒 Private' },
+                ],
+                selected: [myVisibility],
+                onToggle: v => setMyVisibility(v as 'all' | 'public' | 'private'),
+              },
+            ] satisfies FilterSheetSection[]}
+            onClearAll={() => { setMyFilterSkills([]); setMyFilterLevels([]); setMyFilters([]); setMyTypes([]); setMyVisibility('all'); }}
+            onDone={() => setShowMyMoreFilters(false)}
+          />
 
           {loadingMy ? (
-            <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>
+            <View style={styles.center}><ActivityIndicator size="large" color={NICO.primary} /></View>
           ) : (
             <FlatList
+              data={visibleMy}
+              keyExtractor={t => t.id}
+              numColumns={2}
+              columnWrapperStyle={styles.gridRow}
+              contentContainerStyle={styles.gridList}
               ListHeaderComponent={
                 filteredMy.length > 0
                   ? <AppText style={styles.listCount}>{filteredMy.length} tutorial{filteredMy.length !== 1 ? 's' : ''}</AppText>
@@ -519,59 +532,50 @@ export default function GuardianTutorialsScreen() {
                     <AppText style={styles.loadMoreText}>Load {pageSizeMy} more</AppText>
                   </TouchableOpacity>
                 ) : showCapMy ? (
-                  <View style={styles.capMessage}>
-                    <AppText style={styles.capMessageText}>Use filters to search records</AppText>
-                  </View>
+                  <View style={styles.capMessage}><AppText style={styles.capMessageText}>Use filters to search records</AppText></View>
                 ) : null
               }
-              data={visibleMy}
-              keyExtractor={t => t.id}
-              contentContainerStyle={styles.list}
               renderItem={({ item: t }) => (
                 <TouchableOpacity
-                  style={styles.card}
+                  style={styles.gridCard}
                   onPress={() => { if (t.status !== 'generating') navigation.navigate('TutorialPreview', { tutorialId: t.id }); }}
                   activeOpacity={t.status === 'generating' ? 1 : 0.85}
                 >
-                  <View style={styles.thumb}>
+                  <View style={styles.thumbWrap}>
                     {t.thumbnail_url
-                      ? <Image source={{ uri: t.thumbnail_url }} style={styles.thumbImage} />
-                      : <AppText style={styles.thumbEmoji}>{FORMAT_EMOJI[t.format] ?? '📚'}</AppText>
+                      ? <Image source={{ uri: t.thumbnail_url }} style={styles.gridThumb} />
+                      : <View style={[styles.gridThumb, styles.gridThumbPlaceholder]}>
+                          <AppText style={styles.gridThumbEmoji}>{FORMAT_EMOJI[t.format] ?? '📚'}</AppText>
+                        </View>
                     }
-                  </View>
-                  <View style={styles.cardInfo}>
-                    <AppText style={styles.cardTitle} numberOfLines={2}>{t.display_name || t.category}</AppText>
-                    <AppText style={styles.cardSub}>{t.category}</AppText>
-                    <View style={styles.cardMeta}>
-                      <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[t.status as TutorialStatus].bg }]}>
-                        <AppText style={[styles.statusText, { color: STATUS_COLORS[t.status as TutorialStatus].text }]}>
-                          {STATUS_LABELS[t.status as TutorialStatus]}
-                        </AppText>
-                      </View>
-                      {t.link_count > 0 && <AppText style={styles.metaText}>🔗 {t.link_count}</AppText>}
-                      {!t.is_public && <AppText style={styles.privateBadge}>🔒</AppText>}
+                    <View style={[styles.statusRibbon, { backgroundColor: STATUS_COLORS[t.status as TutorialStatus].bg }]}>
+                      <AppText style={[styles.statusRibbonText, { color: STATUS_COLORS[t.status as TutorialStatus].text }]}>
+                        {STATUS_RIBBON_LABELS[t.status as TutorialStatus]}
+                      </AppText>
                     </View>
-                    {t.status === 'generating' && (
-                      <AppText style={styles.generatingHint}>May take 1–2 mins</AppText>
+                    {t.status !== 'generating' && (
+                      <TouchableOpacity style={styles.gridDeleteBtn} onPress={() => deleteTutorial(t)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                        <AppText style={styles.gridDeleteIcon}>{GRID_CARD.deleteIcon}</AppText>
+                      </TouchableOpacity>
                     )}
+                  </View>
+                  <View style={styles.gridCardBody}>
+                    <AppText style={styles.gridCardTitle} numberOfLines={2}>{t.display_name || t.category}</AppText>
+                    <AppText style={styles.gridCardSub}>{t.category}</AppText>
+                    {t.status === 'generating' && <AppText style={styles.generatingHint}>May take 1–2 mins</AppText>}
                     {t.status === 'approved' && learnerUserId && (
                       <TouchableOpacity
-                        style={[styles.linkBtn, linkedIds.has(t.id) && styles.linkBtnLinked]}
+                        style={[styles.gridAddBtn, linkedIds.has(t.id) && styles.gridAddBtnLinked]}
                         onPress={() => toggleLink(t)}
                         disabled={togglingId === t.id}
                         activeOpacity={0.75}
                       >
-                        <AppText style={[styles.linkBtnText, linkedIds.has(t.id) && styles.linkBtnTextLinked]}>
-                          {togglingId === t.id ? '…' : linkedIds.has(t.id) ? '✓ Added to Learner' : '＋ Add to Learner'}
+                        <AppText style={[styles.gridAddBtnText, linkedIds.has(t.id) && styles.gridAddBtnTextLinked]}>
+                          {togglingId === t.id ? '…' : linkedIds.has(t.id) ? '✓ Added' : '＋ Add to Learner'}
                         </AppText>
                       </TouchableOpacity>
                     )}
                   </View>
-                  {t.status !== 'generating' && (
-                    <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteTutorial(t)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <AppText style={styles.deleteBtnText}>🗑</AppText>
-                    </TouchableOpacity>
-                  )}
                 </TouchableOpacity>
               )}
               ListEmptyComponent={
@@ -586,6 +590,153 @@ export default function GuardianTutorialsScreen() {
         </View>
       )}
 
+      {/* ── Pending tab ──────────────────────────────────────────────────── */}
+      {activeTab === 'pending' && (
+        <View style={{ flex: 1 }}>
+          <View style={styles.searchRow}>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={styles.searchGradient}>
+              <TextInput
+                style={styles.searchInput}
+                value={pendingSearch}
+                onChangeText={setPendingSearch}
+                placeholder="Search by name…"
+                placeholderTextColor={NICO.textMuted}
+                clearButtonMode="while-editing"
+              />
+            </LinearGradient>
+          </View>
+
+          {/* Filter bar: More Filters */}
+          {(() => {
+            const hasPendingMore = pendingFilterSkills.length + pendingFilterLevels.length + pendingStatusFilter.length > 0;
+            return (
+              <>
+                <View style={styles.filterBar}>
+                  <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={styles.moreBtnGradient}>
+                    <TouchableOpacity style={[styles.moreBtn, hasPendingMore && styles.moreBtnActive]} onPress={() => setShowPendingMoreFilters(true)} activeOpacity={0.75}>
+                      <AppText style={[styles.moreBtnText, hasPendingMore && styles.moreBtnTextActive]}>More Filters</AppText>
+                    </TouchableOpacity>
+                  </LinearGradient>
+                </View>
+                {hasPendingMore && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={styles.chipsContent}>
+                    {pendingFilterSkills.map(s => (
+                      <TouchableOpacity key={`skill-${s}`} style={styles.chip} onPress={() => setPendingFilterSkills(p => p.filter(x => x !== s))} activeOpacity={0.75}>
+                        <AppText style={styles.chipText}>{s}</AppText>
+                        <AppText style={styles.chipX}>×</AppText>
+                      </TouchableOpacity>
+                    ))}
+                    {pendingFilterLevels.map(l => (
+                      <TouchableOpacity key={`level-${l}`} style={styles.chip} onPress={() => setPendingFilterLevels(p => p.filter(x => x !== l))} activeOpacity={0.75}>
+                        <AppText style={styles.chipText}>{l}</AppText>
+                        <AppText style={styles.chipX}>×</AppText>
+                      </TouchableOpacity>
+                    ))}
+                    {pendingStatusFilter.map(s => (
+                      <TouchableOpacity key={`status-${s}`} style={styles.chip} onPress={() => setPendingStatusFilter(p => p.filter(x => x !== s))} activeOpacity={0.75}>
+                        <AppText style={styles.chipText}>{PENDING_STATUS_OPTIONS.find(o => o.key === s)?.label ?? s}</AppText>
+                        <AppText style={styles.chipX}>×</AppText>
+                      </TouchableOpacity>
+                    ))}
+                    <TouchableOpacity style={styles.clearAllChip} onPress={() => { setPendingFilterSkills([]); setPendingFilterLevels([]); setPendingStatusFilter([]); }} activeOpacity={0.75}>
+                      <AppText style={styles.clearAllChipText}>Clear all</AppText>
+                    </TouchableOpacity>
+                  </ScrollView>
+                )}
+              </>
+            );
+          })()}
+
+          <FilterSheet
+            visible={showPendingMoreFilters}
+            sections={[
+              {
+                key: 'skill', title: 'Skill',
+                options: skillOptions.map(s => ({ key: s, label: s })),
+                selected: pendingFilterSkills,
+                onToggle: s => setPendingFilterSkills(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]),
+              },
+              {
+                key: 'level', title: 'Comprehension Level',
+                options: (TUTORIAL_COMPREHENSION as string[]).map(l => ({ key: l, label: l, capitalize: true })),
+                selected: pendingFilterLevels,
+                onToggle: l => setPendingFilterLevels(prev => prev.includes(l) ? prev.filter(x => x !== l) : [...prev, l]),
+              },
+              {
+                key: 'status', title: 'Status',
+                options: PENDING_STATUS_OPTIONS.map(o => ({ key: o.key, label: o.label })),
+                selected: pendingStatusFilter,
+                onToggle: k => setPendingStatusFilter(prev => prev.includes(k as TutorialStatus) ? prev.filter(x => x !== k) : [...prev, k as TutorialStatus]),
+              },
+            ] satisfies FilterSheetSection[]}
+            onClearAll={() => { setPendingFilterSkills([]); setPendingFilterLevels([]); setPendingStatusFilter([]); }}
+            onDone={() => setShowPendingMoreFilters(false)}
+          />
+
+          {loadingMy ? (
+            <View style={styles.center}><ActivityIndicator size="large" color={NICO.primary} /></View>
+          ) : (
+            <FlatList
+              data={visiblePending}
+              keyExtractor={t => t.id}
+              numColumns={2}
+              columnWrapperStyle={styles.gridRow}
+              contentContainerStyle={styles.gridList}
+              ListHeaderComponent={
+                filteredPending.length > 0
+                  ? <AppText style={styles.listCount}>{filteredPending.length} tutorial{filteredPending.length !== 1 ? 's' : ''}</AppText>
+                  : null
+              }
+              ListFooterComponent={
+                showLoadMorePending ? (
+                  <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMorePending} activeOpacity={0.7}>
+                    <AppText style={styles.loadMoreText}>Load {pageSizePending} more</AppText>
+                  </TouchableOpacity>
+                ) : null
+              }
+              renderItem={({ item: t }) => (
+                <TouchableOpacity
+                  style={styles.gridCard}
+                  onPress={() => { if (t.status !== 'generating') navigation.navigate('TutorialPreview', { tutorialId: t.id }); }}
+                  activeOpacity={t.status === 'generating' ? 1 : 0.85}
+                >
+                  <View style={styles.thumbWrap}>
+                    {t.thumbnail_url
+                      ? <Image source={{ uri: t.thumbnail_url }} style={styles.gridThumb} />
+                      : <View style={[styles.gridThumb, styles.gridThumbPlaceholder]}>
+                          <AppText style={styles.gridThumbEmoji}>{FORMAT_EMOJI[t.format] ?? '📚'}</AppText>
+                        </View>
+                    }
+                    <View style={[styles.statusRibbon, { backgroundColor: STATUS_COLORS[t.status as TutorialStatus].bg }]}>
+                      <AppText style={[styles.statusRibbonText, { color: STATUS_COLORS[t.status as TutorialStatus].text }]}>
+                        {STATUS_RIBBON_LABELS[t.status as TutorialStatus]}
+                      </AppText>
+                    </View>
+                    {t.status !== 'generating' && (
+                      <TouchableOpacity style={styles.gridDeleteBtn} onPress={() => deleteTutorial(t)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                        <AppText style={styles.gridDeleteIcon}>{GRID_CARD.deleteIcon}</AppText>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <View style={styles.gridCardBody}>
+                    <AppText style={styles.gridCardTitle} numberOfLines={2}>{t.display_name || t.category}</AppText>
+                    <AppText style={styles.gridCardSub}>{t.category}</AppText>
+                    {t.status === 'generating' && <AppText style={styles.generatingHint}>May take 1–2 mins</AppText>}
+                  </View>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <View style={styles.empty}>
+                  <AppText style={styles.emptyEmoji}>⏳</AppText>
+                  <AppText style={styles.emptyText}>No pending tutorials</AppText>
+                  <AppText style={styles.emptyHint}>Tutorials in progress will appear here</AppText>
+                </View>
+              }
+            />
+          )}
+        </View>
+      )}
+
       {/* ── Create Tutorial tab ───────────────────────────────────────────── */}
       {activeTab === 'create' && (
         <View style={styles.createPane}>
@@ -593,14 +744,14 @@ export default function GuardianTutorialsScreen() {
             <View style={styles.quotaBar}>
               <View style={styles.quotaHeader}>
                 <AppText style={styles.quotaLabel}>Monthly quota</AppText>
-                <AppText style={[styles.quotaCount, quota.used >= quota.limit && { color: COLORS.error }]}>
+                <AppText style={[styles.quotaCount, quota.used >= quota.limit && { color: NICO.error }]}>
                   {quota.used} / {quota.limit} used
                 </AppText>
               </View>
               <View style={styles.quotaTrack}>
                 <View style={[styles.quotaFill, {
                   width: `${Math.min((quota.used / quota.limit) * 100, 100)}%` as any,
-                  backgroundColor: quota.used >= quota.limit ? COLORS.error : COLORS.bloomAccent,
+                  backgroundColor: quota.used >= quota.limit ? NICO.error : NICO.primary,
                 }]} />
               </View>
             </View>
@@ -641,176 +792,242 @@ export default function GuardianTutorialsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bloomBody },
+  container: { flex: 1, backgroundColor: NICO.screenBg },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
 
   // Tab bar
   tabBar: {
-    flexDirection: 'row', backgroundColor: COLORS.bloomCard,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    flexDirection: 'row', backgroundColor: NICO.surface,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
   tab: {
-    flex: 1, paddingVertical: 13, alignItems: 'center',
+    flex: 1, paddingVertical: SPACING.md, alignItems: 'center',
     borderBottomWidth: 2.5, borderBottomColor: 'transparent',
   },
-  tabActive: { borderBottomColor: COLORS.bloomAccent },
-  tabText: { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted },
-  tabTextActive: { color: COLORS.bloomAccent, fontWeight: '800' },
+  tabActive:     { borderBottomColor: NICO.primary },
+  tabText:       { ...TEXT_STYLE.tabLabel },
+  tabTextActive: { ...TEXT_STYLE.tabLabel, color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold },
 
-  // Search tab
-  searchRow: { padding: 14, paddingBottom: 8 },
+  // Search / name input row
+  searchRow:    { padding: SPACING.base, paddingBottom: SPACING.sm },
+  searchGradient: {
+    padding: BUTTERFLY_BORDER.width,
+    borderRadius: RADIUS.md + BUTTERFLY_BORDER.width,
+  },
   searchInput: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, color: COLORS.bloomText,
+    ...INPUT.base,
+    borderWidth: 0,   // gradient wrapper provides the visual border
   },
 
-  linkBtn: { marginTop: 8, backgroundColor: COLORS.bloomAccent, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
-  linkBtnLinked: { backgroundColor: COLORS.statusGreenLight },
-  linkBtnText: { fontSize: 13, fontWeight: '800', color: COLORS.bloomOnAccent },
-  linkBtnTextLinked: { color: COLORS.statusGreenDark },
+  // Link button (My Tutorials tab)
+  linkBtn:           { ...BTN_SIZE.sm, ...BTN_VARIANT.primary, marginTop: SPACING.sm, alignSelf: CARD_BTN_ALIGN },
+  linkBtnLinked:     { backgroundColor: NICO.successLight, ...SHADOW.none },
+  linkBtnText:       { ...TEXT_STYLE.buttonSmall },
+  linkBtnTextLinked: { ...TEXT_STYLE.buttonSmall, color: NICO.success },
 
   // Search tab grid
-  gridList: { padding: 12, paddingBottom: 32 },
-  gridRow:  { gap: 12, marginBottom: 12 },
+  gridList: { padding: SPACING.md, paddingBottom: SPACING['2xl'] },
+  gridRow:  { gap: SPACING.md, marginBottom: SPACING.md },
   gridCard: {
-    flex: 1, backgroundColor: COLORS.bloomCard, borderRadius: 18,
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder, overflow: 'hidden',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    flex: 1, backgroundColor: NICO.surface, borderRadius: RADIUS.xl,
+    borderWidth: 1, borderColor: NICO.border, overflow: 'hidden',
+    ...SHADOW.md,
   },
+  thumbWrap:            { position: 'relative', overflow: 'hidden' },
   gridThumb:            { width: '100%', height: 120 },
-  gridThumbPlaceholder: { backgroundColor: COLORS.bloomActiveBg, justifyContent: 'center', alignItems: 'center' },
+  gridThumbPlaceholder: { backgroundColor: NICO.background, justifyContent: 'center', alignItems: 'center' },
   gridThumbEmoji:       { fontSize: 44 },
-  gridCardBody:         { padding: 12, gap: 4 },
-  gridCardTitle:        { fontSize: 15, fontWeight: '800', color: COLORS.bloomText, lineHeight: 20 },
-  gridCardSub:          { fontSize: 12, fontWeight: '500', color: COLORS.bloomMuted, marginBottom: 2 },
-  gridCardCreator:      { fontSize: 11, color: COLORS.bloomMuted, fontStyle: 'italic' },
-  gridAddBtn:           { backgroundColor: COLORS.bloomAccent, borderRadius: 10, paddingVertical: 9, alignItems: 'center', marginTop: 4 },
-  gridAddBtnLinked:     { backgroundColor: COLORS.statusGreenLight },
-  gridAddBtnText:       { fontSize: 12, fontWeight: '800', color: COLORS.bloomOnAccent },
-  gridAddBtnTextLinked: { color: COLORS.statusGreenDark },
+  statusRibbon: {
+    position: 'absolute',
+    top: GRID_CARD.ribbonTop, left: GRID_CARD.ribbonLeft, width: GRID_CARD.ribbonWidth,
+    paddingVertical: GRID_CARD.ribbonPadding, alignItems: 'center',
+    transform: [{ rotate: '-45deg' }],
+  },
+  statusRibbonText: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold },
+  gridCardBody:         { padding: SPACING.md, gap: SPACING.xs },
+  gridCardTitle:        { ...TEXT_STYLE.bodyMedium, lineHeight: 20 },
+  gridCardSub:          { ...TEXT_STYLE.caption, marginBottom: SPACING.xs },
+  gridCardCreator:      { ...TEXT_STYLE.labelSmall, fontStyle: 'italic' },
+  gridDeleteBtn: {
+    position: 'absolute', top: SPACING.xs, right: SPACING.xs,
+    backgroundColor: GRID_CARD.deleteBg, borderRadius: RADIUS.full,
+    width: 28, height: 28, justifyContent: 'center', alignItems: 'center',
+    ...SHADOW.sm,
+  },
+  gridDeleteIcon: { fontSize: FONT_SIZE.md, color: GRID_CARD.deleteColor, fontWeight: FONT_WEIGHT.bold },
+  gridAddBtn:           { ...BTN_SIZE.sm, ...BTN_VARIANT.primary, alignSelf: CARD_BTN_ALIGN, marginTop: SPACING.xs },
+  gridAddBtnLinked:     { backgroundColor: NICO.successLight, ...SHADOW.none },
+  gridAddBtnText:       { ...TEXT_STYLE.buttonSmall },
+  gridAddBtnTextLinked: { ...TEXT_STYLE.buttonSmall, color: NICO.success },
 
-  // Quota bar (shared)
+  // Quota bar (Create tab)
   quotaBar: {
-    marginHorizontal: 16, marginTop: 14,
-    backgroundColor: COLORS.bloomCard, borderRadius: 16, padding: 16, gap: 10,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    marginHorizontal: SPACING.base, marginTop: SPACING.base,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.lg,
+    borderWidth: 1, borderColor: NICO.border,
+    padding: SPACING.base, gap: SPACING.sm,
+    ...SHADOW.sm,
   },
   quotaHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  quotaLabel: { fontSize: 14, fontWeight: '600', color: COLORS.bloomText },
-  quotaCount: { fontSize: 14, fontWeight: '800', color: COLORS.bloomAccent },
-  quotaTrack: { height: 8, backgroundColor: COLORS.bloomBorder, borderRadius: 4, overflow: 'hidden' },
-  quotaFill:  { height: '100%', borderRadius: 4 },
+  quotaLabel:  { ...TEXT_STYLE.bodyMedium },
+  quotaCount:  { ...TEXT_STYLE.bodyMedium, color: NICO.primary },
+  quotaTrack:  { height: 6, backgroundColor: NICO.border, borderRadius: RADIUS.full, overflow: 'hidden' },
+  quotaFill:   { height: '100%', borderRadius: RADIUS.full },
 
-
-  // Tutorial list
-  list: { padding: 16, gap: 14 },
+  // Tutorial list (My + Pending tabs)
+  list: { padding: SPACING.base, gap: SPACING.md },
   card: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 18,
-    flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 3,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.xl,
+    borderWidth: 1, borderColor: NICO.border,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.md,
+    ...SHADOW.md,
   },
   thumb: {
-    width: 80, height: 80, borderRadius: 14, backgroundColor: COLORS.bloomActiveBg,
+    width: 80, height: 80, borderRadius: RADIUS.lg, backgroundColor: NICO.background,
     justifyContent: 'center', alignItems: 'center', overflow: 'hidden', flexShrink: 0,
   },
-  thumbImage: { width: 80, height: 80 },
-  thumbEmoji: { fontSize: 36 },
-  cardInfo:   { flex: 1, minWidth: 0, gap: 4 },
-  cardTitle:  { fontSize: 17, fontWeight: '800', color: COLORS.bloomText, lineHeight: 22 },
-  cardSub:    { fontSize: 13, color: COLORS.bloomMuted, fontWeight: '500' },
-  cardCreator: { fontSize: 11, color: COLORS.bloomMuted, fontStyle: 'italic', marginTop: 1 },
-  cardMeta:   { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
-  statusBadge:  { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
-  statusText:   { fontSize: 12, fontWeight: '700' },
-  metaText:     { fontSize: 13, color: COLORS.bloomMuted, fontWeight: '500' },
-  generatingHint: { fontSize: 11, color: COLORS.bloomMuted, marginTop: 4 },
-  privateBadge:   { fontSize: 13 },
-  listCount: { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted, paddingHorizontal: 4, paddingBottom: 8 },
-  deleteBtn:    { padding: 6 },
-  deleteBtnText:{ fontSize: 22 },
+  thumbImage:     { width: 80, height: 80 },
+  thumbEmoji:     { fontSize: 36 },
+  cardInfo:       { flex: 1, minWidth: 0, gap: SPACING.xs },
+  cardTitle:      { ...TEXT_STYLE.bodyMedium, fontSize: FONT_SIZE.xl, lineHeight: 22 },
+  cardSub:        { ...TEXT_STYLE.hint },
+  cardCreator:    { ...TEXT_STYLE.labelSmall, fontStyle: 'italic', marginTop: 2 },
+  cardMeta:       { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xs, flexWrap: 'wrap' },
+  statusBadge:    { borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs },
+  statusText:     { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold },
+  metaText:       { ...TEXT_STYLE.hint },
+  generatingHint: { ...TEXT_STYLE.caption, marginTop: SPACING.xs },
+  privateBadge:   { fontSize: FONT_SIZE.md },
+  listCount:      { ...TEXT_STYLE.hint, paddingHorizontal: SPACING.xs, paddingBottom: SPACING.sm },
+  deleteBtn:      { padding: SPACING.sm },
+  deleteBtnText:  { fontSize: FONT_SIZE['4xl'] },
+
+  // Load more / cap
+  loadMoreBtn: { ...BTN_SIZE.sm, ...BTN_VARIANT.outline, alignSelf: 'center', marginTop: SPACING.base },
+  loadMoreText: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary },
+  capMessage:     { alignItems: 'center', paddingVertical: SPACING.base },
+  capMessageText: { ...TEXT_STYLE.hint, fontStyle: 'italic' },
 
   // Empty state
-  loadMoreBtn: {
-    alignItems: 'center', paddingVertical: 14, marginTop: 4,
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    borderRadius: 14, backgroundColor: COLORS.bloomCard,
-  },
-  loadMoreText:   { fontSize: 14, fontWeight: '700', color: COLORS.bloomNavy },
-  capMessage:     { alignItems: 'center', paddingVertical: 16 },
-  capMessageText: { fontSize: 13, color: COLORS.bloomMuted, fontStyle: 'italic' },
-
-  empty:      { alignItems: 'center', paddingTop: 80, gap: 12 },
+  empty:      { alignItems: 'center', paddingTop: 80, gap: SPACING.md },
   emptyEmoji: { fontSize: 72 },
-  emptyText:  { fontSize: 22, fontWeight: '800', color: COLORS.bloomText },
-  emptyHint:  { fontSize: 15, color: COLORS.bloomMuted },
+  emptyText:  { ...TEXT_STYLE.cardTitle },
+  emptyHint:  { ...TEXT_STYLE.hint },
 
   // Create tab
-  createPane: { flex: 1, padding: 0 },
+  createPane: { flex: 1 },
   createCard: {
-    marginHorizontal: 16, marginTop: 12,
-    backgroundColor: COLORS.bloomCard, borderRadius: 18,
-    paddingVertical: 16, paddingHorizontal: 16,
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3,
+    marginHorizontal: SPACING.base, marginTop: SPACING.md,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.xl,
+    borderWidth: 1, borderColor: NICO.border,
+    paddingVertical: SPACING.base, paddingHorizontal: SPACING.base,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.md,
+    ...SHADOW.md,
   },
   createEmoji:       { fontSize: 34 },
-  createCardContent: { flex: 1, gap: 3 },
-  createHeading:     { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
-  createBody:        { fontSize: 13, color: COLORS.bloomMuted, lineHeight: 18 },
-  createChevron:  { fontSize: 22, color: COLORS.bloomMuted, lineHeight: 28 },
-  createBtnText:  { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 16 },
+  createCardContent: { flex: 1, gap: SPACING.xs },
+  createHeading:     { ...TEXT_STYLE.bodyMedium, fontSize: FONT_SIZE.xl },
+  createBody:        { ...TEXT_STYLE.hint, lineHeight: 18 },
+  createChevron:     { fontSize: FONT_SIZE['4xl'], color: NICO.textMuted, lineHeight: 28 },
+  createBtnText:     { ...TEXT_STYLE.buttonPrimary },
 
-  // Label-value filter panel (Search tab)
+  // Label-value filter panel
   filterPanel: {
-    marginHorizontal: 14, marginBottom: 8,
-    backgroundColor: COLORS.bloomCard, borderRadius: 16,
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder, overflow: 'hidden',
+    marginHorizontal: SPACING.base, marginBottom: SPACING.sm,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.lg,
+    borderWidth: 1, borderColor: NICO.border, overflow: 'hidden',
   },
-  filterRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 8 },
-  filterLabel: { fontSize: 14, fontWeight: '700', color: COLORS.bloomText, width: 48 },
-  filterValue: { flex: 1, fontSize: 14, fontWeight: '600', color: COLORS.bloomText },
-  filterPlaceholder: { color: COLORS.bloomMuted, fontWeight: '400' },
-  filterClear: { fontSize: 13, color: COLORS.bloomMuted, fontWeight: '700', paddingHorizontal: 4 },
-  filterChevron: { fontSize: 20, color: COLORS.bloomMuted, lineHeight: 24 },
-  filterDivider: { height: 1, backgroundColor: COLORS.bloomBorder, marginHorizontal: 14 },
-  segmented:     { flex: 1, flexDirection: 'row', gap: 6 },
+  filterRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.base, paddingVertical: SPACING.md, gap: SPACING.sm },
+  filterLabel:       { ...TEXT_STYLE.bodyMedium, width: 52 },
+  filterValue:       { flex: 1, ...TEXT_STYLE.body },
+  filterPlaceholder: { color: NICO.textMuted, fontWeight: FONT_WEIGHT.regular },
+  filterClear:       { ...TEXT_STYLE.caption, color: NICO.textMuted, fontWeight: FONT_WEIGHT.bold, paddingHorizontal: SPACING.xs },
+  filterChevron:     { fontSize: FONT_SIZE['2xl'], color: NICO.textMuted, lineHeight: 26 },
+  filterDivider:     { height: 1, backgroundColor: NICO.border, marginHorizontal: SPACING.base },
+  segmented:         { flex: 1, flexDirection: 'row', gap: SPACING.xs },
   segment: {
-    flex: 1, paddingVertical: 7, borderRadius: 10, alignItems: 'center',
-    backgroundColor: COLORS.bloomBody, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+    flex: 1, paddingVertical: SPACING.sm, borderRadius: RADIUS.md, alignItems: 'center',
+    backgroundColor: NICO.screenBg, borderWidth: 1, borderColor: NICO.border,
   },
-  segmentActive:     { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
-  segmentText:       { fontSize: 12, fontWeight: '600', color: COLORS.bloomMuted },
-  segmentTextActive: { fontSize: 12, fontWeight: '700', color: COLORS.bloomOnAccent },
+  segmentActive:     { backgroundColor: NICO.primary, borderColor: NICO.primary },
+  segmentText:       { ...TEXT_STYLE.caption },
+  segmentTextActive: { ...TEXT_STYLE.caption, color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.bold },
 
   // Picker bottom sheet
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.40)', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: COLORS.bloomCard,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 32,
+    backgroundColor: NICO.surface,
+    borderTopLeftRadius: RADIUS['3xl'], borderTopRightRadius: RADIUS['3xl'],
+    paddingBottom: SPACING['2xl'],
   },
   sheetHdr: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 16,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  sheetTitle: { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
-  sheetClear: { fontSize: 13, fontWeight: '600', color: COLORS.bloomAccent },
+  sheetTitle:            { ...TEXT_STYLE.modalTitle },
+  sheetClear:            { ...TEXT_STYLE.linkSmall },
   sheetOption: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 16,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  sheetOptionActive: { backgroundColor: COLORS.bloomActiveBg },
-  sheetOptionText: { fontSize: 15, fontWeight: '600', color: COLORS.bloomText },
-  sheetOptionTextActive: { color: COLORS.bloomAccent, fontWeight: '700' },
-  sheetDone: { marginHorizontal: 20, marginTop: 16, backgroundColor: COLORS.bloomAccent, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  sheetDoneText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 15 },
+  sheetOptionActive:     { backgroundColor: NICO.primaryLight },
+  sheetOptionText:       { ...TEXT_STYLE.body },
+  sheetOptionTextActive: { ...TEXT_STYLE.body, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
+  sheetDone: {
+    marginHorizontal: SPACING.lg, marginTop: SPACING.base,
+    ...BTN_SIZE.lg, ...BTN_VARIANT.primary,
+  },
+  sheetDoneText:  { ...TEXT_STYLE.buttonPrimary },
   multiCheck: {
-    width: 22, height: 22, borderRadius: 6,
-    borderWidth: 2, borderColor: COLORS.bloomBorder,
-    backgroundColor: COLORS.bloomBody, justifyContent: 'center', alignItems: 'center',
+    width: 22, height: 22, borderRadius: RADIUS.xs,
+    borderWidth: 2, borderColor: NICO.border,
+    backgroundColor: NICO.screenBg, justifyContent: 'center', alignItems: 'center',
   },
-  multiCheckActive: { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
-  multiCheckMark: { color: COLORS.bloomOnAccent, fontSize: 12, fontWeight: '800' },
+  multiCheckActive: { backgroundColor: NICO.primary, borderColor: NICO.primary },
+  multiCheckMark:   { color: NICO.textOnAccent, fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.extraBold },
+
+  // Filter bar (inline chip + More Filters button)
+  filterBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end',
+    paddingHorizontal: SPACING.base, paddingVertical: SPACING.sm,
+  },
+  moreBtnGradient: {
+    padding: BUTTERFLY_BORDER.width,
+    borderRadius: RADIUS.full,
+  },
+  moreBtn: {
+    flexDirection: 'row', alignItems: 'center',
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.base, paddingVertical: SPACING.xs,
+    backgroundColor: NICO.screenBg,
+  },
+  moreBtnActive: { backgroundColor: NICO.primaryLight },
+  moreBtnText: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.medium, color: NICO.textMuted },
+  moreBtnTextActive: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.primary },
+
+  // Active-filter chips strip
+  chipsRow: { maxHeight: 40 },
+  chipsContent: { paddingHorizontal: SPACING.base, gap: SPACING.xs, alignItems: 'center' },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: NICO.primaryLight, borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.sm, paddingVertical: 4,
+  },
+  chipText: { ...TEXT_STYLE.caption, color: NICO.primary, textTransform: 'capitalize' },
+  chipX:    { fontSize: FONT_SIZE.xs, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
+  clearAllChip: {
+    paddingHorizontal: SPACING.sm, paddingVertical: 4,
+    borderRadius: RADIUS.full, borderWidth: 1, borderColor: NICO.border,
+  },
+  clearAllChipText: { ...TEXT_STYLE.caption, color: NICO.textMuted },
+
+  // Sheet section header
+  sheetSectionHdr: {
+    ...TEXT_STYLE.caption, color: NICO.textMuted, fontWeight: FONT_WEIGHT.bold,
+    textTransform: 'uppercase', letterSpacing: 0.8,
+    paddingHorizontal: SPACING.lg, paddingTop: SPACING.base, paddingBottom: SPACING.xs,
+    backgroundColor: NICO.background,
+  },
 });

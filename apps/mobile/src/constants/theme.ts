@@ -85,7 +85,8 @@ export const NICO = {
   purpleLight: '#EDE6F7',
 
   // ── Backgrounds & surfaces ──────────────────────────────────────────────
-  background:  '#E8E7E5',   // page background — warm off-white
+  screenBg:    '#FFFFFF',   // ← single token for every screen root background
+  background:  '#E8E7E5',   // section dividers, input areas, subtle contrast zones
   surface:     '#FFFFFF',   // card, sheet, input surface
   surfaceAlt:  '#FDFBF7',   // slightly warmer surface (learner screens)
 
@@ -209,6 +210,7 @@ export const TEXT_STYLE = {
   label:      { fontSize: FONT_SIZE.lg,   fontWeight: FONT_WEIGHT.bold,     color: NICO.text },
   labelSmall: { fontSize: FONT_SIZE.sm,   fontWeight: FONT_WEIGHT.bold,     color: NICO.textMuted },
   caption:    { fontSize: FONT_SIZE.xs,   fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
+  tabLabel:   { fontSize: FONT_SIZE.md,   fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
 
   // ── Interactive ───────────────────────────────────────────────────────
   buttonPrimary: { fontSize: FONT_SIZE.xl,   fontWeight: FONT_WEIGHT.extraBold, color: NICO.textOnAccent },
@@ -394,6 +396,13 @@ export const BTN = {
   ghostSm:    { ...BTN_SIZE.sm, ...BTN_VARIANT.ghost     },
   outlineSm:  { ...BTN_SIZE.sm, ...BTN_VARIANT.outline   },
 };
+
+/**
+ * alignSelf for buttons that sit inside a card/grid cell.
+ * On phone: stretch to fill the narrow cell.
+ * On tablet: center as a pill (cells are too wide for a full-stretch button).
+ */
+export const CARD_BTN_ALIGN: 'stretch' | 'center' = IS_TABLET ? 'center' : 'stretch';
 
 /** Base TextInput style. */
 export const INPUT = {

@@ -74,7 +74,7 @@ export type GuardianNavParamList = {
   GuardianHome: undefined;
   Profiles: undefined;
   Notifications: undefined;
-  Learning: { initialTab?: 'search' | 'my' | 'create' } | undefined;
+  Learning: { initialTab?: 'search' | 'my' | 'pending' | 'create' } | undefined;
   Activities: undefined;
   Account: undefined;
   EditAccount: undefined;

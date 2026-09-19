@@ -164,7 +164,7 @@ export default function LearnerSelectScreen() {
               end={BUTTERFLY_BORDER.end}
               style={s.tileBorder}
             >
-              <TouchableOpacity style={[s.tile, { backgroundColor: NICO.greenLight }]} onPress={openPinModal} activeOpacity={0.85}>
+              <TouchableOpacity style={[s.tile, { backgroundColor: NICO.surface }]} onPress={openPinModal} activeOpacity={0.85}>
                 <View style={s.tileBody}>
                   <View style={s.avatarWrap}>
                     {guardian?.photo_url ? (
@@ -190,7 +190,7 @@ export default function LearnerSelectScreen() {
                 style={s.tileBorder}
               >
                 <TouchableOpacity
-                  style={[s.tile, { backgroundColor: NICO.orangeLight }]}
+                  style={[s.tile, { backgroundColor: NICO.surface }]}
                   onPress={() => handleLearnerTap(tile)}
                   activeOpacity={0.85}
                   disabled={!!biometricLoading}
@@ -343,7 +343,7 @@ export default function LearnerSelectScreen() {
 }
 
 const s = StyleSheet.create({
-  root:      { flex: 1, backgroundColor: NICO.surface },
+  root:      { flex: 1, backgroundColor: NICO.screenBg },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
   container: { flexGrow: 1, paddingBottom: SPACING['4xl'] ?? 80 },
 
@@ -367,7 +367,7 @@ const s = StyleSheet.create({
   // Tiles
   tileBorder: {
     width:        '50%',
-    borderRadius: RADIUS.xl + BUTTERFLY_BORDER.width,
+    borderRadius: RADIUS.full,
     padding:      BUTTERFLY_BORDER.width,
     shadowColor:  '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -376,7 +376,7 @@ const s = StyleSheet.create({
     elevation:    5,
   },
   tile: {
-    borderRadius: RADIUS.xl,
+    borderRadius: RADIUS.full,
     overflow:     'hidden',
   },
   tileBar:  { height: 7 },
@@ -433,7 +433,7 @@ const s = StyleSheet.create({
 
   passwordInput: { ...INPUT.base, alignSelf: 'stretch', marginBottom: SPACING.sm },
 
-  pinSubmitBtn:      { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, alignSelf: 'stretch', marginTop: SPACING.lg, marginBottom: SPACING.sm },
+  pinSubmitBtn:      { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.lg, marginBottom: SPACING.sm },
   pinSubmitDisabled: { opacity: 0.4 },
   pinSubmitText:     { ...TEXT_STYLE.buttonPrimary },
 });

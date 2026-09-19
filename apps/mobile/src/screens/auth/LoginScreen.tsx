@@ -130,7 +130,7 @@ export default function LoginScreen({ navigation }: Props) {
 }
 
 const s = StyleSheet.create({
-  root:      { flex: 1, backgroundColor: NICO.surface },
+  root:      { flex: 1, backgroundColor: NICO.screenBg },
   container: { flexGrow: 1 },
 
   logoBorder: {

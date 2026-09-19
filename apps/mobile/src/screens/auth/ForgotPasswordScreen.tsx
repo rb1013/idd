@@ -95,7 +95,7 @@ export default function ForgotPasswordScreen() {
 }
 
 const s = StyleSheet.create({
-  root:      { flex: 1, backgroundColor: NICO.surface },
+  root:      { flex: 1, backgroundColor: NICO.screenBg },
   container: { flexGrow: 1, justifyContent: 'center', paddingBottom: '30%' },
 
   content: {

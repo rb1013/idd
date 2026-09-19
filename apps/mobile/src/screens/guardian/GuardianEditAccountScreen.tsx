@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import {
   View, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator,
   TextInput, Alert, Modal, FlatList,
 } from 'react-native';
 import AppText from '../../components/AppText';
+import ContentContainer from '../../components/ContentContainer';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
 import { US_STATES } from '../../constants/usStates';
 import { validatePhone, buildE164 } from '../../constants/countryCodes';
 import { useNavigation } from '@react-navigation/native';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, INPUT, BTN_SIZE, BTN_VARIANT, FONT_SIZE, FONT_WEIGHT,
+} from '../../constants/theme';
 
 export default function GuardianEditAccountScreen() {
   const { guardian, refreshGuardian } = useAuth();
@@ -20,14 +23,23 @@ export default function GuardianEditAccountScreen() {
     const raw = guardian?.phone ?? '';
     return raw.startsWith('+1') ? raw.slice(2) : raw.replace(/\D/g, '');
   });
-  const [state, setState]         = useState(guardian?.state ?? '');
-  const [city, setCity]           = useState(guardian?.city ?? '');
+  const [state, setState]               = useState(guardian?.state ?? '');
+  const [city, setCity]                 = useState(guardian?.city ?? '');
   const [selectedTags, setSelectedTags] = useState<string[]>(guardian?.situation_tags ?? []);
 
   const [tagOptions, setTagOptions]           = useState<string[]>([]);
   const [showStatePicker, setShowStatePicker] = useState(false);
   const [showTagPicker, setShowTagPicker]     = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]                   = useState(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerStyle:        { backgroundColor: NICO.background },
+      headerTitleStyle:   { color: NICO.text },
+      headerTintColor:    NICO.text,
+      headerShadowVisible: false,
+    });
+  }, [navigation]);
 
   useEffect(() => {
     supabase.from('situation_tag_options').select('label').order('label').then(({ data }) => {
@@ -63,242 +75,260 @@ export default function GuardianEditAccountScreen() {
 
   return (
     <>
-    <ScrollView style={styles.container} contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
-      <View style={styles.field}>
-        <AppText style={styles.label}>Name</AppText>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="Your full name"
-          placeholderTextColor={COLORS.textLight}
-          maxLength={20}
-        />
-      </View>
-
-      <View style={styles.field}>
-        <AppText style={styles.label}>Phone *</AppText>
-        <View style={styles.phoneRow}>
-          <View style={styles.countryCodeBtn}>
-            <AppText style={styles.countryFlag}>🇺🇸</AppText>
-            <AppText style={styles.countryCodeText}>+1</AppText>
-          </View>
-          <TextInput
-            style={styles.phoneInput}
-            value={phone}
-            onChangeText={v => setPhone(v.replace(/[^\d\s\-]/g, ''))}
-            placeholder="555 000 0000"
-            keyboardType="phone-pad"
-            placeholderTextColor={COLORS.textLight}
-          />
-        </View>
-      </View>
-
-      <View style={styles.field}>
-        <AppText style={styles.label}>Email</AppText>
-        <View style={styles.readonlyInput}>
-          <AppText style={styles.readonlyText}>{guardian?.email ?? '—'}</AppText>
-        </View>
-      </View>
-
-      <View style={styles.field}>
-        <AppText style={styles.label}>Country</AppText>
-        <View style={styles.readonlyInput}>
-          <AppText style={styles.readonlyText}>USA</AppText>
-        </View>
-      </View>
-
-      <View style={styles.field}>
-        <AppText style={styles.label}>State</AppText>
-        <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowStatePicker(true)} activeOpacity={0.7}>
-          <AppText style={[styles.pickerBtnText, !state && { color: COLORS.textLight }]}>
-            {state || 'Select state...'}
-          </AppText>
-          <AppText style={styles.chevron}>▾</AppText>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.field}>
-        <AppText style={styles.label}>City</AppText>
-        <TextInput
-          style={styles.input}
-          value={city}
-          onChangeText={setCity}
-          placeholder="e.g. Austin"
-          placeholderTextColor={COLORS.textLight}
-          maxLength={20}
-        />
-      </View>
-
-      <View style={styles.field}>
-        <AppText style={styles.label}>Situation Tags</AppText>
-        <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>
-          <AppText style={[styles.pickerBtnText, selectedTags.length === 0 && { color: COLORS.textLight }]}>
-            {selectedTags.length === 0 ? 'Select tags...' : `${selectedTags.length} selected`}
-          </AppText>
-          <AppText style={styles.chevron}>▾</AppText>
-        </TouchableOpacity>
-        {selectedTags.length > 0 && (
-          <View style={styles.tagChipRow}>
-            {selectedTags.map(tag => (
-              <TouchableOpacity key={tag} style={styles.tagChip} onPress={() => toggleTag(tag)} activeOpacity={0.7}>
-                <AppText style={styles.tagChipText}>{tag}</AppText>
-                <AppText style={styles.tagChipX}>✕</AppText>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </View>
-
-      <TouchableOpacity
-        style={[styles.saveBtn, saving && { opacity: 0.7 }]}
-        onPress={handleSave}
-        disabled={saving}
-        activeOpacity={0.85}
+      <ScrollView
+        style={s.root}
+        contentContainerStyle={s.inner}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {saving
-          ? <ActivityIndicator color={COLORS.bloomOnAccent} />
-          : <AppText style={styles.saveBtnText}>Save Changes</AppText>
-        }
-      </TouchableOpacity>
-    </ScrollView>
+        <ContentContainer>
 
-    {/* State picker modal */}
-    <Modal visible={showStatePicker} animationType="slide" transparent onRequestClose={() => setShowStatePicker(false)}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalCard}>
-          <View style={styles.modalHeader}>
-            <AppText style={styles.modalTitle}>Select State</AppText>
-            <TouchableOpacity onPress={() => setShowStatePicker(false)}>
-              <AppText style={styles.modalClose}>Done</AppText>
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={US_STATES}
-            keyExtractor={item => item}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.stateItem, state === item && styles.stateItemSelected]}
-                onPress={() => { setState(item); setShowStatePicker(false); }}
-              >
-                <AppText style={[styles.stateItemText, state === item && styles.stateItemTextSelected]}>{item}</AppText>
-                {state === item && <AppText style={styles.stateCheck}>✓</AppText>}
-              </TouchableOpacity>
-            )}
-            ItemSeparatorComponent={() => <View style={styles.stateDivider} />}
-          />
-        </View>
-      </View>
-    </Modal>
-
-    {/* Tag picker modal */}
-    <Modal visible={showTagPicker} animationType="slide" transparent onRequestClose={() => setShowTagPicker(false)}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalCard}>
-          <View style={styles.modalHeader}>
-            <AppText style={styles.modalTitle}>Situation Tags</AppText>
-            <TouchableOpacity onPress={() => setShowTagPicker(false)}>
-              <AppText style={styles.modalClose}>Done</AppText>
-            </TouchableOpacity>
-          </View>
-          {tagOptions.length === 0 ? (
-            <View style={{ padding: 40, alignItems: 'center' }}>
-              <AppText style={{ fontSize: 15, color: COLORS.textLight }}>No tags available yet.</AppText>
-            </View>
-          ) : (
-            <FlatList
-              data={tagOptions}
-              keyExtractor={item => item}
-              renderItem={({ item }) => {
-                const selected = selectedTags.includes(item);
-                return (
-                  <TouchableOpacity
-                    style={[styles.stateItem, selected && styles.stateItemSelected]}
-                    onPress={() => toggleTag(item)}
-                  >
-                    <AppText style={[styles.stateItemText, selected && styles.stateItemTextSelected]}>{item}</AppText>
-                    {selected && <AppText style={styles.stateCheck}>✓</AppText>}
-                  </TouchableOpacity>
-                );
-              }}
-              ItemSeparatorComponent={() => <View style={styles.stateDivider} />}
+          <View style={s.field}>
+            <AppText style={s.label}>Name</AppText>
+            <TextInput
+              style={s.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Your full name"
+              placeholderTextColor={NICO.textMuted}
+              maxLength={20}
             />
-          )}
+          </View>
+
+          <View style={s.field}>
+            <AppText style={s.label}>Phone</AppText>
+            <View style={s.phoneRow}>
+              <View style={s.countryCodeBtn}>
+                <AppText style={s.countryFlag}>🇺🇸</AppText>
+                <AppText style={s.countryCodeText}>+1</AppText>
+              </View>
+              <TextInput
+                style={s.phoneInput}
+                value={phone}
+                onChangeText={v => setPhone(v.replace(/[^\d\s\-]/g, ''))}
+                placeholder="555 000 0000"
+                keyboardType="phone-pad"
+                placeholderTextColor={NICO.textMuted}
+              />
+            </View>
+          </View>
+
+          <View style={s.field}>
+            <AppText style={s.label}>Email</AppText>
+            <View style={s.readonlyInput}>
+              <AppText style={s.readonlyText}>{guardian?.email ?? '—'}</AppText>
+            </View>
+          </View>
+
+          <View style={s.field}>
+            <AppText style={s.label}>Country</AppText>
+            <View style={s.readonlyInput}>
+              <AppText style={s.readonlyText}>USA</AppText>
+            </View>
+          </View>
+
+          <View style={s.field}>
+            <AppText style={s.label}>State</AppText>
+            <TouchableOpacity style={s.pickerBtn} onPress={() => setShowStatePicker(true)} activeOpacity={0.7}>
+              <AppText style={[s.pickerBtnText, !state && { color: NICO.textMuted }]}>
+                {state || 'Select state...'}
+              </AppText>
+              <AppText style={s.chevron}>▾</AppText>
+            </TouchableOpacity>
+          </View>
+
+          <View style={s.field}>
+            <AppText style={s.label}>City</AppText>
+            <TextInput
+              style={s.input}
+              value={city}
+              onChangeText={setCity}
+              placeholder="e.g. Austin"
+              placeholderTextColor={NICO.textMuted}
+              maxLength={20}
+            />
+          </View>
+
+          <View style={s.field}>
+            <AppText style={s.label}>Situation Tags</AppText>
+            <TouchableOpacity style={s.pickerBtn} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>
+              <AppText style={[s.pickerBtnText, selectedTags.length === 0 && { color: NICO.textMuted }]}>
+                {selectedTags.length === 0 ? 'Select tags...' : `${selectedTags.length} selected`}
+              </AppText>
+              <AppText style={s.chevron}>▾</AppText>
+            </TouchableOpacity>
+            {selectedTags.length > 0 && (
+              <View style={s.tagRow}>
+                {selectedTags.map(tag => (
+                  <TouchableOpacity key={tag} style={s.tag} onPress={() => toggleTag(tag)} activeOpacity={0.7}>
+                    <AppText style={s.tagText}>{tag}</AppText>
+                    <AppText style={s.tagX}>✕</AppText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={[s.saveBtn, saving && s.saveBtnDisabled]}
+            onPress={handleSave}
+            disabled={saving}
+            activeOpacity={0.85}
+          >
+            {saving
+              ? <ActivityIndicator color={NICO.textOnAccent} />
+              : <AppText style={s.saveBtnText}>Save Changes</AppText>
+            }
+          </TouchableOpacity>
+
+          <TouchableOpacity style={s.cancelBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+            <AppText style={s.cancelBtnText}>Cancel</AppText>
+          </TouchableOpacity>
+
+        </ContentContainer>
+      </ScrollView>
+
+      {/* State picker */}
+      <Modal visible={showStatePicker} animationType="slide" transparent onRequestClose={() => setShowStatePicker(false)}>
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            <View style={s.modalHeader}>
+              <AppText style={s.modalTitle}>Select State</AppText>
+              <TouchableOpacity onPress={() => setShowStatePicker(false)}>
+                <AppText style={s.modalClose}>Done</AppText>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={US_STATES}
+              keyExtractor={item => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[s.listItem, state === item && s.listItemSelected]}
+                  onPress={() => { setState(item); setShowStatePicker(false); }}
+                >
+                  <AppText style={[s.listItemText, state === item && s.listItemTextSelected]}>{item}</AppText>
+                  {state === item && <AppText style={s.listCheck}>✓</AppText>}
+                </TouchableOpacity>
+              )}
+              ItemSeparatorComponent={() => <View style={s.listDivider} />}
+            />
+          </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+
+      {/* Tag picker */}
+      <Modal visible={showTagPicker} animationType="slide" transparent onRequestClose={() => setShowTagPicker(false)}>
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            <View style={s.modalHeader}>
+              <AppText style={s.modalTitle}>Situation Tags</AppText>
+              <TouchableOpacity onPress={() => setShowTagPicker(false)}>
+                <AppText style={s.modalClose}>Done</AppText>
+              </TouchableOpacity>
+            </View>
+            {tagOptions.length === 0 ? (
+              <View style={s.modalEmpty}>
+                <AppText style={s.modalEmptyText}>No tags available yet.</AppText>
+              </View>
+            ) : (
+              <FlatList
+                data={tagOptions}
+                keyExtractor={item => item}
+                renderItem={({ item }) => {
+                  const selected = selectedTags.includes(item);
+                  return (
+                    <TouchableOpacity
+                      style={[s.listItem, selected && s.listItemSelected]}
+                      onPress={() => toggleTag(item)}
+                    >
+                      <AppText style={[s.listItemText, selected && s.listItemTextSelected]}>{item}</AppText>
+                      {selected && <AppText style={s.listCheck}>✓</AppText>}
+                    </TouchableOpacity>
+                  );
+                }}
+                ItemSeparatorComponent={() => <View style={s.listDivider} />}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  inner: { padding: 20, paddingBottom: 48, gap: 20 },
+const s = StyleSheet.create({
+  root:  { flex: 1, backgroundColor: NICO.screenBg },
+  inner: { padding: SPACING.base, paddingBottom: SPACING['3xl'], gap: SPACING.base },
 
-  field: { gap: 8 },
-  label: { fontSize: 15, fontWeight: '600', color: COLORS.text },
+  field: { gap: SPACING.xs },
+  label: { ...TEXT_STYLE.fieldLabel },
+
+  input: { ...INPUT.base },
   readonlyInput: {
-    backgroundColor: COLORS.border + '40', borderWidth: 1, borderColor: COLORS.border,
-    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
+    ...INPUT.base,
+    backgroundColor: NICO.background,
+    borderColor:     NICO.border,
   },
-  readonlyText: { fontSize: 15, color: COLORS.textLight },
-  input: {
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
-    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
-    fontSize: 15, color: COLORS.text,
-  },
+  readonlyText: { ...TEXT_STYLE.body, color: NICO.textMuted },
 
-  phoneRow: { flexDirection: 'row', gap: 8 },
+  phoneRow: { flexDirection: 'row', gap: SPACING.sm },
   countryCodeBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
-    borderRadius: 12, paddingHorizontal: 12, paddingVertical: 14,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
+    ...INPUT.base,
+    paddingHorizontal: SPACING.md,
   },
-  countryFlag:     { fontSize: 20 },
-  countryCodeText: { fontSize: 15, fontWeight: '700', color: COLORS.text },
-  countryChevron:  { fontSize: 11, color: COLORS.textLight },
-  phoneInput: {
-    flex: 1, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
-    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
-    fontSize: 15, color: COLORS.text,
-  },
+  countryFlag:     { fontSize: FONT_SIZE.xl },
+  countryCodeText: { ...TEXT_STYLE.bodyMedium },
+
+  phoneInput: { ...INPUT.base, flex: 1 },
 
   pickerBtn: {
+    ...INPUT.base,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
-    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
   },
-  pickerBtnText: { fontSize: 15, color: COLORS.text },
-  chevron: { fontSize: 13, color: COLORS.textLight },
+  pickerBtnText: { ...TEXT_STYLE.body },
+  chevron:       { ...TEXT_STYLE.hint },
 
-  tagChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  tagChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: COLORS.primary + '18', borderWidth: 1.5, borderColor: COLORS.primary,
-    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6,
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.xs },
+  tag: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
+    backgroundColor: NICO.primaryLight,
+    borderWidth: 1.5, borderColor: NICO.primary,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs,
   },
-  tagChipText: { fontSize: 13, color: COLORS.primary, fontWeight: '600' },
-  tagChipX:    { fontSize: 11, color: COLORS.primary, fontWeight: '700' },
+  tagText: { ...TEXT_STYLE.caption, color: NICO.primary },
+  tagX:    { fontSize: FONT_SIZE.xs, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
 
-  saveBtn: {
-    marginTop: 8, backgroundColor: COLORS.primary, borderRadius: 14,
-    paddingVertical: 16, alignItems: 'center',
-  },
-  saveBtnText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '800' },
+  saveBtn:         { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.xl },
+  saveBtnDisabled: { opacity: 0.7 },
+  saveBtnText:     { ...TEXT_STYLE.buttonPrimary },
+
+  cancelBtn:     { marginTop: SPACING.md, padding: SPACING.sm, alignItems: 'center' },
+  cancelBtnText: { ...TEXT_STYLE.link },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '70%' },
+  modalCard: {
+    backgroundColor: NICO.surface,
+    borderTopLeftRadius:  RADIUS['3xl'],
+    borderTopRightRadius: RADIUS['3xl'],
+    maxHeight: '70%',
+    ...SHADOW.xl,
+  },
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 18, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    padding: SPACING.base,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: COLORS.text },
-  modalClose: { fontSize: 16, fontWeight: '600', color: COLORS.primary },
+  modalTitle: { ...TEXT_STYLE.modalTitle },
+  modalClose: { ...TEXT_STYLE.link },
+  modalEmpty: { padding: SPACING['3xl'], alignItems: 'center' },
+  modalEmptyText: { ...TEXT_STYLE.hint },
 
-  stateItem:             { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, gap: 10 },
-  stateItemSelected:     { backgroundColor: '#EEF4FF' },
-  stateItemText:         { flex: 1, fontSize: 15, color: COLORS.text },
-  stateItemTextSelected: { fontWeight: '700', color: COLORS.primary },
-  stateCheck:            { fontSize: 16, color: COLORS.primary, fontWeight: '700' },
-  stateDivider:          { height: 1, backgroundColor: COLORS.border, marginHorizontal: 20 },
+  listItem:             { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.base, paddingVertical: SPACING.base, gap: SPACING.md },
+  listItemSelected:     { backgroundColor: NICO.primaryLight },
+  listItemText:         { flex: 1, ...TEXT_STYLE.body },
+  listItemTextSelected: { fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
+  listCheck:            { ...TEXT_STYLE.bodyMedium, color: NICO.primary },
+  listDivider:          { height: 1, backgroundColor: NICO.border, marginHorizontal: SPACING.base },
 });

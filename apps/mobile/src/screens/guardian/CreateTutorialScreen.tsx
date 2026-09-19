@@ -84,7 +84,7 @@ export default function CreateTutorialScreen() {
         },
       });
       if (error || data?.error) throw new Error(data?.error ?? error?.message);
-      navigation.replace('Learning', { initialTab: 'my' });
+      navigation.replace('Learning', { initialTab: 'pending' });
     } catch (err: unknown) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Something went wrong.');
       setSubmitting(false);
