@@ -33,7 +33,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) { setLoading(false); return; }
+      if (error) {
+        // Stale token in SecureStore (e.g. after reinstall on iOS) — clear it so
+        // auto-refresh stops throwing. scope:'local' avoids a network call.
+        supabase.auth.signOut({ scope: 'local' });
+        setLoading(false);
+        return;
+      }
       setSession(session);
       if (session) {
         currentUserIdRef.current = session.user.id;

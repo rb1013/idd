@@ -27,6 +27,9 @@ const { width, height } = Dimensions.get('window');
  */
 export const IS_TABLET = Math.min(width, height) >= 768;
 
+/** Max content width — constrains forms/cards to readable width on iPad. */
+export const MAX_CONTENT_WIDTH = IS_TABLET ? 520 : undefined;
+
 /**
  * Moderate scale factor applied to font sizes, spacing, and touch targets.
  * Deliberately NOT the full proportional ratio — a full 375→768 scale would
@@ -36,7 +39,7 @@ export const IS_TABLET = Math.min(width, height) >= 768;
  * If the app ever supports iPad split-screen or Stage Manager, replace
  * this static check with `useWindowDimensions()` inside a ThemeProvider.
  */
-const TABLET_SCALE = 1.25;
+const TABLET_SCALE = 1.40;
 
 /**
  * Scale a raw design value for the current device class.

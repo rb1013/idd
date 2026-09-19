@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabase';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, BTN_SIZE, BTN_VARIANT, FONT_SIZE, FONT_WEIGHT,
 } from '../../constants/theme';
+import ContentContainer from '../../components/ContentContainer';
 
 type RouteParams = { email: string };
 
@@ -81,6 +82,7 @@ export default function ResetOTPScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <ContentContainer>
         <View style={s.content}>
           <AppText style={s.title}>Enter Reset Code</AppText>
           <AppText style={s.body}>
@@ -142,6 +144,7 @@ export default function ResetOTPScreen() {
             <AppText style={s.backBtnText}>← Back to Sign In</AppText>
           </TouchableOpacity>
         </View>
+        </ContentContainer>
       </ScrollView>
     </KeyboardAvoidingView>
   );

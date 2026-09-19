@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import AppText from '../../components/AppText';
 import { supabase } from '../../lib/supabase';
 import { emailError } from '../../lib/validators';
+import ContentContainer from '../../components/ContentContainer';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, INPUT, BTN_SIZE, BTN_VARIANT, BUTTERFLY_BORDER,
 } from '../../constants/theme';
@@ -40,6 +41,7 @@ export default function ForgotPasswordScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <ContentContainer>
         <View style={s.content}>
           <AppText style={s.title}>Forgot Password?</AppText>
           <AppText style={s.subtitle}>
@@ -74,7 +76,7 @@ export default function ForgotPasswordScreen() {
           >
             {loading
               ? <ActivityIndicator color={NICO.textOnAccent} />
-              : <AppText style={s.btnText}>Send Reset Link</AppText>
+              : <AppText style={s.btnText}>Send Reset Code</AppText>
             }
           </TouchableOpacity>
 
@@ -86,6 +88,7 @@ export default function ForgotPasswordScreen() {
             <AppText style={s.backBtnText}>← Back to Sign In</AppText>
           </TouchableOpacity>
         </View>
+        </ContentContainer>
       </ScrollView>
     </KeyboardAvoidingView>
   );

@@ -6,6 +6,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
 import AppLogo from '../../components/AppLogo';
+import ContentContainer from '../../components/ContentContainer';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { saveGuardianCredentials } from '../../lib/biometricStore';
@@ -37,7 +38,7 @@ export default function LoginScreen({ navigation }: Props) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Logo + tagline with butterfly gradient border */}
+        {/* Logo + tagline — full width */}
         <LinearGradient
           colors={[...BUTTERFLY_BORDER.colors]}
           start={BUTTERFLY_BORDER.start}
@@ -49,7 +50,8 @@ export default function LoginScreen({ navigation }: Props) {
           </View>
         </LinearGradient>
 
-        {/* Form */}
+        {/* Form — constrained width on tablet */}
+        <ContentContainer>
         <View style={s.form}>
           <AppText style={s.title}>Welcome</AppText>
           <AppText style={s.subtitle}>Sign in to your NICO account</AppText>
@@ -120,7 +122,8 @@ export default function LoginScreen({ navigation }: Props) {
             <AppText style={s.registerHint}>Create your account to get started</AppText>
             <AppText style={s.registerLink}>Create Account</AppText>
           </TouchableOpacity>
-        </View>
+        </View>{/* form */}
+        </ContentContainer>
       </ScrollView>
     </KeyboardAvoidingView>
   );
