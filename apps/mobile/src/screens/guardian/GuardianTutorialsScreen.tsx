@@ -16,6 +16,7 @@ import type { Tutorial, TutorialStatus, TutorialSource } from '../../types';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import RainbowDivider from '../../components/RainbowDivider';
+import MoreFiltersLink from '../../components/MoreFiltersLink';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
   BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, CARD_BTN_ALIGN, scale, GRID_COLS, GRID_CARD_W,
@@ -295,11 +296,7 @@ export default function GuardianTutorialsScreen() {
             return (
               <>
                 <View style={styles.filterBar}>
-                  <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={styles.moreBtnGradient}>
-                    <TouchableOpacity style={[styles.moreBtn, hasSearchMore && styles.moreBtnActive]} onPress={() => setShowSearchMoreFilters(true)} activeOpacity={0.75}>
-                      <AppText style={[styles.moreBtnText, hasSearchMore && styles.moreBtnTextActive]}>More Filters</AppText>
-                    </TouchableOpacity>
-                  </LinearGradient>
+                  <MoreFiltersLink onPress={() => setShowSearchMoreFilters(true)} isActive={hasSearchMore} />
                 </View>
                 {hasSearchMore && (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={styles.chipsContent}>
@@ -396,13 +393,13 @@ export default function GuardianTutorialsScreen() {
             visible={showSearchMoreFilters}
             sections={[
               {
-                key: 'skill', title: 'Skill',
+                key: 'skill', emoji: '🎯', title: 'Skill',
                 options: skillOptions.map(s => ({ key: s, label: s })),
                 selected: filterSkills,
                 onToggle: s => setFilterSkills(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]),
               },
               {
-                key: 'level', title: 'Comprehension Level',
+                key: 'level', emoji: '📊', title: 'Comprehension Level',
                 options: (TUTORIAL_COMPREHENSION as string[]).map(l => ({ key: l, label: l, capitalize: true })),
                 selected: filterLevels,
                 onToggle: l => setFilterLevels(prev => prev.includes(l) ? prev.filter(x => x !== l) : [...prev, l]),
@@ -430,17 +427,37 @@ export default function GuardianTutorialsScreen() {
             </LinearGradient>
           </View>
 
+          {/* Inline status pills */}
+          <View style={styles.statusPillsRow}>
+            <AppText style={styles.statusPillsLabel}>Status</AppText>
+            {MY_FILTER_OPTIONS.map(opt => {
+              const active = myFilters.includes(opt.key);
+              const colors = STATUS_COLORS[opt.key];
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[
+                    styles.statusPill,
+                    active && { backgroundColor: colors.bg, borderColor: colors.text },
+                  ]}
+                  onPress={() => setMyFilters(prev => prev.includes(opt.key) ? prev.filter(x => x !== opt.key) : [...prev, opt.key])}
+                  activeOpacity={0.75}
+                >
+                  <AppText style={[styles.statusPillText, active && { color: colors.text }]}>
+                    {opt.label}
+                  </AppText>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           {/* Filter bar: More Filters */}
           {(() => {
-            const hasMyMore = myFilterSkills.length + myFilterLevels.length + myFilters.length + myTypes.length + (myVisibility !== 'all' ? 1 : 0) > 0;
+            const hasMyMore = myFilterSkills.length + myFilterLevels.length + myTypes.length + (myVisibility !== 'all' ? 1 : 0) > 0;
             return (
               <>
                 <View style={styles.filterBar}>
-                  <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={styles.moreBtnGradient}>
-                    <TouchableOpacity style={[styles.moreBtn, hasMyMore && styles.moreBtnActive]} onPress={() => setShowMyMoreFilters(true)} activeOpacity={0.75}>
-                      <AppText style={[styles.moreBtnText, hasMyMore && styles.moreBtnTextActive]}>More Filters</AppText>
-                    </TouchableOpacity>
-                  </LinearGradient>
+                  <MoreFiltersLink onPress={() => setShowMyMoreFilters(true)} isActive={hasMyMore} />
                 </View>
                 {hasMyMore && (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={styles.chipsContent}>
@@ -456,12 +473,6 @@ export default function GuardianTutorialsScreen() {
                         <AppText style={styles.chipX}>×</AppText>
                       </TouchableOpacity>
                     ))}
-                    {myFilters.map(s => (
-                      <TouchableOpacity key={`status-${s}`} style={styles.chip} onPress={() => setMyFilters(p => p.filter(x => x !== s))} activeOpacity={0.75}>
-                        <AppText style={styles.chipText}>{MY_FILTER_OPTIONS.find(o => o.key === s)?.label ?? s}</AppText>
-                        <AppText style={styles.chipX}>×</AppText>
-                      </TouchableOpacity>
-                    ))}
                     {myTypes.map(t => (
                       <TouchableOpacity key={`type-${t}`} style={styles.chip} onPress={() => setMyTypes(p => p.filter(x => x !== t))} activeOpacity={0.75}>
                         <AppText style={styles.chipText}>{MY_TYPE_OPTIONS.find(o => o.key === t)?.label ?? t}</AppText>
@@ -474,7 +485,7 @@ export default function GuardianTutorialsScreen() {
                         <AppText style={styles.chipX}>×</AppText>
                       </TouchableOpacity>
                     )}
-                    <TouchableOpacity style={styles.clearAllChip} onPress={() => { setMyFilterSkills([]); setMyFilterLevels([]); setMyFilters([]); setMyTypes([]); setMyVisibility('all'); }} activeOpacity={0.75}>
+                    <TouchableOpacity style={styles.clearAllChip} onPress={() => { setMyFilterSkills([]); setMyFilterLevels([]); setMyTypes([]); setMyVisibility('all'); }} activeOpacity={0.75}>
                       <AppText style={styles.clearAllChipText}>Clear all</AppText>
                     </TouchableOpacity>
                   </ScrollView>
@@ -487,31 +498,25 @@ export default function GuardianTutorialsScreen() {
             visible={showMyMoreFilters}
             sections={[
               {
-                key: 'skill', title: 'Skill',
+                key: 'skill', emoji: '🎯', title: 'Skill',
                 options: skillOptions.map(s => ({ key: s, label: s })),
                 selected: myFilterSkills,
                 onToggle: s => setMyFilterSkills(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]),
               },
               {
-                key: 'level', title: 'Comprehension Level',
+                key: 'level', emoji: '📊', title: 'Comprehension Level',
                 options: (TUTORIAL_COMPREHENSION as string[]).map(l => ({ key: l, label: l, capitalize: true })),
                 selected: myFilterLevels,
                 onToggle: l => setMyFilterLevels(prev => prev.includes(l) ? prev.filter(x => x !== l) : [...prev, l]),
               },
               {
-                key: 'status', title: 'Status',
-                options: MY_FILTER_OPTIONS.map(o => ({ key: o.key, label: o.label })),
-                selected: myFilters,
-                onToggle: k => setMyFilters(prev => prev.includes(k as TutorialStatus) ? prev.filter(x => x !== k) : [...prev, k as TutorialStatus]),
-              },
-              {
-                key: 'type', title: 'Type',
+                key: 'type', emoji: '✨', title: 'Type',
                 options: MY_TYPE_OPTIONS.map(o => ({ key: o.key, label: o.label })),
                 selected: myTypes,
                 onToggle: k => setMyTypes(prev => prev.includes(k as TutorialSource) ? prev.filter(x => x !== k) : [...prev, k as TutorialSource]),
               },
               {
-                key: 'visibility', title: 'Visibility', type: 'single',
+                key: 'visibility', emoji: '👁️', title: 'Visibility', type: 'single',
                 options: [
                   { key: 'all', label: 'All' },
                   { key: 'public', label: '🌐 Public' },
@@ -521,7 +526,7 @@ export default function GuardianTutorialsScreen() {
                 onToggle: v => setMyVisibility(v as 'all' | 'public' | 'private'),
               },
             ] satisfies FilterSheetSection[]}
-            onClearAll={() => { setMyFilterSkills([]); setMyFilterLevels([]); setMyFilters([]); setMyTypes([]); setMyVisibility('all'); }}
+            onClearAll={() => { setMyFilterSkills([]); setMyFilterLevels([]); setMyTypes([]); setMyVisibility('all'); }}
             onDone={() => setShowMyMoreFilters(false)}
           />
 
@@ -626,11 +631,7 @@ export default function GuardianTutorialsScreen() {
             return (
               <>
                 <View style={styles.filterBar}>
-                  <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={styles.moreBtnGradient}>
-                    <TouchableOpacity style={[styles.moreBtn, hasPendingMore && styles.moreBtnActive]} onPress={() => setShowPendingMoreFilters(true)} activeOpacity={0.75}>
-                      <AppText style={[styles.moreBtnText, hasPendingMore && styles.moreBtnTextActive]}>More Filters</AppText>
-                    </TouchableOpacity>
-                  </LinearGradient>
+                  <MoreFiltersLink onPress={() => setShowPendingMoreFilters(true)} isActive={hasPendingMore} />
                 </View>
                 {hasPendingMore && (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={styles.chipsContent}>
@@ -665,19 +666,19 @@ export default function GuardianTutorialsScreen() {
             visible={showPendingMoreFilters}
             sections={[
               {
-                key: 'skill', title: 'Skill',
+                key: 'skill', emoji: '🎯', title: 'Skill',
                 options: skillOptions.map(s => ({ key: s, label: s })),
                 selected: pendingFilterSkills,
                 onToggle: s => setPendingFilterSkills(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]),
               },
               {
-                key: 'level', title: 'Comprehension Level',
+                key: 'level', emoji: '📊', title: 'Comprehension Level',
                 options: (TUTORIAL_COMPREHENSION as string[]).map(l => ({ key: l, label: l, capitalize: true })),
                 selected: pendingFilterLevels,
                 onToggle: l => setPendingFilterLevels(prev => prev.includes(l) ? prev.filter(x => x !== l) : [...prev, l]),
               },
               {
-                key: 'status', title: 'Status',
+                key: 'status', emoji: '📋', title: 'Status',
                 options: PENDING_STATUS_OPTIONS.map(o => ({ key: o.key, label: o.label })),
                 selected: pendingStatusFilter,
                 onToggle: k => setPendingStatusFilter(prev => prev.includes(k as TutorialStatus) ? prev.filter(x => x !== k) : [...prev, k as TutorialStatus]),
@@ -1014,6 +1015,19 @@ const styles = StyleSheet.create({
   },
   multiCheckActive: { backgroundColor: NICO.primary, borderColor: NICO.primary },
   multiCheckMark:   { color: NICO.textOnAccent, fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.extraBold },
+
+  // Inline status pills (My Tutorials)
+  statusPillsRow: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
+    paddingHorizontal: SPACING.base, paddingBottom: SPACING.sm,
+  },
+  statusPillsLabel: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
+  statusPill: {
+    borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: NICO.border,
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs,
+    backgroundColor: NICO.screenBg,
+  },
+  statusPillText: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
 
   // Filter bar (inline chip + More Filters button)
   filterBar: {

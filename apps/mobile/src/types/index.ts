@@ -33,6 +33,7 @@ export interface UserProfile {
   created_at: string;
   current_mood?: string | null;
   messaging_disabled?: boolean;
+  tts_disabled?: boolean;
 }
 
 export interface ChatPreferences {

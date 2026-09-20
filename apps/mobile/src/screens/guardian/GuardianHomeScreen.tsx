@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
-  View, TouchableOpacity, StyleSheet,
+  View, TouchableOpacity, StyleSheet, Modal,
   ScrollView, StatusBar, Image, Platform, Alert, ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,7 +13,7 @@ import * as Notifications from 'expo-notifications';
 import { useAuth } from '../../lib/AuthContext';
 import { supabase } from '../../lib/supabase';
 import {
-  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, BUTTERFLY_BORDER, BUTTERFLY_TILES, FONT_SIZE,
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, BUTTERFLY_BORDER, BUTTERFLY_TILES, FONT_SIZE, FONT_WEIGHT, BTN_SIZE, BTN_VARIANT,
 } from '../../constants/theme';
 import { GuardianNavParamList } from '../../navigation';
 
@@ -52,6 +52,9 @@ export default function GuardianHomeScreen() {
   const [stats, setStats]                         = useState<Stats>({ learners: 0, tutorials: 0, activities: 0 });
   const [messagingDisabled, setMessagingDisabled] = useState(false);
   const [togglingMsg, setTogglingMsg]             = useState(false);
+  const [ttsDisabled, setTtsDisabled]             = useState(false);
+  const [togglingTts, setTogglingTts]             = useState(false);
+  const [showTtsInfo, setShowTtsInfo]             = useState(false);
   const insets = useSafeAreaInsets();
 
   function handleSignOut() {
@@ -100,8 +103,8 @@ export default function GuardianHomeScreen() {
     });
 
     if (profileList.length > 0) {
-      supabase.from('user_profiles').select('messaging_disabled').eq('id', profileList[0].id).single()
-        .then(({ data }) => { if (data) setMessagingDisabled(!!data.messaging_disabled); });
+      supabase.from('user_profiles').select('messaging_disabled, tts_disabled').eq('id', profileList[0].id).single()
+        .then(({ data }) => { if (data) { setMessagingDisabled(!!data.messaging_disabled); setTtsDisabled(!!data.tts_disabled); } });
     }
   }
 
@@ -125,6 +128,15 @@ export default function GuardianHomeScreen() {
     await supabase.from('user_profiles').update({ messaging_disabled: newVal }).eq('id', learners[0].id);
     setMessagingDisabled(newVal);
     setTogglingMsg(false);
+  }
+
+  async function toggleTts() {
+    if (!learners[0]) return;
+    setTogglingTts(true);
+    const newVal = !ttsDisabled;
+    await supabase.from('user_profiles').update({ tts_disabled: newVal }).eq('id', learners[0].id);
+    setTtsDisabled(newVal);
+    setTogglingTts(false);
   }
 
   const initial   = guardian?.full_name?.[0]?.toUpperCase() ?? 'G';
@@ -241,7 +253,7 @@ export default function GuardianHomeScreen() {
                   disabled={togglingMsg}
                 >
                   <View style={s.settingInfo}>
-                    <AppText style={s.settingLabel}>Disable Messaging for Learner</AppText>
+                    <AppText style={s.settingLabel}>Disable Messaging</AppText>
                   </View>
                   {togglingMsg ? (
                     <ActivityIndicator size="small" color={TOGGLE_COLOR.accent} />
@@ -251,6 +263,47 @@ export default function GuardianHomeScreen() {
                     </View>
                   )}
                 </TouchableOpacity>
+
+                {/* TTS toggle */}
+                <TouchableOpacity
+                  style={s.settingRow}
+                  onPress={toggleTts}
+                  activeOpacity={0.8}
+                  disabled={togglingTts}
+                >
+                  <View style={s.settingInfo}>
+                    <AppText style={s.settingLabel}>Disable Text to Speech 🔊</AppText>
+                    <TouchableOpacity
+                      onPress={() => setShowTtsInfo(true)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      activeOpacity={0.7}
+                    >
+                      <AppText style={s.infoIcon}>ⓘ</AppText>
+                    </TouchableOpacity>
+                  </View>
+                  {togglingTts ? (
+                    <ActivityIndicator size="small" color={TOGGLE_COLOR.accent} />
+                  ) : (
+                    <View style={[s.toggle, ttsDisabled && s.toggleOn]}>
+                      <View style={[s.toggleThumb, ttsDisabled && s.toggleThumbOn]} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                {/* TTS info modal */}
+                <Modal visible={showTtsInfo} transparent animationType="fade" onRequestClose={() => setShowTtsInfo(false)}>
+                  <TouchableOpacity style={s.infoOverlay} activeOpacity={1} onPress={() => setShowTtsInfo(false)}>
+                    <View style={s.infoCard} onStartShouldSetResponder={() => true}>
+                      <AppText style={s.infoTitle}>Text to Speech</AppText>
+                      <AppText style={s.infoBody}>
+                        Some pages in the learner zone read content aloud automatically. For some children, unexpected audio can feel startling or overwhelming and may cause distress.{'\n\n'}Enable this setting to turn off all automatic voice reading for your learner.
+                      </AppText>
+                      <TouchableOpacity style={s.infoDismiss} onPress={() => setShowTtsInfo(false)} activeOpacity={0.8}>
+                        <AppText style={s.infoDismissText}>Got it</AppText>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
               </>
             ) : (
               <>
@@ -387,8 +440,22 @@ const s = StyleSheet.create({
     borderRadius:    RADIUS.md,
     padding:         SPACING.md,
   },
-  settingInfo:    { flex: 1 },
-  settingLabel:   { ...TEXT_STYLE.bodyMedium },
+  settingInfo:    { flex: 1, flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
+  settingLabel:   { ...TEXT_STYLE.bodyMedium, flex: 1 },
+  infoIcon:       { fontSize: FONT_SIZE.lg, color: NICO.text, fontWeight: FONT_WEIGHT.extraBold },
+
+  // TTS info modal
+  infoOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: SPACING.xl },
+  infoCard: {
+    backgroundColor: NICO.screenBg, borderRadius: RADIUS.xl,
+    padding: SPACING.lg, gap: SPACING.md, maxWidth: 360, width: '100%',
+  },
+  infoTitle:       { ...TEXT_STYLE.cardTitle, fontSize: FONT_SIZE.xl },
+  infoBody:        { ...TEXT_STYLE.body, lineHeight: 22, color: NICO.textMuted },
+  infoDismiss: {
+    ...BTN_SIZE.md, ...BTN_VARIANT.primary, alignSelf: 'flex-end',
+  },
+  infoDismissText: { ...TEXT_STYLE.buttonPrimary },
   toggle: {
     width: 46, height: 26, borderRadius: 13,
     backgroundColor: NICO.border, justifyContent: 'center', padding: 2,

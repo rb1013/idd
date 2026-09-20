@@ -13,6 +13,7 @@ import { useVisibleCount } from '../../hooks/useVisibleCount';
 import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
 import RainbowDivider from '../../components/RainbowDivider';
 import useNicoHeader from '../../hooks/useNicoHeader';
+import MoreFiltersLink from '../../components/MoreFiltersLink';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
   BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, CARD_BTN_ALIGN,
@@ -553,11 +554,7 @@ export default function GuardianConnectionsScreen() {
 
           <View style={s.filterBar}>
             <AppText style={s.resultCount}>{discovered.length} result{discovered.length !== 1 ? 's' : ''}</AppText>
-            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.moreBtnGradient}>
-              <TouchableOpacity style={[s.moreBtn, hasFindMore && s.moreBtnActive]} onPress={() => setSheetOpen(true)} activeOpacity={0.75}>
-                <AppText style={[s.moreBtnText, hasFindMore && s.moreBtnTextActive]}>More Filters</AppText>
-              </TouchableOpacity>
-            </LinearGradient>
+            <MoreFiltersLink onPress={() => setSheetOpen(true)} isActive={hasFindMore} />
           </View>
 
           <FlatList

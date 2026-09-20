@@ -10,6 +10,7 @@ import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
 import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
 import useNicoHeader from '../../hooks/useNicoHeader';
+import MoreFiltersLink from '../../components/MoreFiltersLink';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -248,11 +249,7 @@ export default function DiscussionsScreen() {
           {(tab === 'mine' ? mineFiltered : allFiltered).length} result{(tab === 'mine' ? mineFiltered : allFiltered).length !== 1 ? 's' : ''}
         </AppText>
         {tab === 'all' && (
-          <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.moreBtnGradient}>
-            <TouchableOpacity style={[s.moreBtn, hasMoreFilters && s.moreBtnActive]} onPress={() => setSheetOpen(true)} activeOpacity={0.75}>
-              <AppText style={[s.moreBtnText, hasMoreFilters && s.moreBtnTextActive]}>More Filters</AppText>
-            </TouchableOpacity>
-          </LinearGradient>
+          <MoreFiltersLink onPress={() => setSheetOpen(true)} isActive={hasMoreFilters} />
         )}
       </View>
     </View>
