@@ -52,7 +52,7 @@ export default function GuardianHomeScreen() {
   const [stats, setStats]                         = useState<Stats>({ learners: 0, tutorials: 0, activities: 0 });
   const [messagingDisabled, setMessagingDisabled] = useState(false);
   const [togglingMsg, setTogglingMsg]             = useState(false);
-  const [unreadCount, setUnreadCount]             = useState(0);
+  const [pendingConnections, setPendingConnections] = useState(0);
   const [ttsDisabled, setTtsDisabled]             = useState(false);
   const [togglingTts, setTogglingTts]             = useState(false);
   const [showTtsInfo, setShowTtsInfo]             = useState(false);
@@ -78,14 +78,14 @@ export default function GuardianHomeScreen() {
       { data: profiles },
       { count: tutorialCount },
       { count: activityCount },
-      { count: unread },
+      { count: pendingCount },
     ] = await Promise.all([
       supabase.from('user_profiles').select('id, name, photo_url').eq('guardian_id', guardianId),
       supabase.from('tutorials').select('id', { count: 'exact', head: true }).eq('created_by_guardian_id', guardianId),
       supabase.from('guardian_activity_presets').select('id', { count: 'exact', head: true }).eq('guardian_id', guardianId),
-      supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('guardian_id', guardianId).eq('read', false),
+      supabase.from('guardian_connections').select('id', { count: 'exact', head: true }).eq('addressee_id', guardianId).eq('status', 'pending'),
     ]);
-    setUnreadCount(unread ?? 0);
+    setPendingConnections(pendingCount ?? 0);
 
     const profileList = profiles ?? [];
 
@@ -171,18 +171,6 @@ export default function GuardianHomeScreen() {
               <AppText style={s.guardianName}>{guardian?.full_name ?? 'Guardian'}</AppText>
             </View>
 
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Notifications')}
-              activeOpacity={0.75}
-              style={s.bellBtn}
-            >
-              <AppText style={s.bellIcon}>🔔</AppText>
-              {unreadCount > 0 && (
-                <View style={s.bellBadge}>
-                  <AppText style={s.bellBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</AppText>
-                </View>
-              )}
-            </TouchableOpacity>
           </View>
         </LinearGradient>
       </SafeAreaView>
@@ -203,13 +191,27 @@ export default function GuardianHomeScreen() {
                 {pair.map(idx => {
                   const tile = GUARDIAN_TILES[idx];
                   const color = BUTTERFLY_TILES[tile.ci];
+                  const isConnections = tile.screen === 'GuardianConnections';
+                  const showBadge = isConnections && pendingConnections > 0;
                   return (
                     <TouchableOpacity
                       key={tile.label}
                       style={[s.tile, s.guardianTile, { backgroundColor: color.bg }]}
-                      onPress={() => navigation.navigate(tile.screen as any)}
+                      onPress={() => navigation.navigate(
+                        tile.screen as any,
+                        isConnections && pendingConnections > 0
+                          ? { initialTab: 'requests', initialSubTab: 'received' }
+                          : undefined,
+                      )}
                       activeOpacity={0.78}
                     >
+                      {showBadge && (
+                        <View style={s.tileBadge}>
+                          <AppText style={s.tileBadgeText}>
+                            {pendingConnections > 9 ? '9+' : pendingConnections}
+                          </AppText>
+                        </View>
+                      )}
                       <AppText style={s.tileEmoji}>{tile.emoji}</AppText>
                       <AppText style={s.tileLabel}>{tile.label}</AppText>
                     </TouchableOpacity>
@@ -337,6 +339,10 @@ export default function GuardianHomeScreen() {
             <AppText style={s.navIcon}>🏠</AppText>
             <AppText style={[s.navLabel, s.navLabelActive]}>Home</AppText>
           </TouchableOpacity>
+          <TouchableOpacity style={s.navItem} onPress={() => navigation.navigate('Notifications')} activeOpacity={0.75}>
+            <AppText style={s.navIcon}>🔔</AppText>
+            <AppText style={s.navLabel}>Notifications</AppText>
+          </TouchableOpacity>
           <TouchableOpacity
             style={s.navItem}
             onPress={() => navigation.navigate('Account')}
@@ -385,16 +391,6 @@ const s = StyleSheet.create({
   },
   avatarInitial: { ...TEXT_STYLE.label, color: NICO.primary, fontSize: FONT_SIZE.md },
   guardianName:  { ...TEXT_STYLE.bodyMedium },
-  bellBtn:       { padding: SPACING.xs, position: 'relative' },
-  bellIcon:      { fontSize: scale(22) },
-  bellBadge: {
-    position: 'absolute', top: 0, right: 0,
-    backgroundColor: NICO.error, borderRadius: RADIUS.full,
-    minWidth: scale(16), height: scale(16), paddingHorizontal: 3,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  bellBadgeText: { fontSize: scale(9), fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
-
   body:        { flex: 1 },
   bodyContent: { padding: SPACING.base, paddingTop: SPACING.xl, gap: SPACING.base },
 
@@ -416,6 +412,13 @@ const s = StyleSheet.create({
     ...SHADOW.sm,
   },
   guardianTile: { flex: 0, width: '40%' },
+  tileBadge: {
+    position: 'absolute', top: SPACING.xs, right: SPACING.xs,
+    backgroundColor: NICO.error, borderRadius: RADIUS.full,
+    minWidth: scale(20), height: scale(20), paddingHorizontal: 4,
+    justifyContent: 'center', alignItems: 'center', zIndex: 1,
+  },
+  tileBadgeText: { fontSize: scale(10), fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
   tileEmoji: { fontSize: 24 },
   tileLabel: { ...TEXT_STYLE.bodyMedium, textAlign: 'center' },
 

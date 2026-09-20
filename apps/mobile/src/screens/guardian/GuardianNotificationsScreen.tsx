@@ -20,10 +20,7 @@ type Tab = 'discussions' | 'tutorials';
 type NotifType =
   | 'tutorial_approved'
   | 'tutorial_rejected'
-  | 'discussion_reply'
-  | 'connection_request'
-  | 'connection_accepted'
-  | 'connection_rejected';
+  | 'discussion_reply';
 
 interface GuardianNotification {
   id: string;
@@ -35,12 +32,9 @@ interface GuardianNotification {
 }
 
 const NOTIF_META: Record<NotifType, { icon: string; label: string }> = {
-  tutorial_approved:   { icon: '🎓', label: 'Tutorial Approved'  },
-  tutorial_rejected:   { icon: '❌', label: 'Tutorial Rejected'  },
-  discussion_reply:    { icon: '💬', label: 'New Reply'           },
-  connection_request:  { icon: '🤝', label: 'Connection Request'  },
-  connection_accepted: { icon: '✓',  label: 'Request Accepted'   },
-  connection_rejected: { icon: '✕',  label: 'Request Declined'   },
+  tutorial_approved: { icon: '🎓', label: 'Tutorial Approved' },
+  tutorial_rejected: { icon: '❌', label: 'Tutorial Rejected' },
+  discussion_reply:  { icon: '💬', label: 'New Reply'         },
 };
 
 function timeAgo(dateStr: string): string {
@@ -126,15 +120,6 @@ export default function GuardianNotificationsScreen() {
         break;
       case 'discussion_reply':
         if (n.ref_id) navigation.navigate('DiscussionDetail', { postId: n.ref_id });
-        break;
-      case 'connection_request':
-        navigation.navigate('GuardianConnections', { initialTab: 'requests', initialSubTab: 'received' });
-        break;
-      case 'connection_accepted':
-        navigation.navigate('GuardianConnections', { initialTab: 'connected' });
-        break;
-      case 'connection_rejected':
-        navigation.navigate('GuardianConnections', { initialTab: 'requests', initialSubTab: 'sent' });
         break;
     }
   }
