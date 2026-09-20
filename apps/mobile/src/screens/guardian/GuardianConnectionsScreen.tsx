@@ -1,20 +1,27 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
-  TextInput, ActivityIndicator, Alert, Modal, ScrollView, Dimensions, Image,
+  View, FlatList, TouchableOpacity, StyleSheet,
+  TextInput, ActivityIndicator, Alert, Modal, ScrollView, Image,
 } from 'react-native';
 import AppText from '../../components/AppText';
-import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS, calcAge } from '../../constants';
+import { calcAge } from '../../constants';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
+import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
+import RainbowDivider from '../../components/RainbowDivider';
+import useNicoHeader from '../../hooks/useNicoHeader';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, CARD_BTN_ALIGN,
+  GRID_COLS, GRID_CARD_W, scale,
+} from '../../constants/theme';
 
-const { height: SCREEN_H } = Dimensions.get('window');
+const AVATAR_COLORS = [NICO.teal, NICO.orange, NICO.coral, NICO.pink, NICO.purple, NICO.primary];
 
-const AVATAR_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, COLORS.statusAmber, COLORS.statusBlue, COLORS.statusPink];
-
-const AGE_GROUPS    = ['Under 10', '10–14', '15–18', '19–25', '26–35', '36+'];
+const AGE_GROUPS     = ['Under 10', '10–14', '15–18', '19–25', '26–35', '36+'];
 const GENDER_OPTIONS = ['Male', 'Female'];
 
 function getAgeGroup(dob: string | null): string | null {
@@ -32,8 +39,9 @@ function toggle<T>(arr: T[], val: T): T[] {
   return arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
 }
 
-type Status = 'none' | 'pending_sent' | 'pending_received' | 'accepted';
-type Tab = 'connected' | 'find';
+type Status = 'none' | 'pending_sent' | 'pending_received' | 'accepted' | 'rejected';
+type Tab = 'connected' | 'requests' | 'find';
+type RequestsSubTab = 'sent' | 'received';
 
 interface GuardianResult {
   guardianId: string;
@@ -48,90 +56,42 @@ interface GuardianResult {
   learnerGender: string;
   status: Status;
   connectionId: string | null;
+  isRequester: boolean;
 }
-
-// ── SheetSection ──────────────────────────────────────────────────────────────
-
-interface SectionProps {
-  id: string; emoji: string; title: string;
-  options: string[]; selected: string[];
-  onToggle: (val: string) => void;
-  openId: string | null; setOpenId: (id: string | null) => void;
-}
-
-function SheetSection({ id, emoji, title, options, selected, onToggle, openId, setOpenId }: SectionProps) {
-  const open = openId === id;
-  return (
-    <View style={s.sheetSec}>
-      <TouchableOpacity style={s.sheetSecHdr} onPress={() => setOpenId(open ? null : id)} activeOpacity={0.7}>
-        <AppText style={s.sheetSecTitle}>{emoji}  {title}</AppText>
-        <View style={s.sheetSecRight}>
-          {selected.length > 0 && (
-            <View style={s.sheetSecBadge}><AppText style={s.sheetSecBadgeTxt}>{selected.length}</AppText></View>
-          )}
-          <AppText style={s.sheetSecArr}>{open ? '▲' : '▼'}</AppText>
-        </View>
-      </TouchableOpacity>
-      {open && (
-        <View>
-          {options.map(opt => {
-            const on = selected.includes(opt);
-            return (
-              <TouchableOpacity key={opt} style={s.optRow} onPress={() => onToggle(opt)} activeOpacity={0.7}>
-                <AppText style={[s.optTxt, on && s.optTxtOn]}>{opt}</AppText>
-                <View style={[s.optCheck, on && s.optCheckOn]}>
-                  {on && <AppText style={s.optCheckMark}>✓</AppText>}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
-    </View>
-  );
-}
-
-// ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function GuardianConnectionsScreen() {
   const { guardian } = useAuth();
+  const navigation = useNavigation();
+  useNicoHeader(navigation);
 
-  const [activeTab, setActiveTab]           = useState<Tab>('connected');
-  const [peekGuardian, setPeekGuardian]     = useState<GuardianResult | null>(null);
-  const [hoveredDisconnect, setHoveredDisconnect] = useState<string | null>(null);
+  const [activeTab, setActiveTab]               = useState<Tab>('connected');
+  const [activeRequestsTab, setActiveRequestsTab] = useState<RequestsSubTab>('sent');
+  const [peekGuardian, setPeekGuardian]         = useState<GuardianResult | null>(null);
   const [situationTagOptions, setSituationTagOptions] = useState<string[]>([]);
-
-  useEffect(() => {
-    supabase.from('situation_tag_options').select('label').order('label').then(({ data }) => {
-      if (data) setSituationTagOptions(data.map((r: any) => r.label));
-    });
-  }, []);
 
   const [results, setResults]       = useState<GuardianResult[]>([]);
   const [loading, setLoading]       = useState(true);
   const [sending, setSending]       = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
 
-  // Search
+  // My Connections search
+  const [connectedSearchName, setConnectedSearchName] = useState('');
+  const [connectedSearchCity, setConnectedSearchCity] = useState('');
+
+  // Find tab search + filters
   const [searchName, setSearchName] = useState('');
   const [searchCity, setSearchCity] = useState('');
-
-  // Applied filters
   const [filterAgeGroups, setFilterAgeGroups] = useState<string[]>([]);
   const [filterTags,      setFilterTags]      = useState<string[]>([]);
   const [filterGenders,   setFilterGenders]   = useState<string[]>([]);
-
-  // Draft filters
-  const [draftAgeGroups, setDraftAgeGroups] = useState<string[]>([]);
-  const [draftTags,      setDraftTags]      = useState<string[]>([]);
-  const [draftGenders,   setDraftGenders]   = useState<string[]>([]);
-
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [openSec,   setOpenSec]   = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen]             = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       if (guardian) load(guardian.id);
+      supabase.from('situation_tag_options').select('label').order('label').then(({ data }) => {
+        if (data) setSituationTagOptions(data.map((r: any) => r.label));
+      });
     }, [guardian]),
   );
 
@@ -161,32 +121,39 @@ export default function GuardianConnectionsScreen() {
     const learnerMap: Record<string, any> = {};
     (learners ?? []).forEach((l: any) => { if (!learnerMap[l.guardian_id]) learnerMap[l.guardian_id] = l; });
 
-    function getStatus(otherId: string): { status: Status; connectionId: string | null } {
+    function getStatus(otherId: string): { status: Status; connectionId: string | null; isRequester: boolean } {
       const c = (connections ?? []).find((r: any) =>
         (r.requester_id === myId && r.addressee_id === otherId) ||
         (r.addressee_id === myId && r.requester_id === otherId)
       );
-      if (!c) return { status: 'none', connectionId: null };
-      if (c.status === 'accepted') return { status: 'accepted', connectionId: c.id };
-      return { status: c.requester_id === myId ? 'pending_sent' : 'pending_received', connectionId: c.id };
+      if (!c) return { status: 'none', connectionId: null, isRequester: false };
+      const isRequester = c.requester_id === myId;
+      if (c.status === 'accepted') return { status: 'accepted', connectionId: c.id, isRequester };
+      if (c.status === 'rejected') return { status: 'rejected', connectionId: c.id, isRequester };
+      return {
+        status: isRequester ? 'pending_sent' : 'pending_received',
+        connectionId: c.id,
+        isRequester,
+      };
     }
 
     const list: GuardianResult[] = guardians.map((g: any) => {
       const l = learnerMap[g.id];
-      const { status, connectionId } = getStatus(g.id);
+      const { status, connectionId, isRequester } = getStatus(g.id);
       return {
-        guardianId: g.id,
-        guardianName: g.full_name ?? 'Unknown',
+        guardianId:    g.id,
+        guardianName:  g.full_name ?? 'Unknown',
         guardianEmail: g.email ?? '',
-        photoUrl: g.photo_url ?? '',
-        city: [g.city, g.state].filter(Boolean).join(', '),
+        photoUrl:      g.photo_url ?? '',
+        city:          [g.city, g.state].filter(Boolean).join(', '),
         situationTags: g.situation_tags ?? [],
-        learnerName: l?.name ?? '',
+        learnerName:   l?.name ?? '',
         learnerRegion: l?.region ?? '',
-        learnerDob: l?.date_of_birth ?? null,
+        learnerDob:    l?.date_of_birth ?? null,
         learnerGender: l?.gender ?? '',
         status,
         connectionId,
+        isRequester,
       };
     });
 
@@ -198,12 +165,21 @@ export default function GuardianConnectionsScreen() {
     if (!guardian) return;
     setSending(item.guardianId);
     try {
-      const { error } = await supabase.from('guardian_connections').insert({
-        requester_id: guardian.id, addressee_id: item.guardianId, status: 'pending',
-      });
-      if (error) throw new Error(error.message);
+      if (item.connectionId) {
+        // Re-request after rejection: update existing row, flip requester direction
+        const { error } = await supabase.from('guardian_connections')
+          .update({ requester_id: guardian.id, addressee_id: item.guardianId, status: 'pending' })
+          .eq('id', item.connectionId);
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await supabase.from('guardian_connections')
+          .insert({ requester_id: guardian.id, addressee_id: item.guardianId, status: 'pending' });
+        if (error) throw new Error(error.message);
+      }
       setResults(prev => prev.map(r =>
-        r.guardianId === item.guardianId ? { ...r, status: 'pending_sent' } : r
+        r.guardianId === item.guardianId
+          ? { ...r, status: 'pending_sent', isRequester: true }
+          : r
       ));
       Alert.alert('Request sent!', `A connection request has been sent to ${item.guardianName}.`);
     } catch (err: any) {
@@ -225,19 +201,12 @@ export default function GuardianConnectionsScreen() {
 
   async function decline(item: GuardianResult) {
     if (!item.connectionId) return;
-    Alert.alert('Decline', `Decline connection request from ${item.guardianName}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Decline', style: 'destructive', onPress: async () => {
-          setProcessing(item.guardianId);
-          await supabase.from('guardian_connections').delete().eq('id', item.connectionId!);
-          setResults(prev => prev.map(r =>
-            r.guardianId === item.guardianId ? { ...r, status: 'none', connectionId: null } : r
-          ));
-          setProcessing(null);
-        },
-      },
-    ]);
+    setProcessing(item.guardianId);
+    await supabase.from('guardian_connections').update({ status: 'rejected' }).eq('id', item.connectionId);
+    setResults(prev => prev.map(r =>
+      r.guardianId === item.guardianId ? { ...r, status: 'rejected' } : r
+    ));
+    setProcessing(null);
   }
 
   async function disconnect(item: GuardianResult) {
@@ -249,7 +218,7 @@ export default function GuardianConnectionsScreen() {
           setProcessing(item.guardianId);
           await supabase.from('guardian_connections').delete().eq('id', item.connectionId!);
           setResults(prev => prev.map(r =>
-            r.guardianId === item.guardianId ? { ...r, status: 'none', connectionId: null } : r
+            r.guardianId === item.guardianId ? { ...r, status: 'none', connectionId: null, isRequester: false } : r
           ));
           setProcessing(null);
         },
@@ -257,123 +226,127 @@ export default function GuardianConnectionsScreen() {
     ]);
   }
 
-  function openSheet() {
-    setDraftAgeGroups([...filterAgeGroups]);
-    setDraftTags([...filterTags]);
-    setDraftGenders([...filterGenders]);
-    setOpenSec(null);
-    setSheetOpen(true);
+  function avatarColor(name: string) {
+    return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
   }
 
-  function applySheet() {
-    setFilterAgeGroups([...draftAgeGroups]);
-    setFilterTags([...draftTags]);
-    setFilterGenders([...draftGenders]);
-    setSheetOpen(false);
-  }
+  // ── Derived lists ────────────────────────────────────────────────────────────
 
-  function clearSheet() {
-    setDraftAgeGroups([]);
-    setDraftTags([]);
-    setDraftGenders([]);
-  }
+  const connected = useMemo(() => results.filter(r => r.status === 'accepted'), [results]);
 
-  const totalActive = filterAgeGroups.length + filterTags.length + filterGenders.length;
+  const filteredConnected = useMemo(() =>
+    connected.filter(r => {
+      const matchName = !connectedSearchName || r.guardianName.toLowerCase().includes(connectedSearchName.toLowerCase());
+      const matchCity = !connectedSearchCity || r.city.toLowerCase().includes(connectedSearchCity.toLowerCase());
+      return matchName && matchCity;
+    }),
+  [connected, connectedSearchName, connectedSearchCity]);
 
-  const connected = useMemo(() =>
-    results.filter(r => r.status === 'accepted'),
+  // All rows where current user sent the request (pending, accepted, rejected)
+  const sentRequests = useMemo(() =>
+    results.filter(r => r.isRequester && (r.status === 'pending_sent' || r.status === 'rejected')),
   [results]);
 
-  const pendingReceived = useMemo(() =>
+  // All rows where current user received a request and it's still pending
+  const receivedRequests = useMemo(() =>
     results.filter(r => r.status === 'pending_received'),
   [results]);
 
-  const discovered = useMemo(() => {
-    return results.filter(r => {
-      if (r.status === 'accepted' || r.status === 'pending_received' || r.status === 'pending_sent') return false;
+  const discovered = useMemo(() =>
+    results.filter(r => {
+      if (r.status === 'accepted' || r.status === 'pending_sent' || r.status === 'pending_received') return false;
+      // 'none' and 'rejected' are both discoverable (re-request allowed)
       const matchName   = !searchName || r.guardianName.toLowerCase().includes(searchName.toLowerCase());
       const matchCity   = !searchCity || r.city.toLowerCase().includes(searchCity.toLowerCase());
       const matchAge    = filterAgeGroups.length === 0 || filterAgeGroups.includes(getAgeGroup(r.learnerDob) ?? '');
       const matchTags   = filterTags.length === 0 || filterTags.some(t => r.situationTags.includes(t));
       const matchGender = filterGenders.length === 0 || filterGenders.includes(r.learnerGender);
       return matchName && matchCity && matchAge && matchTags && matchGender;
-    });
-  }, [results, searchName, searchCity, filterAgeGroups, filterTags, filterGenders]);
+    }),
+  [results, searchName, searchCity, filterAgeGroups, filterTags, filterGenders]);
 
-  // ── Pagination ──────────────────────────────────────────────────────────────
+  // ── Pagination ───────────────────────────────────────────────────────────────
 
-  const resetKeyConnected  = String(connected.length);
+  const resetKeyConnected = `${connectedSearchName}|${connectedSearchCity}|${connected.length}`;
   const { visible: visibleConnected, showLoadMore: showLoadMoreConnected, loadMore: loadMoreConnected, showCapMessage: showCapConnected, pageSize } =
-    useVisibleCount(connected, resetKeyConnected);
+    useVisibleCount(filteredConnected, resetKeyConnected);
 
   const resetKeyDiscover = `${searchName}|${searchCity}|${filterAgeGroups.join(',')}|${filterTags.join(',')}|${filterGenders.join(',')}`;
   const { visible: visibleDiscovered, showLoadMore: showLoadMoreDiscovered, loadMore: loadMoreDiscovered, showCapMessage: showCapDiscovered, pageSize: pageSizeDiscover } =
     useVisibleCount(discovered, resetKeyDiscover);
 
-  // ── Card renderers ──────────────────────────────────────────────────────────
+  const hasFindMore = filterAgeGroups.length + filterTags.length + filterGenders.length > 0;
 
-  function avatarColor(name: string) {
-    return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
-  }
+  // ── Card renderers ───────────────────────────────────────────────────────────
 
   function renderConnectedCard(item: GuardianResult) {
     return (
-      <TouchableOpacity key={item.guardianId} style={s.card} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
-        <View style={[s.avatar, { backgroundColor: avatarColor(item.guardianName) }]}>
-          <AppText style={s.avatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
+      <TouchableOpacity key={item.guardianId} style={s.gridCard} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+        <View style={[s.gridAvatar, { backgroundColor: avatarColor(item.guardianName) }]}>
+          <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
         </View>
-        <View style={s.info}>
-          <AppText style={s.guardianName}>{item.guardianName}</AppText>
-          {item.city ? <AppText style={s.meta}>{item.city}</AppText> : null}
-        </View>
-        <View style={s.actions}>
+        <AppText style={s.gridName} numberOfLines={1}>{item.guardianName}</AppText>
+        {item.city ? <AppText style={s.gridCity} numberOfLines={1}>{item.city}</AppText> : null}
+        <View style={s.gridAction}>
           {processing === item.guardianId ? (
-            <ActivityIndicator color={COLORS.bloomAccent} />
+            <ActivityIndicator color={NICO.primary} />
           ) : (
-            <View style={s.disconnectWrap}>
-              {hoveredDisconnect === item.guardianId && (
-                <AppText style={s.disconnectLabel}>Delete Connection</AppText>
-              )}
-              <TouchableOpacity
-                style={s.disconnectBtn}
-                onPress={(e) => { e.stopPropagation(); disconnect(item); }}
-                onPressIn={() => setHoveredDisconnect(item.guardianId)}
-                onPressOut={() => setHoveredDisconnect(null)}
-                activeOpacity={0.7}
-              >
-                <AppText style={s.disconnectIcon}>🗑️</AppText>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={s.disconnectBtn}
+              onPress={(e) => { e.stopPropagation(); disconnect(item); }}
+              activeOpacity={0.7}
+            >
+              <AppText style={s.disconnectIcon}>✕</AppText>
+            </TouchableOpacity>
           )}
         </View>
       </TouchableOpacity>
     );
   }
 
-  function renderPendingCard(item: GuardianResult) {
+  function renderSentCard(item: GuardianResult) {
+    const badge =
+      item.status === 'accepted'     ? { label: 'Connected',  style: s.badgeAccepted,  textStyle: s.badgeAcceptedTxt  } :
+      item.status === 'rejected'     ? { label: 'Rejected',   style: s.badgeRejected,  textStyle: s.badgeRejectedTxt  } :
+      /* pending_sent */               { label: 'Pending',    style: s.badgePending,   textStyle: s.badgePendingTxt   };
+    return (
+      <TouchableOpacity key={item.guardianId} style={s.gridCard} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+        <View style={[s.gridAvatar, { backgroundColor: avatarColor(item.guardianName) }]}>
+          <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
+        </View>
+        <AppText style={s.gridName} numberOfLines={1}>{item.guardianName}</AppText>
+        {item.city ? <AppText style={s.gridCity} numberOfLines={1}>{item.city}</AppText> : null}
+        <View style={s.gridAction}>
+          <View style={badge.style}>
+            <AppText style={badge.textStyle}>{badge.label}</AppText>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  function renderReceivedCard(item: GuardianResult) {
     const isProcessing = processing === item.guardianId;
     return (
-      <TouchableOpacity key={item.guardianId} style={[s.card, s.pendingCard]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
-        <View style={[s.avatar, { backgroundColor: avatarColor(item.guardianName) }]}>
-          <AppText style={s.avatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
+      <TouchableOpacity key={item.guardianId} style={s.gridCard} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+        <View style={[s.gridAvatar, { backgroundColor: avatarColor(item.guardianName) }]}>
+          <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
         </View>
-        <View style={s.info}>
-          <AppText style={s.guardianName}>{item.guardianName}</AppText>
-          {item.city ? <AppText style={s.meta}>{item.city}</AppText> : null}
-          <AppText style={s.pendingLabel}>Wants to connect with you</AppText>
-        </View>
-        <View style={s.actions}>
+        <AppText style={s.gridName} numberOfLines={1}>{item.guardianName}</AppText>
+        {item.city ? <AppText style={s.gridCity} numberOfLines={1}>{item.city}</AppText> : null}
+        <AppText style={s.gridPendingLabel}>Wants to connect</AppText>
+        <View style={s.gridAction}>
           {isProcessing ? (
-            <ActivityIndicator color={COLORS.bloomAccent} />
+            <ActivityIndicator color={NICO.primary} />
           ) : (
-            <>
-              <TouchableOpacity style={s.acceptBtn} onPress={() => accept(item)}>
-                <AppText style={s.acceptText}>✓</AppText>
+            <View style={s.gridTwoBtn}>
+              <TouchableOpacity style={[s.gridHalfBtn, { backgroundColor: NICO.successLight, borderWidth: 1.5, borderColor: NICO.success }]} onPress={() => accept(item)}>
+                <AppText style={[s.gridHalfBtnTxt, { color: NICO.success }]}>✓</AppText>
               </TouchableOpacity>
-              <TouchableOpacity style={s.declineBtn} onPress={() => decline(item)}>
-                <AppText style={s.declineText}>✕</AppText>
+              <TouchableOpacity style={[s.gridHalfBtn, { backgroundColor: NICO.errorLight, borderWidth: 1.5, borderColor: NICO.error }]} onPress={() => decline(item)}>
+                <AppText style={[s.gridHalfBtnTxt, { color: NICO.error }]}>✕</AppText>
               </TouchableOpacity>
-            </>
+            </View>
           )}
         </View>
       </TouchableOpacity>
@@ -384,33 +357,18 @@ export default function GuardianConnectionsScreen() {
     const isProcessing = processing === item.guardianId;
     const isSending    = sending === item.guardianId;
     return (
-      <TouchableOpacity key={item.guardianId} style={s.card} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
-        <View style={[s.avatar, { backgroundColor: avatarColor(item.guardianName) }]}>
-          <AppText style={s.avatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
+      <TouchableOpacity key={item.guardianId} style={s.gridCard} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+        <View style={[s.gridAvatar, { backgroundColor: avatarColor(item.guardianName) }]}>
+          <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
         </View>
-        <View style={s.info}>
-          <AppText style={s.guardianName}>{item.guardianName}</AppText>
-          {item.city ? <AppText style={s.meta}>{item.city}</AppText> : null}
-        </View>
-        <View style={s.actions}>
+        <AppText style={s.gridName} numberOfLines={1}>{item.guardianName}</AppText>
+        {item.city ? <AppText style={s.gridCity} numberOfLines={1}>{item.city}</AppText> : null}
+        <View style={s.gridAction}>
           {isProcessing || isSending ? (
-            <ActivityIndicator color={COLORS.bloomAccent} />
-          ) : item.status === 'accepted' ? (
-            <View style={s.connectedBadge}><AppText style={s.connectedText}>✓ Connected</AppText></View>
-          ) : item.status === 'pending_sent' ? (
-            <View style={s.pendingBadge}><AppText style={s.pendingText}>Pending</AppText></View>
-          ) : item.status === 'pending_received' ? (
-            <>
-              <TouchableOpacity style={s.acceptBtn} onPress={() => accept(item)}>
-                <AppText style={s.acceptText}>✓ Accept</AppText>
-              </TouchableOpacity>
-              <TouchableOpacity style={s.declineBtn} onPress={() => decline(item)}>
-                <AppText style={s.declineText}>✕</AppText>
-              </TouchableOpacity>
-            </>
+            <ActivityIndicator color={NICO.primary} />
           ) : (
-            <TouchableOpacity style={s.connectBtn} onPress={(e) => { e.stopPropagation(); sendRequest(item); }}>
-              <AppText style={s.connectText}>Connect</AppText>
+            <TouchableOpacity style={s.gridConnectBtn} onPress={(e) => { e.stopPropagation(); sendRequest(item); }} activeOpacity={0.8}>
+              <AppText style={s.gridConnectIcon}>🤝</AppText>
             </TouchableOpacity>
           )}
         </View>
@@ -418,115 +376,197 @@ export default function GuardianConnectionsScreen() {
     );
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <View style={s.container}>
+      <RainbowDivider />
+
       {/* Tab bar */}
       <View style={s.tabBar}>
-        <TouchableOpacity
-          style={[s.tab, activeTab === 'connected' && s.tabActive]}
-          onPress={() => setActiveTab('connected')}
-          activeOpacity={0.8}
-        >
-          <AppText style={[s.tabTxt, activeTab === 'connected' && s.tabTxtActive]}>
-            My Connections
-            {connected.length > 0 ? `  ${connected.length}` : ''}
-          </AppText>
-          {pendingReceived.length > 0 && activeTab !== 'connected' && (
-            <View style={s.tabDot} />
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[s.tab, activeTab === 'find' && s.tabActive]}
-          onPress={() => setActiveTab('find')}
-          activeOpacity={0.8}
-        >
-          <AppText style={[s.tabTxt, activeTab === 'find' && s.tabTxtActive]}>Find Guardians</AppText>
-        </TouchableOpacity>
+        {(['connected', 'requests', 'find'] as Tab[]).map(tab => (
+          <TouchableOpacity
+            key={tab}
+            style={[s.tab, activeTab === tab && s.tabActive]}
+            onPress={() => setActiveTab(tab)}
+            activeOpacity={0.8}
+          >
+            <AppText style={[s.tabTxt, activeTab === tab && s.tabTxtActive]}>
+              {tab === 'connected' ? 'My Connections' : tab === 'requests' ? 'Requests' : 'Find'}
+            </AppText>
+          </TouchableOpacity>
+        ))}
       </View>
 
       {loading ? (
-        <View style={s.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>
+        <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>
+
       ) : activeTab === 'connected' ? (
-        /* ── Connected tab ─────────────────────────────────────────── */
-        <ScrollView contentContainerStyle={s.list}>
-          {pendingReceived.length === 0 && connected.length === 0 ? (
-            <View style={s.empty}>
-              <AppText style={s.emptyEmoji}>🤝</AppText>
-              <AppText style={s.emptyText}>No connections yet</AppText>
-              <AppText style={s.emptyHint}>
-                Connect with other guardians who share similar experiences — filter by your learner's situation, age, or location to find the right people.
-              </AppText>
-              <TouchableOpacity style={s.emptyBtn} onPress={() => setActiveTab('find')} activeOpacity={0.8}>
-                <AppText style={s.emptyBtnTxt}>Find Guardians</AppText>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <>
-              {pendingReceived.length > 0 && (
-                <>
-                  <AppText style={s.sectionHeader}>Pending requests  ·  {pendingReceived.length}</AppText>
-                  {pendingReceived.map(item => renderPendingCard(item))}
-                </>
-              )}
-              {connected.length > 0 && (
-                <>
-                  <AppText style={[s.sectionHeader, pendingReceived.length > 0 && { marginTop: 20 }]}>
-                    Connected  ·  {connected.length}
-                  </AppText>
-                  {visibleConnected.map(item => renderConnectedCard(item))}
-                  {showLoadMoreConnected && (
-                    <TouchableOpacity style={s.loadMoreBtn} onPress={loadMoreConnected} activeOpacity={0.7}>
-                      <AppText style={s.loadMoreText}>Load {pageSize} more</AppText>
-                    </TouchableOpacity>
-                  )}
-                  {showCapConnected && (
-                    <View style={s.capMessage}>
-                      <AppText style={s.capMessageText}>Use filters to search records</AppText>
-                    </View>
-                  )}
-                </>
-              )}
-            </>
-          )}
-        </ScrollView>
-      ) : (
-        /* ── Find tab ──────────────────────────────────────────────── */
-        <>
+        /* ── My Connections tab ──────────────────────────────────────────── */
+        <View style={s.tabPane}>
           <View style={s.searchRow}>
-            <TextInput
-              style={s.searchInput}
-              value={searchName}
-              onChangeText={setSearchName}
-              placeholder="Guardian name…"
-              placeholderTextColor={COLORS.bloomMuted}
-              clearButtonMode="while-editing"
-            />
-            <TextInput
-              style={s.searchInput}
-              value={searchCity}
-              onChangeText={setSearchCity}
-              placeholder="Guardian city or state…"
-              placeholderTextColor={COLORS.bloomMuted}
-              clearButtonMode="while-editing"
-            />
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
+              <TextInput
+                style={s.searchInput}
+                value={connectedSearchName}
+                onChangeText={setConnectedSearchName}
+                placeholder="Search by name…"
+                placeholderTextColor={NICO.textMuted}
+                clearButtonMode="while-editing"
+              />
+            </LinearGradient>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
+              <TextInput
+                style={s.searchInput}
+                value={connectedSearchCity}
+                onChangeText={setConnectedSearchCity}
+                placeholder="Search by city or state…"
+                placeholderTextColor={NICO.textMuted}
+                clearButtonMode="while-editing"
+              />
+            </LinearGradient>
           </View>
 
-          <View style={s.filterRow}>
-            <TouchableOpacity style={[s.filterBtn, totalActive > 0 && s.filterBtnActive]} onPress={openSheet} activeOpacity={0.8}>
-              <AppText style={[s.filterBtnTxt, totalActive > 0 && s.filterBtnTxtActive]}>
-                {totalActive > 0 ? `Filters  ·  ${totalActive}` : 'Filters'}
-              </AppText>
-              <AppText style={[s.filterBtnIcon, totalActive > 0 && s.filterBtnTxtActive]}>⊟</AppText>
-            </TouchableOpacity>
+          <ScrollView contentContainerStyle={s.list}>
+            {connected.length === 0 ? (
+              <View style={s.empty}>
+                <AppText style={s.emptyEmoji}>🤝</AppText>
+                <AppText style={s.emptyText}>No connections yet</AppText>
+                <AppText style={s.emptyHint}>Connect with other guardians who share similar experiences.</AppText>
+                <TouchableOpacity style={s.emptyBtn} onPress={() => setActiveTab('find')} activeOpacity={0.8}>
+                  <AppText style={s.emptyBtnTxt}>Find Guardians</AppText>
+                </TouchableOpacity>
+              </View>
+            ) : filteredConnected.length === 0 ? (
+              <View style={s.empty}>
+                <AppText style={s.emptyEmoji}>🔍</AppText>
+                <AppText style={s.emptyText}>No matches</AppText>
+                <AppText style={s.emptyHint}>Try a different name or city</AppText>
+              </View>
+            ) : (
+              <>
+                <View style={s.gridWrap}>
+                  {visibleConnected.map(item => renderConnectedCard(item))}
+                </View>
+                {showLoadMoreConnected && (
+                  <TouchableOpacity style={s.loadMoreBtn} onPress={loadMoreConnected} activeOpacity={0.7}>
+                    <AppText style={s.loadMoreText}>Load {pageSize} more</AppText>
+                  </TouchableOpacity>
+                )}
+                {showCapConnected && (
+                  <View style={s.capMessage}>
+                    <AppText style={s.capMessageText}>Use filters to search records</AppText>
+                  </View>
+                )}
+              </>
+            )}
+          </ScrollView>
+        </View>
+
+      ) : activeTab === 'requests' ? (
+        /* ── Requests tab ────────────────────────────────────────────────── */
+        <View style={s.tabPane}>
+          {/* Sub-tab bar */}
+          <View style={s.subTabBar}>
+            {([
+              { key: 'sent',     label: 'Sent',     count: sentRequests.length },
+              { key: 'received', label: 'Received', count: receivedRequests.length },
+            ] as { key: RequestsSubTab; label: string; count: number }[]).map(({ key, label, count }) => {
+              const isActive = activeRequestsTab === key;
+              return (
+                <LinearGradient
+                  key={key}
+                  colors={[...BUTTERFLY_BORDER.colors]}
+                  start={BUTTERFLY_BORDER.start}
+                  end={BUTTERFLY_BORDER.end}
+                  style={[s.subTabGradient, !isActive && s.subTabGradientDim]}
+                >
+                  <TouchableOpacity
+                    style={[s.subTabInner, isActive && s.subTabInnerActive]}
+                    onPress={() => setActiveRequestsTab(key)}
+                    activeOpacity={0.8}
+                  >
+                    <AppText style={[s.subTabTxt, isActive && s.subTabTxtActive]}>
+                      {label}{count > 0 ? `  ${count}` : ''}
+                    </AppText>
+                  </TouchableOpacity>
+                </LinearGradient>
+              );
+            })}
+          </View>
+
+          {activeRequestsTab === 'sent' ? (
+            <ScrollView contentContainerStyle={s.list}>
+              {sentRequests.length === 0 ? (
+                <View style={s.empty}>
+                  <AppText style={s.emptyEmoji}>📤</AppText>
+                  <AppText style={s.emptyText}>No sent requests</AppText>
+                  <AppText style={s.emptyHint}>Requests you send will appear here.</AppText>
+                </View>
+              ) : (
+                <View style={s.gridWrap}>
+                  {sentRequests.map(item => renderSentCard(item))}
+                </View>
+              )}
+            </ScrollView>
+          ) : (
+            <ScrollView contentContainerStyle={s.list}>
+              {receivedRequests.length === 0 ? (
+                <View style={s.empty}>
+                  <AppText style={s.emptyText}>No pending requests</AppText>
+                  <AppText style={s.emptyHint}>Connection requests from others will appear here.</AppText>
+                </View>
+              ) : (
+                <View style={s.gridWrap}>
+                  {receivedRequests.map(item => renderReceivedCard(item))}
+                </View>
+              )}
+            </ScrollView>
+          )}
+        </View>
+
+      ) : (
+        /* ── Find tab ────────────────────────────────────────────────────── */
+        <View style={s.tabPane}>
+          <View style={s.searchRow}>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
+              <TextInput
+                style={s.searchInput}
+                value={searchName}
+                onChangeText={setSearchName}
+                placeholder="Search by guardian name…"
+                placeholderTextColor={NICO.textMuted}
+                clearButtonMode="while-editing"
+              />
+            </LinearGradient>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
+              <TextInput
+                style={s.searchInput}
+                value={searchCity}
+                onChangeText={setSearchCity}
+                placeholder="Search by city or state…"
+                placeholderTextColor={NICO.textMuted}
+                clearButtonMode="while-editing"
+              />
+            </LinearGradient>
+          </View>
+
+          <View style={s.filterBar}>
             <AppText style={s.resultCount}>{discovered.length} result{discovered.length !== 1 ? 's' : ''}</AppText>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.moreBtnGradient}>
+              <TouchableOpacity style={[s.moreBtn, hasFindMore && s.moreBtnActive]} onPress={() => setSheetOpen(true)} activeOpacity={0.75}>
+                <AppText style={[s.moreBtnText, hasFindMore && s.moreBtnTextActive]}>More Filters</AppText>
+              </TouchableOpacity>
+            </LinearGradient>
           </View>
 
           <FlatList
             data={visibleDiscovered}
             keyExtractor={r => r.guardianId}
-            contentContainerStyle={s.list}
+            numColumns={GRID_COLS}
+            key={String(GRID_COLS)}
+            columnWrapperStyle={s.gridRow}
+            contentContainerStyle={s.gridList}
             renderItem={({ item }) => renderDiscoverCard(item)}
             ListFooterComponent={
               showLoadMoreDiscovered ? (
@@ -543,22 +583,47 @@ export default function GuardianConnectionsScreen() {
               <View style={s.empty}>
                 <AppText style={s.emptyEmoji}>🔍</AppText>
                 <AppText style={s.emptyText}>No guardians found</AppText>
-                <AppText style={s.emptyHint}>Try adjusting your filters</AppText>
+                <AppText style={s.emptyHint}>Try adjusting your search or filters</AppText>
               </View>
             }
           />
-        </>
+
+          <FilterSheet
+            visible={sheetOpen}
+            title="More Filters"
+            sections={[
+              {
+                key: 'situation', emoji: '🎯', title: 'Situation',
+                options: situationTagOptions.map(t => ({ key: t, label: t })),
+                selected: filterTags,
+                onToggle: v => setFilterTags(prev => toggle(prev, v)),
+              },
+              {
+                key: 'age', emoji: '👤', title: 'Learner Age',
+                options: AGE_GROUPS.map(g => ({ key: g, label: g })),
+                selected: filterAgeGroups,
+                onToggle: v => setFilterAgeGroups(prev => toggle(prev, v)),
+              },
+              {
+                key: 'gender', emoji: '⚧', title: 'Learner Gender',
+                options: GENDER_OPTIONS.map(g => ({ key: g, label: g })),
+                selected: filterGenders,
+                onToggle: v => setFilterGenders(prev => toggle(prev, v)),
+              },
+            ] satisfies FilterSheetSection[]}
+            onClearAll={() => { setFilterAgeGroups([]); setFilterTags([]); setFilterGenders([]); }}
+            onDone={() => setSheetOpen(false)}
+          />
+        </View>
       )}
 
-      {/* Quick look */}
+      {/* Quick-look modal */}
       <Modal visible={!!peekGuardian} transparent animationType="slide" onRequestClose={() => setPeekGuardian(null)}>
         <TouchableOpacity style={s.sheetBackdrop} activeOpacity={1} onPress={() => setPeekGuardian(null)}>
           {peekGuardian && (
-            <View style={s.sheet} onStartShouldSetResponder={() => true}>
-              {/* Handle */}
+            <View style={s.peekSheet} onStartShouldSetResponder={() => true}>
               <View style={s.peekHandle} />
 
-              {/* Guardian header */}
               <View style={s.peekHeader}>
                 {peekGuardian.photoUrl ? (
                   <Image source={{ uri: peekGuardian.photoUrl }} style={s.peekPhoto} />
@@ -569,31 +634,23 @@ export default function GuardianConnectionsScreen() {
                 )}
                 <View style={s.peekHeaderInfo}>
                   <AppText style={s.peekName}>{peekGuardian.guardianName}</AppText>
-                  {peekGuardian.city ? (
-                    <AppText style={s.peekCity}>📍 {peekGuardian.city}</AppText>
-                  ) : null}
+                  {peekGuardian.city ? <AppText style={s.peekCity}>📍 {peekGuardian.city}</AppText> : null}
                 </View>
               </View>
 
-              {/* Learner section */}
               {peekGuardian.learnerName ? (
                 <View style={s.peekSection}>
                   <AppText style={s.peekSectionLabel}>Learner</AppText>
-                  <View style={s.peekLearnerRow}>
-                    <View style={s.peekLearnerDetail}>
-                      <AppText style={s.peekLearnerName}>{peekGuardian.learnerName}</AppText>
-                      <AppText style={s.peekLearnerMeta}>
-                        {[
-                          peekGuardian.learnerDob ? `${calcAge(peekGuardian.learnerDob) ?? '—'} yrs` : null,
-                          peekGuardian.learnerGender || null,
-                        ].filter(Boolean).join('  ·  ')}
-                      </AppText>
-                    </View>
-                  </View>
+                  <AppText style={s.peekLearnerName}>{peekGuardian.learnerName}</AppText>
+                  <AppText style={s.peekLearnerMeta}>
+                    {[
+                      peekGuardian.learnerDob ? `${calcAge(peekGuardian.learnerDob) ?? '—'} yrs` : null,
+                      peekGuardian.learnerGender || null,
+                    ].filter(Boolean).join('  ·  ')}
+                  </AppText>
                 </View>
               ) : null}
 
-              {/* Situation tags */}
               {peekGuardian.situationTags.length > 0 ? (
                 <View style={s.peekSection}>
                   <AppText style={s.peekSectionLabel}>Situation</AppText>
@@ -607,28 +664,31 @@ export default function GuardianConnectionsScreen() {
                 </View>
               ) : null}
 
-              {/* Action */}
               <View style={s.peekActions}>
                 {peekGuardian.status === 'accepted' ? (
-                  <View style={[s.sheetApply, { backgroundColor: COLORS.statusGreenDark }]}>
-                    <AppText style={s.sheetApplyTxt}>✓ Connected</AppText>
+                  <View style={[s.peekActionBtn, { backgroundColor: NICO.successLight }]}>
+                    <AppText style={[s.peekActionTxt, { color: NICO.success }]}>✓ Connected</AppText>
                   </View>
                 ) : peekGuardian.status === 'pending_sent' ? (
-                  <View style={[s.sheetApply, { backgroundColor: COLORS.bloomMuted }]}>
-                    <AppText style={s.sheetApplyTxt}>Request Sent</AppText>
+                  <View style={[s.peekActionBtn, { backgroundColor: NICO.background }]}>
+                    <AppText style={[s.peekActionTxt, { color: NICO.textMuted }]}>Request Sent</AppText>
                   </View>
                 ) : peekGuardian.status === 'pending_received' ? (
-                  <View style={{ flexDirection: 'row', gap: 10 }}>
-                    <TouchableOpacity style={[s.sheetApply, { flex: 1 }]} onPress={() => { accept(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
-                      <AppText style={s.sheetApplyTxt}>✓ Accept</AppText>
+                  <View style={{ flexDirection: 'row', gap: SPACING.md }}>
+                    <TouchableOpacity style={[s.peekActionBtn, { flex: 1, backgroundColor: NICO.primary }]} onPress={() => { accept(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
+                      <AppText style={[s.peekActionTxt, { color: NICO.textOnAccent }]}>✓ Accept</AppText>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[s.sheetApply, { flex: 1, backgroundColor: COLORS.statusRedLight }]} onPress={() => { decline(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
-                      <AppText style={[s.sheetApplyTxt, { color: '#B91C1C' }]}>✕ Decline</AppText>
+                    <TouchableOpacity style={[s.peekActionBtn, { flex: 1, backgroundColor: NICO.errorLight }]} onPress={() => { decline(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
+                      <AppText style={[s.peekActionTxt, { color: NICO.error }]}>✕ Decline</AppText>
                     </TouchableOpacity>
                   </View>
+                ) : peekGuardian.status === 'rejected' ? (
+                  <TouchableOpacity style={[s.peekActionBtn, { backgroundColor: NICO.primary }]} onPress={() => { sendRequest(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
+                    <AppText style={[s.peekActionTxt, { color: NICO.textOnAccent }]}>Send Request Again</AppText>
+                  </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity style={s.sheetApply} onPress={() => { sendRequest(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
-                    <AppText style={s.sheetApplyTxt}>Connect</AppText>
+                  <TouchableOpacity style={[s.peekActionBtn, { backgroundColor: NICO.primary }]} onPress={() => { sendRequest(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
+                    <AppText style={[s.peekActionTxt, { color: NICO.textOnAccent }]}>Connect</AppText>
                   </TouchableOpacity>
                 )}
               </View>
@@ -636,224 +696,166 @@ export default function GuardianConnectionsScreen() {
           )}
         </TouchableOpacity>
       </Modal>
-
-      {/* Filter sheet */}
-      <Modal visible={sheetOpen} transparent animationType="slide" onRequestClose={() => setSheetOpen(false)}>
-        <TouchableOpacity style={s.sheetBackdrop} activeOpacity={1} onPress={() => setSheetOpen(false)}>
-          <View style={s.sheet} onStartShouldSetResponder={() => true}>
-            <View style={s.sheetHdr}>
-              <TouchableOpacity onPress={clearSheet} activeOpacity={0.7}>
-                <AppText style={s.sheetClear}>Clear all</AppText>
-              </TouchableOpacity>
-              <AppText style={s.sheetTitle}>Filters</AppText>
-              <TouchableOpacity onPress={() => setSheetOpen(false)} activeOpacity={0.7}>
-                <AppText style={s.sheetClose}>✕</AppText>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={s.sheetBody} showsVerticalScrollIndicator={false}>
-              <SheetSection
-                id="situation" emoji="🎯" title="Situation"
-                options={situationTagOptions} selected={draftTags}
-                onToggle={v => setDraftTags(t => toggle(t, v))}
-                openId={openSec} setOpenId={setOpenSec}
-              />
-              <SheetSection
-                id="age" emoji="👤" title="Learner age"
-                options={AGE_GROUPS} selected={draftAgeGroups}
-                onToggle={v => setDraftAgeGroups(g => toggle(g, v))}
-                openId={openSec} setOpenId={setOpenSec}
-              />
-              <SheetSection
-                id="gender" emoji="⚧" title="Learner gender"
-                options={GENDER_OPTIONS} selected={draftGenders}
-                onToggle={v => setDraftGenders(g => toggle(g, v))}
-                openId={openSec} setOpenId={setOpenSec}
-              />
-            </ScrollView>
-
-            <TouchableOpacity style={s.sheetApply} onPress={applySheet} activeOpacity={0.85}>
-              <AppText style={s.sheetApplyTxt}>Show results</AppText>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bloomBody },
+  container: { flex: 1, backgroundColor: NICO.screenBg },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 40 },
+  tabPane:   { flex: 1, backgroundColor: NICO.background },
 
-  // Tab bar
+  // Primary tab bar
   tabBar: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.bloomCard,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.bloomBorder,
+    flexDirection: 'row', backgroundColor: NICO.surface,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
   tab: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 14, gap: 6,
-    borderBottomWidth: 2, borderBottomColor: 'transparent',
+    paddingVertical: SPACING.md, gap: SPACING.xs,
+    borderBottomWidth: 2.5, borderBottomColor: 'transparent',
   },
-  tabActive: { borderBottomColor: COLORS.bloomNavy },
-  tabTxt:    { fontSize: 14, fontWeight: '600', color: COLORS.bloomMuted },
-  tabTxtActive: { color: COLORS.bloomNavy, fontWeight: '800' },
-  tabDot: {
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: COLORS.statusError, marginLeft: 2,
+  tabActive:    { borderBottomColor: NICO.primary },
+  tabTxt:       { ...TEXT_STYLE.tabLabel },
+  tabTxtActive: { ...TEXT_STYLE.tabLabel, color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold },
+
+  // Secondary (Requests) sub-tab bar
+  subTabBar: {
+    flexDirection: 'row', backgroundColor: NICO.screenBg,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
+    paddingHorizontal: SPACING.base, paddingVertical: SPACING.sm,
+    gap: SPACING.xl,
   },
+  subTabGradient:    { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.full },
+  subTabGradientDim: { opacity: 0.35 },
+  subTabInner: {
+    paddingVertical: SPACING.xs, paddingHorizontal: SPACING.lg,
+    borderRadius: RADIUS.full, backgroundColor: NICO.screenBg, alignItems: 'center' as const,
+  },
+  subTabInnerActive: { backgroundColor: NICO.primaryLight },
+  subTabTxt:         { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
+  subTabTxtActive:   { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary },
 
   sectionHeader: {
-    fontSize: 12, fontWeight: '700', color: COLORS.bloomMuted,
-    textTransform: 'uppercase', letterSpacing: 0.6,
-    marginBottom: 8, marginTop: 4,
+    ...TEXT_STYLE.labelSmall, textTransform: 'uppercase', letterSpacing: 0.6,
+    marginBottom: SPACING.sm, marginTop: SPACING.xs,
   },
 
-  searchRow:   { padding: 14, gap: 8 },
-  searchInput: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 14, borderWidth: 1.5,
-    borderColor: COLORS.bloomBorder, paddingHorizontal: 16, paddingVertical: 13,
-    fontSize: 15, fontWeight: '500', color: COLORS.bloomText,
+  // Search row
+  searchRow: { padding: SPACING.base, gap: SPACING.sm, backgroundColor: NICO.screenBg },
+  searchGradient: {
+    padding: BUTTERFLY_BORDER.width,
+    borderRadius: RADIUS.md + BUTTERFLY_BORDER.width,
   },
+  searchInput: { ...INPUT.base, borderWidth: 0 },
 
-  filterRow:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingBottom: 10, gap: 10 },
-  filterBtn:       { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.bloomCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1.5, borderColor: COLORS.bloomBorder },
-  filterBtnActive: { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
-  filterBtnTxt:    { fontSize: 13, fontWeight: '700', color: COLORS.bloomMuted },
-  filterBtnTxtActive: { color: COLORS.bloomOnAccent },
-  filterBtnIcon:   { fontSize: 16, color: COLORS.bloomMuted },
-  resultCount:     { fontSize: 13, color: COLORS.bloomMuted, fontWeight: '600' },
-
-  list: { padding: 14, gap: 10, paddingBottom: 40 },
-
-  card: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: COLORS.bloomCard, borderRadius: 18, padding: 14,
-    borderWidth: 1, borderColor: COLORS.bloomBorder,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
-  },
-  pendingCard: { borderColor: '#FDE68A', borderWidth: 1.5 },
-
-  avatar:        { width: 52, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  avatarInitial: { fontSize: 20, fontWeight: '800', color: '#fff' },
-  info:          { flex: 1, minWidth: 0, gap: 3 },
-  guardianName:  { fontSize: 15, fontWeight: '800', color: COLORS.bloomText },
-  meta:          { fontSize: 12, color: COLORS.bloomMuted },
-  tags:          { fontSize: 11, color: COLORS.bloomMuted, marginTop: 1 },
-  pendingLabel:  { fontSize: 12, fontWeight: '600', color: '#B45309', marginTop: 2 },
-  actions:       { alignItems: 'center', gap: 6 },
-
-  connectBtn:     { backgroundColor: COLORS.bloomAccent, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
-  connectText:    { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 13 },
-  connectedBadge: { backgroundColor: COLORS.secondaryLight, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  connectedText:  { fontSize: 12, fontWeight: '700', color: COLORS.statusGreenDark },
-  disconnectWrap:  { alignItems: 'flex-end', gap: 4 },
-  disconnectLabel: { fontSize: 10, fontWeight: '700', color: '#B91C1C', textAlign: 'right' },
-  disconnectBtn:   { width: 36, height: 36, borderRadius: 10, backgroundColor: COLORS.statusRedLight, justifyContent: 'center', alignItems: 'center' },
-  disconnectIcon:  { fontSize: 18 },
-  pendingBadge:   { backgroundColor: COLORS.bloomBorder, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  pendingText:    { fontSize: 12, fontWeight: '600', color: COLORS.bloomMuted },
-  acceptBtn:      { backgroundColor: COLORS.bloomAccent, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  acceptText:     { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 12 },
-  declineBtn:     { backgroundColor: COLORS.statusRedLight, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  declineText:    { color: '#B91C1C', fontWeight: '700', fontSize: 12 },
-
-  loadMoreBtn: {
-    alignItems: 'center', paddingVertical: 14, marginTop: 8,
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    borderRadius: 14, backgroundColor: COLORS.bloomCard,
-  },
-  loadMoreText:   { fontSize: 14, fontWeight: '700', color: COLORS.bloomNavy },
-  capMessage:     { alignItems: 'center', paddingVertical: 16 },
-  capMessageText: { fontSize: 13, color: COLORS.bloomMuted, fontStyle: 'italic' },
-
-  empty:      { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyEmoji: { fontSize: 56 },
-  emptyText:  { fontSize: 20, fontWeight: '800', color: COLORS.bloomText },
-  emptyHint:  { fontSize: 14, color: COLORS.bloomMuted, textAlign: 'center', paddingHorizontal: 32 },
-  emptyBtn:   { backgroundColor: COLORS.bloomAccent, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 },
-  emptyBtnTxt: { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 15 },
-
-  // Filter sheet
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: COLORS.bloomCard, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    maxHeight: SCREEN_H * 0.75,
-  },
-  sheetHdr: {
+  // Filter bar (Find tab)
+  filterBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 16,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    paddingHorizontal: SPACING.base, paddingBottom: SPACING.sm,
+    backgroundColor: NICO.screenBg,
   },
-  sheetTitle: { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
-  sheetClear: { fontSize: 14, fontWeight: '600', color: COLORS.bloomAccent },
-  sheetClose: { fontSize: 18, color: COLORS.bloomMuted },
-  sheetBody:  { paddingHorizontal: 16 },
+  resultCount:     { ...TEXT_STYLE.caption, color: NICO.textMuted },
+  moreBtnGradient: { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.full },
+  moreBtn: {
+    flexDirection: 'row', alignItems: 'center',
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.base, paddingVertical: SPACING.xs,
+    backgroundColor: NICO.screenBg,
+  },
+  moreBtnActive:     { backgroundColor: NICO.primaryLight },
+  moreBtnText:       { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.medium, color: NICO.textMuted },
+  moreBtnTextActive: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.primary },
 
-  sheetSec:    { borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder, paddingVertical: 4 },
-  sheetSecHdr: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
-  sheetSecTitle: { fontSize: 15, fontWeight: '700', color: COLORS.bloomText },
-  sheetSecRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sheetSecBadge: { backgroundColor: COLORS.bloomAccent, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2 },
-  sheetSecBadgeTxt: { fontSize: 11, fontWeight: '800', color: COLORS.bloomOnAccent },
-  sheetSecArr: { fontSize: 11, color: COLORS.bloomMuted },
+  list:     { padding: SPACING.base, gap: SPACING.sm, paddingBottom: SPACING['2xl'] },
+  gridList: { padding: SPACING.base, paddingBottom: SPACING['2xl'] },
+  gridRow:  { gap: SPACING.sm, marginBottom: SPACING.sm },
 
-  optRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 11 },
-  optTxt:   { fontSize: 14, color: COLORS.bloomMuted, flex: 1 },
-  optTxtOn: { color: COLORS.bloomText, fontWeight: '700' },
-  optCheck: {
-    width: 22, height: 22, borderRadius: 6,
-    borderWidth: 2, borderColor: COLORS.bloomBorder,
+  // Shared grid card
+  gridCard: {
+    width: GRID_CARD_W,
+    backgroundColor: 'white', borderRadius: RADIUS.xl, padding: SPACING.base,
+    borderWidth: 1, borderColor: NICO.border,
+    alignItems: 'center', gap: SPACING.xs,
+    ...SHADOW.md,
+  },
+gridAvatar:        { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.xs },
+  gridAvatarInitial: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: 'white' },
+  gridName:          { ...TEXT_STYLE.bodyMedium, textAlign: 'center' as const },
+  gridCity:          { ...TEXT_STYLE.caption, textAlign: 'center' as const },
+  gridPendingLabel:  { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.primary },
+  gridAction:        { width: '100%', alignItems: 'center', marginTop: SPACING.xs },
+  gridConnectBtn: {
+    width: scale(44), height: scale(44), borderRadius: RADIUS.full,
+    backgroundColor: NICO.primaryLight, borderWidth: 1.5, borderColor: NICO.primary,
     justifyContent: 'center', alignItems: 'center',
   },
-  optCheckOn:   { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
-  optCheckMark: { fontSize: 12, color: COLORS.bloomOnAccent, fontWeight: '900' },
-
-  sheetApply: {
-    margin: 16, backgroundColor: COLORS.bloomAccent,
-    borderRadius: 14, paddingVertical: 15, alignItems: 'center',
+  gridConnectIcon: { fontSize: scale(22) },
+  gridTwoBtn:      { flexDirection: 'row' as const, gap: SPACING.xs, width: '100%' },
+  gridHalfBtn: {
+    flex: 1, borderRadius: RADIUS.lg,
+    paddingVertical: SPACING.sm, alignItems: 'center' as const,
   },
-  sheetApplyTxt: { fontSize: 16, fontWeight: '800', color: COLORS.bloomOnAccent },
+  gridHalfBtnTxt: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold },
+  gridWrap:        { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: SPACING.sm },
 
-  // Quick look
+  // Sent request status badges
+  badgeAccepted:    { backgroundColor: NICO.successLight, borderRadius: RADIUS.lg, paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs },
+  badgeAcceptedTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.success },
+  badgeRejected:    { backgroundColor: NICO.errorLight, borderRadius: RADIUS.lg, paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs },
+  badgeRejectedTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.error },
+  badgePending:     { backgroundColor: NICO.background, borderRadius: RADIUS.lg, paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs },
+  badgePendingTxt:  { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
+
+  disconnectBtn:  { width: scale(32), height: scale(32), borderRadius: RADIUS.full, backgroundColor: NICO.errorLight, borderWidth: 1.5, borderColor: NICO.error, justifyContent: 'center', alignItems: 'center' },
+  disconnectIcon: { fontSize: scale(FONT_SIZE.sm), color: NICO.error, fontWeight: FONT_WEIGHT.bold },
+
+  loadMoreBtn:    { ...BTN_SIZE.sm, ...BTN_VARIANT.outline, alignSelf: 'center', marginTop: SPACING.base },
+  loadMoreText:   { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary },
+  capMessage:     { alignItems: 'center', paddingVertical: SPACING.base },
+  capMessageText: { ...TEXT_STYLE.hint, fontStyle: 'italic' },
+
+  empty:       { alignItems: 'center', paddingTop: 60, gap: SPACING.md },
+  emptyEmoji:  { fontSize: 56 },
+  emptyText:   { ...TEXT_STYLE.cardTitle },
+  emptyHint:   { ...TEXT_STYLE.hint, textAlign: 'center', paddingHorizontal: SPACING['2xl'] },
+  emptyBtn:    { ...BTN_SIZE.md, ...BTN_VARIANT.primary, marginTop: SPACING.sm },
+  emptyBtnTxt: { ...TEXT_STYLE.buttonSmall },
+
+  // Quick-look sheet
+  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  peekSheet: {
+    backgroundColor: NICO.screenBg, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl,
+    maxHeight: '80%', paddingBottom: SPACING.xl,
+  },
   peekHandle: {
-    width: 40, height: 4, borderRadius: 2,
-    backgroundColor: COLORS.bloomBorder,
-    alignSelf: 'center', marginTop: 12, marginBottom: 4,
+    width: 40, height: 4, borderRadius: 2, backgroundColor: NICO.border,
+    alignSelf: 'center', marginTop: SPACING.md, marginBottom: SPACING.xs,
   },
   peekHeader: {
-    flexDirection: 'row', alignItems: 'center', gap: 16,
-    paddingHorizontal: 20, paddingVertical: 16,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.base,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  peekPhoto:        { width: 72, height: 72, borderRadius: 36 },
+  peekPhoto:         { width: 72, height: 72, borderRadius: 36 },
   peekPhotoFallback: { justifyContent: 'center', alignItems: 'center' },
-  peekInitial:      { fontSize: 28, fontWeight: '800', color: '#fff' },
-  peekHeaderInfo:   { flex: 1, gap: 4 },
-  peekName:         { fontSize: 20, fontWeight: '800', color: COLORS.bloomText },
-  peekCity:         { fontSize: 13, color: COLORS.bloomMuted, fontWeight: '500' },
+  peekInitial:       { fontSize: 28, fontWeight: FONT_WEIGHT.extraBold, color: 'white' },
+  peekHeaderInfo:    { flex: 1, gap: SPACING.xs },
+  peekName:          { ...TEXT_STYLE.cardTitle },
+  peekCity:          { ...TEXT_STYLE.caption },
 
-  peekSection:      { paddingHorizontal: 20, paddingTop: 16, gap: 8 },
-  peekSectionLabel: {
-    fontSize: 11, fontWeight: '700', color: COLORS.bloomMuted,
-    textTransform: 'uppercase', letterSpacing: 0.7,
-  },
-  peekLearnerRow:    { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  peekLearnerDetail: { gap: 2 },
-  peekLearnerName:   { fontSize: 16, fontWeight: '700', color: COLORS.bloomText },
-  peekLearnerMeta:   { fontSize: 13, color: COLORS.bloomMuted },
-
-  peekTagWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  peekSection:      { paddingHorizontal: SPACING.lg, paddingTop: SPACING.base, gap: SPACING.xs },
+  peekSectionLabel: { ...TEXT_STYLE.labelSmall, textTransform: 'uppercase', letterSpacing: 0.7 },
+  peekLearnerName:  { ...TEXT_STYLE.bodyMedium, fontWeight: FONT_WEIGHT.bold },
+  peekLearnerMeta:  { ...TEXT_STYLE.caption },
+  peekTagWrap:      { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs },
   peekTag: {
-    backgroundColor: COLORS.bloomBody, borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 5,
-    borderWidth: 1, borderColor: COLORS.bloomBorder,
+    backgroundColor: NICO.background, borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs,
+    borderWidth: 1, borderColor: NICO.border,
   },
-  peekTagTxt: { fontSize: 12, fontWeight: '600', color: COLORS.bloomText },
-
-  peekActions: { paddingHorizontal: 16, paddingBottom: 8 },
+  peekTagTxt:    { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
+  peekActions:   { paddingHorizontal: SPACING.lg, paddingTop: SPACING.base },
+  peekActionBtn: { borderRadius: RADIUS.xl, paddingVertical: SPACING.base, alignItems: 'center' },
+  peekActionTxt: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold },
 });

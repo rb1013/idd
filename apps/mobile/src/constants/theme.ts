@@ -404,6 +404,13 @@ export const BTN = {
  */
 export const CARD_BTN_ALIGN: 'stretch' | 'center' = IS_TABLET ? 'center' : 'stretch';
 
+/** Grid columns for search/browse result lists: 2 on phone, 3 on tablet. */
+export const GRID_COLS = IS_TABLET ? 3 : 2;
+
+/** Card width that fills GRID_COLS columns with SPACING.base list padding and SPACING.sm column gap. */
+export const GRID_CARD_W =
+  (width - SPACING.base * 2 - SPACING.sm * (GRID_COLS - 1)) / GRID_COLS;
+
 /** Base TextInput style. */
 export const INPUT = {
   base: {

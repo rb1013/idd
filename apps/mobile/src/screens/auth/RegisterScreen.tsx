@@ -59,7 +59,7 @@ export default function RegisterScreen() {
   }
 
   async function handleRegister() {
-    if (!fullName || !email || !password) { Alert.alert('Please fill in all required fields'); return; }
+    if (!fullName || !email || !password || !state || !city.trim()) { Alert.alert('Please fill in all required fields'); return; }
     const emailErr = emailError(email);
     if (emailErr) { Alert.alert('Invalid email', emailErr); return; }
     const pwdErr = passwordError(password);

@@ -18,7 +18,7 @@ import useNicoHeader from '../../hooks/useNicoHeader';
 import RainbowDivider from '../../components/RainbowDivider';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
-  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, CARD_BTN_ALIGN, scale, IS_TABLET,
+  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, CARD_BTN_ALIGN, scale, GRID_COLS, GRID_CARD_W,
 } from '../../constants/theme';
 
 type TutorialWithGuardian = Tutorial & { guardian?: { full_name: string } | null };
@@ -66,7 +66,6 @@ const GRID_CARD = {
 
 /** Returns the card title: full text on tablet, truncated on phone. */
 function cardTitle(name: string): string {
-  if (IS_TABLET) return name;
   return name.length > GRID_CARD.titlePhoneChars
     ? name.slice(0, GRID_CARD.titlePhoneChars) + '…'
     : name;
@@ -331,7 +330,8 @@ export default function GuardianTutorialsScreen() {
             <FlatList
               data={visibleSearch}
               keyExtractor={t => t.id}
-              numColumns={2}
+              numColumns={GRID_COLS}
+              key={String(GRID_COLS)}
               columnWrapperStyle={styles.gridRow}
               contentContainerStyle={styles.gridList}
               ListFooterComponent={
@@ -363,7 +363,7 @@ export default function GuardianTutorialsScreen() {
                       }
                     </View>
                     <View style={styles.gridCardBody}>
-                      <AppText style={styles.gridCardTitle} numberOfLines={IS_TABLET ? 2 : 1}>{cardTitle(t.display_name || t.category)}</AppText>
+                      <AppText style={styles.gridCardTitle} numberOfLines={1}>{cardTitle(t.display_name || t.category)}</AppText>
                       <AppText style={styles.gridCardSub}>{t.category}</AppText>
                       {(t as TutorialWithGuardian).guardian?.full_name && (
                         <AppText style={styles.gridCardCreator} numberOfLines={1}>by {(t as TutorialWithGuardian).guardian!.full_name}</AppText>
@@ -531,7 +531,8 @@ export default function GuardianTutorialsScreen() {
             <FlatList
               data={visibleMy}
               keyExtractor={t => t.id}
-              numColumns={2}
+              numColumns={GRID_COLS}
+              key={String(GRID_COLS)}
               columnWrapperStyle={styles.gridRow}
               contentContainerStyle={styles.gridList}
               ListHeaderComponent={
@@ -573,7 +574,7 @@ export default function GuardianTutorialsScreen() {
                     )}
                   </View>
                   <View style={styles.gridCardBody}>
-                    <AppText style={styles.gridCardTitle} numberOfLines={IS_TABLET ? 2 : 1}>{cardTitle(t.display_name || t.category)}</AppText>
+                    <AppText style={styles.gridCardTitle} numberOfLines={1}>{cardTitle(t.display_name || t.category)}</AppText>
                     <AppText style={styles.gridCardSub}>{t.category}</AppText>
                     {t.status === 'generating' && <AppText style={styles.generatingHint}>May take 1–2 mins</AppText>}
                     {t.status === 'approved' && learnerUserId && (
@@ -692,7 +693,8 @@ export default function GuardianTutorialsScreen() {
             <FlatList
               data={visiblePending}
               keyExtractor={t => t.id}
-              numColumns={2}
+              numColumns={GRID_COLS}
+              key={String(GRID_COLS)}
               columnWrapperStyle={styles.gridRow}
               contentContainerStyle={styles.gridList}
               ListHeaderComponent={
@@ -732,7 +734,7 @@ export default function GuardianTutorialsScreen() {
                     )}
                   </View>
                   <View style={styles.gridCardBody}>
-                    <AppText style={styles.gridCardTitle} numberOfLines={IS_TABLET ? 2 : 1}>{cardTitle(t.display_name || t.category)}</AppText>
+                    <AppText style={styles.gridCardTitle} numberOfLines={1}>{cardTitle(t.display_name || t.category)}</AppText>
                     <AppText style={styles.gridCardSub}>{t.category}</AppText>
                     {t.status === 'generating' && <AppText style={styles.generatingHint}>May take 1–2 mins</AppText>}
                   </View>
@@ -849,7 +851,7 @@ const styles = StyleSheet.create({
   gridList: { padding: SPACING.md, paddingBottom: SPACING['2xl'] },
   gridRow:  { gap: SPACING.md, marginBottom: SPACING.md },
   gridCard: {
-    flex: 1, backgroundColor: 'white', borderRadius: RADIUS.xl,
+    width: GRID_CARD_W, backgroundColor: 'white', borderRadius: RADIUS.xl,
     borderWidth: 1, borderColor: NICO.border, overflow: 'hidden',
     ...SHADOW.md,
   },
