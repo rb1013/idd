@@ -19,7 +19,7 @@ import { GuardianNavParamList } from '../../navigation';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
-  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, scale,
+  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, scale,
 } from '../../constants/theme';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
@@ -280,9 +280,9 @@ export default function DiscussionsScreen() {
           contentContainerStyle={s.list}
           ListHeaderComponent={filterHeader}
           keyboardShouldPersistTaps="handled"
-          renderItem={({ item: p }) => (
+          renderItem={({ item: p, index }) => (
             <TouchableOpacity
-              style={s.card}
+              style={[s.card, { backgroundColor: BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg, borderColor: 'transparent' }]}
               onPress={() => navigation.navigate('DiscussionDetail', { postId: p.id })}
               activeOpacity={0.82}
             >
@@ -496,7 +496,7 @@ export default function DiscussionsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: NICO.screenBg },
-  tabPane:   { flex: 1, backgroundColor: NICO.background },
+  tabPane:   { flex: 1, backgroundColor: NICO.screenBg },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 40 },
   list:      { padding: SPACING.base, paddingBottom: 100, gap: SPACING.sm },
 

@@ -19,7 +19,7 @@ import RainbowDivider from '../../components/RainbowDivider';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
-  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, CARD_BTN_ALIGN, scale, GRID_COLS, GRID_CARD_W,
+  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, CARD_BTN_ALIGN, scale, GRID_COLS, GRID_CARD_W,
 } from '../../constants/theme';
 
 type TutorialWithGuardian = Tutorial & { guardian?: { full_name: string } | null };
@@ -344,12 +344,13 @@ export default function GuardianTutorialsScreen() {
                   </View>
                 ) : null
               }
-              renderItem={({ item: t }) => {
+              renderItem={({ item: t, index }) => {
                 const toggling = togglingId === t.id;
                 const isLinked = linkedIds.has(t.id);
+                const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
                 return (
                   <TouchableOpacity
-                    style={styles.gridCard}
+                    style={[styles.gridCard, { backgroundColor: tileBg, borderColor: 'transparent' }]}
                     onPress={() => navigation.navigate('TutorialPreview', { tutorialId: t.id })}
                     activeOpacity={0.85}
                   >
@@ -556,9 +557,11 @@ export default function GuardianTutorialsScreen() {
                   <View style={styles.capMessage}><AppText style={styles.capMessageText}>Use filters to search records</AppText></View>
                 ) : null
               }
-              renderItem={({ item: t }) => (
+              renderItem={({ item: t, index }) => {
+                const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
+                return (
                 <TouchableOpacity
-                  style={styles.gridCard}
+                  style={[styles.gridCard, { backgroundColor: tileBg, borderColor: 'transparent' }]}
                   onPress={() => { if (t.status !== 'generating') navigation.navigate('TutorialPreview', { tutorialId: t.id }); }}
                   activeOpacity={t.status === 'generating' ? 1 : 0.85}
                 >
@@ -598,7 +601,8 @@ export default function GuardianTutorialsScreen() {
                     )}
                   </View>
                 </TouchableOpacity>
-              )}
+                );
+              }}
               ListEmptyComponent={
                 <View style={styles.empty}>
                   <AppText style={styles.emptyEmoji}>📚</AppText>
@@ -712,9 +716,11 @@ export default function GuardianTutorialsScreen() {
                   </TouchableOpacity>
                 ) : null
               }
-              renderItem={({ item: t }) => (
+              renderItem={({ item: t, index }) => {
+                const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
+                return (
                 <TouchableOpacity
-                  style={styles.gridCard}
+                  style={[styles.gridCard, { backgroundColor: tileBg, borderColor: 'transparent' }]}
                   onPress={() => { if (t.status !== 'generating') navigation.navigate('TutorialPreview', { tutorialId: t.id }); }}
                   activeOpacity={t.status === 'generating' ? 1 : 0.85}
                 >
@@ -742,7 +748,8 @@ export default function GuardianTutorialsScreen() {
                     {t.status === 'generating' && <AppText style={styles.generatingHint}>May take 1–2 mins</AppText>}
                   </View>
                 </TouchableOpacity>
-              )}
+                );
+              }}
               ListEmptyComponent={
                 <View style={styles.empty}>
                   <AppText style={styles.emptyEmoji}>⏳</AppText>
@@ -783,7 +790,7 @@ export default function GuardianTutorialsScreen() {
           )}
 
           <TouchableOpacity
-            style={[styles.createCard, quota?.used !== undefined && quota.used >= quota.limit && { opacity: 0.6 }]}
+            style={[styles.createCard, { backgroundColor: BUTTERFLY_TILES[0].bg, borderColor: 'transparent' }, quota?.used !== undefined && quota.used >= quota.limit && { opacity: 0.6 }]}
             onPress={() => {
               if (quota && quota.used >= quota.limit) { Alert.alert('Quota reached', `You have used all ${quota.limit} tutorials for this month.`); return; }
               navigation.navigate('CreateTutorial');
@@ -799,7 +806,7 @@ export default function GuardianTutorialsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.createCard}
+            style={[styles.createCard, { backgroundColor: BUTTERFLY_TILES[1].bg, borderColor: 'transparent' }]}
             onPress={() => navigation.navigate('LinkYoutube')}
             activeOpacity={0.85}
           >
@@ -945,7 +952,7 @@ const styles = StyleSheet.create({
   emptyHint:  { ...TEXT_STYLE.hint },
 
   // Create tab
-  tabPane: { flex: 1, backgroundColor: NICO.background },
+  tabPane: { flex: 1, backgroundColor: NICO.screenBg },
   createCard: {
     marginHorizontal: SPACING.base, marginTop: SPACING.md,
     backgroundColor: 'white', borderRadius: RADIUS.xl,

@@ -17,7 +17,7 @@ import useNicoHeader from '../../hooks/useNicoHeader';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
-  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, CARD_BTN_ALIGN,
+  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, CARD_BTN_ALIGN,
   GRID_COLS, GRID_CARD_W, scale,
 } from '../../constants/theme';
 
@@ -284,9 +284,10 @@ export default function GuardianConnectionsScreen() {
 
   // ── Card renderers ───────────────────────────────────────────────────────────
 
-  function renderConnectedCard(item: GuardianResult) {
+  function renderConnectedCard(item: GuardianResult, index: number) {
+    const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
     return (
-      <TouchableOpacity key={item.guardianId} style={s.gridCard} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+      <TouchableOpacity key={item.guardianId} style={[s.gridCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
         <View style={[s.gridAvatar, { backgroundColor: avatarColor(item.guardianName) }]}>
           <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
         </View>
@@ -309,13 +310,14 @@ export default function GuardianConnectionsScreen() {
     );
   }
 
-  function renderSentCard(item: GuardianResult) {
+  function renderSentCard(item: GuardianResult, index: number) {
+    const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
     const badge =
       item.status === 'accepted'     ? { label: 'Connected',  style: s.badgeAccepted,  textStyle: s.badgeAcceptedTxt  } :
       item.status === 'rejected'     ? { label: 'Rejected',   style: s.badgeRejected,  textStyle: s.badgeRejectedTxt  } :
       /* pending_sent */               { label: 'Pending',    style: s.badgePending,   textStyle: s.badgePendingTxt   };
     return (
-      <TouchableOpacity key={item.guardianId} style={s.gridCard} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+      <TouchableOpacity key={item.guardianId} style={[s.gridCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
         <View style={[s.gridAvatar, { backgroundColor: avatarColor(item.guardianName) }]}>
           <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
         </View>
@@ -330,10 +332,11 @@ export default function GuardianConnectionsScreen() {
     );
   }
 
-  function renderReceivedCard(item: GuardianResult) {
+  function renderReceivedCard(item: GuardianResult, index: number) {
+    const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
     const isProcessing = processing === item.guardianId;
     return (
-      <TouchableOpacity key={item.guardianId} style={s.gridCard} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+      <TouchableOpacity key={item.guardianId} style={[s.gridCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
         <View style={[s.gridAvatar, { backgroundColor: avatarColor(item.guardianName) }]}>
           <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
         </View>
@@ -358,11 +361,12 @@ export default function GuardianConnectionsScreen() {
     );
   }
 
-  function renderDiscoverCard(item: GuardianResult) {
+  function renderDiscoverCard(item: GuardianResult, index: number) {
+    const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
     const isProcessing = processing === item.guardianId;
     const isSending    = sending === item.guardianId;
     return (
-      <TouchableOpacity key={item.guardianId} style={s.gridCard} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+      <TouchableOpacity key={item.guardianId} style={[s.gridCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
         <View style={[s.gridAvatar, { backgroundColor: avatarColor(item.guardianName) }]}>
           <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
         </View>
@@ -451,7 +455,7 @@ export default function GuardianConnectionsScreen() {
             ) : (
               <>
                 <View style={s.gridWrap}>
-                  {visibleConnected.map(item => renderConnectedCard(item))}
+                  {visibleConnected.map((item, index) => renderConnectedCard(item, index))}
                 </View>
                 {showLoadMoreConnected && (
                   <TouchableOpacity style={s.loadMoreBtn} onPress={loadMoreConnected} activeOpacity={0.7}>
@@ -510,7 +514,7 @@ export default function GuardianConnectionsScreen() {
                 </View>
               ) : (
                 <View style={s.gridWrap}>
-                  {sentRequests.map(item => renderSentCard(item))}
+                  {sentRequests.map((item, index) => renderSentCard(item, index))}
                 </View>
               )}
             </ScrollView>
@@ -523,7 +527,7 @@ export default function GuardianConnectionsScreen() {
                 </View>
               ) : (
                 <View style={s.gridWrap}>
-                  {receivedRequests.map(item => renderReceivedCard(item))}
+                  {receivedRequests.map((item, index) => renderReceivedCard(item, index))}
                 </View>
               )}
             </ScrollView>
@@ -568,7 +572,7 @@ export default function GuardianConnectionsScreen() {
             key={String(GRID_COLS)}
             columnWrapperStyle={s.gridRow}
             contentContainerStyle={s.gridList}
-            renderItem={({ item }) => renderDiscoverCard(item)}
+            renderItem={({ item, index }) => renderDiscoverCard(item, index)}
             ListFooterComponent={
               showLoadMoreDiscovered ? (
                 <TouchableOpacity style={s.loadMoreBtn} onPress={loadMoreDiscovered} activeOpacity={0.7}>
@@ -704,7 +708,7 @@ export default function GuardianConnectionsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: NICO.screenBg },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 40 },
-  tabPane:   { flex: 1, backgroundColor: NICO.background },
+  tabPane:   { flex: 1, backgroundColor: NICO.screenBg },
 
   // Primary tab bar
   tabBar: {
