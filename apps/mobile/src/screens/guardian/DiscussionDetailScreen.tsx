@@ -1,30 +1,36 @@
 import React, { useCallback, useRef, useState } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  View, FlatList, TouchableOpacity, StyleSheet,
   TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
+import RainbowDivider from '../../components/RainbowDivider';
+import useNicoHeader from '../../hooks/useNicoHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { useFocusEffect, useRoute, RouteProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BUTTERFLY_BORDER, scale,
+} from '../../constants/theme';
 
 type Route = RouteProp<GuardianNavParamList, 'DiscussionDetail'>;
 
-const AVATAR_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, COLORS.statusAmber, COLORS.statusBlue, COLORS.statusPink];
+const AVATAR_PALETTE = ['#38BDF8', '#818CF8', '#C084FC', '#FB923C', '#34D399', '#FBBF24'];
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
+  if (mins < 1)  return 'just now';
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24)  return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
+  if (days < 7)  return `${days}d ago`;
   return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
@@ -32,10 +38,11 @@ interface Post  { id: string; title: string; body: string; guardianName: string;
 interface Reply { id: string; content: string; guardianName: string; guardianId: string; createdAt: string }
 
 export default function DiscussionDetailScreen() {
-  const route   = useRoute<Route>();
+  const navigation = useNavigation();
+  const route      = useRoute<Route>();
   const { postId } = route.params;
   const { guardian } = useAuth();
-  const insets     = useSafeAreaInsets();
+  const insets       = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
 
   const [post, setPost]         = useState<Post | null>(null);
@@ -45,6 +52,7 @@ export default function DiscussionDetailScreen() {
   const [sending, setSending]   = useState(false);
   const listRef = useRef<FlatList>(null);
 
+  useNicoHeader(navigation);
   useFocusEffect(useCallback(() => { load(); }, [postId]));
 
   async function load() {
@@ -86,7 +94,7 @@ export default function DiscussionDetailScreen() {
   }
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
+    return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
   }
 
   return (
@@ -95,6 +103,8 @@ export default function DiscussionDetailScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={headerHeight}
     >
+      <RainbowDivider />
+
       <FlatList
         ref={listRef}
         data={replies}
@@ -120,7 +130,7 @@ export default function DiscussionDetailScreen() {
           </View>
         }
         renderItem={({ item: r }) => {
-          const color = AVATAR_COLORS[r.guardianName.charCodeAt(0) % AVATAR_COLORS.length];
+          const color = AVATAR_PALETTE[r.guardianName.charCodeAt(0) % AVATAR_PALETTE.length];
           const isMe  = r.guardianId === guardian?.id;
           return (
             <View style={[s.replyRow, isMe && s.replyRowMe]}>
@@ -139,25 +149,35 @@ export default function DiscussionDetailScreen() {
         }}
       />
 
-      <View style={s.replyBar(insets.bottom)}>
-        <TextInput
-          style={s.replyInput}
-          value={replyText}
-          onChangeText={setReplyText}
-          placeholder="Write a reply…"
-          placeholderTextColor={COLORS.bloomMuted}
-          returnKeyType="send"
-          submitBehavior="submit"
-          onSubmitEditing={submitReply}
-          maxLength={500}
-        />
+      {/* Reply bar */}
+      <View style={[s.replyBar, { paddingBottom: Math.max(insets.bottom + 8, 16) }]}>
+        <LinearGradient
+          colors={[...BUTTERFLY_BORDER.colors]}
+          start={BUTTERFLY_BORDER.start}
+          end={BUTTERFLY_BORDER.end}
+          style={s.replyInputGradient}
+        >
+          <TextInput
+            style={s.replyInput}
+            value={replyText}
+            onChangeText={setReplyText}
+            placeholder="Write a reply…"
+            placeholderTextColor={NICO.textMuted}
+            returnKeyType="send"
+            submitBehavior="submit"
+            onSubmitEditing={submitReply}
+            maxLength={500}
+            multiline
+          />
+        </LinearGradient>
         <TouchableOpacity
           style={[s.sendBtn, (!replyText.trim() || sending) && { opacity: 0.4 }]}
           onPress={submitReply}
           disabled={!replyText.trim() || sending}
+          activeOpacity={0.8}
         >
           {sending
-            ? <ActivityIndicator size="small" color="#fff" />
+            ? <ActivityIndicator size="small" color={NICO.textOnAccent} />
             : <AppText style={s.sendBtnText}>↑</AppText>
           }
         </TouchableOpacity>
@@ -167,58 +187,69 @@ export default function DiscussionDetailScreen() {
 }
 
 const s = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: COLORS.bloomBody },
+  root:   { flex: 1, backgroundColor: NICO.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list:   { padding: 16, paddingBottom: 12, gap: 10 },
+  list:   { padding: SPACING.base, paddingBottom: SPACING.md, gap: SPACING.sm },
 
+  // Post card
   postCard: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 20, padding: 20, gap: 8, marginBottom: 8,
-    borderWidth: 1, borderColor: COLORS.bloomBorder,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    backgroundColor: NICO.screenBg, borderRadius: RADIUS.xl,
+    padding: SPACING.lg, gap: SPACING.xs, marginBottom: SPACING.sm,
+    borderWidth: 1, borderColor: NICO.border,
+    ...SHADOW.md,
   },
-  postTitle:     { fontSize: 20, fontWeight: '900', color: COLORS.bloomText },
-  postBody:      { fontSize: 15, color: COLORS.bloomText, lineHeight: 22 },
-  postMeta:      { fontSize: 12, color: COLORS.bloomMuted, marginTop: 4 },
-  repliesHeader: { fontSize: 11, fontWeight: '800', color: COLORS.bloomMuted, letterSpacing: 0.8, marginTop: 8, textTransform: 'uppercase' },
+  postTitle:     { fontSize: scale(FONT_SIZE.xl), fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  postBody:      { fontSize: FONT_SIZE.md, color: NICO.text, lineHeight: 22 },
+  postMeta:      { ...TEXT_STYLE.hint, marginTop: SPACING.xs },
+  repliesHeader: {
+    fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.extraBold,
+    color: NICO.textMuted, letterSpacing: 0.8,
+    marginTop: SPACING.sm, textTransform: 'uppercase',
+  },
 
-  replyRow:   { flexDirection: 'row', gap: 10, alignItems: 'flex-end' },
-  replyRowMe: { flexDirection: 'row-reverse' },
-
-  replyAvatar: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  replyAvatarText: { fontSize: 12, fontWeight: '800', color: '#fff' },
+  // Reply bubbles
+  replyRow:        { flexDirection: 'row', gap: SPACING.sm, alignItems: 'flex-end' },
+  replyRowMe:      { flexDirection: 'row-reverse' },
+  replyAvatar:     { width: scale(32), height: scale(32), borderRadius: scale(16), justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  replyAvatarText: { fontSize: scale(FONT_SIZE.sm), fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
 
   bubble: {
-    flex: 1, maxWidth: '80%', backgroundColor: COLORS.bloomCard,
-    borderRadius: 16, borderBottomLeftRadius: 4, padding: 12, gap: 3,
-    borderWidth: 1, borderColor: COLORS.bloomBorder,
+    flex: 1, maxWidth: '80%',
+    backgroundColor: NICO.screenBg,
+    borderRadius: RADIUS.lg, borderBottomLeftRadius: RADIUS.xs,
+    padding: SPACING.md, gap: 3,
+    borderWidth: 1, borderColor: NICO.border,
   },
-  bubbleMe:          { backgroundColor: COLORS.bloomAccent, borderBottomLeftRadius: 16, borderBottomRightRadius: 4, borderColor: COLORS.bloomAccent },
-  bubbleAuthor:      { fontSize: 11, fontWeight: '700', color: COLORS.bloomAccent },
-  bubbleAuthorMe:    { color: 'rgba(255,255,255,0.65)' },
-  bubbleContent:     { fontSize: 14, color: COLORS.bloomText, lineHeight: 20 },
-  bubbleContentMe:   { color: COLORS.bloomOnAccent },
-  bubbleTime:        { fontSize: 10, color: COLORS.bloomMuted, marginTop: 2 },
-  bubbleTimeMe:      { color: 'rgba(255,255,255,0.55)' },
+  bubbleMe:        { backgroundColor: NICO.primary, borderColor: NICO.primary, borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.xs },
+  bubbleAuthor:    { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
+  bubbleAuthorMe:  { color: 'rgba(255,255,255,0.65)' },
+  bubbleContent:   { fontSize: FONT_SIZE.md, color: NICO.text, lineHeight: 20 },
+  bubbleContentMe: { color: NICO.textOnAccent },
+  bubbleTime:      { fontSize: FONT_SIZE.xs, color: NICO.textMuted, marginTop: 2 },
+  bubbleTimeMe:    { color: 'rgba(255,255,255,0.55)' },
 
-  noReplies:     { alignItems: 'center', paddingTop: 24 },
-  noRepliesText: { fontSize: 14, color: COLORS.bloomMuted, fontStyle: 'italic' },
+  noReplies:     { alignItems: 'center', paddingTop: SPACING.xl },
+  noRepliesText: { ...TEXT_STYLE.hint, fontStyle: 'italic' },
 
-  replyBar: (bottomInset: number) => ({
-    flexDirection: 'row', alignItems: 'flex-end', gap: 10,
-    padding: 12, paddingBottom: Math.max(bottomInset + 8, 16),
-    backgroundColor: COLORS.bloomCard,
-    borderTopWidth: 1, borderTopColor: COLORS.bloomBorder,
-  }),
+  // Reply bar
+  replyBar: {
+    flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.sm,
+    padding: SPACING.md,
+    backgroundColor: NICO.screenBg,
+    borderTopWidth: 1, borderTopColor: NICO.border,
+  },
+  replyInputGradient: {
+    flex: 1, padding: BUTTERFLY_BORDER.width,
+    borderRadius: RADIUS.xl + BUTTERFLY_BORDER.width,
+  },
   replyInput: {
-    flex: 1, backgroundColor: COLORS.bloomBody, borderRadius: 20,
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    paddingHorizontal: 16, paddingVertical: 10,
-    fontSize: 15, color: COLORS.bloomText, maxHeight: 120,
+    backgroundColor: NICO.screenBg, borderRadius: RADIUS.xl,
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+    fontSize: FONT_SIZE.md, color: NICO.text, maxHeight: 120,
   },
   sendBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: COLORS.bloomAccent, justifyContent: 'center', alignItems: 'center',
+    width: scale(40), height: scale(40), borderRadius: scale(20),
+    backgroundColor: NICO.primary, justifyContent: 'center', alignItems: 'center',
   },
-  sendBtnText: { color: COLORS.bloomOnAccent, fontSize: 18, fontWeight: '700' },
+  sendBtnText: { color: NICO.textOnAccent, fontSize: scale(FONT_SIZE.xl), fontWeight: FONT_WEIGHT.bold },
 });
