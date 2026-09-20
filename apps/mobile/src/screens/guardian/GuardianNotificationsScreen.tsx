@@ -132,6 +132,10 @@ export default function GuardianNotificationsScreen() {
               activeOpacity={0.8}
             >
               {wasUnread && <View style={s.unreadStripe} />}
+              {wasUnread
+                ? <View style={s.unreadDot} />
+                : <AppText style={s.readTick}>✓</AppText>
+              }
               <AppText style={s.cardIcon}>{meta.icon}</AppText>
               <View style={s.cardBody}>
                 <AppText style={s.cardLabel}>{meta.label}</AppText>
@@ -167,11 +171,30 @@ const s = StyleSheet.create({
     overflow: 'hidden',
     ...SHADOW.sm,
   },
-  cardUnread: { borderColor: NICO.primary },
+  cardUnread: {
+    backgroundColor: NICO.chatBubbleMe,
+    borderColor: NICO.teal,
+    // inset shadow via extra shadow layers
+    shadowColor: NICO.teal,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    elevation: 3,
+  },
   unreadStripe: {
     position: 'absolute', left: 0, top: 0, bottom: 0,
-    width: 4, backgroundColor: NICO.primary,
+    width: 4, backgroundColor: NICO.teal,
     borderTopLeftRadius: RADIUS.xl, borderBottomLeftRadius: RADIUS.xl,
+  },
+  unreadDot: {
+    position: 'absolute', top: SPACING.md, right: SPACING.md,
+    width: 9, height: 9, borderRadius: 5,
+    backgroundColor: NICO.error,
+  },
+  readTick: {
+    position: 'absolute', top: SPACING.sm, right: SPACING.md,
+    fontSize: scale(18), fontWeight: FONT_WEIGHT.extraBold,
+    color: NICO.success,
   },
   cardIcon:    { fontSize: scale(22), marginTop: 1 },
   cardBody:    { flex: 1, gap: 2 },

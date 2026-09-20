@@ -124,17 +124,6 @@ export default function LearnerPublicProfileScreen() {
       });
       if (error) throw new Error(error.message);
 
-      const { data: addresseeProfile } = await supabase
-        .from('user_profiles').select('guardian_id').eq('id', profile.id).single();
-      if (addresseeProfile?.guardian_id) {
-        await supabase.from('notifications').insert({
-          guardian_id: addresseeProfile.guardian_id,
-          user_id: profile.id,
-          type: 'friend_request',
-          message: `${guardian.full_name} wants to connect their learner with ${profile.name}.`,
-        });
-      }
-
       setProfile(prev => prev ? { ...prev, connectionStatus: 'pending_sent' } : prev);
       Alert.alert('Request sent!', `A friend request has been sent to ${profile.name}'s guardian.`);
     } catch (err: any) {

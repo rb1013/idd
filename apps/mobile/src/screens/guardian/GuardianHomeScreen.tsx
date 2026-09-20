@@ -13,7 +13,7 @@ import * as Notifications from 'expo-notifications';
 import { useAuth } from '../../lib/AuthContext';
 import { supabase } from '../../lib/supabase';
 import {
-  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, BUTTERFLY_BORDER, BUTTERFLY_TILES, FONT_SIZE, FONT_WEIGHT, BTN_SIZE, BTN_VARIANT,
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, BUTTERFLY_BORDER, BUTTERFLY_TILES, FONT_SIZE, FONT_WEIGHT, BTN_SIZE, BTN_VARIANT, scale,
 } from '../../constants/theme';
 import { GuardianNavParamList } from '../../navigation';
 
@@ -53,7 +53,6 @@ export default function GuardianHomeScreen() {
   const [messagingDisabled, setMessagingDisabled] = useState(false);
   const [togglingMsg, setTogglingMsg]             = useState(false);
   const [unreadCount, setUnreadCount]             = useState(0);
-  const [showBellMenu, setShowBellMenu]           = useState(false);
   const [ttsDisabled, setTtsDisabled]             = useState(false);
   const [togglingTts, setTogglingTts]             = useState(false);
   const [showTtsInfo, setShowTtsInfo]             = useState(false);
@@ -173,7 +172,7 @@ export default function GuardianHomeScreen() {
             </View>
 
             <TouchableOpacity
-              onPress={() => setShowBellMenu(true)}
+              onPress={() => navigation.navigate('Notifications')}
               activeOpacity={0.75}
               style={s.bellBtn}
             >
@@ -184,32 +183,6 @@ export default function GuardianHomeScreen() {
                 </View>
               )}
             </TouchableOpacity>
-
-            {/* Bell dropdown */}
-            <Modal visible={showBellMenu} transparent animationType="fade" onRequestClose={() => setShowBellMenu(false)}>
-              <TouchableOpacity style={s.bellMenuOverlay} activeOpacity={1} onPress={() => setShowBellMenu(false)}>
-                <View style={s.bellMenuCard} onStartShouldSetResponder={() => true}>
-                  <AppText style={s.bellMenuTitle}>Notifications</AppText>
-                  <TouchableOpacity
-                    style={s.bellMenuItem}
-                    onPress={() => { setShowBellMenu(false); navigation.navigate('Notifications'); }}
-                    activeOpacity={0.75}
-                  >
-                    <AppText style={s.bellMenuItemText}>Guardian</AppText>
-                    {unreadCount > 0 && (
-                      <View style={s.bellMenuBadge}>
-                        <AppText style={s.bellMenuBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</AppText>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                  <View style={s.bellMenuDivider} />
-                  <TouchableOpacity style={[s.bellMenuItem, s.bellMenuItemDisabled]} activeOpacity={0.5}>
-                    <AppText style={[s.bellMenuItemText, { color: NICO.textMuted }]}>Learner</AppText>
-                    <AppText style={s.bellMenuComingSoon}>coming soon</AppText>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            </Modal>
           </View>
         </LinearGradient>
       </SafeAreaView>
@@ -413,47 +386,14 @@ const s = StyleSheet.create({
   avatarInitial: { ...TEXT_STYLE.label, color: NICO.primary, fontSize: FONT_SIZE.md },
   guardianName:  { ...TEXT_STYLE.bodyMedium },
   bellBtn:       { padding: SPACING.xs, position: 'relative' },
-  bellIcon:      { fontSize: 22 },
+  bellIcon:      { fontSize: scale(22) },
   bellBadge: {
     position: 'absolute', top: 0, right: 0,
     backgroundColor: NICO.error, borderRadius: RADIUS.full,
-    minWidth: 16, height: 16, paddingHorizontal: 3,
+    minWidth: scale(16), height: scale(16), paddingHorizontal: 3,
     justifyContent: 'center', alignItems: 'center',
   },
-  bellBadgeText: { fontSize: 9, fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
-
-  // Bell dropdown menu
-  bellMenuOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.35)',
-    alignItems: 'flex-end', justifyContent: 'flex-start',
-    paddingTop: 64, paddingRight: SPACING.base,
-  },
-  bellMenuCard: {
-    backgroundColor: NICO.screenBg, borderRadius: RADIUS.xl,
-    paddingVertical: SPACING.sm, minWidth: 200,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15, shadowRadius: 20, elevation: 10,
-  },
-  bellMenuTitle: {
-    fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold,
-    color: NICO.textMuted, textAlign: 'center',
-    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm,
-  },
-  bellMenuDivider:    { height: 1, backgroundColor: NICO.border },
-  bellMenuItem: {
-    flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg,
-  },
-  bellMenuItemDisabled: { opacity: 0.5 },
-  bellMenuItemIcon: { fontSize: FONT_SIZE.xl },
-  bellMenuItemText: { flex: 1, fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
-  bellMenuBadge: {
-    backgroundColor: NICO.error, borderRadius: RADIUS.full,
-    minWidth: 18, height: 18, paddingHorizontal: 4,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  bellMenuBadgeText: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
-  bellMenuComingSoon: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, fontStyle: 'italic' },
+  bellBadgeText: { fontSize: scale(9), fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
 
   body:        { flex: 1 },
   bodyContent: { padding: SPACING.base, paddingTop: SPACING.xl, gap: SPACING.base },
