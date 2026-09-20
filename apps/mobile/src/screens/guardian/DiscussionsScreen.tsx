@@ -273,6 +273,7 @@ export default function DiscussionsScreen() {
         ))}
       </View>
 
+      <View style={s.tabPane}>
       {loading ? (
         <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>
       ) : (
@@ -331,6 +332,7 @@ export default function DiscussionsScreen() {
           }
         />
       )}
+      </View>
 
       <TouchableOpacity style={s.fab} onPress={() => setShowCreate(true)} activeOpacity={0.85}>
         <AppText style={s.fabText}>New Discussion</AppText>
@@ -416,7 +418,7 @@ export default function DiscussionsScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <View style={s.formGap}>
-                <AppText style={s.fieldLabel}>Topic</AppText>
+                <AppText style={s.fieldLabel}>Topic <AppText style={{ color: NICO.error }}>*</AppText></AppText>
                 <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.fieldGradient}>
                   <TextInput
                     style={s.fieldInput}
@@ -424,7 +426,7 @@ export default function DiscussionsScreen() {
                     onChangeText={setNewTitle}
                     placeholder="What's on your mind?"
                     placeholderTextColor={NICO.textMuted}
-                    maxLength={120}
+                    maxLength={80}
                   />
                 </LinearGradient>
 
@@ -461,7 +463,7 @@ export default function DiscussionsScreen() {
                   </>
                 )}
 
-                <AppText style={s.fieldLabel}>Details</AppText>
+                <AppText style={s.fieldLabel}>Details <AppText style={{ color: NICO.error }}>*</AppText></AppText>
                 <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.fieldGradient}>
                   <TextInput
                     style={[s.fieldInput, s.fieldTextArea]}
@@ -471,6 +473,7 @@ export default function DiscussionsScreen() {
                     placeholderTextColor={NICO.textMuted}
                     multiline
                     numberOfLines={4}
+                    maxLength={600}
                   />
                 </LinearGradient>
 
@@ -496,6 +499,7 @@ export default function DiscussionsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: NICO.screenBg },
+  tabPane:   { flex: 1, backgroundColor: NICO.background },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 40 },
   list:      { padding: SPACING.base, paddingBottom: 100, gap: SPACING.sm },
 

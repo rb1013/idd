@@ -703,7 +703,7 @@ export default function GuardianConnectionsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: NICO.screenBg },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 40 },
-  tabPane:   { flex: 1, backgroundColor: NICO.background },
+  tabPane:   { flex: 1, backgroundColor: NICO.screenBg },
 
   // Primary tab bar
   tabBar: {
