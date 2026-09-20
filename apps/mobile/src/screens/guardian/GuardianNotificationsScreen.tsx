@@ -78,17 +78,14 @@ export default function GuardianNotificationsScreen() {
       .order('created_at', { ascending: false })
       .limit(30);
     setNotifications((data as GuardianNotification[]) ?? []);
-    // Mark all as read
-    await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('guardian_id', guardianId)
-      .eq('read', false)
-      .in('type', ['tutorial_approved', 'tutorial_rejected', 'discussion_reply', 'connection_request', 'connection_accepted', 'connection_rejected']);
     setLoading(false);
   }
 
-  function handleTap(n: GuardianNotification) {
+  async function handleTap(n: GuardianNotification) {
+    if (!n.read) {
+      await supabase.from('notifications').update({ read: true }).eq('id', n.id);
+      setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
+    }
     switch (n.type) {
       case 'tutorial_approved':
         navigation.navigate('Learning', { initialTab: 'my', initialStatus: 'approved' });

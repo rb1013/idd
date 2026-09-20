@@ -57,6 +57,14 @@ export default function DiscussionDetailScreen() {
 
   async function load() {
     setLoading(true);
+    if (guardian) {
+      supabase.from('notifications')
+        .update({ read: true })
+        .eq('guardian_id', guardian.id)
+        .eq('ref_id', postId)
+        .eq('read', false)
+        .then(() => {});
+    }
     const [{ data: p }, { data: r }] = await Promise.all([
       supabase
         .from('discussion_posts')
