@@ -2,17 +2,24 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, FlatList, TouchableOpacity, StyleSheet,
   TextInput, Modal, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, ScrollView,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
+import RainbowDivider from '../../components/RainbowDivider';
+import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
+import useNicoHeader from '../../hooks/useNicoHeader';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, scale,
+} from '../../constants/theme';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
@@ -44,19 +51,19 @@ interface Category { id: string; label: string; }
 export default function DiscussionsScreen() {
   const navigation = useNavigation<Nav>();
   const { guardian } = useAuth();
+  useNicoHeader(navigation);
 
-  const [posts, setPosts]             = useState<Post[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [tab, setTab]                 = useState<'all' | 'mine'>('all');
-  const [showCreate, setShowCreate]   = useState(false);
-  const [newTitle, setNewTitle]       = useState('');
-  const [newBody, setNewBody]         = useState('');
-  const [submitting, setSubmitting]   = useState(false);
-  const [categories, setCategories]   = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [posts, setPosts]           = useState<Post[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [tab, setTab]               = useState<'all' | 'mine'>('all');
+  const [showCreate, setShowCreate] = useState(false);
+  const [newTitle, setNewTitle]     = useState('');
+  const [newBody, setNewBody]       = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory]   = useState<Category | null>(null);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
-  // Shared filters (both tabs)
   const [filterTitle, setFilterTitle]       = useState('');
   const [filterGuardian, setFilterGuardian] = useState('');
   const [filterDateFrom, setFilterDateFrom] = useState<Date | null>(null);
@@ -67,7 +74,7 @@ export default function DiscussionsScreen() {
   const [showDateToPicker, setShowDateToPicker]     = useState(false);
   const [filterCategory, setFilterCategory] = useState<Category | null>(null);
   const [showFilterCatPicker, setShowFilterCatPicker] = useState(false);
-  const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const [sheetOpen, setSheetOpen]           = useState(false);
 
   useEffect(() => {
     supabase.from('discussion_category_options').select('id, label').order('label')
@@ -93,10 +100,7 @@ export default function DiscussionsScreen() {
 
     setPosts(
       (data ?? []).map((p: any) => ({
-        id: p.id,
-        title: p.title,
-        body: p.body,
-        createdAt: p.created_at,
+        id: p.id, title: p.title, body: p.body, createdAt: p.created_at,
         guardianId: p.guardian_id,
         guardianName: p.guardians?.full_name ?? 'Unknown',
         replyCount: (p.discussion_replies ?? []).length,
@@ -118,19 +122,16 @@ export default function DiscussionsScreen() {
     if (error) {
       Alert.alert('Error', error.message);
     } else {
-      setNewTitle('');
-      setNewBody('');
-      setSelectedCategory(null);
-      setShowCreate(false);
+      setNewTitle(''); setNewBody(''); setSelectedCategory(null); setShowCreate(false);
       load();
     }
     setSubmitting(false);
   }
 
   const applyFilters = (list: Post[]) => {
-    if (filterTitle.trim()) list = list.filter(p => p.title.toLowerCase().includes(filterTitle.trim().toLowerCase()));
+    if (filterTitle.trim())    list = list.filter(p => p.title.toLowerCase().includes(filterTitle.trim().toLowerCase()));
     if (filterGuardian.trim()) list = list.filter(p => p.guardianName.toLowerCase().includes(filterGuardian.trim().toLowerCase()));
-    if (filterCategory) list = list.filter(p => p.categoryLabel === filterCategory.label);
+    if (filterCategory)        list = list.filter(p => p.categoryLabel === filterCategory.label);
     if (filterDateFrom) {
       const from = new Date(filterDateFrom); from.setHours(0, 0, 0, 0);
       list = list.filter(p => new Date(p.createdAt) >= from);
@@ -146,226 +147,236 @@ export default function DiscussionsScreen() {
   const mineFiltered = applyFilters(posts.filter(p => p.guardianId === guardian?.id));
 
   const fmtDate = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-  const moreFiltersActive = !!(filterGuardian || filterDateFrom || filterDateTo);
+  const hasMoreFilters = tab === 'mine' ? !!filterGuardian : !!(filterGuardian || filterCategory);
 
   const filterResetKey = `${filterTitle}|${filterCategory?.id ?? ''}|${filterGuardian}|${filterDateFrom?.toISOString() ?? ''}|${filterDateTo?.toISOString() ?? ''}`;
   const { visible: visibleAll,  showLoadMore: showLoadMoreAll,  loadMore: loadMoreAll,  showCapMessage: showCapAll,  pageSize: pageSizeAll  } = useVisibleCount(allFiltered,  filterResetKey);
   const { visible: visibleMine, showLoadMore: showLoadMoreMine, loadMore: loadMoreMine, showCapMessage: showCapMine, pageSize: pageSizeMine } = useVisibleCount(mineFiltered, filterResetKey);
 
   const displayedPosts = tab === 'mine' ? visibleMine : visibleAll;
+  const showMore       = tab === 'mine' ? showLoadMoreMine : showLoadMoreAll;
+  const doPaginate     = tab === 'mine' ? loadMoreMine     : loadMoreAll;
+  const ps             = tab === 'mine' ? pageSizeMine     : pageSizeAll;
+  const showCap        = tab === 'mine' ? showCapMine      : showCapAll;
 
-  if (loading) {
-    return <View style={s.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
-  }
 
   const filterHeader = (
     <View style={s.filterOuter}>
-      {/* Primary filters: Title + Category */}
-      <View style={s.filterPanel}>
+      <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
         <TextInput
-          style={s.filterInput}
+          style={s.searchInput}
           placeholder="Search by title…"
-          placeholderTextColor={COLORS.bloomMuted}
+          placeholderTextColor={NICO.textMuted}
           value={filterTitle}
           onChangeText={setFilterTitle}
+          clearButtonMode="while-editing"
         />
+      </LinearGradient>
 
-        {categories.length > 0 && (
-          <>
-            <View style={s.filterDivider} />
-            <TouchableOpacity style={s.filterCatBtn} onPress={() => setShowFilterCatPicker(o => !o)} activeOpacity={0.7}>
-              <AppText style={s.filterLabel}>Category</AppText>
-              <AppText style={[s.filterValue, !!filterCategory && s.filterValueActive]} numberOfLines={1}>
-                {filterCategory?.label ?? 'All'}
+      {/* Date range inline — rainbow bordered */}
+      <View style={s.dateRow}>
+        <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.dateBtnGradient}>
+          <TouchableOpacity
+            style={[s.dateBtn, filterDateFrom && s.dateBtnActive]}
+            onPress={() => { setTempDateFrom(filterDateFrom ?? new Date()); setShowDateFromPicker(true); }}
+            activeOpacity={0.75}
+          >
+            <AppText style={[s.dateBtnTxt, filterDateFrom && s.dateBtnTxtActive]}>
+              {filterDateFrom ? fmtDate(filterDateFrom) : 'From'}
+            </AppText>
+            {filterDateFrom && (
+              <TouchableOpacity onPress={() => setFilterDateFrom(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <AppText style={s.dateClear}>✕</AppText>
+              </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+        </LinearGradient>
+        <AppText style={s.dateSep}>–</AppText>
+        <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.dateBtnGradient}>
+          <TouchableOpacity
+            style={[s.dateBtn, filterDateTo && s.dateBtnActive]}
+            onPress={() => { setTempDateTo(filterDateTo ?? new Date()); setShowDateToPicker(true); }}
+            activeOpacity={0.75}
+          >
+            <AppText style={[s.dateBtnTxt, filterDateTo && s.dateBtnTxtActive]}>
+              {filterDateTo ? fmtDate(filterDateTo) : 'To'}
+            </AppText>
+            {filterDateTo && (
+              <TouchableOpacity onPress={() => setFilterDateTo(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <AppText style={s.dateClear}>✕</AppText>
+              </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+        </LinearGradient>
+      </View>
+
+      {/* Category dropdown — My Discussions tab only */}
+      {tab === 'mine' && categories.length > 0 && (
+        <View>
+          <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.fieldGradient}>
+            <TouchableOpacity style={s.catPickerBtn} onPress={() => setShowFilterCatPicker(o => !o)} activeOpacity={0.7}>
+              <AppText style={[s.catPickerTxt, !filterCategory && { color: NICO.textMuted }]}>
+                {filterCategory?.label ?? 'All categories'}
               </AppText>
               {filterCategory
                 ? <TouchableOpacity onPress={() => { setFilterCategory(null); setShowFilterCatPicker(false); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <AppText style={s.filterClear}>✕</AppText>
+                    <AppText style={s.dateClear}>✕</AppText>
                   </TouchableOpacity>
-                : <AppText style={s.filterArrow}>{showFilterCatPicker ? '▴' : '▾'}</AppText>
+                : <AppText style={s.pickerChevron}>{showFilterCatPicker ? '▴' : '▾'}</AppText>
               }
             </TouchableOpacity>
-            {showFilterCatPicker && (
-              <View>
-                <View style={s.filterDivider} />
-                {categories.map((cat, i) => (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[s.filterCatOption, i < categories.length - 1 && s.filterDividerItem, filterCategory?.id === cat.id && s.filterCatOptionSelected]}
-                    onPress={() => { setFilterCategory(cat); setShowFilterCatPicker(false); }}
-                  >
-                    <AppText style={[s.filterValue, filterCategory?.id === cat.id && s.filterValueActive]}>{cat.label}</AppText>
-                    {filterCategory?.id === cat.id && <AppText style={s.dropdownCheck}>✓</AppText>}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </>
-        )}
-      </View>
-
-      {/* More Filters toggle */}
-      <TouchableOpacity
-        style={s.moreFiltersBtn}
-        onPress={() => setShowMoreFilters(o => !o)}
-        activeOpacity={0.7}
-      >
-        <AppText style={s.moreFiltersBtnText}>
-          {showMoreFilters ? 'Less Filters' : 'More Filters'}
-        </AppText>
-        {moreFiltersActive && !showMoreFilters && (
-          <View style={s.moreFiltersBadge} />
-        )}
-        <AppText style={s.moreFiltersChevron}>{showMoreFilters ? '▴' : '▾'}</AppText>
-      </TouchableOpacity>
-
-      {/* Expanded: Guardian + Date range in one row */}
-      {showMoreFilters && (
-        <View style={s.filterPanel}>
-          <TextInput
-            style={s.filterInput}
-            placeholder="Search by guardian name…"
-            placeholderTextColor={COLORS.bloomMuted}
-            value={filterGuardian}
-            onChangeText={setFilterGuardian}
-          />
-
-          <View style={s.filterDivider} />
-
-          <View style={s.filterRow}>
-            <AppText style={s.filterLabel}>Dates</AppText>
-            <TouchableOpacity
-              style={s.dateRangeBtn}
-              onPress={() => { setTempDateFrom(filterDateFrom ?? new Date()); setShowDateFromPicker(true); }}
-              activeOpacity={0.7}
-            >
-              <AppText style={[s.dateRangeText, filterDateFrom && s.filterValueActive]}>
-                {filterDateFrom ? fmtDate(filterDateFrom) : 'From'}
-              </AppText>
-              {filterDateFrom
-                ? <TouchableOpacity onPress={() => setFilterDateFrom(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <AppText style={s.filterClear}>✕</AppText>
-                  </TouchableOpacity>
-                : <AppText style={s.filterArrow}>›</AppText>
-              }
-            </TouchableOpacity>
-            <AppText style={s.dateRangeSep}>–</AppText>
-            <TouchableOpacity
-              style={s.dateRangeBtn}
-              onPress={() => { setTempDateTo(filterDateTo ?? new Date()); setShowDateToPicker(true); }}
-              activeOpacity={0.7}
-            >
-              <AppText style={[s.dateRangeText, filterDateTo && s.filterValueActive]}>
-                {filterDateTo ? fmtDate(filterDateTo) : 'To'}
-              </AppText>
-              {filterDateTo
-                ? <TouchableOpacity onPress={() => setFilterDateTo(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <AppText style={s.filterClear}>✕</AppText>
-                  </TouchableOpacity>
-                : <AppText style={s.filterArrow}>›</AppText>
-              }
-            </TouchableOpacity>
-          </View>
+          </LinearGradient>
+          {showFilterCatPicker && (
+            <View style={s.dropdownList}>
+              {categories.map((cat, i) => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[s.dropdownItem, i < categories.length - 1 && s.dropdownItemBorder, filterCategory?.id === cat.id && s.dropdownItemSelected]}
+                  onPress={() => { setFilterCategory(filterCategory?.id === cat.id ? null : cat); setShowFilterCatPicker(false); }}
+                >
+                  <AppText style={[s.dropdownItemText, filterCategory?.id === cat.id && s.dropdownItemTextSelected]}>{cat.label}</AppText>
+                  {filterCategory?.id === cat.id && <AppText style={s.dropdownCheck}>✓</AppText>}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       )}
+
+      <View style={s.filterBar}>
+        <AppText style={s.resultCount}>
+          {(tab === 'mine' ? mineFiltered : allFiltered).length} result{(tab === 'mine' ? mineFiltered : allFiltered).length !== 1 ? 's' : ''}
+        </AppText>
+        {tab === 'all' && (
+          <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.moreBtnGradient}>
+            <TouchableOpacity style={[s.moreBtn, hasMoreFilters && s.moreBtnActive]} onPress={() => setSheetOpen(true)} activeOpacity={0.75}>
+              <AppText style={[s.moreBtnText, hasMoreFilters && s.moreBtnTextActive]}>More Filters</AppText>
+            </TouchableOpacity>
+          </LinearGradient>
+        )}
+      </View>
     </View>
   );
 
-  const showMore = tab === 'mine' ? showLoadMoreMine : showLoadMoreAll;
-  const doPaginate = tab === 'mine' ? loadMoreMine : loadMoreAll;
-  const ps = tab === 'mine' ? pageSizeMine : pageSizeAll;
-  const showCap = tab === 'mine' ? showCapMine : showCapAll;
-
   return (
     <View style={s.container}>
-      {/* Tabs */}
-      <View style={s.tabs}>
+      <RainbowDivider />
+
+      {/* Tab bar */}
+      <View style={s.tabBar}>
         {(['all', 'mine'] as const).map(t => (
-          <TouchableOpacity
-            key={t}
-            style={[s.tab, tab === t && s.tabActive]}
-            onPress={() => setTab(t)}
-          >
-            <AppText style={[s.tabText, tab === t && s.tabTextActive]}>
+          <TouchableOpacity key={t} style={[s.tab, tab === t && s.tabActive]} onPress={() => setTab(t)} activeOpacity={0.8}>
+            <AppText style={[s.tabTxt, tab === t && s.tabTxtActive]}>
               {t === 'all' ? 'All Discussions' : 'My Discussions'}
             </AppText>
           </TouchableOpacity>
         ))}
       </View>
 
-      <FlatList
-        data={displayedPosts}
-        keyExtractor={p => p.id}
-        contentContainerStyle={s.list}
-        ListHeaderComponent={filterHeader}
-        keyboardShouldPersistTaps="handled"
-        renderItem={({ item: p }) => (
-          <TouchableOpacity
-            style={s.card}
-            onPress={() => navigation.navigate('DiscussionDetail', { postId: p.id })}
-            activeOpacity={0.82}
-          >
-            {p.categoryLabel && (
-              <View style={s.categoryBadge}>
-                <AppText style={s.categoryBadgeText}>{p.categoryLabel}</AppText>
+      {loading ? (
+        <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>
+      ) : (
+        <FlatList
+          data={displayedPosts}
+          keyExtractor={p => p.id}
+          contentContainerStyle={s.list}
+          ListHeaderComponent={filterHeader}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item: p }) => (
+            <TouchableOpacity
+              style={s.card}
+              onPress={() => navigation.navigate('DiscussionDetail', { postId: p.id })}
+              activeOpacity={0.82}
+            >
+              {p.categoryLabel && (
+                <View style={s.categoryBadge}>
+                  <AppText style={s.categoryBadgeText}>{p.categoryLabel}</AppText>
+                </View>
+              )}
+              <AppText style={s.postTitle}>{p.title}</AppText>
+              <AppText style={s.postBody} numberOfLines={2}>{p.body}</AppText>
+              <View style={s.postMeta}>
+                <AppText style={s.metaText}>{p.guardianName}</AppText>
+                <AppText style={s.metaDot}>·</AppText>
+                <AppText style={s.metaText}>{timeAgo(p.createdAt)}</AppText>
+                <AppText style={s.metaDot}>·</AppText>
+                <AppText style={s.metaText}>{p.replyCount} {p.replyCount === 1 ? 'reply' : 'replies'}</AppText>
               </View>
-            )}
-            <AppText style={s.postTitle}>{p.title}</AppText>
-            <AppText style={s.postBody} numberOfLines={2}>{p.body}</AppText>
-            <View style={s.postMeta}>
-              <AppText style={s.metaText}>{p.guardianName}</AppText>
-              <AppText style={s.metaDot}>·</AppText>
-              <AppText style={s.metaText}>{timeAgo(p.createdAt)}</AppText>
-              <AppText style={s.metaDot}>·</AppText>
-              <AppText style={s.metaText}>
-                {p.replyCount} {p.replyCount === 1 ? 'reply' : 'replies'}
+            </TouchableOpacity>
+          )}
+          ListFooterComponent={
+            showMore ? (
+              <TouchableOpacity style={s.loadMoreBtn} onPress={doPaginate} activeOpacity={0.7}>
+                <AppText style={s.loadMoreText}>Load {ps} more</AppText>
+              </TouchableOpacity>
+            ) : showCap ? (
+              <View style={s.capMessage}>
+                <AppText style={s.capMessageText}>Use filters to search records</AppText>
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            <View style={s.empty}>
+              <AppText style={s.emptyText}>
+                {tab === 'mine'
+                  ? (posts.filter(p => p.guardianId === guardian?.id).length === 0 ? "No discussions started" : 'No results')
+                  : (posts.length === 0 ? 'No discussions yet' : 'No results')}
+              </AppText>
+              <AppText style={s.emptyHint}>
+                {tab === 'mine' && posts.filter(p => p.guardianId === guardian?.id).length === 0
+                  ? 'Be the first to start a conversation'
+                  : 'Try adjusting your filters'}
               </AppText>
             </View>
-          </TouchableOpacity>
-        )}
-        ListFooterComponent={
-          showMore ? (
-            <TouchableOpacity style={s.loadMoreBtn} onPress={doPaginate} activeOpacity={0.7}>
-              <AppText style={s.loadMoreText}>Load {ps} more</AppText>
-            </TouchableOpacity>
-          ) : showCap ? (
-            <View style={s.capMessage}>
-              <AppText style={s.capMessageText}>Use filters to search records</AppText>
-            </View>
-          ) : null
-        }
-        ListEmptyComponent={
-          <View style={s.empty}>
-            <AppText style={s.emptyEmoji}>💬</AppText>
-            <AppText style={s.emptyText}>
-              {tab === 'mine'
-                ? (posts.filter(p => p.guardianId === guardian?.id).length === 0 ? "You haven't started any discussions" : 'No results')
-                : (posts.length === 0 ? 'No discussions yet' : 'No results')}
-            </AppText>
-            <AppText style={s.emptyHint}>
-              {tab === 'mine' && posts.filter(p => p.guardianId === guardian?.id).length === 0
-                ? 'Start the first conversation'
-                : 'Try adjusting your filters'}
-            </AppText>
-          </View>
-        }
-      />
+          }
+        />
+      )}
 
       <TouchableOpacity style={s.fab} onPress={() => setShowCreate(true)} activeOpacity={0.85}>
-        <AppText style={s.fabText}>+ New Discussion</AppText>
+        <AppText style={s.fabText}>New Discussion</AppText>
       </TouchableOpacity>
 
-      {/* Date From picker */}
+      {/* More Filters sheet */}
+      <FilterSheet
+        visible={sheetOpen}
+        title="More Filters"
+        sections={[
+          ...(categories.length > 0 && tab === 'all' ? [{
+            key: 'category', emoji: '🏷️', title: 'Category',
+            options: categories.map(c => ({ key: c.id, label: c.label })),
+            selected: filterCategory ? [filterCategory.id] : [],
+            onToggle: (v: string) => setFilterCategory(prev => prev?.id === v ? null : (categories.find(c => c.id === v) ?? null)),
+          }] : []),
+        ] satisfies FilterSheetSection[]}
+        extraContent={tab === 'all' ? (
+          <View style={s.extraFilters}>
+            <AppText style={s.extraLabel}>Guardian Name</AppText>
+            <TextInput
+              style={s.plainInput}
+              placeholder="Search by guardian name…"
+              placeholderTextColor={NICO.textMuted}
+              value={filterGuardian}
+              onChangeText={setFilterGuardian}
+              clearButtonMode="while-editing"
+            />
+          </View>
+        ) : undefined}
+        hasExtraActive={!!filterGuardian}
+        onClearAll={() => { setFilterCategory(null); setFilterGuardian(''); }}
+        onDone={() => setSheetOpen(false)}
+      />
+
+      {/* Date pickers */}
       <Modal visible={showDateFromPicker} transparent animationType="slide" onRequestClose={() => setShowDateFromPicker(false)}>
-        <TouchableOpacity style={s.nudgeBackdrop} activeOpacity={1} onPress={() => setShowDateFromPicker(false)}>
-          <View style={s.nudgeSheet} onStartShouldSetResponder={() => true}>
-            <View style={s.filterPickerHdr}>
+        <TouchableOpacity style={s.pickerBackdrop} activeOpacity={1} onPress={() => setShowDateFromPicker(false)}>
+          <View style={s.pickerSheet} onStartShouldSetResponder={() => true}>
+            <View style={s.pickerHdr}>
               <TouchableOpacity onPress={() => setShowDateFromPicker(false)}>
-                <AppText style={s.filterPickerCancel}>Cancel</AppText>
+                <AppText style={s.pickerCancel}>Cancel</AppText>
               </TouchableOpacity>
-              <AppText style={s.filterPickerTitle}>From Date</AppText>
+              <AppText style={s.pickerTitle}>From Date</AppText>
               <TouchableOpacity onPress={() => { setFilterDateFrom(tempDateFrom); setShowDateFromPicker(false); }}>
-                <AppText style={s.filterPickerDone}>Done</AppText>
+                <AppText style={s.pickerDone}>Done</AppText>
               </TouchableOpacity>
             </View>
             <DateTimePicker value={tempDateFrom} mode="date" display="spinner" onChange={(_, d) => { if (d) setTempDateFrom(d); }} style={{ height: 220 }} />
@@ -373,17 +384,16 @@ export default function DiscussionsScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* Date To picker */}
       <Modal visible={showDateToPicker} transparent animationType="slide" onRequestClose={() => setShowDateToPicker(false)}>
-        <TouchableOpacity style={s.nudgeBackdrop} activeOpacity={1} onPress={() => setShowDateToPicker(false)}>
-          <View style={s.nudgeSheet} onStartShouldSetResponder={() => true}>
-            <View style={s.filterPickerHdr}>
+        <TouchableOpacity style={s.pickerBackdrop} activeOpacity={1} onPress={() => setShowDateToPicker(false)}>
+          <View style={s.pickerSheet} onStartShouldSetResponder={() => true}>
+            <View style={s.pickerHdr}>
               <TouchableOpacity onPress={() => setShowDateToPicker(false)}>
-                <AppText style={s.filterPickerCancel}>Cancel</AppText>
+                <AppText style={s.pickerCancel}>Cancel</AppText>
               </TouchableOpacity>
-              <AppText style={s.filterPickerTitle}>To Date</AppText>
+              <AppText style={s.pickerTitle}>To Date</AppText>
               <TouchableOpacity onPress={() => { setFilterDateTo(tempDateTo); setShowDateToPicker(false); }}>
-                <AppText style={s.filterPickerDone}>Done</AppText>
+                <AppText style={s.pickerDone}>Done</AppText>
               </TouchableOpacity>
             </View>
             <DateTimePicker value={tempDateTo} mode="date" display="spinner" onChange={(_, d) => { if (d) setTempDateTo(d); }} style={{ height: 220 }} />
@@ -391,21 +401,10 @@ export default function DiscussionsScreen() {
         </TouchableOpacity>
       </Modal>
 
-      <Modal
-        visible={showCreate}
-        animationType="slide"
-        transparent
-        onRequestClose={closeCreateSheet}
-      >
-        <KeyboardAvoidingView
-          style={s.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <TouchableOpacity
-            style={s.modalBackdrop}
-            activeOpacity={1}
-            onPress={closeCreateSheet}
-          />
+      {/* Create discussion modal */}
+      <Modal visible={showCreate} animationType="slide" transparent onRequestClose={closeCreateSheet}>
+        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <TouchableOpacity style={s.modalBackdrop} activeOpacity={1} onPress={closeCreateSheet} />
           <View style={s.modalSheet}>
             <View style={s.modalHandle} />
             <View style={s.modalTitleRow}>
@@ -415,236 +414,237 @@ export default function DiscussionsScreen() {
               </TouchableOpacity>
             </View>
 
-            <AppText style={s.fieldLabel}>Topic</AppText>
-            <TextInput
-              style={s.fieldInput}
-              value={newTitle}
-              onChangeText={setNewTitle}
-              placeholder="What's on your mind?"
-              placeholderTextColor={COLORS.bloomMuted}
-              maxLength={120}
-            />
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <View style={s.formGap}>
+                <AppText style={s.fieldLabel}>Topic</AppText>
+                <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.fieldGradient}>
+                  <TextInput
+                    style={s.fieldInput}
+                    value={newTitle}
+                    onChangeText={setNewTitle}
+                    placeholder="What's on your mind?"
+                    placeholderTextColor={NICO.textMuted}
+                    maxLength={120}
+                  />
+                </LinearGradient>
 
-            {categories.length > 0 && (
-              <>
-                <AppText style={s.fieldLabel}>Category <AppText style={s.fieldRequired}>*</AppText></AppText>
-                <TouchableOpacity style={s.pickerBtn} onPress={() => setShowCategoryPicker(o => !o)} activeOpacity={0.7}>
-                  <AppText style={[s.pickerBtnText, !selectedCategory && { color: COLORS.bloomMuted }]}>
-                    {selectedCategory?.label ?? 'Select a category…'}
-                  </AppText>
-                  <AppText style={s.pickerChevron}>{showCategoryPicker ? '▴' : '▾'}</AppText>
-                </TouchableOpacity>
-                {showCategoryPicker && (
-                  <View style={s.dropdownList}>
-                    {selectedCategory && (
-                      <TouchableOpacity style={s.dropdownItem} onPress={() => { setSelectedCategory(null); setShowCategoryPicker(false); }}>
-                        <AppText style={s.dropdownClearText}>Clear</AppText>
+                {categories.length > 0 && (
+                  <>
+                    <AppText style={s.fieldLabel}>Category <AppText style={{ color: NICO.error }}>*</AppText></AppText>
+                    <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.fieldGradient}>
+                      <TouchableOpacity style={s.pickerBtn} onPress={() => setShowCategoryPicker(o => !o)} activeOpacity={0.7}>
+                        <AppText style={[s.pickerBtnText, !selectedCategory && { color: NICO.textMuted }]}>
+                          {selectedCategory?.label ?? 'Select a category…'}
+                        </AppText>
+                        <AppText style={s.pickerChevron}>{showCategoryPicker ? '▴' : '▾'}</AppText>
                       </TouchableOpacity>
+                    </LinearGradient>
+                    {showCategoryPicker && (
+                      <View style={s.dropdownList}>
+                        {selectedCategory && (
+                          <TouchableOpacity style={s.dropdownItem} onPress={() => { setSelectedCategory(null); setShowCategoryPicker(false); }}>
+                            <AppText style={[s.dropdownItemText, { color: NICO.error }]}>Clear</AppText>
+                          </TouchableOpacity>
+                        )}
+                        {categories.map((cat, i) => (
+                          <TouchableOpacity
+                            key={cat.id}
+                            style={[s.dropdownItem, (i < categories.length - 1 || !!selectedCategory) && s.dropdownItemBorder, selectedCategory?.id === cat.id && s.dropdownItemSelected]}
+                            onPress={() => { setSelectedCategory(cat); setShowCategoryPicker(false); }}
+                          >
+                            <AppText style={[s.dropdownItemText, selectedCategory?.id === cat.id && s.dropdownItemTextSelected]}>{cat.label}</AppText>
+                            {selectedCategory?.id === cat.id && <AppText style={s.dropdownCheck}>✓</AppText>}
+                          </TouchableOpacity>
+                        ))}
+                      </View>
                     )}
-                    {categories.map((cat, i) => (
-                      <TouchableOpacity
-                        key={cat.id}
-                        style={[s.dropdownItem, (i < categories.length - 1 || !!selectedCategory) && s.dropdownItemBorder, selectedCategory?.id === cat.id && s.dropdownItemSelected]}
-                        onPress={() => { setSelectedCategory(cat); setShowCategoryPicker(false); }}
-                      >
-                        <AppText style={[s.dropdownItemText, selectedCategory?.id === cat.id && s.dropdownItemTextSelected]}>{cat.label}</AppText>
-                        {selectedCategory?.id === cat.id && <AppText style={s.dropdownCheck}>✓</AppText>}
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+                  </>
                 )}
-              </>
-            )}
 
-            <AppText style={s.fieldLabel}>Details</AppText>
-            <TextInput
-              style={[s.fieldInput, s.fieldTextArea]}
-              value={newBody}
-              onChangeText={setNewBody}
-              placeholder="Share more context…"
-              placeholderTextColor={COLORS.bloomMuted}
-              multiline
-              numberOfLines={4}
-            />
+                <AppText style={s.fieldLabel}>Details</AppText>
+                <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.fieldGradient}>
+                  <TextInput
+                    style={[s.fieldInput, s.fieldTextArea]}
+                    value={newBody}
+                    onChangeText={setNewBody}
+                    placeholder="Share more context…"
+                    placeholderTextColor={NICO.textMuted}
+                    multiline
+                    numberOfLines={4}
+                  />
+                </LinearGradient>
 
-            <TouchableOpacity
-              style={[s.submitBtn, (!newTitle.trim() || !newBody.trim() || (categories.length > 0 && !selectedCategory) || submitting) && { opacity: 0.5 }]}
-              onPress={submitPost}
-              disabled={!newTitle.trim() || !newBody.trim() || (categories.length > 0 && !selectedCategory) || submitting}
-            >
-              {submitting
-                ? <ActivityIndicator color="#fff" />
-                : <AppText style={s.submitBtnText}>Post Discussion</AppText>
-              }
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={[{ ...BTN_SIZE.lg, ...BTN_VARIANT.primary }, (!newTitle.trim() || !newBody.trim() || (categories.length > 0 && !selectedCategory) || submitting) && { opacity: 0.5 }]}
+                  onPress={submitPost}
+                  disabled={!newTitle.trim() || !newBody.trim() || (categories.length > 0 && !selectedCategory) || submitting}
+                  activeOpacity={0.85}
+                >
+                  {submitting
+                    ? <ActivityIndicator color={NICO.textOnAccent} />
+                    : <AppText style={s.submitBtnText}>Post Discussion</AppText>
+                  }
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
-
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bloomBody },
-  center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list:      { padding: 16, paddingBottom: 100, gap: 10 },
+  container: { flex: 1, backgroundColor: NICO.screenBg },
+  center:    { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 40 },
+  list:      { padding: SPACING.base, paddingBottom: 100, gap: SPACING.sm },
 
-  tabs: {
-    flexDirection: 'row', margin: 14, marginBottom: 4,
-    backgroundColor: COLORS.bloomBorder, borderRadius: 14, padding: 3,
+  // Tab bar
+  tabBar: {
+    flexDirection: 'row', backgroundColor: NICO.surface,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  tab:          { flex: 1, paddingVertical: 9, borderRadius: 11, alignItems: 'center' },
-  tabActive:    { backgroundColor: COLORS.bloomCard },
-  tabText:      { fontSize: 14, fontWeight: '600', color: COLORS.bloomMuted },
-  tabTextActive:{ color: COLORS.bloomNavy, fontWeight: '800' },
+  tab: {
+    flex: 1, alignItems: 'center', paddingVertical: SPACING.md,
+    borderBottomWidth: 2.5, borderBottomColor: 'transparent',
+  },
+  tabActive:    { borderBottomColor: NICO.primary },
+  tabTxt:       { ...TEXT_STYLE.tabLabel },
+  tabTxtActive: { ...TEXT_STYLE.tabLabel, color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold },
 
+  // Filter header
+  filterOuter: { paddingBottom: SPACING.sm, gap: SPACING.sm },
+  searchGradient: {
+    padding: BUTTERFLY_BORDER.width,
+    borderRadius: RADIUS.md + BUTTERFLY_BORDER.width,
+  },
+  searchInput: { ...INPUT.base, borderWidth: 0 },
+  plainInput:  { ...INPUT.base },
+
+  filterBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
+  resultCount:      { ...TEXT_STYLE.caption, color: NICO.textMuted },
+  moreBtnGradient:  { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.full },
+  moreBtn:          { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.full, paddingHorizontal: SPACING.base, paddingVertical: SPACING.xs, backgroundColor: NICO.screenBg },
+  moreBtnActive:    { backgroundColor: NICO.primaryLight },
+  moreBtnText:      { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.medium, color: NICO.textMuted },
+  moreBtnTextActive:{ fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.primary },
+
+
+  // Post cards
   card: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 18, padding: 16, gap: 6,
-    borderWidth: 1, borderColor: COLORS.bloomBorder,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    backgroundColor: 'white', borderRadius: RADIUS.xl, padding: SPACING.base, gap: SPACING.xs,
+    borderWidth: 1, borderColor: NICO.border,
+    ...SHADOW.md,
   },
-  postTitle: { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
-  postBody:  { fontSize: 13, color: '#4A5568', lineHeight: 18 },
-  postMeta:  { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  metaText:  { fontSize: 12, color: '#5A6470' },
-  metaDot:   { fontSize: 12, color: COLORS.bloomBorder },
+  postTitle: { ...TEXT_STYLE.cardTitle },
+  postBody:  { fontSize: FONT_SIZE.md, color: NICO.textSecondary, lineHeight: 20 },
+  postMeta:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: SPACING.xs },
+  metaText:  { ...TEXT_STYLE.caption },
+  metaDot:   { fontSize: FONT_SIZE.sm, color: NICO.border },
 
+  categoryBadge: {
+    alignSelf: 'flex-start', backgroundColor: NICO.primaryLight,
+    borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm, paddingVertical: 2, marginBottom: 2,
+  },
+  categoryBadgeText: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
+
+  // FAB
   fab: {
-    position: 'absolute', bottom: 28, right: 20, left: 20,
-    backgroundColor: COLORS.bloomAccent, borderRadius: 16,
-    paddingVertical: 16, alignItems: 'center',
-    shadowColor: COLORS.bloomAccent, shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
+    position: 'absolute', bottom: 28,
+    ...BTN_SIZE.lg, ...BTN_VARIANT.primary,
+    ...SHADOW.md,
   },
-  fabText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 15 },
+  fabText: { ...TEXT_STYLE.buttonPrimary },
 
-  empty:      { alignItems: 'center', paddingTop: 80, gap: 12 },
-  emptyEmoji: { fontSize: 56 },
-  emptyText:  { fontSize: 20, fontWeight: '800', color: COLORS.bloomText, textAlign: 'center' },
-  emptyHint:  { fontSize: 14, color: COLORS.bloomMuted },
+  empty:     { alignItems: 'center', paddingTop: 60, gap: SPACING.md },
+  emptyText: { ...TEXT_STYLE.cardTitle },
+  emptyHint: { ...TEXT_STYLE.hint, textAlign: 'center', paddingHorizontal: SPACING['2xl'] },
 
+  loadMoreBtn:    { ...BTN_SIZE.sm, ...BTN_VARIANT.outline, alignSelf: 'center', marginTop: SPACING.sm },
+  loadMoreText:   { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary },
+  capMessage:     { alignItems: 'center', paddingVertical: SPACING.base },
+  capMessageText: { ...TEXT_STYLE.hint, fontStyle: 'italic' },
+
+  // Inline category dropdown (My Discussions tab)
+  catPickerBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', ...INPUT.base, borderWidth: 0 },
+  catPickerTxt: { flex: 1, fontSize: FONT_SIZE.lg, color: NICO.text },
+
+  // FilterSheet extra content
+  extraFilters: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.sm, paddingBottom: SPACING.base, gap: SPACING.xs },
+  extraLabel:   { ...TEXT_STYLE.labelSmall, textTransform: 'uppercase', letterSpacing: 0.7 },
+  dateRow:        { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  dateBtnGradient:{ flex: 1, padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.lg + BUTTERFLY_BORDER.width },
+  dateBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderRadius: RADIUS.lg, borderWidth: 0,
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+    backgroundColor: NICO.surface,
+  },
+  dateBtnActive:    { backgroundColor: NICO.primaryLight },
+  dateBtnTxt:       { fontSize: FONT_SIZE.md, color: NICO.textMuted },
+  dateBtnTxtActive: { fontSize: FONT_SIZE.md, color: NICO.primary, fontWeight: FONT_WEIGHT.semiBold },
+  dateSep:          { fontSize: FONT_SIZE.md, color: NICO.textMuted },
+  dateClear:        { fontSize: FONT_SIZE.sm, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
+
+  // Date picker sheet
+  pickerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  pickerSheet: {
+    backgroundColor: NICO.surface, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl,
+    paddingBottom: 36,
+  },
+  pickerHdr: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
+  },
+  pickerTitle:  { ...TEXT_STYLE.cardTitle },
+  pickerCancel: { fontSize: FONT_SIZE.lg, color: NICO.textMuted, width: 60 },
+  pickerDone:   { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.primary, width: 60, textAlign: 'right' },
+
+  // Create discussion modal
   modalOverlay:  { flex: 1, justifyContent: 'flex-end' },
   modalBackdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
   modalSheet: {
-    backgroundColor: COLORS.bloomCard,
-    borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    padding: 24, paddingBottom: 40, gap: 12,
+    backgroundColor: NICO.screenBg,
+    borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl,
+    padding: SPACING.lg, paddingBottom: scale(40), maxHeight: '90%',
   },
-  filterOuter: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 6, gap: 8 },
-  filterPanel: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 16,
-    borderWidth: 1, borderColor: COLORS.bloomBorder,
-    overflow: 'hidden',
-  },
-  filterInput: {
-    paddingHorizontal: 16, paddingVertical: 13,
-    fontSize: 14, color: COLORS.bloomText,
-  },
-  filterDivider:    { height: 1, backgroundColor: COLORS.bloomBorder, marginLeft: 16 },
-  filterCatBtn: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 13,
-  },
-  filterRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 13,
-  },
-  filterLabel:      { fontSize: 13, fontWeight: '700', color: COLORS.bloomText, width: 72 },
-  filterValue:      { flex: 1, fontSize: 13, color: COLORS.bloomMuted },
-  filterValueActive:{ color: COLORS.bloomNavy, fontWeight: '600' },
-  filterArrow:      { fontSize: 14, color: COLORS.bloomMuted },
-  filterClear:      { fontSize: 13, color: COLORS.bloomNavy, fontWeight: '700' },
-  filterCatOption:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 13 },
-  filterDividerItem:{ borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder },
-  filterCatOptionSelected: { backgroundColor: COLORS.bloomAccent + '10' },
-  dateRangeBtn:  { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  dateRangeText: { flex: 1, fontSize: 13, color: COLORS.bloomMuted },
-  dateRangeSep:  { fontSize: 13, color: COLORS.bloomMuted, marginHorizontal: 4 },
-
-  moreFiltersBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, paddingVertical: 6,
-  },
-  moreFiltersBtnText: { fontSize: 13, fontWeight: '600', color: COLORS.bloomNavy },
-  moreFiltersChevron: { fontSize: 11, color: COLORS.bloomNavy },
-  moreFiltersBadge: {
-    width: 7, height: 7, borderRadius: 4,
-    backgroundColor: COLORS.bloomAccent, marginTop: -2,
-  },
-
-  nudgeBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  nudgeSheet: {
-    backgroundColor: COLORS.bloomCard,
-    borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    paddingBottom: 36,
-  },
-  filterPickerHdr: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 16,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
-  },
-  filterPickerTitle:  { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
-  filterPickerCancel: { fontSize: 15, color: COLORS.bloomMuted, width: 60 },
-  filterPickerDone:   { fontSize: 15, fontWeight: '700', color: COLORS.bloomNavy, width: 60, textAlign: 'right' },
-
   modalHandle: {
-    width: 44, height: 4, backgroundColor: COLORS.bloomBorder,
-    borderRadius: 2, alignSelf: 'center', marginBottom: 8,
+    width: 44, height: 4, backgroundColor: NICO.border,
+    borderRadius: 2, alignSelf: 'center', marginBottom: SPACING.md,
   },
-  modalTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
-  modalTitle:    { fontSize: 20, fontWeight: '900', color: COLORS.bloomText },
-  modalClose:    { fontSize: 18, color: COLORS.bloomMuted, fontWeight: '600' },
+  modalTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.sm },
+  modalTitle:    { ...TEXT_STYLE.screenTitle },
+  modalClose:    { fontSize: FONT_SIZE.xl, color: NICO.textMuted, fontWeight: FONT_WEIGHT.semiBold },
 
-  fieldLabel:    { fontSize: 12, fontWeight: '700', color: COLORS.bloomMuted, letterSpacing: 0.5, marginBottom: -4 },
-  fieldRequired: { color: '#E53E3E' },
-  fieldInput: {
-    backgroundColor: COLORS.bloomBody, borderRadius: 14, borderWidth: 1.5,
-    borderColor: COLORS.bloomBorder, padding: 14,
-    fontSize: 15, color: COLORS.bloomText,
-  },
-  fieldTextArea: { minHeight: 100, textAlignVertical: 'top' },
+  formGap: { gap: SPACING.sm, paddingBottom: SPACING.lg },
 
-  submitBtn: {
-    backgroundColor: COLORS.bloomAccent, borderRadius: 14,
-    paddingVertical: 16, alignItems: 'center', marginTop: 4,
+  fieldLabel:   { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  fieldGradient: {
+    padding: BUTTERFLY_BORDER.width,
+    borderRadius: RADIUS.md + BUTTERFLY_BORDER.width,
   },
-  submitBtnText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 15 },
+  fieldInput:    { ...INPUT.base, borderWidth: 0 },
+  fieldTextArea: { minHeight: scale(100), textAlignVertical: 'top' },
+  submitBtnText: { ...TEXT_STYLE.buttonPrimary },
 
   pickerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: COLORS.bloomBody, borderRadius: 14, borderWidth: 1.5,
-    borderColor: COLORS.bloomBorder, padding: 14,
+    ...INPUT.base, borderWidth: 0,
   },
-  pickerBtnText: { fontSize: 15, color: COLORS.bloomText, flex: 1 },
-  pickerChevron: { fontSize: 13, color: COLORS.bloomMuted },
+  pickerBtnText: { fontSize: FONT_SIZE.lg, color: NICO.text, flex: 1 },
+  pickerChevron: { fontSize: FONT_SIZE.md, color: NICO.textMuted },
 
   dropdownList: {
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder, borderRadius: 14,
-    backgroundColor: COLORS.bloomCard, overflow: 'hidden', marginTop: -8,
+    borderWidth: 1, borderColor: NICO.border, borderRadius: RADIUS.md,
+    backgroundColor: NICO.surface, overflow: 'hidden', marginTop: -SPACING.xs,
   },
-  dropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 13 },
-  dropdownItemBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder },
-  dropdownItemSelected: { backgroundColor: COLORS.bloomAccent + '12' },
-  dropdownItemText:     { fontSize: 15, color: COLORS.bloomText },
-  dropdownItemTextSelected: { fontWeight: '700', color: COLORS.bloomAccent },
-  dropdownCheck:  { fontSize: 15, color: COLORS.bloomAccent, fontWeight: '700' },
-  dropdownClearText: { fontSize: 14, color: '#E53E3E', fontWeight: '600' },
-
-  loadMoreBtn: {
-    alignItems: 'center', paddingVertical: 14, marginTop: 4,
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    borderRadius: 14, backgroundColor: COLORS.bloomCard,
-  },
-  loadMoreText: { fontSize: 14, fontWeight: '700', color: COLORS.bloomNavy },
-  capMessage: { alignItems: 'center', paddingVertical: 16 },
-  capMessageText: { fontSize: 13, color: COLORS.bloomMuted, fontStyle: 'italic' },
-
-  categoryBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: COLORS.bloomAccent + '18', borderRadius: 10,
-    paddingHorizontal: 8, paddingVertical: 3, marginBottom: 2,
-  },
-  categoryBadgeText: { fontSize: 11, fontWeight: '700', color: COLORS.bloomAccent },
+  dropdownItem:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.base, paddingVertical: SPACING.md },
+  dropdownItemBorder:   { borderBottomWidth: 1, borderBottomColor: NICO.border },
+  dropdownItemSelected: { backgroundColor: NICO.primaryLight },
+  dropdownItemText:     { fontSize: FONT_SIZE.lg, color: NICO.text },
+  dropdownItemTextSelected: { fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
+  dropdownCheck:        { fontSize: FONT_SIZE.lg, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
 });

@@ -26,13 +26,17 @@ type Props = {
   sections: FilterSheetSection[];
   onClearAll: () => void;
   onDone: () => void;
+  /** Optional extra content rendered inside the scroll area below all sections. */
+  extraContent?: React.ReactNode;
+  /** Set true when extraContent has active state, so "Clear all" stays visible. */
+  hasExtraActive?: boolean;
 };
 
-export default function FilterSheet({ visible, title = 'More Filters', sections, onClearAll, onDone }: Props) {
+export default function FilterSheet({ visible, title = 'More Filters', sections, onClearAll, onDone, extraContent, hasExtraActive }: Props) {
   // accordion: one section open at a time (null = all closed)
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const hasAnyActive = sections.some(s => s.selected.length > 0);
+  const hasAnyActive = hasExtraActive || sections.some(s => s.selected.length > 0);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onDone}>
@@ -50,7 +54,7 @@ export default function FilterSheet({ visible, title = 'More Filters', sections,
           </View>
 
           {/* Sections */}
-          <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+          <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {sections.map(section => {
               const isOpen = openId === section.key;
               const activeCount = section.type === 'single' ? 0 : section.selected.length;
@@ -110,6 +114,7 @@ export default function FilterSheet({ visible, title = 'More Filters', sections,
                 </View>
               );
             })}
+            {extraContent}
           </ScrollView>
 
           {/* Done button */}
