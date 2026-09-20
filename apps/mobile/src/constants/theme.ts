@@ -107,6 +107,10 @@ export const NICO = {
   warning:     '#F59E0B',
   warningLight:'#FEF3C7',
 
+  // ── Chat bubbles ────────────────────────────────────────────────────────
+  chatBubbleMe:    '#DFF5F3',  // "me" bubble — tealLight from butterfly palette
+  chatBubbleOther: '#F8E6F3',  // "other" bubble — pinkLight from butterfly palette
+
   // ── Learner identity ────────────────────────────────────────────────────
   // The learner header/hero keeps its terracotta — it gives learner screens
   // a warm, distinctive feel separate from the guardian grey.
