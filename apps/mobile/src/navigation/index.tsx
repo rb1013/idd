@@ -74,7 +74,7 @@ export type GuardianNavParamList = {
   GuardianHome: undefined;
   Profiles: undefined;
   Notifications: undefined;
-  Learning: { initialTab?: 'search' | 'my' | 'pending' | 'create' } | undefined;
+  Learning: { initialTab?: 'search' | 'my' | 'pending' | 'create'; initialStatus?: 'approved' | 'rejected' } | undefined;
   Activities: undefined;
   Account: undefined;
   EditAccount: undefined;
@@ -90,7 +90,7 @@ export type GuardianNavParamList = {
   LearnerPublicProfile: { learnerId: string };
   LearnerFriendRequests: undefined;
   LearnerFriends: undefined;
-  GuardianConnections: undefined;
+  GuardianConnections: { initialTab?: 'connected' | 'requests' | 'find'; initialSubTab?: 'sent' | 'received' } | undefined;
   Discussions: undefined;
   DiscussionDetail: { postId: string };
   Events: { tab?: 'mine' | 'upcoming' } | undefined;

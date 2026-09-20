@@ -52,6 +52,7 @@ export default function GuardianHomeScreen() {
   const [stats, setStats]                         = useState<Stats>({ learners: 0, tutorials: 0, activities: 0 });
   const [messagingDisabled, setMessagingDisabled] = useState(false);
   const [togglingMsg, setTogglingMsg]             = useState(false);
+  const [unreadCount, setUnreadCount]             = useState(0);
   const [ttsDisabled, setTtsDisabled]             = useState(false);
   const [togglingTts, setTogglingTts]             = useState(false);
   const [showTtsInfo, setShowTtsInfo]             = useState(false);
@@ -77,11 +78,14 @@ export default function GuardianHomeScreen() {
       { data: profiles },
       { count: tutorialCount },
       { count: activityCount },
+      { count: unread },
     ] = await Promise.all([
       supabase.from('user_profiles').select('id, name, photo_url').eq('guardian_id', guardianId),
       supabase.from('tutorials').select('id', { count: 'exact', head: true }).eq('created_by_guardian_id', guardianId),
       supabase.from('guardian_activity_presets').select('id', { count: 'exact', head: true }).eq('guardian_id', guardianId),
+      supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('guardian_id', guardianId).eq('read', false),
     ]);
+    setUnreadCount(unread ?? 0);
 
     const profileList = profiles ?? [];
 
@@ -167,15 +171,18 @@ export default function GuardianHomeScreen() {
               <AppText style={s.guardianName}>{guardian?.full_name ?? 'Guardian'}</AppText>
             </View>
 
-            {hasLearner && (
-              <TouchableOpacity
-                onPress={() => navigation.navigate('LearnerFriendRequests')}
-                activeOpacity={0.75}
-                style={s.bellBtn}
-              >
-                <AppText style={s.bellIcon}>🔔</AppText>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Notifications')}
+              activeOpacity={0.75}
+              style={s.bellBtn}
+            >
+              <AppText style={s.bellIcon}>🔔</AppText>
+              {unreadCount > 0 && (
+                <View style={s.bellBadge}>
+                  <AppText style={s.bellBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</AppText>
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
         </LinearGradient>
       </SafeAreaView>
@@ -378,8 +385,15 @@ const s = StyleSheet.create({
   },
   avatarInitial: { ...TEXT_STYLE.label, color: NICO.primary, fontSize: FONT_SIZE.md },
   guardianName:  { ...TEXT_STYLE.bodyMedium },
-  bellBtn:       { padding: SPACING.xs },
+  bellBtn:       { padding: SPACING.xs, position: 'relative' },
   bellIcon:      { fontSize: 22 },
+  bellBadge: {
+    position: 'absolute', top: 0, right: 0,
+    backgroundColor: NICO.error, borderRadius: RADIUS.full,
+    minWidth: 16, height: 16, paddingHorizontal: 3,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  bellBadgeText: { fontSize: 9, fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
 
   body:        { flex: 1 },
   bodyContent: { padding: SPACING.base, paddingTop: SPACING.xl, gap: SPACING.base },

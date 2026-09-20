@@ -107,7 +107,9 @@ export default function GuardianTutorialsScreen() {
   // ── My Tutorials tab ──────────────────────────────────────────────────────
   const [myTutorials, setMyTutorials]   = useState<Tutorial[]>([]);
   const [loadingMy, setLoadingMy]       = useState(true);
-  const [myFilters, setMyFilters]       = useState<TutorialStatus[]>([]);
+  const [myFilters, setMyFilters]       = useState<TutorialStatus[]>(
+    route.params?.initialStatus ? [route.params.initialStatus] : []
+  );
   const [myTypes, setMyTypes]           = useState<TutorialSource[]>([]);
   const [myVisibility, setMyVisibility] = useState<'all' | 'public' | 'private'>('all');
   const [mySearchQuery, setMySearchQuery]         = useState('');
