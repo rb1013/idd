@@ -32,12 +32,22 @@ export default function AppSettingsPage() {
   const [savingPageSize, setSavingPageSize] = useState(false);
   const [savedPageSize, setSavedPageSize]   = useState(false);
 
+  const [tutorialWindow, setTutorialWindow]       = useState<number>(48);
+  const [draftTutorialWindow, setDraftTutorialWindow] = useState<string>('48');
+  const [savingTutorialWindow, setSavingTutorialWindow] = useState(false);
+  const [savedTutorialWindow, setSavedTutorialWindow]   = useState(false);
+
+  const [discussionLimit, setDiscussionLimit]       = useState<number>(30);
+  const [draftDiscussionLimit, setDraftDiscussionLimit] = useState<string>('30');
+  const [savingDiscussionLimit, setSavingDiscussionLimit] = useState(false);
+  const [savedDiscussionLimit, setSavedDiscussionLimit]   = useState(false);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { load(); }, []);
 
   async function load() {
-    const { data } = await supabase.from('app_settings').select('tutorial_quota_limit, tutorial_default_duration, tutorial_image_timeout_ms, tutorial_max_frames, report_snapshot_limit, pagination_page_size').single();
+    const { data } = await supabase.from('app_settings').select('tutorial_quota_limit, tutorial_default_duration, tutorial_image_timeout_ms, tutorial_max_frames, report_snapshot_limit, pagination_page_size, notif_tutorial_window_hours, notif_discussion_limit').single();
     if (data) {
       setQuotaLimit(data.tutorial_quota_limit);
       setDraftQuota(String(data.tutorial_quota_limit));
@@ -51,6 +61,10 @@ export default function AppSettingsPage() {
       setDraftSnapshot(String(data.report_snapshot_limit ?? 20));
       setPageSize(data.pagination_page_size ?? 10);
       setDraftPageSize(String(data.pagination_page_size ?? 10));
+      setTutorialWindow(data.notif_tutorial_window_hours ?? 48);
+      setDraftTutorialWindow(String(data.notif_tutorial_window_hours ?? 48));
+      setDiscussionLimit(data.notif_discussion_limit ?? 30);
+      setDraftDiscussionLimit(String(data.notif_discussion_limit ?? 30));
     }
     setLoading(false);
   }
@@ -127,8 +141,34 @@ export default function AppSettingsPage() {
     setTimeout(() => setSavedPageSize(false), 2500);
   }
 
+  async function saveTutorialWindow(e: React.FormEvent) {
+    e.preventDefault();
+    const val = parseInt(draftTutorialWindow, 10);
+    if (isNaN(val) || val < 1) return;
+    setSavingTutorialWindow(true);
+    await supabase.from('app_settings').update({ notif_tutorial_window_hours: val, updated_at: new Date().toISOString() }).eq('id', 1);
+    setTutorialWindow(val);
+    setSavingTutorialWindow(false);
+    setSavedTutorialWindow(true);
+    setTimeout(() => setSavedTutorialWindow(false), 2500);
+  }
+
+  async function saveDiscussionLimit(e: React.FormEvent) {
+    e.preventDefault();
+    const val = parseInt(draftDiscussionLimit, 10);
+    if (isNaN(val) || val < 1) return;
+    setSavingDiscussionLimit(true);
+    await supabase.from('app_settings').update({ notif_discussion_limit: val, updated_at: new Date().toISOString() }).eq('id', 1);
+    setDiscussionLimit(val);
+    setSavingDiscussionLimit(false);
+    setSavedDiscussionLimit(true);
+    setTimeout(() => setSavedDiscussionLimit(false), 2500);
+  }
+
   if (loading) return <div style={{ padding: 32 }}>Loading…</div>;
 
+  const dirtyTutorialWindow  = parseInt(draftTutorialWindow, 10) !== tutorialWindow;
+  const dirtyDiscussionLimit = parseInt(draftDiscussionLimit, 10) !== discussionLimit;
   const dirtyQuota    = parseInt(draftQuota, 10) !== quotaLimit;
   const dirtyDuration = parseInt(draftDuration, 10) !== defaultDuration;
   const dirtyTimeout  = parseInt(draftTimeout, 10) !== imageTimeout;
@@ -275,6 +315,60 @@ export default function AppSettingsPage() {
           </div>
           {savedPageSize && <p style={styles.savedMsg}>✓ Saved successfully</p>}
           {dirtyPageSize && !savedPageSize && <p style={styles.hint}>Changed from {pageSize} → {draftPageSize} records</p>}
+        </form>
+      </div>
+
+      <div style={styles.card}>
+        <h2 style={styles.cardTitle}>Tutorial Notification Window</h2>
+        <p style={styles.cardDesc}>
+          How many hours back the app shows tutorial approval/rejection notifications.
+          Older notifications are hidden automatically. Currently set to <strong>{tutorialWindow} hours</strong>.
+        </p>
+        <form onSubmit={saveTutorialWindow} style={styles.form}>
+          <label style={styles.label}>Window (hours)</label>
+          <div style={styles.inputRow}>
+            <input
+              type="number" min={1} max={168}
+              value={draftTutorialWindow} onChange={e => setDraftTutorialWindow(e.target.value)}
+              style={styles.input}
+            />
+            <button
+              type="submit"
+              disabled={savingTutorialWindow || !dirtyTutorialWindow || parseInt(draftTutorialWindow, 10) < 1 || isNaN(parseInt(draftTutorialWindow, 10))}
+              style={{ ...styles.btn, ...(savingTutorialWindow || !dirtyTutorialWindow ? styles.btnDisabled : {}) }}
+            >
+              {savingTutorialWindow ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+          {savedTutorialWindow && <p style={styles.savedMsg}>✓ Saved successfully</p>}
+          {dirtyTutorialWindow && !savedTutorialWindow && <p style={styles.hint}>Changed from {tutorialWindow}h → {draftTutorialWindow}h</p>}
+        </form>
+      </div>
+
+      <div style={styles.card}>
+        <h2 style={styles.cardTitle}>Discussion Notification Limit</h2>
+        <p style={styles.cardDesc}>
+          Maximum number of unread discussion reply notifications shown to a guardian.
+          Only unread notifications are fetched. Currently set to <strong>{discussionLimit}</strong>.
+        </p>
+        <form onSubmit={saveDiscussionLimit} style={styles.form}>
+          <label style={styles.label}>Max notifications</label>
+          <div style={styles.inputRow}>
+            <input
+              type="number" min={1} max={200}
+              value={draftDiscussionLimit} onChange={e => setDraftDiscussionLimit(e.target.value)}
+              style={styles.input}
+            />
+            <button
+              type="submit"
+              disabled={savingDiscussionLimit || !dirtyDiscussionLimit || parseInt(draftDiscussionLimit, 10) < 1 || isNaN(parseInt(draftDiscussionLimit, 10))}
+              style={{ ...styles.btn, ...(savingDiscussionLimit || !dirtyDiscussionLimit ? styles.btnDisabled : {}) }}
+            >
+              {savingDiscussionLimit ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+          {savedDiscussionLimit && <p style={styles.savedMsg}>✓ Saved successfully</p>}
+          {dirtyDiscussionLimit && !savedDiscussionLimit && <p style={styles.hint}>Changed from {discussionLimit} → {draftDiscussionLimit}</p>}
         </form>
       </div>
 

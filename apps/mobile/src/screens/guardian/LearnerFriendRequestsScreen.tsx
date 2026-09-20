@@ -120,20 +120,6 @@ export default function LearnerFriendRequestsScreen() {
     if (error) {
       Alert.alert('Error', error.message);
     } else {
-      // Auto-connect guardians: find requester's guardian and create guardian connection if needed
-      const { data: requesterProfile } = await supabase
-        .from('user_profiles').select('guardian_id').eq('id', req.requesterId).single();
-
-      if (requesterProfile?.guardian_id && guardian) {
-        try {
-          await supabase.from('guardian_connections').upsert({
-            requester_id: requesterProfile.guardian_id,
-            addressee_id: guardian.id,
-            status: 'accepted',
-          }, { onConflict: 'requester_id,addressee_id', ignoreDuplicates: true });
-        } catch {}
-      }
-
       setRequests(prev => prev.filter(r => r.friendshipId !== req.friendshipId));
       Alert.alert('Connected!', `${req.myLearnerName} and ${req.requesterName} are now friends.`);
     }

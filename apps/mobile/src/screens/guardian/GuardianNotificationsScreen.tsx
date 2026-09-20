@@ -15,6 +15,7 @@ import {
 } from '../../constants/theme';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
+type Tab = 'discussions' | 'tutorials';
 
 type NotifType =
   | 'tutorial_approved'
@@ -54,11 +55,20 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+function fullTimestamp(dateStr: string): string {
+  return new Date(dateStr).toLocaleString(undefined, {
+    month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+  });
+}
+
 export default function GuardianNotificationsScreen() {
   const navigation = useNavigation<Nav>();
   const { guardian } = useAuth();
-  const [notifications, setNotifications] = useState<GuardianNotification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [discussions, setDiscussions] = useState<GuardianNotification[]>([]);
+  const [tutorials, setTutorials]     = useState<GuardianNotification[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [activeTab, setActiveTab]     = useState<Tab>('discussions');
 
   useNicoHeader(navigation);
 
@@ -70,28 +80,49 @@ export default function GuardianNotificationsScreen() {
 
   async function load(guardianId: string) {
     setLoading(true);
-    const { data } = await supabase
-      .from('notifications')
-      .select('id, type, message, ref_id, read, created_at')
-      .eq('guardian_id', guardianId)
-      .in('type', ['tutorial_approved', 'tutorial_rejected', 'discussion_reply', 'connection_request', 'connection_accepted', 'connection_rejected'])
-      .order('created_at', { ascending: false })
-      .limit(30);
-    setNotifications((data as GuardianNotification[]) ?? []);
+    const { data: settings } = await supabase
+      .from('app_settings')
+      .select('notif_tutorial_window_hours, notif_discussion_limit')
+      .single();
+    const windowHours = settings?.notif_tutorial_window_hours ?? 48;
+    const discLimit   = settings?.notif_discussion_limit ?? 30;
+    const cutoff = new Date(Date.now() - windowHours * 60 * 60 * 1000).toISOString();
+
+    const [{ data: disc }, { data: tut }] = await Promise.all([
+      supabase
+        .from('notifications')
+        .select('id, type, message, ref_id, read, created_at')
+        .eq('guardian_id', guardianId)
+        .in('type', ['discussion_reply'])
+        .eq('read', false)
+        .order('created_at', { ascending: false })
+        .limit(discLimit),
+      supabase
+        .from('notifications')
+        .select('id, type, message, ref_id, read, created_at')
+        .eq('guardian_id', guardianId)
+        .in('type', ['tutorial_approved', 'tutorial_rejected'])
+        .eq('dismissed', false)
+        .gte('created_at', cutoff)
+        .order('created_at', { ascending: false })
+        .limit(30),
+    ]);
+
+    setDiscussions((disc as GuardianNotification[]) ?? []);
+    setTutorials((tut as GuardianNotification[]) ?? []);
     setLoading(false);
   }
 
   async function handleTap(n: GuardianNotification) {
     if (!n.read) {
       await supabase.from('notifications').update({ read: true }).eq('id', n.id);
-      setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
+      setDiscussions(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
+      setTutorials(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
     }
     switch (n.type) {
       case 'tutorial_approved':
-        navigation.navigate('Learning', { initialTab: 'my', initialStatus: 'approved' });
-        break;
       case 'tutorial_rejected':
-        navigation.navigate('Learning', { initialTab: 'my', initialStatus: 'rejected' });
+        if (n.ref_id) navigation.navigate('TutorialPreview', { tutorialId: n.ref_id });
         break;
       case 'discussion_reply':
         if (n.ref_id) navigation.navigate('DiscussionDetail', { postId: n.ref_id });
@@ -108,48 +139,108 @@ export default function GuardianNotificationsScreen() {
     }
   }
 
+  async function dismissTutorial(id: string) {
+    supabase.from('notifications').update({ dismissed: true }).eq('id', id).then(() => {});
+    setTutorials(prev => prev.filter(n => n.id !== id));
+  }
+
+  const unreadDiscussions = discussions.filter(n => !n.read).length;
+  const unreadTutorials   = tutorials.filter(n => !n.read).length;
+  const tabData           = activeTab === 'discussions' ? discussions : tutorials;
+
   if (loading) {
     return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
+  }
+
+  function renderCard(n: GuardianNotification) {
+    const meta      = NOTIF_META[n.type] ?? { icon: '🔔', label: n.type };
+    const wasUnread = !n.read;
+    const isTutorial = activeTab === 'tutorials';
+    return (
+      <TouchableOpacity
+        key={n.id}
+        style={[s.card, wasUnread && s.cardUnread]}
+        onPress={() => handleTap(n)}
+        activeOpacity={0.8}
+      >
+        {wasUnread && <View style={s.unreadStripe} />}
+        {wasUnread
+          ? <View style={s.unreadDot} />
+          : <AppText style={s.readTick}>✓</AppText>
+        }
+        <AppText style={s.cardIcon}>{meta.icon}</AppText>
+        <View style={s.cardBody}>
+          <AppText style={s.cardLabel}>{meta.label}</AppText>
+          <AppText style={s.cardMessage}>{n.message}</AppText>
+          <AppText style={s.cardTime}>
+            {isTutorial
+              ? `${timeAgo(n.created_at)}  ·  ${fullTimestamp(n.created_at)}`
+              : timeAgo(n.created_at)
+            }
+          </AppText>
+        </View>
+        {isTutorial && (
+          <TouchableOpacity
+            style={s.dismissBtn}
+            onPress={() => dismissTutorial(n.id)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <AppText style={s.dismissIcon}>✕</AppText>
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+    );
   }
 
   return (
     <View style={s.container}>
       <RainbowDivider />
-      <FlatList
-        data={notifications}
-        keyExtractor={n => n.id}
-        contentContainerStyle={s.list}
-        renderItem={({ item: n }) => {
-          const meta = NOTIF_META[n.type] ?? { icon: '🔔', label: n.type };
-          const wasUnread = !n.read;
+
+      {/* Tab bar */}
+      <View style={s.tabBar}>
+        {(['discussions', 'tutorials'] as Tab[]).map(tab => {
+          const unread = tab === 'discussions' ? unreadDiscussions : unreadTutorials;
+          const active = activeTab === tab;
           return (
             <TouchableOpacity
-              style={[s.card, wasUnread && s.cardUnread]}
-              onPress={() => handleTap(n)}
-              activeOpacity={0.8}
+              key={tab}
+              style={[s.tab, active && s.tabActive]}
+              onPress={() => setActiveTab(tab)}
+              activeOpacity={0.75}
             >
-              {wasUnread && <View style={s.unreadStripe} />}
-              {wasUnread
-                ? <View style={s.unreadDot} />
-                : <AppText style={s.readTick}>✓</AppText>
-              }
-              <AppText style={s.cardIcon}>{meta.icon}</AppText>
-              <View style={s.cardBody}>
-                <AppText style={s.cardLabel}>{meta.label}</AppText>
-                <AppText style={s.cardMessage}>{n.message}</AppText>
-                <AppText style={s.cardTime}>{timeAgo(n.created_at)}</AppText>
-              </View>
+              <AppText style={[s.tabTxt, active && s.tabTxtActive]}>
+                {tab === 'discussions' ? 'Discussions' : 'Tutorials'}
+              </AppText>
+              {unread > 0 && (
+                <View style={s.tabBadge}>
+                  <AppText style={s.tabBadgeText}>{unread > 9 ? '9+' : unread}</AppText>
+                </View>
+              )}
             </TouchableOpacity>
           );
-        }}
-        ListEmptyComponent={
-          <View style={s.empty}>
-            <AppText style={s.emptyEmoji}>🔔</AppText>
-            <AppText style={s.emptyText}>No notifications yet</AppText>
-            <AppText style={s.emptyHint}>Activity from tutorials, discussions and connections will appear here</AppText>
-          </View>
-        }
-      />
+        })}
+      </View>
+
+      <View style={s.tabPane}>
+        <FlatList
+          data={tabData}
+          keyExtractor={n => n.id}
+          contentContainerStyle={s.list}
+          renderItem={({ item: n }) => renderCard(n)}
+          ListEmptyComponent={
+            <View style={s.empty}>
+              <AppText style={s.emptyEmoji}>🔔</AppText>
+              <AppText style={s.emptyText}>No notifications</AppText>
+              <AppText style={s.emptyHint}>
+                {activeTab === 'discussions'
+                  ? 'Replies to your discussion posts will appear here'
+                  : 'Tutorial approvals and rejections from the last 48 hours will appear here'
+                }
+              </AppText>
+            </View>
+          }
+        />
+      </View>
     </View>
   );
 }
@@ -157,7 +248,28 @@ export default function GuardianNotificationsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: NICO.background },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list:      { padding: SPACING.base, paddingBottom: 48, gap: SPACING.sm },
+
+  tabBar: {
+    flexDirection: 'row', backgroundColor: NICO.surface,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
+  },
+  tab: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: SPACING.xs, paddingVertical: SPACING.md,
+    borderBottomWidth: 2, borderBottomColor: 'transparent',
+  },
+  tabActive:    { borderBottomColor: NICO.primary },
+  tabTxt:       { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.medium, color: NICO.textMuted },
+  tabTxtActive: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary },
+  tabBadge: {
+    backgroundColor: NICO.error, borderRadius: RADIUS.full,
+    minWidth: scale(16), height: scale(16), paddingHorizontal: 3,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  tabBadgeText: { fontSize: scale(9), fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
+
+  tabPane: { flex: 1, backgroundColor: NICO.background },
+  list:    { padding: SPACING.base, paddingBottom: 48, gap: SPACING.sm },
 
   card: {
     backgroundColor: NICO.screenBg,
@@ -171,7 +283,6 @@ const s = StyleSheet.create({
   cardUnread: {
     backgroundColor: NICO.chatBubbleMe,
     borderColor: NICO.teal,
-    // inset shadow via extra shadow layers
     shadowColor: NICO.teal,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.18,
@@ -198,6 +309,9 @@ const s = StyleSheet.create({
   cardLabel:   { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary, textTransform: 'uppercase', letterSpacing: 0.6 },
   cardMessage: { fontSize: FONT_SIZE.md, color: NICO.text, lineHeight: 20 },
   cardTime:    { fontSize: FONT_SIZE.xs, color: NICO.textMuted, marginTop: 2 },
+
+  dismissBtn:  { padding: SPACING.xs, justifyContent: 'center', alignItems: 'center' },
+  dismissIcon: { fontSize: scale(14), color: NICO.textMuted, fontWeight: FONT_WEIGHT.bold },
 
   empty:      { alignItems: 'center', paddingTop: 80, gap: SPACING.md },
   emptyEmoji: { fontSize: 56 },
