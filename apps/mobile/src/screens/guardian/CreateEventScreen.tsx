@@ -1,16 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal,
 } from 'react-native';
 import AppText from '../../components/AppText';
+import RainbowDivider from '../../components/RainbowDivider';
+import useNicoHeader from '../../hooks/useNicoHeader';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, scale,
+} from '../../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
@@ -36,6 +42,8 @@ function formatTime24(d: Date): string {
 export default function CreateEventScreen() {
   const navigation = useNavigation<Nav>();
   const { guardian } = useAuth();
+
+  useNicoHeader(navigation);
 
   const [name, setName]               = useState('');
   const [description, setDescription] = useState('');
@@ -100,113 +108,125 @@ export default function CreateEventScreen() {
   const canSubmit = !!name.trim() && !!date && !submitting;
 
   return (
-    <KeyboardAvoidingView
-      style={s.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
+    <View style={s.root}>
+      <RainbowDivider />
+      <KeyboardAvoidingView
         style={s.container}
-        contentContainerStyle={s.content}
-        keyboardShouldPersistTaps="handled"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Field label="Event name" required>
-          <TextInput
-            style={s.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="e.g. Saturday Play Date"
-            placeholderTextColor={COLORS.bloomMuted}
-            maxLength={100}
-          />
-        </Field>
-
-        {/* Category picker */}
-        {categories.length > 0 && (
-          <Field label="Category" hint="optional">
-            <TouchableOpacity style={s.pickerBtn} onPress={() => setShowCategoryPicker(true)} activeOpacity={0.75}>
-              <AppText style={[s.pickerBtnTxt, !category && s.pickerPlaceholder]}>
-                {category || 'Select category…'}
-              </AppText>
-              {category ? (
-                <TouchableOpacity onPress={() => setCategory('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <AppText style={s.clearTxt}>✕</AppText>
-                </TouchableOpacity>
-              ) : (
-                <AppText style={s.pickerIcon}>🏷️</AppText>
-              )}
-            </TouchableOpacity>
-          </Field>
-        )}
-
-        {/* Date picker */}
-        <Field label="Date" required>
-          <TouchableOpacity style={s.pickerBtn} onPress={() => { setTempDate(date ?? new Date()); setShowDatePicker(true); }} activeOpacity={0.75}>
-            <AppText style={[s.pickerBtnTxt, !date && s.pickerPlaceholder]}>
-              {date ? date.toLocaleDateString(undefined, { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }) : 'Select date…'}
-            </AppText>
-            <AppText style={s.pickerIcon}>📅</AppText>
-          </TouchableOpacity>
-        </Field>
-
-        {/* Time picker */}
-        <Field label="Time" hint="optional">
-          <TouchableOpacity style={s.pickerBtn} onPress={() => { setTempTime(time ?? (() => { const t = new Date(); t.setMinutes(0,0,0); return t; })()); setShowTimePicker(true); }} activeOpacity={0.75}>
-            <AppText style={[s.pickerBtnTxt, !time && s.pickerPlaceholder]}>
-              {time ? formatTimeDisplay(time) : 'Select time…'}
-            </AppText>
-            {time ? (
-              <TouchableOpacity onPress={() => setTime(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <AppText style={s.clearTxt}>✕</AppText>
-              </TouchableOpacity>
-            ) : (
-              <AppText style={s.pickerIcon}>🕐</AppText>
-            )}
-          </TouchableOpacity>
-        </Field>
-
-        <Field label="Venue" hint="optional">
-          <TextInput
-            style={s.input}
-            value={venue}
-            onChangeText={setVenue}
-            placeholder="Central Park, New York"
-            placeholderTextColor={COLORS.bloomMuted}
-            maxLength={200}
-          />
-        </Field>
-
-        <Field label="Description" hint="optional">
-          <TextInput
-            style={[s.input, s.textArea]}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="What's happening? What should people bring?"
-            placeholderTextColor={COLORS.bloomMuted}
-            multiline
-            numberOfLines={4}
-          />
-        </Field>
-
-        <TouchableOpacity
-          style={[s.submitBtn, !canSubmit && { opacity: 0.5 }]}
-          onPress={submit}
-          disabled={!canSubmit}
+        <ScrollView
+          contentContainerStyle={s.content}
+          keyboardShouldPersistTaps="handled"
         >
-          {submitting
-            ? <ActivityIndicator color="#fff" />
-            : <AppText style={s.submitBtnText}>Create Event</AppText>
-          }
-        </TouchableOpacity>
-      </ScrollView>
+          <Field label="Event name" required>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.inputGradient}>
+              <TextInput
+                style={s.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="e.g. Saturday Play Date"
+                placeholderTextColor={NICO.textMuted}
+                maxLength={100}
+              />
+            </LinearGradient>
+          </Field>
+
+          {/* Category picker */}
+          {categories.length > 0 && (
+            <Field label="Category" hint="optional">
+              <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.selectGradient}>
+                <TouchableOpacity style={s.pickerBtn} onPress={() => setShowCategoryPicker(true)} activeOpacity={0.75}>
+                  <AppText style={[s.pickerBtnTxt, !category && s.pickerPlaceholder]}>
+                    {category || 'Select category…'}
+                  </AppText>
+                  {category ? (
+                    <TouchableOpacity onPress={() => setCategory('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <AppText style={s.clearTxt}>✕</AppText>
+                    </TouchableOpacity>
+                  ) : (
+                    <AppText style={s.pickerIcon}>🏷️</AppText>
+                  )}
+                </TouchableOpacity>
+              </LinearGradient>
+            </Field>
+          )}
+
+          {/* Date picker */}
+          <Field label="Date" required>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.selectGradient}>
+              <TouchableOpacity style={s.pickerBtn} onPress={() => { setTempDate(date ?? new Date()); setShowDatePicker(true); }} activeOpacity={0.75}>
+                <AppText style={[s.pickerBtnTxt, !date && s.pickerPlaceholder]}>
+                  {date ? date.toLocaleDateString(undefined, { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }) : 'Select date'}
+                </AppText>
+                <AppText style={s.pickerIcon}>📅</AppText>
+              </TouchableOpacity>
+            </LinearGradient>
+          </Field>
+
+          {/* Time picker */}
+          <Field label="Time" hint="optional">
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.selectGradient}>
+              <TouchableOpacity style={s.pickerBtn} onPress={() => { setTempTime(time ?? (() => { const t = new Date(); t.setMinutes(0,0,0); return t; })()); setShowTimePicker(true); }} activeOpacity={0.75}>
+                <AppText style={[s.pickerBtnTxt, !time && s.pickerPlaceholder]}>
+                  {time ? formatTimeDisplay(time) : 'Select time'}
+                </AppText>
+                {time ? (
+                  <TouchableOpacity onPress={() => setTime(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <AppText style={s.clearTxt}>✕</AppText>
+                  </TouchableOpacity>
+                ) : (
+                  <AppText style={s.pickerIcon}>🕐</AppText>
+                )}
+              </TouchableOpacity>
+            </LinearGradient>
+          </Field>
+
+          <Field label="Venue" hint="optional">
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.inputGradient}>
+              <TextInput
+                style={s.input}
+                value={venue}
+                onChangeText={setVenue}
+                placeholder="Where is it happening?"
+                placeholderTextColor={NICO.textMuted}
+                maxLength={200}
+              />
+            </LinearGradient>
+          </Field>
+
+          <Field label="Description" hint="optional">
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.inputGradient}>
+              <TextInput
+                style={[s.input, s.textArea]}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="What's happening? What should people bring?"
+                placeholderTextColor={NICO.textMuted}
+                multiline
+                numberOfLines={4}
+              />
+            </LinearGradient>
+          </Field>
+
+          <TouchableOpacity
+            style={[s.submitBtn, !canSubmit && s.submitBtnDisabled]}
+            onPress={submit}
+            disabled={!canSubmit}
+          >
+            {submitting
+              ? <ActivityIndicator color={NICO.textOnAccent} />
+              : <AppText style={s.submitBtnText}>Create Event</AppText>
+            }
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Category picker modal */}
       <Modal visible={showCategoryPicker} transparent animationType="slide" onRequestClose={() => setShowCategoryPicker(false)}>
         <TouchableOpacity style={s.sheetBackdrop} activeOpacity={1} onPress={() => setShowCategoryPicker(false)}>
           <View style={s.sheet} onStartShouldSetResponder={() => true}>
             <View style={s.sheetHdr}>
-              <TouchableOpacity onPress={() => setShowCategoryPicker(false)}>
-                <AppText style={s.sheetCancel}>Cancel</AppText>
-              </TouchableOpacity>
+              <View style={{ width: 60 }} />
               <AppText style={s.sheetTitle}>Select Category</AppText>
               <View style={{ width: 60 }} />
             </View>
@@ -214,12 +234,12 @@ export default function CreateEventScreen() {
               {categories.map(cat => (
                 <TouchableOpacity
                   key={cat}
-                  style={[s.categoryOption, category === cat && s.categoryOptionActive]}
+                  style={[s.sheetOption, category === cat && s.sheetOptionActive]}
                   onPress={() => { setCategory(cat); setShowCategoryPicker(false); }}
                   activeOpacity={0.7}
                 >
-                  <AppText style={[s.categoryOptionText, category === cat && s.categoryOptionTextActive]}>{cat}</AppText>
-                  {category === cat && <AppText style={s.categoryCheck}>✓</AppText>}
+                  <AppText style={[s.sheetOptionText, category === cat && s.sheetOptionTextActive]}>{cat}</AppText>
+                  {category === cat && <AppText style={s.sheetCheck}>✓</AppText>}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -232,9 +252,7 @@ export default function CreateEventScreen() {
         <TouchableOpacity style={s.sheetBackdrop} activeOpacity={1} onPress={() => setShowDatePicker(false)}>
           <View style={s.sheet} onStartShouldSetResponder={() => true}>
             <View style={s.sheetHdr}>
-              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                <AppText style={s.sheetCancel}>Cancel</AppText>
-              </TouchableOpacity>
+              <View style={{ width: 60 }} />
               <AppText style={s.sheetTitle}>Select Date</AppText>
               <TouchableOpacity onPress={() => { setDate(tempDate); setShowDatePicker(false); }}>
                 <AppText style={s.sheetDone}>Done</AppText>
@@ -257,9 +275,7 @@ export default function CreateEventScreen() {
         <TouchableOpacity style={s.sheetBackdrop} activeOpacity={1} onPress={() => setShowTimePicker(false)}>
           <View style={s.sheet} onStartShouldSetResponder={() => true}>
             <View style={s.sheetHdr}>
-              <TouchableOpacity onPress={() => setShowTimePicker(false)}>
-                <AppText style={s.sheetCancel}>Cancel</AppText>
-              </TouchableOpacity>
+              <View style={{ width: 60 }} />
               <AppText style={s.sheetTitle}>Select Time</AppText>
               <TouchableOpacity onPress={() => { setTime(tempTime); setShowTimePicker(false); }}>
                 <AppText style={s.sheetDone}>Done</AppText>
@@ -275,7 +291,7 @@ export default function CreateEventScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -283,7 +299,7 @@ function Field({ label, hint, required, children }: { label: string; hint?: stri
   return (
     <View style={s.field}>
       <View style={s.fieldLabelRow}>
-        <AppText style={s.fieldLabel}>{label}{required ? <AppText style={{ color: COLORS.statusError }}> *</AppText> : ''}</AppText>
+        <AppText style={s.fieldLabel}>{label}{required ? <AppText style={{ color: NICO.error }}> *</AppText> : ''}</AppText>
         {hint && <AppText style={s.fieldHint}>{hint}</AppText>}
       </View>
       {children}
@@ -292,62 +308,57 @@ function Field({ label, hint, required, children }: { label: string; hint?: stri
 }
 
 const s = StyleSheet.create({
-  root:      { flex: 1, backgroundColor: COLORS.bloomBody },
+  root:      { flex: 1, backgroundColor: NICO.screenBg },
   container: { flex: 1 },
-  content:   { padding: 20, gap: 16, paddingBottom: 40 },
+  content:   { padding: SPACING.base, gap: SPACING.md, paddingBottom: 40 },
 
-  field:         { gap: 6 },
-  fieldLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  fieldLabel:    { fontSize: 13, fontWeight: '700', color: COLORS.bloomText },
-  fieldHint:     { fontSize: 11, color: COLORS.bloomMuted },
+  field:         { gap: SPACING.sm },
+  fieldLabelRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  fieldLabel:    { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  fieldHint:     { fontSize: FONT_SIZE.xs, color: NICO.textMuted },
 
-  input: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 14, borderWidth: 1.5,
-    borderColor: COLORS.bloomBorder, paddingHorizontal: 16, paddingVertical: 14,
-    fontSize: 15, color: COLORS.bloomText,
-  },
-  textArea: { minHeight: 100, textAlignVertical: 'top' },
+  inputGradient: { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
+  input:         { ...INPUT.base, borderWidth: 0 },
+  textArea:      { minHeight: scale(100), textAlignVertical: 'top' },
 
+  selectGradient: { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
   pickerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: COLORS.bloomCard, borderRadius: 14, borderWidth: 1.5,
-    borderColor: COLORS.bloomBorder, paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.base, paddingVertical: 13,
   },
-  pickerBtnTxt:    { fontSize: 15, color: COLORS.bloomText, flex: 1 },
-  pickerPlaceholder: { color: COLORS.bloomMuted },
-  pickerIcon:      { fontSize: 18 },
-  clearTxt:        { fontSize: 14, color: COLORS.bloomMuted, fontWeight: '700' },
+  pickerBtnTxt:      { fontSize: FONT_SIZE.md, color: NICO.text, flex: 1 },
+  pickerPlaceholder: { color: NICO.textMuted },
+  pickerIcon:        { fontSize: scale(18) },
+  clearTxt:          { fontSize: FONT_SIZE.sm, color: NICO.textMuted, fontWeight: FONT_WEIGHT.bold },
 
-  submitBtn: {
-    backgroundColor: COLORS.bloomAccent, borderRadius: 16,
-    paddingVertical: 17, alignItems: 'center', marginTop: 8,
-  },
-  submitBtnText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 16 },
+  submitBtn:         { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.sm },
+  submitBtnDisabled: { opacity: 0.5 },
+  submitBtnText:     { ...TEXT_STYLE.buttonPrimary },
 
-  categoryOption: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
-  },
-  categoryOptionActive:     { backgroundColor: COLORS.bloomTintBg },
-  categoryOptionText:       { fontSize: 15, color: COLORS.bloomText },
-  categoryOptionTextActive: { color: COLORS.bloomNavy, fontWeight: '700' },
-  categoryCheck:            { fontSize: 16, color: COLORS.bloomNavy, fontWeight: '700' },
-
-  // Sheet
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  // Sheets
+  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: COLORS.bloomCard,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: NICO.surface,
+    borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl,
     paddingBottom: 32,
   },
   sheetHdr: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 16,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  sheetTitle:  { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
-  sheetCancel: { fontSize: 15, color: COLORS.bloomMuted },
-  sheetDone:   { fontSize: 15, fontWeight: '700', color: COLORS.bloomNavy },
+  sheetTitle:  { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  sheetDone:   { fontSize: FONT_SIZE.md, color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold, width: 60, textAlign: 'right' },
   picker:      { height: 220 },
+
+  sheetOption: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
+  },
+  sheetOptionActive:     { backgroundColor: NICO.primaryLight },
+  sheetOptionText:       { fontSize: FONT_SIZE.md, color: NICO.text },
+  sheetOptionTextActive: { color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
+  sheetCheck:            { fontSize: FONT_SIZE.md, color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold },
 });
