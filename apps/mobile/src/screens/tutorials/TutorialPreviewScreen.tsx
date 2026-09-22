@@ -4,15 +4,20 @@ import {
   StyleSheet, Alert, ActivityIndicator, Modal, Dimensions,
 } from 'react-native';
 import AppText from '../../components/AppText';
+import RainbowDivider from '../../components/RainbowDivider';
+import useNicoHeader from '../../hooks/useNicoHeader';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import type { TutorialWithFrames, TutorialFrame, TutorialStatus } from '../../types';
 import YoutubePlayer from '../../components/YoutubePlayer';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, scale,
+} from '../../constants/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -20,11 +25,11 @@ type NavProp = NativeStackNavigationProp<GuardianNavParamList, 'TutorialPreview'
 type RouteType = RouteProp<GuardianNavParamList, 'TutorialPreview'>;
 
 const STATUS_COLORS: Record<TutorialStatus, { bg: string; text: string }> = {
-  generating: { bg: '#E8ECEF', text: '#5D6D7E' },
-  preview:    { bg: '#FEF3CD', text: '#B7791F' },
-  pending:    { bg: '#DBEAFE', text: '#1D4ED8' },
-  approved:   { bg: COLORS.statusGreenLight, text: COLORS.statusGreenDark },
-  rejected:   { bg: COLORS.statusRedLight, text: '#991B1B' },
+  generating: { bg: NICO.background, text: NICO.textMuted },
+  preview:    { bg: NICO.warningLight, text: NICO.warning },
+  pending:    { bg: NICO.primaryLight, text: NICO.primary },
+  approved:   { bg: NICO.successLight, text: NICO.success },
+  rejected:   { bg: NICO.errorLight,  text: NICO.error },
 };
 const STATUS_LABELS: Record<TutorialStatus, string> = {
   generating: 'Generating…',
@@ -43,6 +48,8 @@ export default function TutorialPreviewScreen() {
   const [tutorial, setTutorial] = useState<TutorialWithFrames | null>(null);
   const [loading, setLoading] = useState(true);
   const [frameIndex, setFrameIndex] = useState(0);
+
+  useNicoHeader(navigation);
 
   // Audio — hooks must be called unconditionally so compute URL from state directly
   const currentAudioUrl = tutorial?.frames?.[frameIndex]?.audio_url ?? null;
@@ -182,17 +189,13 @@ export default function TutorialPreviewScreen() {
       || (editCaption
         ? `${tutorial?.topic ?? ''} — ${editCaption}: ${editTts}`
         : `${tutorial?.topic ?? ''}: ${editTts}`);
-    // Wrap the guardian's plain-English description with visual style context
     const visualStyle = tutorial?.visual_style ?? '2D Animation';
     const imageStyle = tutorial?.image_style ?? 'Simple & Bold';
     const imagePrompt = `${guardianDescription}. Style: ${visualStyle}, ${imageStyle}.`;
     setRegeneratingImage(true);
     try {
       const { data, error } = await supabase.functions.invoke('regenerate-frame', {
-        body: {
-          frame_id: editingFrame.id,
-          image_prompt: imagePrompt,
-        },
+        body: { frame_id: editingFrame.id, image_prompt: imagePrompt },
       });
       if (error || data?.error) throw new Error(data?.error ?? error?.message);
       const updatedFrame = data.frame as TutorialFrame;
@@ -248,14 +251,11 @@ export default function TutorialPreviewScreen() {
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Re-generate', onPress: async () => {
-          // Clear existing frames and reset status
           await supabase.from('tutorial_frames').delete().eq('tutorial_id', tutorialId);
           await supabase.from('tutorials').update({ status: 'generating', updated_at: new Date().toISOString() }).eq('id', tutorialId);
           setTutorial(prev => prev ? { ...prev, status: 'generating', frames: [] } : prev);
           setFrameIndex(0);
-          // Queue a new job
           await supabase.from('tutorial_jobs').insert({ tutorial_id: tutorialId });
-          // Restart poll
           load();
         },
       },
@@ -263,23 +263,23 @@ export default function TutorialPreviewScreen() {
   }
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
+    return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
   }
 
   if (!tutorial) {
     return (
-      <View style={styles.center}>
-        <AppText style={styles.errorText}>Tutorial not found</AppText>
+      <View style={s.center}>
+        <AppText style={s.errorText}>Tutorial not found</AppText>
       </View>
     );
   }
 
   if (tutorial.status === 'generating') {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.bloomAccent} />
-        <AppText style={styles.generatingText}>AI is creating your tutorial…</AppText>
-        <AppText style={styles.generatingHint}>This usually takes 30–60 seconds</AppText>
+      <View style={s.center}>
+        <ActivityIndicator size="large" color={NICO.primary} />
+        <AppText style={s.generatingText}>AI is creating your tutorial…</AppText>
+        <AppText style={s.generatingHint}>This usually takes 30–60 seconds</AppText>
       </View>
     );
   }
@@ -289,12 +289,13 @@ export default function TutorialPreviewScreen() {
   const isCreator = guardian?.id === tutorial.created_by_guardian_id;
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <View style={s.container}>
+      <RainbowDivider />
+      <ScrollView contentContainerStyle={s.content}>
         {/* Status banner — creator only, not shown when approved */}
         {isCreator && tutorial.status !== 'approved' && (
-          <View style={[styles.statusBanner, { backgroundColor: STATUS_COLORS[tutorial.status as TutorialStatus].bg }]}>
-            <AppText style={[styles.statusBannerText, { color: STATUS_COLORS[tutorial.status as TutorialStatus].text }]}>
+          <View style={[s.statusBanner, { backgroundColor: STATUS_COLORS[tutorial.status as TutorialStatus].bg }]}>
+            <AppText style={[s.statusBannerText, { color: STATUS_COLORS[tutorial.status as TutorialStatus].text }]}>
               {STATUS_LABELS[tutorial.status as TutorialStatus]}
             </AppText>
           </View>
@@ -302,14 +303,14 @@ export default function TutorialPreviewScreen() {
 
         {/* Rejected admin notes — creator only */}
         {isCreator && tutorial.status === 'rejected' && tutorial.admin_notes && (
-          <View style={styles.adminNotesCard}>
-            <AppText style={styles.adminNotesLabel}>Admin Notes</AppText>
-            <AppText style={styles.adminNotesText}>{tutorial.admin_notes}</AppText>
+          <View style={s.adminNotesCard}>
+            <AppText style={s.adminNotesLabel}>Admin Notes</AppText>
+            <AppText style={s.adminNotesText}>{tutorial.admin_notes}</AppText>
           </View>
         )}
 
         {/* Tutorial title */}
-        <AppText style={styles.title}>{tutorial.display_name || tutorial.category}</AppText>
+        <AppText style={s.title}>{tutorial.display_name || tutorial.category}</AppText>
 
         {/* YouTube player */}
         {tutorial.source === 'youtube' && tutorial.video_url && (() => {
@@ -328,54 +329,54 @@ export default function TutorialPreviewScreen() {
 
         {/* Frame viewer (slideshow only) */}
         {tutorial.source !== 'youtube' && frames.length > 0 && (
-          <View style={styles.frameContainer}>
+          <View style={s.frameContainer}>
             {/* Play All — top */}
-            <View style={styles.frameActions}>
+            <View style={s.frameActions}>
               <TouchableOpacity
-                style={[styles.autoPlayBtn, autoPlay && styles.autoPlayBtnActive]}
+                style={[s.autoPlayBtn, autoPlay && s.autoPlayBtnActive]}
                 onPress={() => {
                   if (!autoPlay) { setFrameIndex(0); setAutoPlay(true); }
                   else setAutoPlay(false);
                 }}
                 disabled={(tutorial?.frames?.length ?? 0) <= 1}
               >
-                <AppText style={styles.autoPlayBtnText}>
+                <AppText style={s.autoPlayBtnText}>
                   {autoPlay ? '⏸  Stop' : '▶  Play video'}
                 </AppText>
               </TouchableOpacity>
             </View>
 
             {/* Frame image */}
-            <View style={styles.frameImage}>
+            <View style={s.frameImage}>
               {currentFrame?.image_url
-                ? <Image source={{ uri: currentFrame.image_url }} style={styles.image} resizeMode="contain" />
+                ? <Image source={{ uri: currentFrame.image_url }} style={s.image} resizeMode="contain" />
                 : (
-                  <View style={styles.imagePlaceholder}>
-                    <AppText style={styles.imagePlaceholderEmoji}>🖼</AppText>
-                    <AppText style={styles.imagePlaceholderText}>No image</AppText>
+                  <View style={s.imagePlaceholder}>
+                    <AppText style={s.imagePlaceholderEmoji}>🖼</AppText>
+                    <AppText style={s.imagePlaceholderText}>No image</AppText>
                   </View>
                 )
               }
             </View>
 
             {/* Replay + Edit — below frame, above counter */}
-            <View style={styles.frameSlideActions}>
+            <View style={s.frameSlideActions}>
               {currentFrame?.audio_url && (
                 <TouchableOpacity
-                  style={styles.audioBtn}
+                  style={s.audioBtn}
                   onPress={() => {
                     if (playerStatus.playing) { player.pause(); }
                     else { player.pause(); player.seekTo(0); player.play(); }
                   }}
                 >
-                  <AppText style={styles.audioBtnText}>
+                  <AppText style={s.audioBtnText}>
                     {playerStatus.playing ? '⏸  Pause' : '🔊  Replay slide'}
                   </AppText>
                 </TouchableOpacity>
               )}
               {isCreator && ['preview', 'rejected'].includes(tutorial.status) && (
                 <TouchableOpacity
-                  style={styles.editBtn}
+                  style={s.editBtn}
                   onPress={() => {
                     if (currentFrame) {
                       setEditCaption(currentFrame.caption ?? '');
@@ -387,102 +388,102 @@ export default function TutorialPreviewScreen() {
                     }
                   }}
                 >
-                  <AppText style={styles.editBtnText}>✏️  Edit slide</AppText>
+                  <AppText style={s.editBtnText}>✏️  Edit slide</AppText>
                 </TouchableOpacity>
               )}
             </View>
 
             {/* Frame counter */}
-            <View style={styles.frameHeader}>
-              <AppText style={styles.frameCounter}>Frame {frameIndex + 1} of {frames.length}</AppText>
+            <View style={s.frameHeader}>
+              <AppText style={s.frameCounter}>Frame {frameIndex + 1} of {frames.length}</AppText>
             </View>
 
             {/* Caption + narration */}
-            <View style={styles.frameText}>
+            <View style={s.frameText}>
               {currentFrame?.caption && (
-                <AppText style={styles.caption}>{currentFrame.caption}</AppText>
+                <AppText style={s.caption}>{currentFrame.caption}</AppText>
               )}
               {currentFrame?.tts_text && (
-                <AppText style={styles.narration}>{currentFrame.tts_text}</AppText>
+                <AppText style={s.narration}>{currentFrame.tts_text}</AppText>
               )}
             </View>
 
             {/* Frame navigation */}
-            <View style={styles.frameNav}>
+            <View style={s.frameNav}>
               <TouchableOpacity
-                style={[styles.navBtn, frameIndex === 0 && styles.navBtnDisabled]}
+                style={[s.navBtn, frameIndex === 0 && s.navBtnDisabled]}
                 onPress={() => setFrameIndex(i => Math.max(0, i - 1))}
                 disabled={frameIndex === 0}
               >
-                <AppText style={styles.navBtnText}>← Prev</AppText>
+                <AppText style={s.navBtnText}>← Prev</AppText>
               </TouchableOpacity>
-              <View style={styles.frameDots}>
+              <View style={s.frameDots}>
                 {frames.map((_, i) => (
                   <TouchableOpacity key={i} onPress={() => setFrameIndex(i)}>
-                    <View style={[styles.dot, i === frameIndex && styles.dotActive]} />
+                    <View style={[s.dot, i === frameIndex && s.dotActive]} />
                   </TouchableOpacity>
                 ))}
               </View>
               <TouchableOpacity
-                style={[styles.navBtn, frameIndex === frames.length - 1 && styles.navBtnDisabled]}
+                style={[s.navBtn, frameIndex === frames.length - 1 && s.navBtnDisabled]}
                 onPress={() => setFrameIndex(i => Math.min(frames.length - 1, i + 1))}
                 disabled={frameIndex === frames.length - 1}
               >
-                <AppText style={styles.navBtnText}>Next →</AppText>
+                <AppText style={s.navBtnText}>Next →</AppText>
               </TouchableOpacity>
             </View>
           </View>
         )}
 
         {/* Action buttons — creator only */}
-        {isCreator && <View style={styles.actions}>
+        {isCreator && <View style={s.actions}>
           {tutorial.status === 'preview' && (
             <TouchableOpacity
-              style={[styles.actionBtn, styles.actionBtnPrimary, submitting && styles.actionBtnDisabled]}
+              style={[s.actionBtn, s.actionBtnPrimary, submitting && s.actionBtnDisabled]}
               onPress={submitForReview}
               disabled={submitting}
             >
-              {submitting ? <ActivityIndicator color="#fff" /> : <AppText style={styles.actionBtnTextPrimary}>Submit for Review</AppText>}
+              {submitting ? <ActivityIndicator color={NICO.textOnAccent} /> : <AppText style={s.actionBtnTextPrimary}>Submit for Review</AppText>}
             </TouchableOpacity>
           )}
           {tutorial.status === 'pending' && (
-            <TouchableOpacity style={[styles.actionBtn, styles.actionBtnWarning]} onPress={withdrawFromReview}>
-              <AppText style={styles.actionBtnTextPrimary}>Withdraw from Review</AppText>
+            <TouchableOpacity style={[s.actionBtn, s.actionBtnWarning]} onPress={withdrawFromReview}>
+              <AppText style={s.actionBtnTextPrimary}>Withdraw from Review</AppText>
             </TouchableOpacity>
           )}
           {tutorial.status === 'rejected' && (
             <TouchableOpacity
-              style={[styles.actionBtn, styles.actionBtnPrimary, submitting && styles.actionBtnDisabled]}
+              style={[s.actionBtn, s.actionBtnPrimary, submitting && s.actionBtnDisabled]}
               onPress={submitForReview}
               disabled={submitting}
             >
-              {submitting ? <ActivityIndicator color="#fff" /> : <AppText style={styles.actionBtnTextPrimary}>Resubmit for Review</AppText>}
+              {submitting ? <ActivityIndicator color={NICO.textOnAccent} /> : <AppText style={s.actionBtnTextPrimary}>Resubmit for Review</AppText>}
             </TouchableOpacity>
           )}
           {tutorial.status === 'approved' && tutorial.is_public && (
-            <View style={styles.approvedBanner}>
-              <AppText style={styles.approvedText}>✅ This tutorial is live in the shared library</AppText>
+            <View style={s.approvedBanner}>
+              <AppText style={s.approvedText}>✅ This tutorial is live in the shared library</AppText>
             </View>
           )}
-          <TouchableOpacity style={[styles.actionBtn, styles.actionBtnDelete]} onPress={deleteTutorial}>
-            <AppText style={styles.actionBtnTextDelete}>{tutorial.source === 'youtube' ? 'Delete Video' : 'Delete Tutorial'}</AppText>
+          <TouchableOpacity style={[s.actionBtn, s.actionBtnDelete]} onPress={deleteTutorial}>
+            <AppText style={s.actionBtnTextDelete}>{tutorial.source === 'youtube' ? 'Delete Video' : 'Delete Tutorial'}</AppText>
           </TouchableOpacity>
         </View>}
 
         {/* Guardian inputs used to generate this tutorial — creator only */}
         {isCreator && tutorial.source === 'ai_generated' && (
-          <View style={styles.inputsCard}>
-            <AppText style={styles.inputsCardTitle}>Generation Settings</AppText>
-            <View style={styles.inputsGrid}>
-              {tutorial.category      && <InputRow label="Skill"         value={tutorial.category} />}
-              {tutorial.core_action   && <InputRow label="Core Action"   value={tutorial.core_action} />}
-              {tutorial.duration_seconds && <InputRow label="Duration"   value={`${tutorial.duration_seconds}s`} />}
-              {tutorial.comprehension_level && <InputRow label="Level"   value={tutorial.comprehension_level} />}
+          <View style={s.inputsCard}>
+            <AppText style={s.inputsCardTitle}>Generation Settings</AppText>
+            <View style={s.inputsGrid}>
+              {tutorial.category      && <InputRow label="Skill"       value={tutorial.category} />}
+              {tutorial.core_action   && <InputRow label="Action"       value={tutorial.core_action} />}
+              {tutorial.duration_seconds && <InputRow label="Duration" value={`${tutorial.duration_seconds}s`} />}
+              {tutorial.comprehension_level && <InputRow label="Level" value={tutorial.comprehension_level} />}
             </View>
 
             {['preview', 'rejected'].includes(tutorial.status) && (
-              <TouchableOpacity style={styles.regenTutorialBtn} onPress={regenerateTutorial} activeOpacity={0.8}>
-                <AppText style={styles.regenTutorialBtnText}>🔄  Re-generate Tutorial</AppText>
+              <TouchableOpacity style={s.regenTutorialBtn} onPress={regenerateTutorial} activeOpacity={0.8}>
+                <AppText style={s.regenTutorialBtnText}>🔄  Re-generate Tutorial</AppText>
               </TouchableOpacity>
             )}
           </View>
@@ -491,143 +492,143 @@ export default function TutorialPreviewScreen() {
 
       {/* Frame editor modal */}
       <Modal visible={!!editingFrame} animationType="slide" onRequestClose={() => setEditingFrame(null)}>
-        <View style={styles.editorContainer}>
-          <View style={styles.editorHeader}>
-            <AppText style={styles.editorTitle}>Edit Frame {(editingFrame ? frames.indexOf(editingFrame) : 0) + 1}</AppText>
-            <TouchableOpacity onPress={() => setEditingFrame(null)} style={styles.editorClose}>
-              <AppText style={styles.editorCloseText}>✕</AppText>
+        <View style={s.editorContainer}>
+          <View style={s.editorHeader}>
+            <AppText style={s.editorTitle}>Edit Frame {(editingFrame ? frames.indexOf(editingFrame) : 0) + 1}</AppText>
+            <TouchableOpacity onPress={() => setEditingFrame(null)} style={s.editorClose}>
+              <AppText style={s.editorCloseText}>✕</AppText>
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.editorContent} keyboardShouldPersistTaps="handled">
+          <ScrollView style={s.editorContent} keyboardShouldPersistTaps="handled">
 
             {/* ── Caption ── */}
-            <View style={styles.editorSection}>
-              <View style={styles.editorFieldRow}>
-                <AppText style={styles.editorFieldLabel}>Caption</AppText>
+            <View style={s.editorSection}>
+              <View style={s.editorFieldRow}>
+                <AppText style={s.editorFieldLabel}>Caption</AppText>
                 {!editingCaption && (
-                  <TouchableOpacity onPress={() => setEditingCaption(true)} style={styles.editorPencilBtn}>
-                    <AppText style={styles.editorPencilText}>✏️</AppText>
+                  <TouchableOpacity onPress={() => setEditingCaption(true)} style={s.editorPencilBtn}>
+                    <AppText style={s.editorPencilText}>✏️</AppText>
                   </TouchableOpacity>
                 )}
               </View>
               {editingCaption ? (
-                <View style={styles.editorInlineRow}>
+                <View style={s.editorInlineRow}>
                   <TextInput
-                    style={[styles.editorInput, { flex: 1 }]}
+                    style={[s.editorInput, { flex: 1 }]}
                     value={editCaption}
                     onChangeText={t => setEditCaption(t.slice(0, 50))}
                     placeholder="e.g. Tap the ball"
-                    placeholderTextColor={COLORS.bloomMuted}
+                    placeholderTextColor={NICO.textMuted}
                     maxLength={50}
                     autoFocus
                   />
                   <TouchableOpacity
-                    style={[styles.editorInlineConfirm, savingCaption && { opacity: 0.5 }]}
+                    style={[s.editorInlineConfirm, savingCaption && { opacity: 0.5 }]}
                     onPress={saveCaptionEdit}
                     disabled={savingCaption}
                   >
                     {savingCaption
-                      ? <ActivityIndicator size="small" color="#fff" />
-                      : <AppText style={styles.editorInlineConfirmText}>✓</AppText>
+                      ? <ActivityIndicator size="small" color={NICO.textOnAccent} />
+                      : <AppText style={s.editorInlineConfirmText}>✓</AppText>
                     }
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.editorInlineDismiss}
+                    style={s.editorInlineDismiss}
                     onPress={() => { setEditCaption(editingFrame?.caption ?? ''); setEditingCaption(false); }}
                   >
-                    <AppText style={styles.editorInlineDismissText}>✕</AppText>
+                    <AppText style={s.editorInlineDismissText}>✕</AppText>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <AppText style={styles.editorFieldValue}>{editCaption || '—'}</AppText>
+                <AppText style={s.editorFieldValue}>{editCaption || '—'}</AppText>
               )}
             </View>
 
-            <View style={styles.editorDivider} />
+            <View style={s.editorDivider} />
 
             {/* ── Narration ── */}
-            <View style={styles.editorSection}>
-              <View style={styles.editorFieldRow}>
-                <AppText style={styles.editorFieldLabel}>Narration text</AppText>
+            <View style={s.editorSection}>
+              <View style={s.editorFieldRow}>
+                <AppText style={s.editorFieldLabel}>Narration text</AppText>
                 {!editingNarration && (
-                  <TouchableOpacity onPress={() => setEditingNarration(true)} style={styles.editorPencilBtn}>
-                    <AppText style={styles.editorPencilText}>✏️</AppText>
+                  <TouchableOpacity onPress={() => setEditingNarration(true)} style={s.editorPencilBtn}>
+                    <AppText style={s.editorPencilText}>✏️</AppText>
                   </TouchableOpacity>
                 )}
               </View>
               {editingNarration ? (
                 <>
                   <TextInput
-                    style={[styles.editorInput, { height: 90 }]}
+                    style={[s.editorInput, { height: 90 }]}
                     value={editTts}
                     onChangeText={t => setEditTts(t.slice(0, 150))}
                     placeholder="e.g. Use the inside of your foot to tap the ball forward."
-                    placeholderTextColor={COLORS.bloomMuted}
+                    placeholderTextColor={NICO.textMuted}
                     multiline
                     textAlignVertical="top"
                     maxLength={150}
                     autoFocus
                   />
-                  <View style={styles.editorInlineRowEnd}>
+                  <View style={s.editorInlineRowEnd}>
                     <TouchableOpacity
-                      style={styles.editorInlineDismiss}
+                      style={s.editorInlineDismiss}
                       onPress={() => { setEditTts(editingFrame?.tts_text ?? ''); setEditingNarration(false); }}
                     >
-                      <AppText style={styles.editorInlineDismissText}>Cancel</AppText>
+                      <AppText style={s.editorInlineDismissText}>Cancel</AppText>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.editorInlineConfirm, savingNarration && { opacity: 0.5 }]}
+                      style={[s.editorInlineConfirm, savingNarration && { opacity: 0.5 }]}
                       onPress={saveNarrationEdit}
                       disabled={savingNarration}
                     >
                       {savingNarration
-                        ? <ActivityIndicator size="small" color="#fff" />
-                        : <AppText style={styles.editorInlineConfirmText}>Save &amp; regenerate audio</AppText>
+                        ? <ActivityIndicator size="small" color={NICO.textOnAccent} />
+                        : <AppText style={s.editorInlineConfirmText}>Save &amp; regenerate audio</AppText>
                       }
                     </TouchableOpacity>
                   </View>
                 </>
               ) : (
-                <AppText style={styles.editorFieldValue}>{editTts || '—'}</AppText>
+                <AppText style={s.editorFieldValue}>{editTts || '—'}</AppText>
               )}
             </View>
 
-            <View style={styles.editorDivider} />
+            <View style={s.editorDivider} />
 
             {/* ── Image regeneration ── */}
-            <View style={styles.editorImageSection}>
+            <View style={s.editorImageSection}>
               {editingFrame?.image_url && (
-                <Image source={{ uri: editingFrame.image_url }} style={styles.editorImage} resizeMode="cover" />
+                <Image source={{ uri: editingFrame.image_url }} style={s.editorImage} resizeMode="cover" />
               )}
-              <AppText style={styles.editorFieldLabel}>What should the image show?</AppText>
+              <AppText style={s.editorFieldLabel}>What should the image show?</AppText>
               <TextInput
-                style={[styles.editorInput, { height: 80, marginBottom: 10 }]}
+                style={[s.editorInput, { height: 80, marginBottom: 10 }]}
                 value={editImagePrompt}
                 onChangeText={t => setEditImagePrompt(t.slice(0, 150))}
                 placeholder="e.g. A child kicking a soccer ball on a green field"
-                placeholderTextColor={COLORS.bloomMuted}
+                placeholderTextColor={NICO.textMuted}
                 multiline
                 textAlignVertical="top"
                 maxLength={150}
               />
               <TouchableOpacity
-                style={[styles.regenBtn, regeneratingImage && styles.regenBtnDisabled]}
+                style={[s.regenBtn, regeneratingImage && s.regenBtnDisabled]}
                 onPress={regenerateFrameImage}
                 disabled={regeneratingImage}
               >
                 {regeneratingImage
-                  ? <ActivityIndicator color={COLORS.bloomAccent} size="small" />
-                  : <AppText style={styles.regenBtnText}>🔄  Regenerate image</AppText>
+                  ? <ActivityIndicator color={NICO.primary} size="small" />
+                  : <AppText style={s.regenBtnText}>🔄  Regenerate image</AppText>
                 }
               </TouchableOpacity>
             </View>
 
           </ScrollView>
 
-          <View style={styles.editorActions}>
-            <TouchableOpacity style={styles.editorDoneBtn} onPress={() => setEditingFrame(null)}>
-              <AppText style={styles.editorDoneBtnText}>Done</AppText>
+          <View style={s.editorActions}>
+            <TouchableOpacity style={s.editorDoneBtn} onPress={() => setEditingFrame(null)}>
+              <AppText style={s.editorDoneBtnText}>Done</AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -638,164 +639,130 @@ export default function TutorialPreviewScreen() {
 
 function InputRow({ label, value }: { label: string; value: string }) {
   return (
-    <View style={styles.inputRow}>
-      <AppText style={styles.inputRowLabel}>{label}</AppText>
-      <AppText style={styles.inputRowValue} numberOfLines={2}>{value}</AppText>
+    <View style={s.inputRow}>
+      <AppText style={s.inputRowLabel}>{label}</AppText>
+      <AppText style={s.inputRowValue} numberOfLines={2}>{value}</AppText>
     </View>
   );
 }
 
-function MetaBadge({ text, color }: { text: string; color?: string }) {
-  return (
-    <View style={[styles.metaBadge, color ? { backgroundColor: `${color}22`, borderColor: color } : {}]}>
-      <AppText style={[styles.metaBadgeText, color ? { color } : {}]}>{text}</AppText>
-    </View>
-  );
-}
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: NICO.screenBg },
+  content:   { padding: SPACING.base, paddingBottom: 48 },
+  center:    { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 32 },
+  errorText:     { ...TEXT_STYLE.body, color: NICO.textMuted },
+  generatingText:{ fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, textAlign: 'center' },
+  generatingHint:{ fontSize: FONT_SIZE.md, color: NICO.textMuted, textAlign: 'center' },
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bloomBody },
-  content: { padding: 16, paddingBottom: 48 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 32 },
-  errorText: { fontSize: 16, color: COLORS.bloomMuted },
-  generatingText: { fontSize: 18, fontWeight: '700', color: COLORS.bloomText, textAlign: 'center' },
-  generatingHint: { fontSize: 14, color: COLORS.bloomMuted, textAlign: 'center' },
+  statusBanner:     { borderRadius: RADIUS.lg, paddingHorizontal: SPACING.base, paddingVertical: SPACING.md, marginBottom: 14, alignItems: 'center' },
+  statusBannerText: { fontWeight: FONT_WEIGHT.extraBold, fontSize: FONT_SIZE.md },
 
-  statusBanner: { borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 14, alignItems: 'center' },
-  statusBannerText: { fontWeight: '800', fontSize: 15 },
+  adminNotesCard:  { backgroundColor: NICO.errorLight, borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: NICO.error, padding: 14, marginBottom: 12 },
+  adminNotesLabel: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.error, marginBottom: 4 },
+  adminNotesText:  { fontSize: FONT_SIZE.md, color: NICO.text, lineHeight: 20 },
 
-  adminNotesCard: { backgroundColor: '#FFF5F5', borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.error, padding: 14, marginBottom: 12 },
-  adminNotesLabel: { fontSize: 12, fontWeight: '700', color: COLORS.error, marginBottom: 4 },
-  adminNotesText: { fontSize: 14, color: COLORS.bloomText, lineHeight: 20 },
+  title: { fontSize: FONT_SIZE['4xl'], fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: 10 },
 
-  title: { fontSize: 22, fontWeight: '800', color: COLORS.bloomText, marginBottom: 10 },
-  metaRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 20 },
-  metaBadge: {
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10,
-    backgroundColor: COLORS.bloomActiveBg, borderWidth: 1, borderColor: COLORS.bloomAccent,
-  },
-  metaBadgeText: { fontSize: 12, fontWeight: '600', color: COLORS.bloomAccent, textTransform: 'capitalize' },
+  frameContainer:    { backgroundColor: NICO.surface, borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 20, ...SHADOW.sm },
+  frameActions:      { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, padding: 14, paddingBottom: SPACING.sm },
+  frameSlideActions: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 },
+  frameHeader:       { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 10 },
+  frameCounter:      { ...TEXT_STYLE.caption, color: NICO.textMuted },
 
-  frameContainer: { backgroundColor: COLORS.bloomCard, borderRadius: 20, overflow: 'hidden', marginBottom: 20 },
-  frameActions: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 8,
-    padding: 14, paddingBottom: 8,
-  },
-  frameSlideActions: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 8,
-    paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4,
-  },
-  frameHeader: { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 10 },
-  frameCounter: { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted },
-  autoPlayBtn: {
-    backgroundColor: COLORS.bloomAccent, borderRadius: 8,
-    paddingHorizontal: 12, paddingVertical: 8,
-  },
-  autoPlayBtnActive: { backgroundColor: COLORS.bloomNavy },
-  autoPlayBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomOnAccent },
-  audioBtn: { backgroundColor: '#F0FDF4', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: '#86EFAC' },
-  audioBtnText: { fontSize: 13, fontWeight: '700', color: '#166534' },
-  editBtn: { backgroundColor: COLORS.bloomActiveBg, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: COLORS.bloomAccent },
-  editBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomAccent },
+  autoPlayBtn:       { backgroundColor: NICO.primary, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
+  autoPlayBtnActive: { backgroundColor: NICO.primaryDark },
+  autoPlayBtnText:   { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.textOnAccent },
 
-  frameImage: { width: '100%', aspectRatio: 1, backgroundColor: '#000' },
-  image: { width: '100%', height: '100%' },
-  imagePlaceholder: {
-    width: '100%', height: '100%',
-    backgroundColor: COLORS.bloomActiveBg, justifyContent: 'center', alignItems: 'center', gap: 8,
-  },
-  imagePlaceholderEmoji: { fontSize: 48 },
-  imagePlaceholderText: { fontSize: 14, color: COLORS.bloomMuted },
+  audioBtn:     { backgroundColor: NICO.successLight, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderWidth: 1, borderColor: NICO.success },
+  audioBtnText: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.success },
+  editBtn:      { backgroundColor: NICO.primaryLight, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderWidth: 1, borderColor: NICO.primary },
+  editBtnText:  { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 
-  frameText: { padding: 18, gap: 10 },
-  caption: { fontSize: 22, fontWeight: '800', color: COLORS.bloomText },
-  narration: { fontSize: 16, color: COLORS.bloomText, lineHeight: 24, opacity: 0.75 },
+  frameImage:          { width: '100%', aspectRatio: 1, backgroundColor: '#000' },
+  image:               { width: '100%', height: '100%' },
+  imagePlaceholder:    { width: '100%', height: '100%', backgroundColor: NICO.primaryLight, justifyContent: 'center', alignItems: 'center', gap: SPACING.sm },
+  imagePlaceholderEmoji: { fontSize: scale(48) },
+  imagePlaceholderText:  { fontSize: FONT_SIZE.md, color: NICO.textMuted },
 
-  frameNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 16 },
-  navBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: COLORS.bloomAccent },
+  frameText:  { padding: 18, gap: 10 },
+  caption:    { fontSize: FONT_SIZE['4xl'], fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  narration:  { fontSize: FONT_SIZE.xl, color: NICO.text, lineHeight: 24, opacity: 0.75 },
+
+  frameNav:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.base, paddingBottom: SPACING.base },
+  navBtn:      { paddingHorizontal: SPACING.base, paddingVertical: 10, borderRadius: RADIUS.sm, backgroundColor: NICO.primary },
   navBtnDisabled: { opacity: 0.3 },
-  navBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.bloomOnAccent },
-  frameDots: { flexDirection: 'row', gap: 6 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.bloomBorder },
-  dotActive: { backgroundColor: COLORS.bloomAccent, width: 20 },
+  navBtnText:  { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.textOnAccent },
+  frameDots:   { flexDirection: 'row', gap: 6 },
+  dot:         { width: 8, height: 8, borderRadius: 4, backgroundColor: NICO.border },
+  dotActive:   { backgroundColor: NICO.primary, width: 20 },
 
-  actions: { gap: 12 },
-  actionBtn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
-  actionBtnPrimary: { backgroundColor: COLORS.bloomAccent, shadowColor: COLORS.bloomAccent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
-  actionBtnWarning: { backgroundColor: COLORS.warning },
-  actionBtnDisabled: { opacity: 0.5 },
-  actionBtnTextPrimary: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 15 },
-  approvedBanner: { backgroundColor: COLORS.secondaryLight, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
-  approvedText: { color: COLORS.success, fontWeight: '700', fontSize: 14 },
-  actionBtnDelete: { backgroundColor: COLORS.statusRedLight, borderWidth: 1.5, borderColor: '#FCA5A5' },
-  actionBtnTextDelete: { color: '#991B1B', fontWeight: '700', fontSize: 15 },
+  actions:             { gap: SPACING.md },
+  actionBtn:           { ...BTN_SIZE.lg },
+  actionBtnPrimary:    { ...BTN_VARIANT.primary, ...SHADOW.sm },
+  actionBtnWarning:    { ...BTN_VARIANT.primary, backgroundColor: NICO.warning },
+  actionBtnDisabled:   { opacity: 0.5 },
+  actionBtnTextPrimary:{ ...TEXT_STYLE.buttonPrimary },
+  approvedBanner:      { backgroundColor: NICO.successLight, borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center' },
+  approvedText:        { color: NICO.success, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.md },
+  actionBtnDelete:     { ...BTN_VARIANT.danger },
+  actionBtnTextDelete: { ...TEXT_STYLE.buttonPrimary },
 
-  // Guardian inputs card
   inputsCard: {
-    marginTop: 20, backgroundColor: COLORS.bloomCard, borderRadius: 18,
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder, padding: 18, gap: 14,
+    marginTop: 20, backgroundColor: NICO.surface, borderRadius: RADIUS.xl,
+    borderWidth: 1.5, borderColor: NICO.border, padding: 18, gap: 14,
   },
-  inputsCardTitle: { fontSize: 14, fontWeight: '700', color: COLORS.bloomMuted, textTransform: 'uppercase', letterSpacing: 0.6 },
-  inputsGrid: { gap: 0 },
-  inputRow: {
-    flexDirection: 'row', alignItems: 'flex-start',
-    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
-  },
-  inputRowLabel: { width: 100, fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted },
-  inputRowValue: { flex: 1, fontSize: 14, fontWeight: '600', color: COLORS.bloomText, textTransform: 'capitalize' },
+  inputsCardTitle: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, textTransform: 'uppercase', letterSpacing: 0.6 },
+  inputsGrid:      { gap: 0 },
+  inputRow:        { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: NICO.border },
+  inputRowLabel:   { width: scale(100), fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
+  inputRowValue:   { flex: 1, fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, textTransform: 'capitalize' },
 
-  regenTutorialBtn: {
-    backgroundColor: COLORS.bloomActiveBg, borderRadius: 12, paddingVertical: 13,
-    alignItems: 'center', marginTop: 4,
-  },
-  regenTutorialBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.bloomAccent },
+  regenTutorialBtn:     { backgroundColor: NICO.primaryLight, borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center', marginTop: 4 },
+  regenTutorialBtnText: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 
   // Frame editor modal
-  editorContainer: { flex: 1, backgroundColor: COLORS.bloomBody },
+  editorContainer: { flex: 1, backgroundColor: NICO.screenBg },
   editorHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 56, paddingBottom: 16,
-    backgroundColor: COLORS.bloomCard, borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    paddingHorizontal: SPACING.lg, paddingTop: 56, paddingBottom: SPACING.base,
+    backgroundColor: NICO.surface, borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  editorTitle: { fontSize: 18, fontWeight: '800', color: COLORS.bloomText },
-  editorClose: { padding: 4 },
-  editorCloseText: { fontSize: 22, color: COLORS.bloomMuted },
-  editorContent: { flex: 1 },
-  editorSection: { paddingHorizontal: 20, paddingVertical: 16 },
-  editorDivider: { height: 1, backgroundColor: COLORS.bloomBorder, marginHorizontal: 20 },
-  editorFieldRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  editorFieldLabel: { fontSize: 13, fontWeight: '700', color: COLORS.bloomMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  editorFieldValue: { fontSize: 15, color: COLORS.bloomText, lineHeight: 22 },
-  editorPencilBtn: { padding: 4 },
-  editorPencilText: { fontSize: 18 },
-  editorInlineRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  editorInlineRowEnd: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 },
+  editorTitle:       { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  editorClose:       { padding: 4 },
+  editorCloseText:   { fontSize: FONT_SIZE.xl, color: NICO.textMuted },
+  editorContent:     { flex: 1 },
+  editorSection:     { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base },
+  editorDivider:     { height: 1, backgroundColor: NICO.border, marginHorizontal: SPACING.lg },
+  editorFieldRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  editorFieldLabel:  { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  editorFieldValue:  { fontSize: FONT_SIZE.md, color: NICO.text, lineHeight: 22 },
+  editorPencilBtn:   { padding: 4 },
+  editorPencilText:  { fontSize: FONT_SIZE.lg },
+  editorInlineRow:   { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  editorInlineRowEnd:{ flexDirection: 'row', justifyContent: 'flex-end', gap: SPACING.sm, marginTop: SPACING.sm },
   editorInlineConfirm: {
-    backgroundColor: COLORS.bloomAccent, borderRadius: 10,
+    backgroundColor: NICO.primary, borderRadius: RADIUS.sm,
     paddingHorizontal: 14, paddingVertical: 10, minWidth: 44, alignItems: 'center',
   },
-  editorInlineConfirmText: { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 13 },
+  editorInlineConfirmText: { color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.sm },
   editorInlineDismiss: {
-    backgroundColor: COLORS.bloomBorder, borderRadius: 10,
+    backgroundColor: NICO.border, borderRadius: RADIUS.sm,
     paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center',
   },
-  editorInlineDismissText: { color: COLORS.bloomText, fontWeight: '600', fontSize: 13 },
-  editorImageSection: { padding: 20, backgroundColor: '#F0F4FF' },
-  editorImage: { width: '100%', height: 180, borderRadius: 14, marginBottom: 14 },
-  editorInput: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 12, borderWidth: 1, borderColor: COLORS.bloomBorder,
-    paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: COLORS.bloomText,
+  editorInlineDismissText: { color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, fontSize: FONT_SIZE.sm },
+  editorImageSection: { padding: SPACING.lg, backgroundColor: NICO.primaryLight },
+  editorImage:  { width: '100%', height: 180, borderRadius: RADIUS.md, marginBottom: 14 },
+  editorInput:  {
+    backgroundColor: NICO.surface, borderRadius: RADIUS.md, borderWidth: 1, borderColor: NICO.border,
+    paddingHorizontal: 14, paddingVertical: 12, fontSize: FONT_SIZE.md, color: NICO.text,
   },
-  regenBtn: {
-    flexDirection: 'row', justifyContent: 'center',
-    backgroundColor: COLORS.bloomActiveBg, borderRadius: 10, paddingVertical: 12,
-  },
+  regenBtn:         { flexDirection: 'row', justifyContent: 'center', backgroundColor: NICO.primaryLight, borderRadius: RADIUS.sm, paddingVertical: 12 },
   regenBtnDisabled: { opacity: 0.5 },
-  regenBtnText: { color: COLORS.bloomAccent, fontWeight: '700', fontSize: 14 },
+  regenBtnText:     { color: NICO.primary, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.md },
   editorActions: {
-    padding: 20, paddingBottom: 36,
-    backgroundColor: COLORS.bloomCard, borderTopWidth: 1, borderTopColor: COLORS.bloomBorder,
+    padding: SPACING.lg, paddingBottom: 36,
+    backgroundColor: NICO.surface, borderTopWidth: 1, borderTopColor: NICO.border,
   },
-  editorDoneBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: COLORS.bloomAccent },
-  editorDoneBtnText: { fontWeight: '700', color: COLORS.bloomOnAccent, fontSize: 15 },
+  editorDoneBtn:     { paddingVertical: 14, borderRadius: RADIUS.md, alignItems: 'center', backgroundColor: NICO.primary },
+  editorDoneBtnText: { fontWeight: FONT_WEIGHT.bold, color: NICO.textOnAccent, fontSize: FONT_SIZE.md },
 });

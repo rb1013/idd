@@ -1,15 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView,
+  View, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, Alert, ActivityIndicator, Modal,
 } from 'react-native';
 import AppText from '../../components/AppText';
+import RainbowDivider from '../../components/RainbowDivider';
+import useNicoHeader from '../../hooks/useNicoHeader';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, scale,
+} from '../../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // Defaults saved to every tutorial. To re-enable guardian customisation,
 // convert each field back to useState initialised from this object.
@@ -25,6 +31,8 @@ const TUTORIAL_DEFAULTS = {
 export default function CreateTutorialScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<GuardianNavParamList>>();
   const { guardian } = useAuth();
+
+  useNicoHeader(navigation);
 
   const [targetSkill, setTargetSkill] = useState('');
   const [coreAction, setCoreAction] = useState('');
@@ -93,76 +101,99 @@ export default function CreateTutorialScreen() {
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      style={s.container}
+      contentContainerStyle={s.content}
       keyboardShouldPersistTaps="handled"
     >
+      <RainbowDivider />
+
       {/* Quota pill */}
       {quota && (
-        <View style={styles.quotaPill}>
-          <AppText style={styles.quotaLabel}>Monthly quota</AppText>
-          <AppText style={[styles.quotaCount, quota.used >= quota.limit && { color: COLORS.error }]}>
+        <View style={s.quotaPill}>
+          <AppText style={s.quotaLabel}>Monthly quota</AppText>
+          <AppText style={[s.quotaCount, quota.used >= quota.limit && { color: NICO.error }]}>
             {quota.used} / {quota.limit} used
           </AppText>
         </View>
       )}
 
-      <View style={styles.infoBanner}>
-        <AppText style={styles.infoText}>ℹ️  Shared tutorials are reviewed by an admin before becoming visible to other guardians.</AppText>
+      <View style={s.infoBanner}>
+        <AppText style={s.infoText}>ℹ️  Shared tutorials are reviewed by an admin before becoming visible to other guardians.</AppText>
       </View>
 
       {/* Form card */}
-      <View style={styles.formCard}>
+      <View style={s.formCard}>
         <FieldBlock label="Target Skill *">
-          <TouchableOpacity style={styles.selectRow} onPress={() => setShowSkillPicker(true)} activeOpacity={0.75}>
-            <AppText style={[styles.selectValue, !targetSkill && styles.selectPlaceholder]}>
-              {targetSkill || 'Select a skill…'}
-            </AppText>
-            {targetSkill
-              ? <TouchableOpacity onPress={() => setTargetSkill('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <AppText style={styles.selectClear}>✕</AppText>
-                </TouchableOpacity>
-              : <AppText style={styles.selectChevron}>›</AppText>
-            }
-          </TouchableOpacity>
+          <LinearGradient
+            colors={[...BUTTERFLY_BORDER.colors]}
+            start={BUTTERFLY_BORDER.start}
+            end={BUTTERFLY_BORDER.end}
+            style={s.selectGradient}
+          >
+            <TouchableOpacity style={s.selectRow} onPress={() => setShowSkillPicker(true)} activeOpacity={0.75}>
+              <AppText style={[s.selectValue, !targetSkill && s.selectPlaceholder]}>
+                {targetSkill || 'Select a skill…'}
+              </AppText>
+              {targetSkill
+                ? <TouchableOpacity onPress={() => setTargetSkill('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <AppText style={s.selectClear}>✕</AppText>
+                  </TouchableOpacity>
+                : <AppText style={s.selectChevron}>›</AppText>
+              }
+            </TouchableOpacity>
+          </LinearGradient>
         </FieldBlock>
 
         <Divider />
 
         <FieldBlock label="Core Action *" hint="e.g. Dribbling a soccer ball (max 60 chars)">
-          <TextInput
-            style={styles.input}
-            value={coreAction}
-            onChangeText={t => setCoreAction(t.slice(0, 60))}
-            placeholder="Describe what the user will learn to do…"
-            placeholderTextColor={COLORS.bloomMuted}
-            maxLength={60}
-            returnKeyType="done"
-          />
-          <AppText style={styles.charCount}>{coreAction.length}/60</AppText>
+          <LinearGradient
+            colors={[...BUTTERFLY_BORDER.colors]}
+            start={BUTTERFLY_BORDER.start}
+            end={BUTTERFLY_BORDER.end}
+            style={s.inputGradient}
+          >
+            <TextInput
+              style={s.input}
+              value={coreAction}
+              onChangeText={t => setCoreAction(t.slice(0, 60))}
+              placeholder="Describe what the user will learn to do…"
+              placeholderTextColor={NICO.textMuted}
+              maxLength={60}
+              returnKeyType="done"
+            />
+          </LinearGradient>
+          <AppText style={s.charCount}>{coreAction.length}/60</AppText>
         </FieldBlock>
 
         <Divider />
 
         <FieldBlock label="Tutorial Name" hint="Short friendly name shown to your user (e.g. 'Soccer Fun'). Optional — auto-generated if left blank.">
-          <TextInput
-            style={styles.input}
-            value={displayName}
-            onChangeText={t => setDisplayName(t.slice(0, 60))}
-            placeholder="Give it a name your user will recognise…"
-            placeholderTextColor={COLORS.bloomMuted}
-            maxLength={60}
-            returnKeyType="done"
-          />
-          <AppText style={styles.charCount}>{displayName.length}/40</AppText>
+          <LinearGradient
+            colors={[...BUTTERFLY_BORDER.colors]}
+            start={BUTTERFLY_BORDER.start}
+            end={BUTTERFLY_BORDER.end}
+            style={s.inputGradient}
+          >
+            <TextInput
+              style={s.input}
+              value={displayName}
+              onChangeText={t => setDisplayName(t.slice(0, 60))}
+              placeholder="Give it a name your user will recognise…"
+              placeholderTextColor={NICO.textMuted}
+              maxLength={60}
+              returnKeyType="done"
+            />
+          </LinearGradient>
+          <AppText style={s.charCount}>{displayName.length}/40</AppText>
         </FieldBlock>
 
         <Divider />
 
         <FieldBlock label="Share with other guardians" hint="When approved, this tutorial will appear in the shared library for all guardians to use.">
-          <TouchableOpacity style={styles.shareToggleRow} onPress={() => setIsPublic(v => !v)} activeOpacity={0.7}>
-            <View style={[styles.shareToggle, isPublic && styles.shareToggleOn]}>
-              <View style={[styles.shareThumb, isPublic && styles.shareThumbOn]} />
+          <TouchableOpacity style={s.shareToggleRow} onPress={() => setIsPublic(v => !v)} activeOpacity={0.7}>
+            <View style={[s.shareToggle, isPublic && s.shareToggleOn]}>
+              <View style={[s.shareThumb, isPublic && s.shareThumbOn]} />
             </View>
           </TouchableOpacity>
         </FieldBlock>
@@ -170,37 +201,37 @@ export default function CreateTutorialScreen() {
 
       {/* Submit */}
       <TouchableOpacity
-        style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
+        style={[s.submitBtn, submitting && s.submitBtnDisabled]}
         onPress={handleSubmit}
         disabled={submitting}
       >
         {submitting
-          ? <ActivityIndicator color="#fff" />
-          : <AppText style={styles.submitText}>✨  Create Tutorial</AppText>
+          ? <ActivityIndicator color={NICO.textOnAccent} />
+          : <AppText style={s.submitText}>✨  Create Tutorial</AppText>
         }
       </TouchableOpacity>
-      <AppText style={styles.footerNote}>AI generation takes upto 1-2 mins</AppText>
+      <AppText style={s.footerNote}>AI generation takes upto 1-2 mins</AppText>
 
       <Modal visible={showSkillPicker} transparent animationType="slide" onRequestClose={() => setShowSkillPicker(false)}>
-        <TouchableOpacity style={styles.sheetBackdrop} activeOpacity={1} onPress={() => setShowSkillPicker(false)}>
-          <View style={styles.sheet} onStartShouldSetResponder={() => true}>
-            <View style={styles.sheetHdr}>
+        <TouchableOpacity style={s.sheetBackdrop} activeOpacity={1} onPress={() => setShowSkillPicker(false)}>
+          <View style={s.sheet} onStartShouldSetResponder={() => true}>
+            <View style={s.sheetHdr}>
               <TouchableOpacity onPress={() => setShowSkillPicker(false)}>
-                <AppText style={styles.sheetCancel}>Cancel</AppText>
+                <AppText style={s.sheetCancel}>Cancel</AppText>
               </TouchableOpacity>
-              <AppText style={styles.sheetTitle}>Target Skill</AppText>
+              <AppText style={s.sheetTitle}>Target Skill</AppText>
               <View style={{ width: 60 }} />
             </View>
             <ScrollView style={{ maxHeight: 360 }}>
-              {targetSkills.map(s => (
+              {targetSkills.map(skill => (
                 <TouchableOpacity
-                  key={s}
-                  style={[styles.sheetOption, targetSkill === s && styles.sheetOptionActive]}
-                  onPress={() => { setTargetSkill(s); setShowSkillPicker(false); }}
+                  key={skill}
+                  style={[s.sheetOption, targetSkill === skill && s.sheetOptionActive]}
+                  onPress={() => { setTargetSkill(skill); setShowSkillPicker(false); }}
                   activeOpacity={0.7}
                 >
-                  <AppText style={[styles.sheetOptionText, targetSkill === s && styles.sheetOptionTextActive]}>{s}</AppText>
-                  {targetSkill === s && <AppText style={styles.sheetCheck}>✓</AppText>}
+                  <AppText style={[s.sheetOptionText, targetSkill === skill && s.sheetOptionTextActive]}>{skill}</AppText>
+                  {targetSkill === skill && <AppText style={s.sheetCheck}>✓</AppText>}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -215,145 +246,100 @@ export default function CreateTutorialScreen() {
 
 function FieldBlock({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <View style={styles.fieldBlock}>
-      <AppText style={styles.fieldLabel}>{label}</AppText>
-      {hint ? <AppText style={styles.fieldHint}>{hint}</AppText> : null}
+    <View style={s.fieldBlock}>
+      <AppText style={s.fieldLabel}>{label}</AppText>
+      {hint ? <AppText style={s.fieldHint}>{hint}</AppText> : null}
       {children}
     </View>
   );
 }
 
 function Divider() {
-  return <View style={styles.divider} />;
-}
-
-function SegRow({ options, value, onSelect, activeColor = COLORS.bloomAccent }: {
-  options: { key: string; label: string }[];
-  value: string;
-  onSelect: (v: string) => void;
-  activeColor?: string;
-}) {
-  return (
-    <View style={styles.segRow}>
-      {options.map(o => (
-        <TouchableOpacity
-          key={o.key}
-          style={[styles.seg, value === o.key && styles.segActive]}
-          onPress={() => onSelect(o.key)}
-        >
-          <AppText style={[styles.segText, value === o.key && [styles.segTextActive, { color: activeColor }]]}>
-            {o.label}
-          </AppText>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
+  return <View style={s.divider} />;
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bloomBody },
-  content: { padding: 14, paddingBottom: 120, gap: 12 },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: NICO.screenBg },
+  content:   { padding: SPACING.base, paddingBottom: 120, gap: SPACING.md },
 
   quotaPill: {
-    backgroundColor: COLORS.bloomTintBg, borderRadius: 14,
+    backgroundColor: NICO.primaryLight, borderRadius: RADIUS.lg,
     padding: 13, flexDirection: 'row',
     justifyContent: 'space-between', alignItems: 'center',
   },
-  quotaLabel: { fontSize: 14, fontWeight: '600', color: COLORS.bloomText },
-  quotaCount: { fontSize: 14, fontWeight: '800', color: COLORS.bloomAccent },
+  quotaLabel: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
+  quotaCount: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary },
 
   infoBanner: {
-    backgroundColor: COLORS.bloomActiveBg, borderRadius: 12,
-    borderLeftWidth: 3, borderLeftColor: COLORS.bloomAccent,
-    padding: 12,
+    backgroundColor: BUTTERFLY_TILES[2].bg, borderRadius: RADIUS.md,
+    borderLeftWidth: 4, borderLeftColor: BUTTERFLY_TILES[2].accent,
+    padding: SPACING.md,
   },
-  infoText: { fontSize: 13, color: COLORS.bloomText, lineHeight: 18 },
+  infoText: { fontSize: FONT_SIZE.sm, color: NICO.text, lineHeight: 18 },
 
   formCard: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 20, padding: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07, shadowRadius: 10, elevation: 3,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.xl, padding: SPACING.base,
+    ...SHADOW.sm,
   },
 
   // Field
-  fieldBlock: { gap: 8, paddingVertical: 14 },
-  fieldLabel: { fontSize: 15, fontWeight: '700', color: COLORS.bloomText },
-  fieldHint: { fontSize: 12, color: COLORS.bloomMuted },
-  divider: { height: 1, backgroundColor: COLORS.bloomBorder },
+  fieldBlock: { gap: SPACING.sm, paddingVertical: 14 },
+  fieldLabel: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  fieldHint:  { fontSize: FONT_SIZE.xs, color: NICO.textMuted },
+  divider:    { height: 1, backgroundColor: NICO.border },
 
-  // Input
-  input: {
-    backgroundColor: COLORS.bloomBody, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: COLORS.bloomText,
-  },
-  charCount: { fontSize: 11, color: COLORS.bloomMuted, alignSelf: 'flex-end' },
+  // Input with butterfly border
+  inputGradient:  { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
+  input:          { ...INPUT.base, borderWidth: 0 },
+  charCount:      { fontSize: FONT_SIZE.xs, color: NICO.textMuted, alignSelf: 'flex-end' },
 
-  // Segment control
-  segRow: {
-    flexDirection: 'row', backgroundColor: COLORS.bloomBody,
-    borderRadius: 12, padding: 3, gap: 3,
-  },
-  seg: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
-  segActive: {
-    backgroundColor: COLORS.bloomCard,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1, shadowRadius: 2, elevation: 1,
-  },
-  segText: { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted },
-  segTextActive: { fontWeight: '800', color: COLORS.bloomAccent },
-
-  // Submit
-  submitBtn: {
-    backgroundColor: COLORS.bloomAccent, borderRadius: 18,
-    paddingVertical: 17, alignItems: 'center',
-    shadowColor: COLORS.bloomAccent, shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
-  },
-  submitBtnDisabled: { opacity: 0.5 },
-  submitText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 17 },
-  footerNote: { fontSize: 12, color: COLORS.bloomMuted, textAlign: 'center', lineHeight: 18 },
-
-  // Target skill selector row
+  // Skill selector
+  selectGradient: { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
   selectRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.bloomBody, borderRadius: 12,
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    paddingHorizontal: 14, paddingVertical: 13, gap: 8,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.base, paddingVertical: 13, gap: SPACING.sm,
   },
-  selectValue: { flex: 1, fontSize: 15, fontWeight: '600', color: COLORS.bloomText },
-  selectPlaceholder: { color: COLORS.bloomMuted, fontWeight: '400' },
-  selectClear: { fontSize: 15, color: COLORS.bloomMuted, fontWeight: '700', paddingHorizontal: 4 },
-  selectChevron: { fontSize: 22, color: COLORS.bloomMuted, lineHeight: 26 },
+  selectValue:      { flex: 1, fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
+  selectPlaceholder:{ color: NICO.textMuted, fontWeight: FONT_WEIGHT.regular },
+  selectClear:      { fontSize: FONT_SIZE.md, color: NICO.textMuted, fontWeight: FONT_WEIGHT.bold, paddingHorizontal: 4 },
+  selectChevron:    { fontSize: FONT_SIZE.xl, color: NICO.textMuted, lineHeight: 26 },
+
   // Share toggle
-  shareToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  shareToggle: { width: 52, height: 30, borderRadius: 15, backgroundColor: COLORS.bloomBorder, justifyContent: 'center', padding: 2 },
-  shareToggleOn: { backgroundColor: COLORS.bloomAccent },
-  shareThumb: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff' },
-  shareThumbOn: { alignSelf: 'flex-end' },
+  shareToggleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  shareToggle:    { width: 52, height: 30, borderRadius: 15, backgroundColor: NICO.border, justifyContent: 'center', padding: 2 },
+  shareToggleOn:  { backgroundColor: NICO.primary },
+  shareThumb:     { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff' },
+  shareThumbOn:   { alignSelf: 'flex-end' },
+
+  // Submit
+  submitBtn:        { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, ...SHADOW.md },
+  submitBtnDisabled:{ opacity: 0.5 },
+  submitText:       { ...TEXT_STYLE.buttonPrimary },
+  footerNote:       { fontSize: FONT_SIZE.xs, color: NICO.textMuted, textAlign: 'center', lineHeight: 18 },
+
   // Skill picker sheet
-  sheetBackdrop: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end',
-  },
+  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: COLORS.bloomCard, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: NICO.surface, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl,
     paddingBottom: 32,
   },
   sheetHdr: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 16,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  sheetTitle: { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
-  sheetCancel: { fontSize: 15, color: COLORS.bloomMuted, fontWeight: '600', width: 60 },
+  sheetTitle:          { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  sheetCancel:         { fontSize: FONT_SIZE.md, color: NICO.textMuted, fontWeight: FONT_WEIGHT.semiBold, width: 60 },
   sheetOption: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 16,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  sheetOptionActive: { backgroundColor: COLORS.bloomActiveBg },
-  sheetOptionText: { fontSize: 15, fontWeight: '600', color: COLORS.bloomText },
-  sheetOptionTextActive: { color: COLORS.bloomAccent, fontWeight: '700' },
-  sheetCheck: { fontSize: 16, color: COLORS.bloomAccent, fontWeight: '800' },
+  sheetOptionActive:     { backgroundColor: NICO.primaryLight },
+  sheetOptionText:       { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
+  sheetOptionTextActive: { color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
+  sheetCheck:            { fontSize: FONT_SIZE.md, color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold },
 });

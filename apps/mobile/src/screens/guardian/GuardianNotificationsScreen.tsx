@@ -15,12 +15,13 @@ import {
 } from '../../constants/theme';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
-type Tab = 'discussions' | 'tutorials';
+type Tab = 'discussions' | 'tutorials' | 'events';
 
 type NotifType =
   | 'tutorial_approved'
   | 'tutorial_rejected'
-  | 'discussion_reply';
+  | 'discussion_reply'
+  | 'event_rsvp';
 
 interface GuardianNotification {
   id: string;
@@ -35,6 +36,7 @@ const NOTIF_META: Record<NotifType, { icon: string; label: string }> = {
   tutorial_approved: { icon: '🎓', label: 'Tutorial Approved' },
   tutorial_rejected: { icon: '❌', label: 'Tutorial Rejected' },
   discussion_reply:  { icon: '💬', label: 'New Reply'         },
+  event_rsvp:        { icon: '📅', label: 'Event RSVP'        },
 };
 
 function timeAgo(dateStr: string): string {
@@ -61,6 +63,7 @@ export default function GuardianNotificationsScreen() {
   const { guardian } = useAuth();
   const [discussions, setDiscussions] = useState<GuardianNotification[]>([]);
   const [tutorials, setTutorials]     = useState<GuardianNotification[]>([]);
+  const [events, setEvents]           = useState<GuardianNotification[]>([]);
   const [loading, setLoading]         = useState(true);
   const [activeTab, setActiveTab]     = useState<Tab>('discussions');
 
@@ -82,7 +85,7 @@ export default function GuardianNotificationsScreen() {
     const discLimit   = settings?.notif_discussion_limit ?? 30;
     const cutoff = new Date(Date.now() - windowHours * 60 * 60 * 1000).toISOString();
 
-    const [{ data: disc }, { data: tut }] = await Promise.all([
+    const [{ data: disc }, { data: tut }, { data: evt }] = await Promise.all([
       supabase
         .from('notifications')
         .select('id, type, message, ref_id, read, created_at')
@@ -100,10 +103,19 @@ export default function GuardianNotificationsScreen() {
         .gte('created_at', cutoff)
         .order('created_at', { ascending: false })
         .limit(30),
+      supabase
+        .from('notifications')
+        .select('id, type, message, ref_id, read, created_at')
+        .eq('guardian_id', guardianId)
+        .eq('type', 'event_rsvp')
+        .eq('read', false)
+        .order('created_at', { ascending: false })
+        .limit(30),
     ]);
 
     setDiscussions((disc as GuardianNotification[]) ?? []);
     setTutorials((tut as GuardianNotification[]) ?? []);
+    setEvents((evt as GuardianNotification[]) ?? []);
     setLoading(false);
   }
 
@@ -112,6 +124,7 @@ export default function GuardianNotificationsScreen() {
       await supabase.from('notifications').update({ read: true }).eq('id', n.id);
       setDiscussions(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
       setTutorials(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
+      setEvents(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
     }
     switch (n.type) {
       case 'tutorial_approved':
@@ -120,6 +133,9 @@ export default function GuardianNotificationsScreen() {
         break;
       case 'discussion_reply':
         if (n.ref_id) navigation.navigate('DiscussionDetail', { postId: n.ref_id });
+        break;
+      case 'event_rsvp':
+        if (n.ref_id) navigation.navigate('EventDetail', { eventId: n.ref_id });
         break;
     }
   }
@@ -131,7 +147,8 @@ export default function GuardianNotificationsScreen() {
 
   const unreadDiscussions = discussions.filter(n => !n.read).length;
   const unreadTutorials   = tutorials.filter(n => !n.read).length;
-  const tabData           = activeTab === 'discussions' ? discussions : tutorials;
+  const unreadEvents      = events.filter(n => !n.read).length;
+  const tabData           = activeTab === 'discussions' ? discussions : activeTab === 'tutorials' ? tutorials : events;
 
   if (loading) {
     return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
@@ -140,7 +157,7 @@ export default function GuardianNotificationsScreen() {
   function renderCard(n: GuardianNotification) {
     const meta      = NOTIF_META[n.type] ?? { icon: '🔔', label: n.type };
     const wasUnread = !n.read;
-    const isTutorial = activeTab === 'tutorials';
+    const isTutorial = n.type === 'tutorial_approved' || n.type === 'tutorial_rejected';
     return (
       <TouchableOpacity
         key={n.id}
@@ -183,9 +200,10 @@ export default function GuardianNotificationsScreen() {
 
       {/* Tab bar */}
       <View style={s.tabBar}>
-        {(['discussions', 'tutorials'] as Tab[]).map(tab => {
-          const unread = tab === 'discussions' ? unreadDiscussions : unreadTutorials;
+        {(['discussions', 'tutorials', 'events'] as Tab[]).map(tab => {
+          const unread = tab === 'discussions' ? unreadDiscussions : tab === 'tutorials' ? unreadTutorials : unreadEvents;
           const active = activeTab === tab;
+          const label  = tab === 'discussions' ? 'Discussions' : tab === 'tutorials' ? 'Tutorials' : 'Events';
           return (
             <TouchableOpacity
               key={tab}
@@ -193,9 +211,7 @@ export default function GuardianNotificationsScreen() {
               onPress={() => setActiveTab(tab)}
               activeOpacity={0.75}
             >
-              <AppText style={[s.tabTxt, active && s.tabTxtActive]}>
-                {tab === 'discussions' ? 'Discussions' : 'Tutorials'}
-              </AppText>
+              <AppText style={[s.tabTxt, active && s.tabTxtActive]}>{label}</AppText>
               {unread > 0 && (
                 <View style={s.tabBadge}>
                   <AppText style={s.tabBadgeText}>{unread > 9 ? '9+' : unread}</AppText>
@@ -219,7 +235,9 @@ export default function GuardianNotificationsScreen() {
               <AppText style={s.emptyHint}>
                 {activeTab === 'discussions'
                   ? 'Replies to your discussion posts will appear here'
-                  : 'Tutorial approvals and rejections from the last 48 hours will appear here'
+                  : activeTab === 'tutorials'
+                  ? 'Tutorial approvals and rejections from the last 48 hours will appear here'
+                  : 'RSVP activity on your hosted events will appear here'
                 }
               </AppText>
             </View>

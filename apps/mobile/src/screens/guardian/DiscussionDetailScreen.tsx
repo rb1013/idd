@@ -195,7 +195,7 @@ export default function DiscussionDetailScreen() {
 }
 
 const s = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: NICO.background },
+  root:   { flex: 1, backgroundColor: NICO.screenBg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list:   { padding: SPACING.base, paddingBottom: SPACING.md, gap: SPACING.sm },
 
