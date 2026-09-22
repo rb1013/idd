@@ -390,12 +390,13 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   avatarInitial: { ...TEXT_STYLE.label, color: NICO.primary, fontSize: FONT_SIZE.md },
-  guardianName:  { ...TEXT_STYLE.bodyMedium },
+  guardianName:  { ...TEXT_STYLE.bodyMedium, fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold },
   body:        { flex: 1 },
   bodyContent: { padding: SPACING.base, paddingTop: SPACING.xl, gap: SPACING.base },
 
   sectionLabel: {
     ...TEXT_STYLE.cardTitle,
+    color:        NICO.primary,
     marginBottom: SPACING.md,
   },
 
