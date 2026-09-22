@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   View, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert,
   Modal, ScrollView, Image, TextInput,
@@ -83,6 +83,28 @@ export default function EventsScreen() {
   const route = useRoute<EventsRoute>();
   const { guardian } = useAuth();
   useNicoHeader(navigation);
+
+  useLayoutEffect(() => {
+    const addBtn = (
+      <TouchableOpacity
+        onPress={() => navigation.navigate('CreateEvent')}
+        activeOpacity={0.6}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        style={{ marginRight: SPACING.xs }}
+      >
+        <AppText style={{ fontSize: scale(24) }}>➕</AppText>
+      </TouchableOpacity>
+    );
+    navigation.setOptions({
+      headerRight: () => addBtn,
+      // iOS 26 wraps custom headerRight elements in a native "Liquid Glass" pill by default —
+      // hidesSharedBackground turns that off so only our own element renders.
+      unstable_headerRightItems: () => [
+        { type: 'custom', element: addBtn, hidesSharedBackground: true },
+      ],
+    });
+  }, [navigation]);
+
 
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -447,13 +469,6 @@ export default function EventsScreen() {
         }
       />
 
-      <TouchableOpacity
-        style={s.fab}
-        onPress={() => navigation.navigate('CreateEvent')}
-        activeOpacity={0.85}
-      >
-        <AppText style={s.fabText}>+ Create Event</AppText>
-      </TouchableOpacity>
 
       {/* Filter: Date From picker */}
       <Modal visible={showDateFromPicker} transparent animationType="slide" onRequestClose={() => setShowDateFromPicker(false)}>
@@ -703,7 +718,7 @@ const s = StyleSheet.create({
   tabTxt:       { ...TEXT_STYLE.tabLabel },
   tabTxtActive: { ...TEXT_STYLE.tabLabel, color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold },
 
-  list: { padding: SPACING.base, paddingBottom: 100, gap: SPACING.sm },
+  list: { padding: SPACING.base, paddingBottom: 48, gap: SPACING.sm },
 
   cardWrapper: { gap: 0 },
 
@@ -754,12 +769,6 @@ const s = StyleSheet.create({
   emptyText:  { ...TEXT_STYLE.cardTitle, textAlign: 'center' },
   emptyHint:  { ...TEXT_STYLE.hint },
 
-  fab: {
-    position: 'absolute', bottom: 28,
-    ...BTN_SIZE.lg, ...BTN_VARIANT.primary,
-    ...SHADOW.md,
-  },
-  fabText: { ...TEXT_STYLE.buttonPrimary },
 
   // Filter area — butterfly border inputs
   filterOuter:     { padding: SPACING.base, paddingBottom: SPACING.sm, gap: SPACING.sm },

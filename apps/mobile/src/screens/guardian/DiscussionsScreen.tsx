@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   View, FlatList, TouchableOpacity, StyleSheet,
   TextInput, Modal, KeyboardAvoidingView, Platform,
@@ -58,6 +58,27 @@ export default function DiscussionsScreen() {
   const [loading, setLoading]       = useState(true);
   const [tab, setTab]               = useState<'all' | 'mine'>('all');
   const [showCreate, setShowCreate] = useState(false);
+
+  useLayoutEffect(() => {
+    const addBtn = (
+      <TouchableOpacity
+        onPress={() => setShowCreate(true)}
+        activeOpacity={0.6}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        style={{ marginRight: SPACING.xs }}
+      >
+        <AppText style={{ fontSize: scale(24) }}>➕</AppText>
+      </TouchableOpacity>
+    );
+    navigation.setOptions({
+      headerRight: () => addBtn,
+      // iOS 26 wraps custom headerRight elements in a native "Liquid Glass" pill by default —
+      // hidesSharedBackground turns that off so only our own element renders.
+      unstable_headerRightItems: () => [
+        { type: 'custom', element: addBtn, hidesSharedBackground: true },
+      ],
+    });
+  }, [navigation]);
   const [newTitle, setNewTitle]     = useState('');
   const [newBody, setNewBody]       = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -331,9 +352,6 @@ export default function DiscussionsScreen() {
       )}
       </View>
 
-      <TouchableOpacity style={s.fab} onPress={() => setShowCreate(true)} activeOpacity={0.85}>
-        <AppText style={s.fabText}>New Discussion</AppText>
-      </TouchableOpacity>
 
       {/* More Filters sheet */}
       <FilterSheet
@@ -498,7 +516,7 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: NICO.screenBg },
   tabPane:   { flex: 1, backgroundColor: NICO.screenBg },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 40 },
-  list:      { padding: SPACING.base, paddingBottom: 100, gap: SPACING.sm },
+  list:      { padding: SPACING.base, paddingBottom: 48, gap: SPACING.sm },
 
   // Tab bar
   tabBar: {
@@ -552,12 +570,6 @@ const s = StyleSheet.create({
   categoryBadgeText: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 
   // FAB
-  fab: {
-    position: 'absolute', bottom: 28,
-    ...BTN_SIZE.lg, ...BTN_VARIANT.primary,
-    ...SHADOW.md,
-  },
-  fabText: { ...TEXT_STYLE.buttonPrimary },
 
   empty:     { alignItems: 'center', paddingTop: 60, gap: SPACING.md },
   emptyText: { ...TEXT_STYLE.cardTitle },
