@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
+import GuardianTabBar from '../../components/GuardianTabBar';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import { LinearGradient } from 'expo-linear-gradient';
 import useNicoHeader from '../../hooks/useNicoHeader';
@@ -698,6 +699,7 @@ export default function EventsScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+      <GuardianTabBar />
     </View>
   );
 }

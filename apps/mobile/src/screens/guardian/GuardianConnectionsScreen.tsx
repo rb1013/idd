@@ -13,6 +13,7 @@ import { calcAge } from '../../constants';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
 import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
 import RainbowDivider from '../../components/RainbowDivider';
+import GuardianTabBar from '../../components/GuardianTabBar';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import {
@@ -701,6 +702,7 @@ export default function GuardianConnectionsScreen() {
           )}
         </TouchableOpacity>
       </Modal>
+      <GuardianTabBar />
     </View>
   );
 }

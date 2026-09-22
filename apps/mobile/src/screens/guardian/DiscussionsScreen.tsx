@@ -8,6 +8,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
+import GuardianTabBar from '../../components/GuardianTabBar';
 import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
@@ -508,6 +509,7 @@ export default function DiscussionsScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+      <GuardianTabBar />
     </View>
   );
 }
