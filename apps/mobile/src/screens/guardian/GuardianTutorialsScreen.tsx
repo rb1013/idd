@@ -814,7 +814,10 @@ export default function GuardianTutorialsScreen() {
             <AppText style={styles.createEmoji}>▶️</AppText>
             <View style={styles.createCardContent}>
               <AppText style={styles.createHeading}>Link YouTube Video</AppText>
-              <AppText style={styles.createBody}>Embed a YouTube video — plays inside the app. ⚠️ May show ads.</AppText>
+              <AppText style={styles.createBody}>
+                Embed a YouTube video — plays inside the app.{' '}
+                <AppText style={styles.createBodyWarning}>⚠️ May show ads.</AppText>
+              </AppText>
             </View>
             <AppText style={styles.createChevron}>›</AppText>
           </TouchableOpacity>
@@ -967,6 +970,7 @@ const styles = StyleSheet.create({
   createCardContent: { flex: 1, gap: SPACING.xs },
   createHeading:     { ...TEXT_STYLE.bodyMedium, fontSize: FONT_SIZE.xl },
   createBody:        { ...TEXT_STYLE.hint, lineHeight: 18 },
+  createBodyWarning: { color: NICO.error, fontWeight: FONT_WEIGHT.extraBold },
   createChevron:     { fontSize: FONT_SIZE['4xl'], color: NICO.textMuted, lineHeight: 28 },
   createBtnText:     { ...TEXT_STYLE.buttonPrimary },
 

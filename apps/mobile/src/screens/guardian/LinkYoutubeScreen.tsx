@@ -4,12 +4,18 @@ import {
   ActivityIndicator, ScrollView, Alert, Dimensions,
 } from 'react-native';
 import AppText from '../../components/AppText';
+import RainbowDivider from '../../components/RainbowDivider';
+import useNicoHeader from '../../hooks/useNicoHeader';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
+import {
+  NICO, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, scale,
+} from '../../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 type NavProp = NativeStackNavigationProp<GuardianNavParamList>;
@@ -29,6 +35,8 @@ function extractVideoId(raw: string): string | null {
 export default function LinkYoutubeScreen() {
   const navigation = useNavigation<NavProp>();
   const { guardian } = useAuth();
+
+  useNicoHeader(navigation);
 
   const [url, setUrl]               = useState('');
   const [previewing, setPreviewing] = useState(false);
@@ -94,138 +102,133 @@ export default function LinkYoutubeScreen() {
   }
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      {/* Ads disclaimer */}
-      <View style={styles.disclaimerBanner}>
-        <AppText style={styles.disclaimerText}>
-          ⚠️  YouTube videos may show ads. For a distraction-free learner experience, consider using ad-free sources.
-        </AppText>
-      </View>
+    <View style={s.root}>
+      <RainbowDivider />
+      <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+        {/* Ads disclaimer */}
+        <View style={s.disclaimerBanner}>
+          <AppText style={s.disclaimerText}>
+            ⚠️  YouTube videos may show ads. NICO is not responsible for any ads. Please supervise the ads.
+          </AppText>
+        </View>
 
-      {/* URL input */}
-      <AppText style={styles.label}>YouTube URL</AppText>
-      <View style={styles.inputRow}>
-        <TextInput
-          style={styles.urlInput}
-          value={url}
-          onChangeText={v => { setUrl(v); setVideoId(null); setFetchError(''); }}
-          placeholder="https://www.youtube.com/watch?v=..."
-          placeholderTextColor={COLORS.bloomMuted}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="url"
-        />
-        <TouchableOpacity
-          style={[styles.previewBtn, (!url.trim() || previewing) && { opacity: 0.5 }]}
-          onPress={handlePreview}
-          disabled={!url.trim() || previewing}
-          activeOpacity={0.8}
-        >
-          {previewing
-            ? <ActivityIndicator color={COLORS.bloomOnAccent} />
-            : <AppText style={styles.previewBtnText}>Preview</AppText>
-          }
-        </TouchableOpacity>
-      </View>
-
-      {fetchError ? <AppText style={styles.errorText}>{fetchError}</AppText> : null}
-
-      {/* Preview card */}
-      {videoId && (
-        <View style={styles.previewCard}>
-          {thumbnail && (
-            <Image source={{ uri: thumbnail }} style={styles.thumbImage} resizeMode="cover" />
-          )}
-          <AppText style={styles.titleLabel}>Title (editable)</AppText>
-          <TextInput
-            style={styles.titleInput}
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Video title"
-            placeholderTextColor={COLORS.bloomMuted}
-          />
-          <AppText style={styles.videoIdNote}>Video ID: {videoId}</AppText>
-
+        {/* URL input */}
+        <AppText style={s.label}>YouTube URL</AppText>
+        <View style={s.inputRow}>
+          <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.urlInputGradient}>
+            <TextInput
+              style={s.urlInput}
+              value={url}
+              onChangeText={v => { setUrl(v); setVideoId(null); setFetchError(''); }}
+              placeholder="https://www.youtube.com/watch?v=..."
+              placeholderTextColor={NICO.textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+          </LinearGradient>
           <TouchableOpacity
-            style={[styles.saveBtn, saving && { opacity: 0.6 }]}
-            onPress={handleSave}
-            disabled={saving}
-            activeOpacity={0.85}
+            style={[s.previewBtn, (!url.trim() || previewing) && s.btnDisabled]}
+            onPress={handlePreview}
+            disabled={!url.trim() || previewing}
+            activeOpacity={0.8}
           >
-            {saving
-              ? <ActivityIndicator color={COLORS.bloomOnAccent} />
-              : <AppText style={styles.saveBtnText}>Save to My Tutorials</AppText>
+            {previewing
+              ? <ActivityIndicator color={NICO.textOnAccent} />
+              : <AppText style={s.previewBtnText}>Preview</AppText>
             }
           </TouchableOpacity>
         </View>
-      )}
 
-      {/* How it works note */}
-      <View style={styles.infoCard}>
-        <AppText style={styles.infoTitle}>How this works</AppText>
-        <AppText style={styles.infoText}>• The video is not downloaded or stored — only the YouTube link is saved.</AppText>
-        <AppText style={styles.infoText}>• The video plays inside the NICO app using YouTube's embedded player.</AppText>
-        <AppText style={styles.infoText}>• Saved as private — visible only to you and your learner.</AppText>
-        <AppText style={styles.infoText}>• No admin review needed for YouTube links.</AppText>
-        <AppText style={styles.infoText}>• Only <AppText style={styles.infoTextBold}>public</AppText> YouTube videos can be linked. Private, unlisted, or age-restricted videos will not work.</AppText>
-      </View>
-    </ScrollView>
+        {fetchError ? <AppText style={s.errorText}>{fetchError}</AppText> : null}
+
+        {/* Preview card */}
+        {videoId && (
+          <View style={s.previewCard}>
+            {thumbnail && (
+              <Image source={{ uri: thumbnail }} style={s.thumbImage} resizeMode="cover" />
+            )}
+            <AppText style={s.titleLabel}>Title (editable)</AppText>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.titleInputGradient}>
+              <TextInput
+                style={s.titleInput}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Video title"
+                placeholderTextColor={NICO.textMuted}
+              />
+            </LinearGradient>
+            <AppText style={s.videoIdNote}>Video ID: {videoId}</AppText>
+
+            <TouchableOpacity
+              style={[s.saveBtn, saving && s.btnDisabled]}
+              onPress={handleSave}
+              disabled={saving}
+              activeOpacity={0.85}
+            >
+              {saving
+                ? <ActivityIndicator color={NICO.textOnAccent} />
+                : <AppText style={s.saveBtnText}>Save to My Tutorials</AppText>
+              }
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* How it works note */}
+        <View style={s.infoCard}>
+          <AppText style={s.infoTitle}>How this works</AppText>
+          <AppText style={s.infoText}>• The video is not downloaded or stored — only the YouTube link is saved.</AppText>
+          <AppText style={s.infoText}>• The video plays inside the NICO app using YouTube's embedded player.</AppText>
+          <AppText style={s.infoText}>• Saved as private — visible only to you and your learner.</AppText>
+          <AppText style={s.infoText}>• No admin review needed for YouTube links.</AppText>
+          <AppText style={s.infoText}>• Only <AppText style={s.infoTextBold}>public</AppText> YouTube videos can be linked. Private, unlisted, or age-restricted videos will not work.</AppText>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root:    { flex: 1, backgroundColor: COLORS.bloomBody },
-  content: { padding: 16, gap: 14, paddingBottom: 40 },
+const s = StyleSheet.create({
+  root:    { flex: 1, backgroundColor: NICO.screenBg },
+  content: { padding: SPACING.base, gap: SPACING.md, paddingBottom: 40 },
 
   disclaimerBanner: {
-    backgroundColor: '#FEF3CD', borderRadius: 14, padding: 14,
-    borderWidth: 1.5, borderColor: '#F6D860',
+    backgroundColor: NICO.errorLight, borderRadius: RADIUS.md,
+    borderLeftWidth: 4, borderLeftColor: NICO.error,
+    padding: SPACING.md,
   },
-  disclaimerText: { fontSize: 13, color: '#92640A', lineHeight: 20 },
+  disclaimerText: { fontSize: FONT_SIZE.sm, color: NICO.text, lineHeight: 20, fontWeight: FONT_WEIGHT.bold },
 
-  label: { fontSize: 14, fontWeight: '700', color: COLORS.bloomText, marginBottom: -6 },
+  label: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.text, marginBottom: -6 },
 
-  inputRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  urlInput: {
-    flex: 1, backgroundColor: COLORS.bloomCard, borderRadius: 14,
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, color: COLORS.bloomText,
-  },
-  previewBtn: {
-    backgroundColor: COLORS.bloomAccent, borderRadius: 14,
-    paddingHorizontal: 18, paddingVertical: 13, minWidth: 80, alignItems: 'center',
-  },
-  previewBtnText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 14 },
+  inputRow: { flexDirection: 'row', gap: SPACING.sm, alignItems: 'center' },
+  urlInputGradient: { flex: 1, padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
+  urlInput:  { ...INPUT.base, borderWidth: 0 },
+  previewBtn: { ...BTN_SIZE.md, ...BTN_VARIANT.primary, minWidth: scale(90) },
+  previewBtnText: { color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.extraBold, fontSize: FONT_SIZE.sm },
+  btnDisabled: { opacity: 0.5 },
 
-  errorText: { fontSize: 13, color: COLORS.error, fontWeight: '500' },
+  errorText: { fontSize: FONT_SIZE.sm, color: NICO.error, fontWeight: FONT_WEIGHT.medium },
 
   previewCard: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 18, overflow: 'hidden',
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.xl, overflow: 'hidden',
+    borderWidth: 1, borderColor: NICO.border,
+    ...SHADOW.sm,
   },
-  thumbImage:   { width: '100%', height: width * 0.5, backgroundColor: COLORS.bloomActiveBg },
-  titleLabel:   { fontSize: 12, fontWeight: '700', color: COLORS.bloomMuted, marginTop: 14, marginHorizontal: 16 },
-  titleInput: {
-    marginHorizontal: 16, marginTop: 6,
-    backgroundColor: COLORS.bloomBody, borderRadius: 10,
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    paddingHorizontal: 12, paddingVertical: 10,
-    fontSize: 15, fontWeight: '600', color: COLORS.bloomText,
-  },
-  videoIdNote: { fontSize: 11, color: COLORS.bloomMuted, marginHorizontal: 16, marginTop: 6 },
-  saveBtn: {
-    margin: 16, backgroundColor: COLORS.bloomAccent, borderRadius: 14,
-    paddingVertical: 14, alignItems: 'center',
-  },
-  saveBtnText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 15 },
+  thumbImage:   { width: '100%', height: width * 0.5, backgroundColor: NICO.background },
+  titleLabel:   { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, marginTop: SPACING.md, marginHorizontal: SPACING.base },
+  titleInputGradient: { marginHorizontal: SPACING.base, marginTop: SPACING.xs, padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
+  titleInput: { ...INPUT.base, borderWidth: 0 },
+  videoIdNote: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, marginHorizontal: SPACING.base, marginTop: SPACING.xs },
+  saveBtn:     { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, margin: SPACING.base },
+  saveBtnText: { color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.extraBold, fontSize: FONT_SIZE.md },
 
   infoCard: {
-    backgroundColor: COLORS.bloomActiveBg, borderRadius: 16, padding: 16, gap: 8,
-    borderWidth: 1.5, borderColor: COLORS.bloomSageMid,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.xl, padding: SPACING.base, gap: SPACING.sm,
+    borderWidth: 1, borderColor: NICO.border,
+    ...SHADOW.sm,
   },
-  infoTitle:     { fontSize: 14, fontWeight: '800', color: COLORS.bloomText, marginBottom: 2 },
-  infoText:      { fontSize: 13, color: COLORS.bloomText, lineHeight: 20 },
-  infoTextBold:  { fontWeight: '800', color: COLORS.bloomText },
+  infoTitle:    { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: 2 },
+  infoText:     { fontSize: FONT_SIZE.sm, color: NICO.text, lineHeight: 20 },
+  infoTextBold: { fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
 });
