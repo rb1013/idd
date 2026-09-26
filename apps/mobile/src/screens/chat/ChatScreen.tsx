@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
-  Alert, Image, Modal, ScrollView,
+  Alert, Image, Modal,
 } from 'react-native';
 import { Filter } from 'bad-words';
 import wordConfig from '../../lib/badWordsList.json';
@@ -14,16 +14,20 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
 import { Message } from '../../types';
 import { UserStackParamList } from '../../navigation';
 import CommunicationBoard from './CommunicationBoard';
 import { isSymbolMessage } from '../../lib/aacSymbols';
+import AppText from '../../components/AppText';
+import useNicoHeader from '../../hooks/useNicoHeader';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, scale,
+} from '../../constants/theme';
 
 type Route = RouteProp<UserStackParamList, 'Chat'>;
 
-
-const AVATAR_COLORS = ['#5CBB7A', '#9B59B6', '#F5A623', '#4A90E2', '#E53E3E', '#1ABC9C'];
+const AVATAR_COLORS = [NICO.teal, NICO.purple, NICO.orange, NICO.primary, NICO.coral, NICO.green];
 function avatarColor(name: string) {
   return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 }
@@ -35,6 +39,8 @@ export default function ChatScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<UserStackParamList>>();
   const route = useRoute<Route>();
   const { conversationId, participantName, participantPhoto } = route.params;
+
+  useNicoHeader(navigation);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
@@ -307,7 +313,7 @@ export default function ChatScreen() {
   }
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+    return <View style={styles.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
   }
 
   return (
@@ -387,7 +393,7 @@ export default function ChatScreen() {
             value={text}
             onChangeText={(val) => { setText(val); if (blockedVisible) setBlockedVisible(false); }}
             placeholder="Type a message…"
-            placeholderTextColor={COLORS.textLight}
+            placeholderTextColor={NICO.textMuted}
             returnKeyType="send"
             onSubmitEditing={() => sendMessage(text, true)}
             submitBehavior="submit"
@@ -432,7 +438,7 @@ export default function ChatScreen() {
               secureTextEntry
               maxLength={6}
               placeholder="••••••"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={NICO.textMuted}
               autoFocus
             />
             {pinError ? <Text style={guardianStyles.pinError}>{pinError}</Text> : null}
@@ -447,7 +453,7 @@ export default function ChatScreen() {
                 activeOpacity={0.8}
               >
                 {pinLoading
-                  ? <ActivityIndicator size="small" color="#fff" />
+                  ? <ActivityIndicator size="small" color={NICO.textOnAccent} />
                   : <Text style={guardianStyles.nextBtnTxt}>Verify</Text>
                 }
               </TouchableOpacity>
@@ -496,7 +502,7 @@ export default function ChatScreen() {
                   value={actionReason}
                   onChangeText={setActionReason}
                   placeholder="e.g. Inappropriate language, bullying…"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={NICO.textMuted}
                   multiline
                   maxLength={300}
                   autoFocus
@@ -542,7 +548,7 @@ export default function ChatScreen() {
                     onChangeText={setDeleteScopeN}
                     keyboardType="number-pad"
                     placeholder="e.g. 10"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={NICO.textMuted}
                     maxLength={5}
                   />
                 )}
@@ -590,7 +596,7 @@ export default function ChatScreen() {
                       activeOpacity={0.8}
                     >
                       {guardianWorking
-                        ? <ActivityIndicator size="small" color="#fff" />
+                        ? <ActivityIndicator size="small" color={NICO.textOnAccent} />
                         : <Text style={guardianStyles.confirmBtnTxt}>{hasDelete ? 'Yes, Delete' : 'Confirm'}</Text>
                       }
                     </TouchableOpacity>
@@ -607,205 +613,200 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#EFF6FF' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: NICO.screenBg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: NICO.screenBg },
 
   // Header
   headerTitle: { flexDirection: 'column', alignItems: 'center', gap: 2, marginTop: 28, paddingBottom: 10 },
   headerPhotoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  headerPhoto: { width: 50, height: 50, borderRadius: 25, borderWidth: 2.5, borderColor: COLORS.primary },
+  headerPhoto: { width: scale(50), height: scale(50), borderRadius: scale(25), borderWidth: 2.5, borderColor: NICO.primary },
   headerPhotoPlaceholder: {
-    width: 50, height: 50, borderRadius: 25,
+    width: scale(50), height: scale(50), borderRadius: scale(25),
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2.5, borderColor: COLORS.primary,
+    borderWidth: 2.5, borderColor: NICO.primary,
   },
-  headerInitial: { fontSize: 20, fontWeight: '800', color: '#fff' },
-  headerSpeaker: { fontSize: 20 },
-  headerName: { fontSize: 15, fontWeight: '800', color: COLORS.primary },
-  headerHint: { fontSize: 10, color: COLORS.textLight },
-  headerOnline: { fontSize: 11, fontWeight: '700', color: '#16A34A' },
+  headerInitial: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
+  headerSpeaker: { fontSize: FONT_SIZE.xl },
+  headerName: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  headerOnline: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.success },
 
   // Messages
-  list: { padding: 16, gap: 6, paddingBottom: 8 },
+  list: { padding: SPACING.base, gap: SPACING.xs, paddingBottom: SPACING.sm },
   bubble: {
-    maxWidth: '75%', padding: 12, borderRadius: 20,
+    maxWidth: '75%', padding: SPACING.md, borderRadius: RADIUS.xl,
   },
   bubbleThem: {
-    backgroundColor: '#FFF7ED', alignSelf: 'flex-start',
+    backgroundColor: NICO.chatBubbleOther, alignSelf: 'flex-start',
     borderBottomLeftRadius: 6,
-    borderLeftWidth: 4, borderLeftColor: '#F97316',
-    shadowColor: '#F97316', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1, shadowRadius: 4, elevation: 1,
+    borderLeftWidth: 4, borderLeftColor: NICO.pink,
+    ...SHADOW.sm,
   },
   bubbleMine: {
-    backgroundColor: '#4F46E5', alignSelf: 'flex-end',
+    backgroundColor: NICO.chatBubbleMe, alignSelf: 'flex-end',
     borderBottomRightRadius: 6,
+    borderRightWidth: 4, borderRightColor: NICO.teal,
+    ...SHADOW.sm,
   },
   bubbleWrapThem: { alignSelf: 'flex-start', alignItems: 'flex-start', gap: 3 },
   bubbleWrapMine: { alignSelf: 'flex-end', alignItems: 'flex-end', gap: 3 },
-  bubbleSpeakRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  bubbleSpeakRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   speakMsgBtn: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: '#EDE9FE',
+    width: scale(32), height: scale(32), borderRadius: scale(16),
+    backgroundColor: NICO.purpleLight,
     justifyContent: 'center', alignItems: 'center',
   },
-  speakMsgIcon: { fontSize: 16 },
-  bubbleText: { fontSize: 19, color: COLORS.text, lineHeight: 27 },
-  bubbleTextMine: { color: '#fff' },
-  timestamp: { fontSize: 11 },
-  timestampThem: { color: COLORS.textLight, marginLeft: 6 },
-  timestampMine: { color: COLORS.textLight, marginRight: 6 },
+  speakMsgIcon: { fontSize: FONT_SIZE.md },
+  bubbleText: { fontSize: FONT_SIZE.xl, color: NICO.text, lineHeight: 27 },
+  bubbleTextMine: { color: NICO.text },
+  timestamp: { fontSize: FONT_SIZE.xs },
+  timestampThem: { color: NICO.textMuted, marginLeft: 6 },
+  timestampMine: { color: NICO.textMuted, marginRight: 6 },
 
   // Blocked word banner
   blockedBanner: {
-    backgroundColor: '#FEF3C7',
-    borderTopWidth: 1.5, borderTopColor: '#F59E0B',
-    paddingVertical: 10, paddingHorizontal: 20,
+    backgroundColor: NICO.warningLight,
+    borderTopWidth: 1.5, borderTopColor: NICO.warning,
+    paddingVertical: SPACING.sm, paddingHorizontal: SPACING.lg,
     alignItems: 'center',
   },
   blockedBannerText: {
-    fontSize: 16, fontWeight: '700', color: '#92400E',
+    fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: '#92400E',
   },
 
   // Bottom panel
   bottom: {
-    backgroundColor: COLORS.surface,
-    borderTopWidth: 1, borderTopColor: COLORS.border,
-    paddingTop: 10,
-    paddingHorizontal: 12,
-    paddingBottom: 8,
+    backgroundColor: NICO.surface,
+    borderTopWidth: 1, borderTopColor: NICO.border,
+    paddingTop: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.sm,
   },
 
   // Symbol bubbles
   bubbleSymbol: { padding: 6, backgroundColor: 'transparent' },
-  symbolBubbleImg: { width: 80, height: 80 },
+  symbolBubbleImg: { width: scale(80), height: scale(80) },
 
   // Communication Board — compact inline icon
   boardBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: '#EDE9FE',
+    width: scale(44), height: scale(44), borderRadius: scale(22),
+    backgroundColor: NICO.purpleLight,
     justifyContent: 'center', alignItems: 'center',
     flexShrink: 0,
   },
-  boardBtnIcon: { fontSize: 22 },
+  boardBtnIcon: { fontSize: FONT_SIZE['2xl'] },
 
   // Input
   inputRow: {
-    flexDirection: 'row', alignItems: 'flex-end', gap: 8,
+    flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.sm,
   },
   input: {
-    flex: 1, backgroundColor: '#EEF2FF',
-    borderWidth: 1.5, borderColor: '#C7D2FE',
-    borderRadius: 22, paddingHorizontal: 16, paddingVertical: 10,
-    fontSize: 16, color: COLORS.text, maxHeight: 100,
+    flex: 1, backgroundColor: NICO.primaryLight,
+    borderWidth: 1.5, borderColor: NICO.border,
+    borderRadius: RADIUS['2xl'], paddingHorizontal: SPACING.base, paddingVertical: SPACING.md,
+    fontSize: FONT_SIZE.xl, color: NICO.text, maxHeight: 100,
   },
   sendBtn: {
-    width: 46, height: 46, borderRadius: 23,
-    backgroundColor: '#4F46E5',
+    width: scale(46), height: scale(46), borderRadius: scale(23),
+    backgroundColor: NICO.primary,
     justifyContent: 'center', alignItems: 'center',
-    shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35, shadowRadius: 8, elevation: 5,
+    ...SHADOW.btnPrimary,
   },
   sendBtnDisabled: { opacity: 0.4 },
-  sendBtnIcon: { fontSize: 18, color: '#fff', marginLeft: 2 },
+  sendBtnIcon: { fontSize: FONT_SIZE['2xl'], color: NICO.textOnAccent, marginLeft: 2 },
 });
 
 const guardianStyles = StyleSheet.create({
   pinCard: {
-    backgroundColor: '#fff', borderRadius: 24, padding: 24, margin: 32,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2, shadowRadius: 24, elevation: 12, gap: 12,
+    backgroundColor: NICO.surface, borderRadius: RADIUS['3xl'], padding: SPACING.xl, margin: SPACING['2xl'],
+    gap: SPACING.md, ...SHADOW.xl,
   },
-  pinTitle: { fontSize: 18, fontWeight: '800', color: '#111827', textAlign: 'center' },
-  pinSub:   { fontSize: 13, color: '#6B7280', textAlign: 'center' },
+  pinTitle: { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, textAlign: 'center' },
+  pinSub:   { fontSize: FONT_SIZE.base, color: NICO.textMuted, textAlign: 'center' },
   pinInput: {
-    borderWidth: 2, borderColor: '#4F46E5', borderRadius: 14,
-    padding: 14, fontSize: 22, textAlign: 'center', letterSpacing: 8,
-    color: '#111827', backgroundColor: '#EEF2FF',
+    borderWidth: 2, borderColor: NICO.primary, borderRadius: RADIUS.lg,
+    padding: SPACING.md, fontSize: FONT_SIZE['2xl'], textAlign: 'center', letterSpacing: 8,
+    color: NICO.text, backgroundColor: NICO.primaryLight,
   },
-  pinError: { fontSize: 13, color: '#DC2626', fontWeight: '600', textAlign: 'center' },
+  pinError: { fontSize: FONT_SIZE.base, color: NICO.error, fontWeight: FONT_WEIGHT.semiBold, textAlign: 'center' },
 
   shieldBtn: {
-    width: 34, height: 34, borderRadius: 17,
-    backgroundColor: 'rgba(79,70,229,0.12)',
+    width: scale(34), height: scale(34), borderRadius: scale(17),
+    backgroundColor: NICO.primaryLight,
     justifyContent: 'center', alignItems: 'center',
     marginRight: 4,
   },
-  shieldIcon: { fontSize: 18 },
+  shieldIcon: { fontSize: FONT_SIZE.xl },
 
   overlay: {
     flex: 1, justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   sheet: {
-    backgroundColor: '#fff', borderTopLeftRadius: 26, borderTopRightRadius: 26,
-    paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-    paddingTop: 8, gap: 12,
+    backgroundColor: NICO.surface, borderTopLeftRadius: RADIUS['3xl'], borderTopRightRadius: RADIUS['3xl'],
+    paddingHorizontal: SPACING.lg, paddingBottom: Platform.OS === 'ios' ? SPACING['3xl'] : SPACING.xl,
+    paddingTop: SPACING.sm, gap: SPACING.md,
   },
   handle: {
-    width: 38, height: 4, backgroundColor: '#E5E7EB',
+    width: scale(38), height: 4, backgroundColor: NICO.border,
     borderRadius: 2, alignSelf: 'center', marginBottom: 4,
   },
-  sheetTitle: { fontSize: 17, fontWeight: '800', color: '#111827', textAlign: 'center' },
-  sheetSub:   { fontSize: 13, color: '#6B7280', textAlign: 'center', marginTop: -4 },
+  sheetTitle: { ...TEXT_STYLE.modalTitle, textAlign: 'center' },
+  sheetSub:   { fontSize: FONT_SIZE.base, color: NICO.textMuted, textAlign: 'center', marginTop: -4 },
 
   actionRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    paddingVertical: 14, borderTopWidth: 1, borderTopColor: '#F3F4F6',
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.lg,
+    paddingVertical: SPACING.md, borderTopWidth: 1, borderTopColor: NICO.border,
   },
-  actionIcon:    { fontSize: 22, width: 28, textAlign: 'center' },
-  actionLabel:   { flex: 1, fontSize: 15, fontWeight: '700', color: '#111827' },
-  actionChevron: { fontSize: 20, color: '#9CA3AF' },
+  actionIcon:    { fontSize: FONT_SIZE['2xl'], width: SPACING.xl, textAlign: 'center' },
+  actionLabel:   { flex: 1, fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  actionChevron: { fontSize: FONT_SIZE.xl, color: NICO.textMuted },
 
   reasonInput: {
-    borderWidth: 1.5, borderColor: '#D1D5DB', borderRadius: 14,
-    padding: 12, fontSize: 14, color: '#111827',
-    minHeight: 80, textAlignVertical: 'top',
+    borderWidth: 1.5, borderColor: NICO.border, borderRadius: RADIUS.lg,
+    padding: SPACING.md, fontSize: FONT_SIZE.md, color: NICO.text,
+    minHeight: scale(80), textAlignVertical: 'top',
   },
 
   scopeOption: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 14, borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 14,
+    padding: SPACING.md, borderWidth: 1.5, borderColor: NICO.border, borderRadius: RADIUS.lg,
   },
-  scopeOptionActive: { borderColor: '#4F46E5', backgroundColor: '#EEF2FF' },
-  scopeOptionTxt:    { fontSize: 15, fontWeight: '600', color: '#111827' },
-  scopeCheck:        { fontSize: 16, color: '#4F46E5', fontWeight: '900' },
+  scopeOptionActive: { borderColor: NICO.primary, backgroundColor: NICO.primaryLight },
+  scopeOptionTxt:    { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
+  scopeCheck:        { fontSize: FONT_SIZE.xl, color: NICO.primary, fontWeight: FONT_WEIGHT.black },
   scopeInput: {
-    borderWidth: 1.5, borderColor: '#D1D5DB', borderRadius: 12,
-    padding: 12, fontSize: 16, color: '#111827', textAlign: 'center',
+    borderWidth: 1.5, borderColor: NICO.border, borderRadius: RADIUS.md,
+    padding: SPACING.md, fontSize: FONT_SIZE.xl, color: NICO.text, textAlign: 'center',
   },
 
   summaryBox: {
-    backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14, gap: 6,
-    borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: NICO.background, borderRadius: RADIUS.lg, padding: SPACING.md, gap: SPACING.sm,
+    borderWidth: 1, borderColor: NICO.border,
   },
-  summaryLine: { fontSize: 14, color: '#374151' },
-  summaryKey:  { fontWeight: '700' },
+  summaryLine: { fontSize: FONT_SIZE.md, color: NICO.text },
+  summaryKey:  { fontWeight: FONT_WEIGHT.bold },
 
   warningBox: {
-    backgroundColor: '#FEF2F2', borderRadius: 12, padding: 12,
-    borderWidth: 1, borderColor: '#FECACA',
+    backgroundColor: NICO.errorLight, borderRadius: RADIUS.md, padding: SPACING.md,
+    borderWidth: 1, borderColor: NICO.error,
   },
-  warningTxt: { fontSize: 13, color: '#B91C1C', fontWeight: '600', lineHeight: 18 },
+  warningTxt: { fontSize: FONT_SIZE.base, color: NICO.error, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 18 },
 
-  btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  btnRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: 4 },
   backBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 14,
-    backgroundColor: '#F3F4F6', alignItems: 'center',
+    flex: 1, ...BTN_SIZE.md,
+    backgroundColor: NICO.background, alignItems: 'center',
   },
-  backBtnTxt: { fontSize: 15, fontWeight: '700', color: '#374151' },
+  backBtnTxt: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted },
   nextBtn: {
-    flex: 2, paddingVertical: 14, borderRadius: 14,
-    backgroundColor: '#4F46E5', alignItems: 'center',
+    flex: 2, ...BTN_SIZE.md, ...BTN_VARIANT.primary,
   },
-  nextBtnTxt:  { fontSize: 15, fontWeight: '800', color: '#fff' },
+  nextBtnTxt:  { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.textOnAccent },
   confirmBtn:  {
-    flex: 2, paddingVertical: 14, borderRadius: 14,
-    backgroundColor: '#4F46E5', alignItems: 'center',
+    flex: 2, ...BTN_SIZE.md, ...BTN_VARIANT.primary,
   },
   confirmDestructBtn: {
-    flex: 2, paddingVertical: 14, borderRadius: 14,
-    backgroundColor: '#DC2626', alignItems: 'center',
+    flex: 2, ...BTN_SIZE.md, ...BTN_VARIANT.danger,
   },
-  confirmBtnTxt: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  confirmBtnTxt: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.textOnAccent },
 });

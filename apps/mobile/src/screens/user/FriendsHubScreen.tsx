@@ -1,58 +1,49 @@
-import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Alert, Dimensions,
 } from 'react-native';
-
-const TILE_W = (Dimensions.get('window').width - 40 - 12) / 2; // 20px padding each side, 12px gap
 import AppText from '../../components/AppText';
+import RainbowDivider from '../../components/RainbowDivider';
+import ContentContainer from '../../components/ContentContainer';
+import useNicoHeader from '../../hooks/useNicoHeader';
 import * as Speech from 'expo-speech';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS, USER_TILE_CYCLE, USER_HEADER } from '../../constants';
 import { UserStackParamList } from '../../navigation';
 import AvatarWithMood from '../../components/AvatarWithMood';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BUTTERFLY_TILES, MAX_CONTENT_WIDTH, IS_TABLET, scale,
+} from '../../constants/theme';
+
+const { width } = Dimensions.get('window');
+const CONTENT_W = IS_TABLET && MAX_CONTENT_WIDTH ? MAX_CONTENT_WIDTH : width;
+const TILE_W = (CONTENT_W - SPACING.base * 2 - SPACING.md) / 2;
 
 const EMPTY_MESSAGE = 'No friends added yet. Ask your guardian to add friends for you!';
 
 function NoFriendsEmptyState() {
   return (
-    <View style={emptyStyles.container}>
-      <AppText style={emptyStyles.emoji}>😊</AppText>
-      <AppText style={emptyStyles.message}>No friends added yet.</AppText>
-      <AppText style={emptyStyles.hint}>Ask your guardian to add friends for you!</AppText>
-      <TouchableOpacity
-        style={emptyStyles.speakBtn}
-        onPress={() => Speech.speak(EMPTY_MESSAGE, { rate: 0.65, pitch: 1.0 })}
-        activeOpacity={0.75}
-      >
-        <AppText style={emptyStyles.speakBtnText}>🔊</AppText>
-      </TouchableOpacity>
+    <View style={s.emptyContainer}>
+      <RainbowDivider />
+      <View style={s.emptyContent}>
+        <AppText style={s.emptyEmoji}>😊</AppText>
+        <AppText style={s.emptyText}>No friends added yet.</AppText>
+        <AppText style={s.emptyHint}>Ask your guardian to add friends for you!</AppText>
+        <TouchableOpacity
+          style={s.emptySpeakBtn}
+          onPress={() => Speech.speak(EMPTY_MESSAGE, { rate: 0.65, pitch: 1.0 })}
+          activeOpacity={0.75}
+        >
+          <AppText style={s.emptySpeakIcon}>🔊</AppText>
+          <AppText style={s.emptySpeakText}>Hear this again</AppText>
+        </TouchableOpacity>
+      </View>
     </View>
   );
-}
-
-const emptyStyles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, gap: 12 },
-  emoji:     { fontSize: 72 },
-  message:   { fontSize: 22, fontWeight: '800', color: COLORS.text, textAlign: 'center' },
-  hint:      { fontSize: 16, color: COLORS.textLight, textAlign: 'center', lineHeight: 24 },
-  speakBtn:  {
-    marginTop: 16, paddingHorizontal: 24, paddingVertical: 12,
-    borderRadius: 20, backgroundColor: '#FDEADB',
-    borderWidth: 1.5, borderColor: '#D4A888',
-  },
-  speakBtnText: { fontSize: 15, fontWeight: '700', color: '#C4693A' },
-});
-
-
-const AVATAR_COLORS = ['#4A90E2', '#5CBB7A', '#F5A623', '#9B59B6', '#E53E3E', '#1ABC9C'];
-function avatarColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
 function isOnline(lastSeenAt: string | null): boolean {
@@ -73,23 +64,14 @@ interface Friend {
   dislikes: CategoryItem[];
 }
 
-
 export default function FriendsHubScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<UserStackParamList>>();
   const { activeUser } = useAuth();
+  useNicoHeader(navigation);
+
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
   const [messagingDisabled, setMessagingDisabled] = useState(false);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerStyle:      { backgroundColor: USER_HEADER.backgroundColor },
-      headerTintColor:  USER_HEADER.tintColor,
-      headerTitleStyle: { color: USER_HEADER.tintColor, fontWeight: '900' as const, fontSize: 18 },
-      headerRight:      undefined,
-    });
-  }, [navigation]);
-
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
 
   useFocusEffect(useCallback(() => {
@@ -190,7 +172,7 @@ export default function FriendsHubScreen() {
     Speech.speak(parts.join('. '), { rate: 0.65, pitch: 1.0 });
   }
 
-  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+  if (loading) return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
 
   const sorted = [...friends].filter(f => !blockedIds.has(f.id)).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -199,107 +181,100 @@ export default function FriendsHubScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.tileGrid}>
-        {sorted.map((friend, idx) => {
-          const tile = USER_TILE_CYCLE[idx % USER_TILE_CYCLE.length];
-          const online = isOnline(friend.last_seen_at);
-          return (
-            <TouchableOpacity
-              key={friend.id}
-              style={[styles.tile, { backgroundColor: tile.backgroundColor, borderColor: tile.borderColor }]}
-              onPress={() => openChat(friend)}
-              activeOpacity={0.8}
-            >
-              <TouchableOpacity
-                style={styles.tileSpeakCorner}
-                onPress={() => speakFriend(friend)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <AppText style={styles.tileSpeakIcon}>🔊</AppText>
-              </TouchableOpacity>
-              <View style={styles.tileAvatarWrap}>
-                <AvatarWithMood name={friend.name} photo={friend.photo_url} size={68} mood={friend.current_mood} />
-              </View>
-              <AppText style={styles.tileName} numberOfLines={2}>{friend.name}</AppText>
-              {friend.likes.length > 0 && (
-                <View style={styles.tileLikesRow}>
-                  <AppText style={styles.tileEmojiLabel}>👍</AppText>
-                  {friend.likes.slice(0, 3).map(like => (
-                    <AppText key={like.name} style={styles.tileLikeEmoji}>{like.emoji}</AppText>
-                  ))}
-                </View>
-              )}
-              {friend.dislikes.length > 0 && (
-                <View style={styles.tileLikesRow}>
-                  <AppText style={styles.tileEmojiLabel}>👎</AppText>
-                  {friend.dislikes.slice(0, 3).map(dislike => (
-                    <AppText key={dislike.name} style={styles.tileLikeEmoji}>{dislike.emoji}</AppText>
-                  ))}
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </ScrollView>
+    <View style={s.container}>
+      <RainbowDivider />
+      <ScrollView contentContainerStyle={s.content}>
+        <ContentContainer>
+          <View style={[s.tileGrid, sorted.length < 3 && s.tileGridStart]}>
+            {sorted.map((friend, idx) => {
+              const tile = BUTTERFLY_TILES[idx % BUTTERFLY_TILES.length];
+              const online = isOnline(friend.last_seen_at);
+              return (
+                <TouchableOpacity
+                  key={friend.id}
+                  style={[s.tile, { backgroundColor: tile.bg, borderColor: tile.accent }]}
+                  onPress={() => openChat(friend)}
+                  activeOpacity={0.85}
+                >
+                  <TouchableOpacity
+                    style={s.tileSpeakCorner}
+                    onPress={() => speakFriend(friend)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <AppText style={s.tileSpeakIcon}>🔊</AppText>
+                  </TouchableOpacity>
+                  <View style={s.tileAvatarWrap}>
+                    <AvatarWithMood name={friend.name} photo={friend.photo_url} size={scale(68)} mood={friend.current_mood} />
+                    {online && <View style={s.onlineDot} />}
+                  </View>
+                  <AppText style={s.tileName} numberOfLines={2}>{friend.name}</AppText>
+                  {friend.likes.length > 0 && (
+                    <View style={s.tileLikesRow}>
+                      <AppText style={s.tileEmojiLabel}>👍</AppText>
+                      {friend.likes.slice(0, 3).map(like => (
+                        <AppText key={like.name} style={s.tileLikeEmoji}>{like.emoji}</AppText>
+                      ))}
+                    </View>
+                  )}
+                  {friend.dislikes.length > 0 && (
+                    <View style={s.tileLikesRow}>
+                      <AppText style={s.tileEmojiLabel}>👎</AppText>
+                      {friend.dislikes.slice(0, 3).map(dislike => (
+                        <AppText key={dislike.name} style={s.tileLikeEmoji}>{dislike.emoji}</AppText>
+                      ))}
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </ContentContainer>
+      </ScrollView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: USER_HEADER.pageBackground },
-  content: { padding: 20, gap: 28, paddingBottom: 48 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: USER_HEADER.pageBackground, padding: 32, gap: 12 },
-  emptyEmoji: { fontSize: 72 },
-  emptyText: { fontSize: 24, fontWeight: '900', color: COLORS.text },
-  emptyHint: { fontSize: 16, color: COLORS.textLight, textAlign: 'center' },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: NICO.screenBg },
+  content:   { padding: SPACING.base, paddingBottom: 48 },
+  center:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: NICO.screenBg },
 
-  section: { gap: 16 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  sectionEmoji: { fontSize: 26 },
-  sectionTitle: { fontSize: 22, fontWeight: '700', color: COLORS.text },
-
-  card: {
-    flexDirection: 'row', alignItems: 'center', gap: 16,
-    borderRadius: 22, padding: 16, borderLeftWidth: 6,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.07, shadowRadius: 10, elevation: 3,
+  emptyContainer: { flex: 1, backgroundColor: NICO.screenBg },
+  emptyContent:   { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.xl, gap: SPACING.md },
+  emptyEmoji: { fontSize: scale(72) },
+  emptyText:  { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.text, textAlign: 'center' },
+  emptyHint:  { ...TEXT_STYLE.screenHint, textAlign: 'center', lineHeight: 24 },
+  emptySpeakBtn: {
+    marginTop: SPACING.sm, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: RADIUS['2xl'],
+    backgroundColor: BUTTERFLY_TILES[2].bg, borderWidth: 1.5, borderColor: BUTTERFLY_TILES[2].accent,
   },
+  emptySpeakIcon: { fontSize: FONT_SIZE.lg },
+  emptySpeakText: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 
-  avatarWrap: { position: 'relative', flexShrink: 0 },
-  statusDot: {
-    position: 'absolute', top: 1, right: 1,
-    width: 14, height: 14, borderRadius: 7,
-    borderWidth: 2, borderColor: USER_HEADER.pageBackground,
-  },
-  dotOnline:  { backgroundColor: '#5CBB7A' },
-  dotOffline: { backgroundColor: '#BDC3C7' },
-
-  info: { flex: 1, minWidth: 0 },
-  name: { fontSize: 22, fontWeight: '900', color: COLORS.text },
-  emojiRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
-  emojiLabel: { fontSize: 16 },
-  likeEmoji: { fontSize: 22 },
-  dislikeEmoji: { fontSize: 22, opacity: 0.7 },
-
-  tileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  tileGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: SPACING.md },
+  tileGridStart: { justifyContent: 'flex-start' },
   tile: {
-    width: TILE_W, borderRadius: 22, borderWidth: 2,
-    alignItems: 'center', paddingVertical: 18, paddingHorizontal: 10, gap: 8,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08, shadowRadius: 10, elevation: 3,
+    width: TILE_W, borderRadius: RADIUS['2xl'], borderWidth: 2,
+    alignItems: 'center', paddingVertical: SPACING.lg, paddingHorizontal: SPACING.sm, gap: SPACING.sm,
+    ...SHADOW.md,
   },
   tileAvatarWrap: { position: 'relative' },
-  tileName: { fontSize: 15, fontWeight: '600', color: COLORS.text, textAlign: 'center' },
+  onlineDot: {
+    position: 'absolute', bottom: 2, left: 2,
+    width: scale(14), height: scale(14), borderRadius: scale(7),
+    backgroundColor: NICO.success, borderWidth: 2, borderColor: '#fff',
+  },
+  tileName: { ...TEXT_STYLE.learnerTileTitle, textAlign: 'center' },
   tileLikesRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  tileEmojiLabel: { fontSize: 14 },
-  tileLikeEmoji: { fontSize: 18 },
+  tileEmojiLabel: { fontSize: FONT_SIZE.sm },
+  tileLikeEmoji: { fontSize: FONT_SIZE.xl },
   tileSpeakCorner: {
-    position: 'absolute', top: 8, right: 8,
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: 'rgba(0,0,0,0.08)',
+    position: 'absolute', top: SPACING.sm, right: SPACING.sm,
+    width: scale(30), height: scale(30), borderRadius: scale(15),
+    backgroundColor: 'rgba(255,255,255,0.75)',
     justifyContent: 'center', alignItems: 'center',
     zIndex: 1,
   },
-  tileSpeakIcon: { fontSize: 13 },
+  tileSpeakIcon: { fontSize: FONT_SIZE.base },
 });
