@@ -37,7 +37,7 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.from('situation_tag_options').select('label').order('label').then(({ data }) => {
+    supabase.from('medical_conditions').select('label').order('label').then(({ data }) => {
       setTagOptions((data ?? []).map((r: any) => r.label));
     });
   }, []);
@@ -214,12 +214,12 @@ export default function RegisterScreen() {
           maxLength={20}
         />
 
-        {/* Situation tags */}
-        <AppText style={styles.label}>Situation Tags (optional)</AppText>
+        {/* Learner situation */}
+        <AppText style={styles.label}>Learner Situation (optional)</AppText>
         <View style={styles.helperBox}>
-          <AppText style={styles.helperTitle}>ℹ️  What are Situation Tags?</AppText>
+          <AppText style={styles.helperTitle}>ℹ️  What is Learner Situation?</AppText>
           <AppText style={styles.helperText}>
-            Situation tags describe your learner's specific needs or medical conditions. It helps you connect with parents in similar situations.
+            Learner Situation describes your learner's specific needs or medical conditions. It helps you connect with parents in similar situations.
           </AppText>
         </View>
         <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>
@@ -307,12 +307,12 @@ export default function RegisterScreen() {
         </View>
       </Modal>
 
-      {/* Situation tag picker modal */}
+      {/* Learner situation picker modal */}
       <Modal visible={showTagPicker} animationType="slide" transparent onRequestClose={() => setShowTagPicker(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <AppText style={styles.modalTitle}>Situation Tags</AppText>
+              <AppText style={styles.modalTitle}>Learner Situation</AppText>
               <TouchableOpacity onPress={() => setShowTagPicker(false)}>
                 <AppText style={styles.modalClose}>Done</AppText>
               </TouchableOpacity>

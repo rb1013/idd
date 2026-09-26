@@ -36,7 +36,7 @@ export default function MedicalConditionsPage() {
   return (
     <div>
       <h1 style={styles.heading}>Medical Conditions</h1>
-      <p style={styles.sub}>These conditions appear as selectable options when a guardian edits their learner's health information.</p>
+      <p style={styles.sub}>These conditions appear as selectable options both when a guardian edits their learner's health information, and when a guardian sets their "Learner Situation" on their own account.</p>
 
       <form onSubmit={addCondition} style={styles.form}>
         <h3 style={styles.formTitle}>Add Condition</h3>

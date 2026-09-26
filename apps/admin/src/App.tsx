@@ -7,7 +7,6 @@ import TutorialsPage from './pages/TutorialsPage';
 import CategoriesPage from './pages/CategoriesPage';
 import UsersPage from './pages/UsersPage';
 import GuardiansPage from './pages/GuardiansPage';
-import SituationTagsPage from './pages/SituationTagsPage';
 import MedicalConditionsPage from './pages/MedicalConditionsPage';
 import EventCategoriesPage from './pages/EventCategoriesPage';
 import DiscussionCategoriesPage from './pages/DiscussionCategoriesPage';
@@ -45,7 +44,6 @@ function App() {
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/guardians" element={<GuardiansPage />} />
-            <Route path="/situation-tags" element={<SituationTagsPage />} />
             <Route path="/medical-conditions" element={<MedicalConditionsPage />} />
             <Route path="/event-categories" element={<EventCategoriesPage />} />
             <Route path="/discussion-categories" element={<DiscussionCategoriesPage />} />

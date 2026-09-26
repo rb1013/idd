@@ -300,7 +300,7 @@ export default function EventDetailScreen() {
                 </View>
                 {guardianSheet.situationTags.length > 0 && (
                   <View style={s.sheetSection}>
-                    <AppText style={s.sheetSectionTitle}>Situation</AppText>
+                    <AppText style={s.sheetSectionTitle}>Learner Situation</AppText>
                     <View style={s.sheetTags}>
                       {guardianSheet.situationTags.map(t => (
                         <View key={t} style={s.sheetTag}>

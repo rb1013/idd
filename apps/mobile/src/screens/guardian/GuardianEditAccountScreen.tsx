@@ -42,7 +42,7 @@ export default function GuardianEditAccountScreen() {
   }, [navigation]);
 
   useEffect(() => {
-    supabase.from('situation_tag_options').select('label').order('label').then(({ data }) => {
+    supabase.from('medical_conditions').select('label').order('label').then(({ data }) => {
       setTagOptions((data ?? []).map((r: any) => r.label));
     });
   }, []);
@@ -150,7 +150,7 @@ export default function GuardianEditAccountScreen() {
           </View>
 
           <View style={s.field}>
-            <AppText style={s.label}>Situation Tags</AppText>
+            <AppText style={s.label}>Learner Situation</AppText>
             <TouchableOpacity style={s.pickerBtn} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>
               <AppText style={[s.pickerBtnText, selectedTags.length === 0 && { color: NICO.textMuted }]}>
                 {selectedTags.length === 0 ? 'Select tags...' : `${selectedTags.length} selected`}
@@ -221,7 +221,7 @@ export default function GuardianEditAccountScreen() {
         <View style={s.modalOverlay}>
           <View style={s.modalCard}>
             <View style={s.modalHeader}>
-              <AppText style={s.modalTitle}>Situation Tags</AppText>
+              <AppText style={s.modalTitle}>Learner Situation</AppText>
               <TouchableOpacity onPress={() => setShowTagPicker(false)}>
                 <AppText style={s.modalClose}>Done</AppText>
               </TouchableOpacity>

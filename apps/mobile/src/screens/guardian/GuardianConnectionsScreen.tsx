@@ -93,7 +93,7 @@ export default function GuardianConnectionsScreen() {
   useFocusEffect(
     useCallback(() => {
       if (guardian) load(guardian.id);
-      supabase.from('situation_tag_options').select('label').order('label').then(({ data }) => {
+      supabase.from('medical_conditions').select('label').order('label').then(({ data }) => {
         if (data) setSituationTagOptions(data.map((r: any) => r.label));
       });
       if (route.params?.initialTab) setActiveTab(route.params.initialTab);
@@ -599,7 +599,7 @@ export default function GuardianConnectionsScreen() {
             title="More Filters"
             sections={[
               {
-                key: 'situation', emoji: '🎯', title: 'Situation',
+                key: 'situation', emoji: '🎯', title: 'Learner Situation',
                 options: situationTagOptions.map(t => ({ key: t, label: t })),
                 selected: filterTags,
                 onToggle: v => setFilterTags(prev => toggle(prev, v)),
@@ -659,7 +659,7 @@ export default function GuardianConnectionsScreen() {
 
               {peekGuardian.situationTags.length > 0 ? (
                 <View style={s.peekSection}>
-                  <AppText style={s.peekSectionLabel}>Situation</AppText>
+                  <AppText style={s.peekSectionLabel}>Learner Situation</AppText>
                   <View style={s.peekTagWrap}>
                     {peekGuardian.situationTags.map(tag => (
                       <View key={tag} style={s.peekTag}>

@@ -135,10 +135,10 @@ export default function GuardianAccountScreen() {
           <InfoRow label="City"    value={guardian?.city || '—'} />
         </View>
 
-        {/* Situation Tags */}
+        {/* Learner Situation */}
         <View style={[s.card, { marginTop: SPACING.md }]}>
           <View style={s.infoRow}>
-            <AppText style={s.infoLabel}>Situation Tags</AppText>
+            <AppText style={s.infoLabel}>Learner Situation</AppText>
           </View>
           {tags.length === 0 ? (
             <View style={s.tagsEmpty}>
@@ -208,7 +208,7 @@ const s = StyleSheet.create({
   divider: { height: 1, backgroundColor: NICO.border },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.base },
   infoLabel: { ...TEXT_STYLE.bodyMedium },
-  infoValue: { ...TEXT_STYLE.body, color: NICO.textMuted, flexShrink: 1, textAlign: 'right', marginLeft: SPACING.md },
+  infoValue: { ...TEXT_STYLE.body, color: NICO.text, flexShrink: 1, textAlign: 'right', marginLeft: SPACING.md },
 
   tagsEmpty: { paddingHorizontal: SPACING.base, paddingBottom: SPACING.base },
   tagRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, paddingHorizontal: SPACING.base, paddingBottom: SPACING.base },
@@ -218,7 +218,7 @@ const s = StyleSheet.create({
     borderRadius: RADIUS.full,
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs,
   },
-  tagText: { ...TEXT_STYLE.caption, color: NICO.primary },
+  tagText: { ...TEXT_STYLE.caption, color: NICO.text, fontWeight: FONT_WEIGHT.bold },
 
   editBtn:     { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.xl },
   editBtnText: { ...TEXT_STYLE.buttonPrimary },
