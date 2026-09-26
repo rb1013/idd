@@ -8,12 +8,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
 import AppText from '../../components/AppText';
+import ContentContainer from '../../components/ContentContainer';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
-import { COLORS } from '../../constants';
 import { US_STATES } from '../../constants/usStates';
 import { validatePhone, buildE164 } from '../../constants/countryCodes';
 import { emailError, passwordError, passwordMatchError } from '../../lib/validators';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, scale,
+} from '../../constants/theme';
 
 export default function RegisterScreen() {
   const navigation = useNavigation<any>();
@@ -113,6 +117,7 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={[styles.inner, { paddingBottom: Math.max(insets.bottom + 24, 48) }]} keyboardShouldPersistTaps="handled">
+        <ContentContainer>
         <AppText style={styles.title}>Create Account</AppText>
         <AppText style={styles.subtitle}>Set up your NICO account</AppText>
 
@@ -139,7 +144,7 @@ export default function RegisterScreen() {
           value={fullName}
           onChangeText={setFullName}
           placeholder="Your full name"
-          placeholderTextColor={COLORS.bloomMuted}
+          placeholderTextColor={NICO.textMuted}
           maxLength={20}
         />
 
@@ -151,7 +156,7 @@ export default function RegisterScreen() {
           placeholder="your@email.com"
           keyboardType="email-address"
           autoCapitalize="none"
-          placeholderTextColor={COLORS.bloomMuted}
+          placeholderTextColor={NICO.textMuted}
         />
 
         <AppText style={styles.label}>Phone *</AppText>
@@ -166,7 +171,7 @@ export default function RegisterScreen() {
             onChangeText={v => setPhone(v.replace(/[^\d\s\-]/g, ''))}
             placeholder="555 000 0000"
             keyboardType="phone-pad"
-            placeholderTextColor={COLORS.bloomMuted}
+            placeholderTextColor={NICO.textMuted}
           />
         </View>
 
@@ -177,7 +182,7 @@ export default function RegisterScreen() {
           onChangeText={setPassword}
           placeholder="Min. 6 characters"
           secureTextEntry
-          placeholderTextColor={COLORS.bloomMuted}
+          placeholderTextColor={NICO.textMuted}
         />
 
         <AppText style={styles.label}>Confirm Password *</AppText>
@@ -187,7 +192,7 @@ export default function RegisterScreen() {
           onChangeText={setConfirm}
           placeholder="Repeat password"
           secureTextEntry
-          placeholderTextColor={COLORS.bloomMuted}
+          placeholderTextColor={NICO.textMuted}
         />
 
         {/* Location */}
@@ -210,7 +215,7 @@ export default function RegisterScreen() {
           value={city}
           onChangeText={setCity}
           placeholder="e.g. Austin"
-          placeholderTextColor={COLORS.bloomMuted}
+          placeholderTextColor={NICO.textMuted}
           maxLength={20}
         />
 
@@ -224,7 +229,7 @@ export default function RegisterScreen() {
         </View>
         <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>
           <AppText style={[styles.pickerBtnText, selectedTags.length === 0 && styles.placeholder]}>
-            {selectedTags.length === 0 ? 'Select tags...' : `${selectedTags.length} selected`}
+            {selectedTags.length === 0 ? 'Select Situation' : `${selectedTags.length} selected`}
           </AppText>
           <AppText style={styles.chevron}>▾</AppText>
         </TouchableOpacity>
@@ -254,7 +259,7 @@ export default function RegisterScreen() {
             keyboardType="number-pad"
             maxLength={6}
             secureTextEntry
-            placeholderTextColor={COLORS.bloomMuted}
+            placeholderTextColor={NICO.textMuted}
           />
           <AppText style={styles.label}>Confirm PIN *</AppText>
           <TextInput
@@ -265,16 +270,17 @@ export default function RegisterScreen() {
             keyboardType="number-pad"
             maxLength={6}
             secureTextEntry
-            placeholderTextColor={COLORS.bloomMuted}
+            placeholderTextColor={NICO.textMuted}
           />
         </View>
 
         <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
           {loading
-            ? <ActivityIndicator color={COLORS.bloomOnAccent} />
+            ? <ActivityIndicator color={NICO.textOnAccent} />
             : <AppText style={styles.buttonText}>Create Account</AppText>
           }
         </TouchableOpacity>
+        </ContentContainer>
       </ScrollView>
 
       {/* State picker modal */}
@@ -350,123 +356,122 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bloomBody },
-  inner:     { padding: 24 },
-  title:     { fontSize: 28, fontWeight: '700', color: COLORS.bloomText, marginBottom: 4, marginTop: 16 },
-  subtitle:  { fontSize: 16, color: COLORS.bloomMuted, marginBottom: 24 },
-  label:     { fontSize: 14, fontWeight: '600', color: COLORS.bloomText, marginBottom: 6 },
-  sublabel:  { fontSize: 12, color: COLORS.bloomMuted, marginBottom: 8, marginTop: -2 },
+  container: { flex: 1, backgroundColor: NICO.screenBg },
+  inner:     { padding: SPACING.xl },
+  title:     { ...TEXT_STYLE.sectionTitle, marginBottom: SPACING.xs, marginTop: SPACING.base },
+  subtitle:  { ...TEXT_STYLE.hint, marginBottom: SPACING.xl },
+  label:     { ...TEXT_STYLE.fieldLabel, marginBottom: SPACING.sm },
+  sublabel:  { fontSize: FONT_SIZE.sm, color: NICO.textMuted, marginBottom: SPACING.sm, marginTop: -2 },
 
   photoPicker: {
-    alignSelf: 'center', marginBottom: 28, position: 'relative',
+    alignSelf: 'center', marginBottom: SPACING['2xl'], position: 'relative',
   },
   photoPreview: {
-    width: 100, height: 100, borderRadius: 50,
-    borderWidth: 3, borderColor: COLORS.bloomAccent,
+    width: scale(100), height: scale(100), borderRadius: scale(50),
+    borderWidth: 3, borderColor: NICO.primary,
   },
   photoPlaceholder: {
-    width: 100, height: 100, borderRadius: 50,
-    backgroundColor: COLORS.bloomCard, borderWidth: 2,
-    borderColor: COLORS.bloomBorder, borderStyle: 'dashed',
+    width: scale(100), height: scale(100), borderRadius: scale(50),
+    backgroundColor: NICO.surface, borderWidth: 2,
+    borderColor: NICO.border, borderStyle: 'dashed',
     justifyContent: 'center', alignItems: 'center', gap: 4,
   },
-  photoPlaceholderEmoji: { fontSize: 28 },
-  photoPlaceholderText:  { fontSize: 12, color: COLORS.bloomMuted, fontWeight: '600' },
+  photoPlaceholderEmoji: { fontSize: scale(28) },
+  photoPlaceholderText:  { fontSize: FONT_SIZE.sm, color: NICO.textMuted, fontWeight: FONT_WEIGHT.semiBold },
   photoEditBadge: {
     position: 'absolute', bottom: 2, right: 2,
-    backgroundColor: COLORS.bloomAccent,
-    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: NICO.primary,
+    width: scale(28), height: scale(28), borderRadius: scale(14),
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 2, borderColor: '#fff',
   },
-  photoEditEmoji: { fontSize: 13 },
+  photoEditEmoji: { fontSize: FONT_SIZE.base },
 
   input: {
-    backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    borderRadius: 12, padding: 16, fontSize: 16, color: COLORS.bloomText, marginBottom: 16,
+    backgroundColor: NICO.surface, borderWidth: 1.5, borderColor: NICO.border,
+    borderRadius: RADIUS.md, padding: SPACING.base, fontSize: FONT_SIZE.lg, color: NICO.text, marginBottom: SPACING.base,
   },
-  readOnly:     { backgroundColor: COLORS.bloomActiveBg, justifyContent: 'center' },
-  readOnlyText: { fontSize: 16, color: COLORS.bloomMuted },
+  readOnly:     { backgroundColor: NICO.background, justifyContent: 'center' },
+  readOnlyText: { fontSize: FONT_SIZE.lg, color: NICO.textMuted },
 
   phoneRow: {
-    flexDirection: 'row', gap: 8, marginBottom: 16,
+    flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.base,
   },
   countryCodeBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    borderRadius: 12, paddingHorizontal: 12, paddingVertical: 16,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
+    backgroundColor: NICO.surface, borderWidth: 1.5, borderColor: NICO.border,
+    borderRadius: RADIUS.md, paddingHorizontal: SPACING.md, paddingVertical: SPACING.base,
   },
-  countryFlag:     { fontSize: 20 },
-  countryCodeText: { fontSize: 15, fontWeight: '700', color: COLORS.bloomText },
-  countryChevron:  { fontSize: 11, color: COLORS.bloomMuted },
+  countryFlag:     { fontSize: FONT_SIZE['2xl'] },
+  countryCodeText: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  countryChevron:  { fontSize: FONT_SIZE.sm, color: NICO.textMuted },
   phoneInput: {
-    flex: 1, backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16,
-    fontSize: 16, color: COLORS.bloomText,
+    flex: 1, backgroundColor: NICO.surface, borderWidth: 1.5, borderColor: NICO.border,
+    borderRadius: RADIUS.md, paddingHorizontal: SPACING.base, paddingVertical: SPACING.base,
+    fontSize: FONT_SIZE.lg, color: NICO.text,
   },
 
   pickerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, marginBottom: 12,
+    backgroundColor: NICO.surface, borderWidth: 1.5, borderColor: NICO.border,
+    borderRadius: RADIUS.md, paddingHorizontal: SPACING.base, paddingVertical: SPACING.base, marginBottom: SPACING.md,
   },
-  pickerBtnText: { fontSize: 16, color: COLORS.bloomText },
-  placeholder:   { color: COLORS.bloomMuted },
-  chevron:       { fontSize: 14, color: COLORS.bloomMuted },
+  pickerBtnText: { fontSize: FONT_SIZE.lg, color: NICO.text },
+  placeholder:   { color: NICO.textMuted },
+  chevron:       { fontSize: FONT_SIZE.md, color: NICO.textMuted },
 
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.base },
   chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: COLORS.bloomActiveBg, borderWidth: 1.5, borderColor: COLORS.bloomSageMid,
-    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
+    backgroundColor: NICO.primaryLight, borderWidth: 1.5, borderColor: NICO.primary,
+    borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs,
   },
-  chipText: { fontSize: 13, color: COLORS.bloomActiveText, fontWeight: '600' },
-  chipX:    { fontSize: 11, color: COLORS.bloomActiveText, fontWeight: '700' },
+  chipText: { fontSize: FONT_SIZE.base, color: NICO.primary, fontWeight: FONT_WEIGHT.semiBold },
+  chipX:    { fontSize: FONT_SIZE.sm, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
 
   pinSection: {
-    backgroundColor: COLORS.bloomActiveBg, borderRadius: 16,
-    padding: 18, marginTop: 8, marginBottom: 8,
-    borderWidth: 1.5, borderColor: COLORS.bloomSageMid,
+    backgroundColor: NICO.primaryLight, borderRadius: RADIUS.lg,
+    padding: SPACING.lg, marginTop: SPACING.sm, marginBottom: SPACING.sm,
+    borderWidth: 1.5, borderColor: NICO.primary,
   },
-  pinSectionTitle: { fontSize: 15, fontWeight: '800', color: COLORS.bloomText, marginBottom: 6 },
-  pinSectionHint:  { fontSize: 13, color: COLORS.bloomMuted, lineHeight: 18, marginBottom: 12 },
+  pinSectionTitle: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: SPACING.xs },
+  pinSectionHint:  { fontSize: FONT_SIZE.base, color: NICO.textMuted, lineHeight: 18, marginBottom: SPACING.md },
 
   button: {
-    backgroundColor: COLORS.bloomAccent, borderRadius: 12,
-    padding: 16, alignItems: 'center', marginTop: 8,
+    ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.sm,
   },
-  buttonText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '700' },
+  buttonText: { ...TEXT_STYLE.buttonPrimary },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalCard: {
-    backgroundColor: COLORS.bloomCard, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    maxHeight: '70%', paddingBottom: 32,
+    backgroundColor: NICO.surface, borderTopLeftRadius: RADIUS['3xl'], borderTopRightRadius: RADIUS['3xl'],
+    maxHeight: '70%', paddingBottom: SPACING.xl,
   },
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 18, borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    padding: SPACING.lg, borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: COLORS.bloomText },
-  modalClose: { fontSize: 16, fontWeight: '600', color: COLORS.bloomAccent },
+  modalTitle: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  modalClose: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.semiBold, color: NICO.primary },
 
-  listItem:             { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, gap: 10 },
-  listItemSelected:     { backgroundColor: COLORS.bloomActiveBg },
-  listItemFlag:         { fontSize: 22 },
-  listItemText:         { flex: 1, fontSize: 15, color: COLORS.bloomText },
-  listItemTextSelected: { fontWeight: '700', color: COLORS.bloomActiveText },
-  listItemCode:         { fontSize: 14, color: COLORS.bloomMuted, fontWeight: '600' },
-  listItemCodeSelected: { color: COLORS.bloomActiveText },
-  listCheck:            { fontSize: 16, color: COLORS.bloomActiveText, fontWeight: '700' },
-  listDivider:          { height: 1, backgroundColor: COLORS.bloomBorder, marginHorizontal: 20 },
+  listItem:             { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, gap: SPACING.sm },
+  listItemSelected:     { backgroundColor: NICO.primaryLight },
+  listItemFlag:         { fontSize: FONT_SIZE['2xl'] },
+  listItemText:         { flex: 1, fontSize: FONT_SIZE.lg, color: NICO.text },
+  listItemTextSelected: { fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
+  listItemCode:         { fontSize: FONT_SIZE.md, color: NICO.textMuted, fontWeight: FONT_WEIGHT.semiBold },
+  listItemCodeSelected: { color: NICO.primary },
+  listCheck:            { fontSize: FONT_SIZE.lg, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
+  listDivider:          { height: 1, backgroundColor: NICO.border, marginHorizontal: SPACING.lg },
 
-  emptyTags:     { padding: 40, alignItems: 'center' },
-  emptyTagsText: { fontSize: 15, color: COLORS.bloomMuted },
+  emptyTags:     { padding: SPACING['3xl'], alignItems: 'center' },
+  emptyTagsText: { fontSize: FONT_SIZE.lg, color: NICO.textMuted },
 
   helperBox: {
-    backgroundColor: COLORS.bloomActiveBg, borderRadius: 12,
-    padding: 14, marginBottom: 12,
-    borderLeftWidth: 3, borderLeftColor: COLORS.bloomAccent,
+    backgroundColor: NICO.primaryLight, borderRadius: RADIUS.md,
+    padding: SPACING.md, marginBottom: SPACING.md,
+    borderLeftWidth: 3, borderLeftColor: NICO.primary,
   },
-  helperTitle: { fontSize: 13, fontWeight: '700', color: COLORS.bloomText, marginBottom: 5 },
-  helperText:  { fontSize: 12, color: COLORS.bloomText, lineHeight: 18 },
+  helperTitle: { fontSize: FONT_SIZE.base, fontWeight: FONT_WEIGHT.bold, color: NICO.text, marginBottom: 5 },
+  helperText:  { fontSize: FONT_SIZE.sm, color: NICO.text, lineHeight: 18 },
 });

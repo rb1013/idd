@@ -5,7 +5,10 @@ import {
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import AppText from '../../components/AppText';
 import { supabase } from '../../lib/supabase';
-import { COLORS } from '../../constants';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, scale,
+} from '../../constants/theme';
 
 type RouteParams = { email: string };
 
@@ -46,7 +49,7 @@ export default function EmailVerificationPendingScreen() {
       ) : (
         <TouchableOpacity style={s.resendBtn} onPress={resend} disabled={resending} activeOpacity={0.75}>
           {resending
-            ? <ActivityIndicator color={COLORS.bloomOnAccent} />
+            ? <ActivityIndicator color={NICO.textOnAccent} />
             : <AppText style={s.resendBtnText}>Resend verification email</AppText>
           }
         </TouchableOpacity>
@@ -61,29 +64,26 @@ export default function EmailVerificationPendingScreen() {
 
 const s = StyleSheet.create({
   container: {
-    flex: 1, backgroundColor: COLORS.bloomBody,
+    flex: 1, backgroundColor: NICO.screenBg,
     alignItems: 'center', justifyContent: 'center',
-    padding: 32, gap: 16,
+    padding: SPACING.xl, gap: SPACING.base,
   },
-  emoji:  { fontSize: 64, marginBottom: 8 },
-  title:  { fontSize: 26, fontWeight: '900', color: COLORS.bloomText, textAlign: 'center' },
-  body:   { fontSize: 16, color: COLORS.bloomMuted, textAlign: 'center', lineHeight: 24 },
-  email:  { fontWeight: '700', color: COLORS.bloomText },
-  hint:   { fontSize: 14, color: COLORS.bloomMuted, textAlign: 'center', lineHeight: 22, marginTop: 4 },
+  emoji:  { fontSize: scale(64), marginBottom: SPACING.sm },
+  title:  { ...TEXT_STYLE.screenTitle, textAlign: 'center' },
+  body:   { ...TEXT_STYLE.body, color: NICO.textMuted, textAlign: 'center', lineHeight: 24 },
+  email:  { fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  hint:   { ...TEXT_STYLE.hint, textAlign: 'center', lineHeight: 22, marginTop: 4 },
 
-  resendBtn: {
-    marginTop: 8, backgroundColor: COLORS.bloomAccent,
-    borderRadius: 12, paddingVertical: 14, paddingHorizontal: 28,
-  },
-  resendBtnText: { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 15 },
+  resendBtn: { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.sm },
+  resendBtnText: { ...TEXT_STYLE.buttonPrimary },
 
   resentBadge: {
-    marginTop: 8, backgroundColor: COLORS.bloomActiveBg,
-    borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24,
-    borderWidth: 1.5, borderColor: COLORS.bloomSageMid,
+    marginTop: SPACING.sm, backgroundColor: NICO.successLight,
+    borderRadius: RADIUS.md, paddingVertical: SPACING.md, paddingHorizontal: SPACING.xl,
+    borderWidth: 1.5, borderColor: NICO.success,
   },
-  resentText: { color: COLORS.bloomActiveText, fontWeight: '700', fontSize: 15 },
+  resentText: { color: NICO.success, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.lg },
 
-  backBtn: { marginTop: 8 },
-  backBtnText: { fontSize: 14, color: COLORS.bloomMuted, fontWeight: '600' },
+  backBtn: { marginTop: SPACING.sm },
+  backBtnText: { ...TEXT_STYLE.hint, fontWeight: FONT_WEIGHT.semiBold },
 });

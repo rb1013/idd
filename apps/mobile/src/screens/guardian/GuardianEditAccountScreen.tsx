@@ -153,7 +153,7 @@ export default function GuardianEditAccountScreen() {
             <AppText style={s.label}>Learner Situation</AppText>
             <TouchableOpacity style={s.pickerBtn} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>
               <AppText style={[s.pickerBtnText, selectedTags.length === 0 && { color: NICO.textMuted }]}>
-                {selectedTags.length === 0 ? 'Select tags...' : `${selectedTags.length} selected`}
+                {selectedTags.length === 0 ? 'Select Situation' : `${selectedTags.length} selected`}
               </AppText>
               <AppText style={s.chevron}>▾</AppText>
             </TouchableOpacity>
