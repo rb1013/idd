@@ -57,6 +57,8 @@ import DiscoveryScreen from '../screens/discovery/DiscoveryScreen';
 // import MessagesScreen from '../screens/messages/MessagesScreen'; // Messages tile removed
 import ChatScreen from '../screens/chat/ChatScreen';
 import TutorialsScreen from '../screens/tutorials/TutorialsScreen';
+import VideoPlayerScreen from '../screens/tutorials/VideoPlayerScreen';
+import SlideshowPlayerScreen from '../screens/tutorials/SlideshowPlayerScreen';
 import ProfileScreen from '../screens/user/ProfileScreen';
 import ActivitiesScreen from '../screens/user/ActivitiesScreen';
 
@@ -110,6 +112,8 @@ export type UserStackParamList = {
   Activities: undefined;
   Chat: { conversationId: string; participantName: string; participantPhoto?: string | null };
   EditUser: { userId: string };
+  VideoPlayer: { tutorialId: string };
+  SlideshowPlayer: { tutorialId: string };
 };
 
 // ── Navigators ────────────────────────────────────────────────────────────
@@ -299,6 +303,8 @@ function UserNavigator() {
       {/* <UserStack.Screen name="Messages" component={MessagesScreen} options={{ title: '💬  Messages', headerBackTitle: '' }} /> */}{/* Messages tile removed */}
       <UserStack.Screen name="Activities" component={ActivitiesScreen}  options={{ title: '✅  Today\'s Activities' }} />
       <UserStack.Screen name="Tutorials"  component={TutorialsScreen}   options={{ title: '📚  Learn' }} />
+      <UserStack.Screen name="VideoPlayer"     component={VideoPlayerScreen}     options={{ title: 'Video' }} />
+      <UserStack.Screen name="SlideshowPlayer" component={SlideshowPlayerScreen} options={{ title: 'Tutorial' }} />
       <UserStack.Screen name="Profile"    component={ProfileScreen}     options={{ title: 'My Profile' }} />
       <UserStack.Screen name="Chat"       component={ChatScreen} />
       <UserStack.Screen name="EditUser"   component={EditUserScreen}    options={{ title: 'Edit Profile' }} />
