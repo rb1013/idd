@@ -22,7 +22,6 @@ import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 
 // Guardian screens
 import GuardianHomeScreen from '../screens/guardian/GuardianHomeScreen';
-import SelectUserScreen from '../screens/guardian/SelectUserScreen';
 import CreateUserScreen from '../screens/guardian/CreateUserScreen';
 import EditUserScreen from '../screens/guardian/EditUserScreen';
 import GuardianNotificationsScreen from '../screens/guardian/GuardianNotificationsScreen';
@@ -80,7 +79,6 @@ export type RootStackParamList = {
 export type GuardianNavParamList = {
   LearnerSelect: undefined;
   GuardianHome: undefined;
-  Profiles: undefined;
   Notifications: undefined;
   Learning: { initialTab?: 'search' | 'my' | 'pending' | 'create'; initialStatus?: 'approved' | 'rejected' } | undefined;
   Activities: undefined;
@@ -261,7 +259,6 @@ function GuardianTabs() {
     >
       <GuardianNav.Screen name="LearnerSelect"   component={LearnerSelectScreen}         options={{ headerShown: false, headerBackTitle: '' }} />
       <GuardianNav.Screen name="GuardianHome"    component={GuardianHomeScreen}          options={{ headerShown: false, headerBackTitle: '' }} />
-      <GuardianNav.Screen name="Profiles"        component={SelectUserScreen}            options={{ title: 'Profiles' }} />
       <GuardianNav.Screen name="Notifications"   component={GuardianNotificationsScreen} options={{ title: 'Notifications', headerRight: undefined }} />
       <GuardianNav.Screen name="Learning"        component={GuardianTutorialsScreen}     options={{ title: 'Tutorials', headerRight: undefined }} />
       <GuardianNav.Screen name="Activities"      component={GuardianActivitiesScreen}    options={{ title: 'Activities', headerRight: undefined }} />

@@ -12,12 +12,18 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS, COMPREHENSION_LEVELS, GENDERS, LANGUAGES, US_STATES } from '../../constants';
+import { COMPREHENSION_LEVELS, GENDERS, LANGUAGES, US_STATES } from '../../constants';
 import DropdownPicker from '../../components/DropdownPicker';
 import type { Category } from '../../types';
 import MultiSelectChips from '../../components/MultiSelectChips';
 import MultiSelectDropdown from '../../components/MultiSelectDropdown';
+import ContentContainer from '../../components/ContentContainer';
+import useNicoHeader from '../../hooks/useNicoHeader';
 import { GuardianNavParamList } from '../../navigation';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, scale,
+} from '../../constants/theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<GuardianNavParamList, 'EditUser'>;
@@ -60,6 +66,8 @@ export default function EditUserScreen({ navigation, route }: Props) {
   const likeCategories = categories.filter(c => c.type === 'like');
   const dislikeCategories = categories.filter(c => c.type === 'dislike');
   const abilityCategories = categories.filter(c => c.type === 'ability');
+
+  useNicoHeader(navigation);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerRight: undefined });
@@ -219,12 +227,21 @@ export default function EditUserScreen({ navigation, route }: Props) {
   const photoSource = photoUri || existingPhotoUrl;
 
   if (initialLoading) {
-    return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
+    return <View style={styles.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
   }
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.stepRow}>
+        <View style={styles.sideSlot}>
+          {guardian ? (
+            <TouchableOpacity onPress={handleDelete} disabled={loading} activeOpacity={0.6} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <AppText style={styles.deleteLink}>Delete</AppText>
+            </TouchableOpacity>
+          ) : (
+            <AppText style={[styles.deleteLink, styles.hiddenLink]}>Delete</AppText>
+          )}
+        </View>
         <View style={styles.stepIndicator}>
           {steps.map((s, i) => (
             <TouchableOpacity key={s} onPress={() => i < stepIndex && setStep(steps[i])}>
@@ -232,12 +249,15 @@ export default function EditUserScreen({ navigation, route }: Props) {
             </TouchableOpacity>
           ))}
         </View>
-        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.6} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <AppText style={styles.cancelLink}>Cancel</AppText>
-        </TouchableOpacity>
+        <View style={[styles.sideSlot, styles.sideSlotRight]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.6} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <AppText style={styles.cancelLink}>Cancel</AppText>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ContentContainer>
         {step === 'social' && (
           <View>
             <AppText style={styles.sectionTitle}>Social Profile</AppText>
@@ -254,7 +274,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
               onPress={() => { setTempDob(dob ?? new Date(2005, 0, 1)); setShowDobPicker(true); }}
               activeOpacity={0.75}
             >
-              <AppText style={[styles.pickerBtnTxt, !dob && { color: COLORS.bloomMuted }]}>
+              <AppText style={[styles.pickerBtnTxt, !dob && { color: NICO.textMuted }]}>
                 {dob ? dob.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Select date of birth…'}
               </AppText>
               <AppText style={{ fontSize: 18 }}>📅</AppText>
@@ -319,7 +339,6 @@ export default function EditUserScreen({ navigation, route }: Props) {
         {step === 'location' && (
           <View>
             <AppText style={styles.sectionTitle}>Location</AppText>
-            <AppText style={styles.sectionSubtitle}>Where is this person based?</AppText>
             <DropdownPicker label="Country" value={country} options={['USA']} onSelect={setCountry} disabled />
             <DropdownPicker label="State *" value={region} options={US_STATES} onSelect={setRegion} placeholder="Select state..." />
             <Field label="City *" value={city} onChangeText={setCity} placeholder="e.g. Austin" />
@@ -353,8 +372,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
             </View>
           </View>
         )}
-
-
+        </ContentContainer>
       </ScrollView>
 
       <View style={styles.navRow}>
@@ -368,7 +386,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
 
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={loading}>
           {loading
-            ? <ActivityIndicator color="#fff" />
+            ? <ActivityIndicator color={NICO.textOnAccent} />
             : <AppText style={styles.saveBtnText}>Save</AppText>}
         </TouchableOpacity>
 
@@ -380,12 +398,6 @@ export default function EditUserScreen({ navigation, route }: Props) {
           <AppText style={styles.arrowText}>›</AppText>
         </TouchableOpacity>
       </View>
-
-      {guardian && step === 'social' && (
-        <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete} disabled={loading}>
-          <AppText style={styles.deleteBtnText}>🗑 Delete Profile</AppText>
-        </TouchableOpacity>
-      )}
 
       <Modal visible={showDobPicker} transparent animationType="slide" onRequestClose={() => setShowDobPicker(false)}>
         <TouchableOpacity style={styles.sheetBackdrop} activeOpacity={1} onPress={() => setShowDobPicker(false)}>
@@ -425,7 +437,7 @@ function Field({ label, ...props }: { label: string } & React.ComponentProps<typ
   return (
     <>
       <AppText style={styles.label}>{label}</AppText>
-      <TextInput style={styles.input} placeholderTextColor={COLORS.bloomMuted} {...props} />
+      <TextInput style={styles.input} placeholderTextColor={NICO.textMuted} {...props} />
     </>
   );
 }
@@ -442,85 +454,89 @@ function Toggle({ label, value, onToggle }: { label: string; value: boolean; onT
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bloomBody },
+  container: { flex: 1, backgroundColor: NICO.screenBg },
   scroll: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bloomBody },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: NICO.screenBg },
   stepRow: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 20, paddingVertical: 14,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md,
   },
-  stepIndicator: { flex: 1, flexDirection: 'row', justifyContent: 'center', gap: 8 },
-  stepDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.bloomBorder },
-  stepDotActive: { backgroundColor: COLORS.bloomAccent },
-  cancelLink: { fontSize: 14, color: COLORS.bloomMuted, fontWeight: '500' },
-  inner: { padding: 24, paddingBottom: 48 },
-  sectionTitle: { fontSize: 24, fontWeight: '700', color: COLORS.bloomText, marginBottom: 4 },
-  sectionSubtitle: { fontSize: 14, color: COLORS.bloomMuted, marginBottom: 20 },
+  stepIndicator: { flex: 1, flexDirection: 'row', justifyContent: 'center', gap: SPACING.sm },
+  sideSlot: { minWidth: scale(56) },
+  sideSlotRight: { alignItems: 'flex-end' },
+  hiddenLink: { opacity: 0 },
+  stepDot: { width: scale(10), height: scale(10), borderRadius: scale(5), backgroundColor: NICO.border },
+  stepDotActive: { backgroundColor: NICO.primary },
+  cancelLink: { fontSize: FONT_SIZE.md, lineHeight: FONT_SIZE.md + 4, color: NICO.textMuted, fontWeight: FONT_WEIGHT.medium },
+  deleteLink: { fontSize: FONT_SIZE.md, lineHeight: FONT_SIZE.md + 4, color: NICO.error, fontWeight: FONT_WEIGHT.semiBold },
+  inner: { padding: SPACING.xl, paddingBottom: SPACING['3xl'] },
+  sectionTitle: { ...TEXT_STYLE.sectionTitle, marginBottom: SPACING.xs },
+  sectionSubtitle: { ...TEXT_STYLE.hint, marginBottom: SPACING.lg },
   photoPicker: {
-    width: 100, height: 100, borderRadius: 50,
-    backgroundColor: COLORS.bloomActiveBg,
+    width: scale(100), height: scale(100), borderRadius: scale(50),
+    backgroundColor: NICO.primaryLight,
     justifyContent: 'center', alignItems: 'center',
-    alignSelf: 'center', marginBottom: 24,
+    alignSelf: 'center', marginBottom: SPACING.xl,
   },
-  photo: { width: 100, height: 100, borderRadius: 50 },
-  photoText: { color: COLORS.bloomAccent, fontSize: 13, textAlign: 'center' },
-  label: { fontSize: 14, fontWeight: '600', color: COLORS.bloomText, marginBottom: 8, marginTop: 16 },
+  photo: { width: scale(100), height: scale(100), borderRadius: scale(50) },
+  photoText: { color: NICO.primary, fontSize: FONT_SIZE.base, textAlign: 'center' },
+  label: { ...TEXT_STYLE.fieldLabel, marginBottom: SPACING.sm, marginTop: SPACING.base },
   input: {
-    backgroundColor: COLORS.bloomCard, borderWidth: 1, borderColor: COLORS.bloomBorder,
-    borderRadius: 12, padding: 14, fontSize: 16, color: COLORS.bloomText, marginBottom: 4,
+    backgroundColor: NICO.surface, borderWidth: 1.5, borderColor: NICO.border,
+    borderRadius: RADIUS.md, padding: SPACING.md, fontSize: FONT_SIZE.lg, color: NICO.text, marginBottom: 4,
   },
-  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
-  toggleLabel: { fontSize: 16, color: COLORS.bloomText },
-  toggle: { width: 52, height: 30, borderRadius: 15, backgroundColor: COLORS.bloomBorder, justifyContent: 'center', padding: 2 },
-  toggleOn: { backgroundColor: COLORS.bloomAccent },
-  toggleThumb: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff' },
+  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.md },
+  toggleLabel: { ...TEXT_STYLE.body },
+  toggle: { width: scale(52), height: scale(30), borderRadius: scale(15), backgroundColor: NICO.border, justifyContent: 'center', padding: 2 },
+  toggleOn: { backgroundColor: NICO.primary },
+  toggleThumb: { width: scale(26), height: scale(26), borderRadius: scale(13), backgroundColor: '#fff' },
   toggleThumbOn: { alignSelf: 'flex-end' },
-  navRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 16, paddingBottom: 32, backgroundColor: COLORS.bloomBody, borderTopWidth: 1, borderTopColor: COLORS.bloomBorder },
-  charCount: { fontSize: 12, color: COLORS.bloomMuted, textAlign: 'right', marginTop: 4 },
-  emptyHint: { color: COLORS.bloomMuted, fontSize: 14, marginTop: 16, textAlign: 'center' },
-  arrowBtn: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#2F6B4A', alignItems: 'center', justifyContent: 'center' },
+  navRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.base,
+    padding: SPACING.base, paddingBottom: SPACING['2xl'],
+    backgroundColor: NICO.screenBg, borderTopWidth: 1, borderTopColor: NICO.border,
+  },
+  charCount: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, textAlign: 'right', marginTop: 4 },
+  emptyHint: { ...TEXT_STYLE.hint, marginTop: SPACING.base, textAlign: 'center' },
+  arrowBtn: {
+    width: scale(48), height: scale(48), borderRadius: scale(24),
+    borderWidth: 2, borderColor: NICO.primary, alignItems: 'center', justifyContent: 'center',
+  },
   arrowBtnHidden: { opacity: 0 },
-  arrowText: { fontSize: 28, color: COLORS.bloomText, lineHeight: 32, fontWeight: '700' },
-  saveBtn: { paddingVertical: 14, paddingHorizontal: 40, backgroundColor: COLORS.bloomAccent, borderRadius: 12, alignItems: 'center' },
-  saveBtnText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '700' },
+  arrowText: { fontSize: FONT_SIZE['4xl'], color: NICO.text, lineHeight: 32, fontWeight: FONT_WEIGHT.bold },
+  saveBtn: { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, paddingHorizontal: scale(40) },
+  saveBtnText: { ...TEXT_STYLE.buttonPrimary },
   readonlyField: {
-    backgroundColor: COLORS.bloomBorder + '60',
-    borderWidth: 1,
-    borderColor: COLORS.bloomBorder,
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: NICO.background,
+    borderWidth: 1.5,
+    borderColor: NICO.border,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
     marginBottom: 4,
   },
-  readonlyText: { fontSize: 16, color: COLORS.bloomMuted },
-
-  deleteBtn: {
-    alignSelf: 'center', marginBottom: 32, paddingVertical: 10,
-    paddingHorizontal: 24, borderRadius: 12,
-    borderWidth: 1.5, borderColor: '#FCA5A5',
-  },
-  deleteBtnText: { color: COLORS.statusRedDark, fontSize: 15, fontWeight: '600' },
+  readonlyText: { ...TEXT_STYLE.body, color: NICO.textMuted },
 
   disclaimer: {
-    marginTop: 20, backgroundColor: '#FFF8E1', borderRadius: 12,
-    borderWidth: 1.5, borderColor: '#F6C90E', padding: 16,
+    marginTop: SPACING.lg, backgroundColor: NICO.warningLight, borderRadius: RADIUS.md,
+    borderWidth: 1.5, borderColor: NICO.warning, padding: SPACING.base,
   },
-  disclaimerText: { fontSize: 13, color: '#6D5700', lineHeight: 20 },
-  disclaimerBold: { fontWeight: '800' },
-  disclaimerEmail: { fontWeight: '700', color: COLORS.bloomAccent },
+  disclaimerText: { fontSize: FONT_SIZE.base, color: NICO.text, lineHeight: 20 },
+  disclaimerBold: { fontWeight: FONT_WEIGHT.extraBold },
+  disclaimerEmail: { fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 
   pickerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: COLORS.bloomCard, borderWidth: 1, borderColor: COLORS.bloomBorder,
-    borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, marginBottom: 4,
+    backgroundColor: NICO.surface, borderWidth: 1.5, borderColor: NICO.border,
+    borderRadius: RADIUS.md, paddingHorizontal: SPACING.md, paddingVertical: SPACING.md, marginBottom: 4,
   },
-  pickerBtnTxt: { fontSize: 16, color: COLORS.bloomText, flex: 1 },
+  pickerBtnTxt: { fontSize: FONT_SIZE.lg, color: NICO.text, flex: 1 },
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: COLORS.bloomCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 32 },
+  sheet: { backgroundColor: NICO.surface, borderTopLeftRadius: RADIUS['3xl'], borderTopRightRadius: RADIUS['3xl'], paddingBottom: SPACING.xl },
   sheetHdr: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base, borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  sheetTitle:  { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
-  sheetCancel: { fontSize: 15, color: COLORS.bloomMuted },
-  sheetDone:   { fontSize: 15, fontWeight: '700', color: COLORS.bloomAccent },
+  sheetTitle:  { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  sheetCancel: { fontSize: FONT_SIZE.lg, color: NICO.textMuted },
+  sheetDone:   { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 });

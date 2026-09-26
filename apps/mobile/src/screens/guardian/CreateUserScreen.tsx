@@ -12,12 +12,18 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { saveBiometricUser, saveCredentialSnapshot } from '../../lib/biometricStore';
-import { COLORS, COMPREHENSION_LEVELS, GENDERS, LANGUAGES, US_STATES } from '../../constants';
+import { COMPREHENSION_LEVELS, GENDERS, LANGUAGES, US_STATES } from '../../constants';
 import DropdownPicker from '../../components/DropdownPicker';
 import { Category } from '../../types';
 import MultiSelectChips from '../../components/MultiSelectChips';
 import MultiSelectDropdown from '../../components/MultiSelectDropdown';
+import ContentContainer from '../../components/ContentContainer';
+import useNicoHeader from '../../hooks/useNicoHeader';
 import { GuardianNavParamList } from '../../navigation';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BTN_VARIANT, scale,
+} from '../../constants/theme';
 
 type Props = { navigation: NativeStackNavigationProp<GuardianNavParamList, 'CreateUser'> };
 
@@ -32,6 +38,8 @@ export default function CreateUserScreen({ navigation }: Props) {
   const { guardian } = useAuth();
   const [step, setStep] = useState<Step>('social');
   const [loading, setLoading] = useState(false);
+
+  useNicoHeader(navigation);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerRight: undefined });
@@ -230,6 +238,7 @@ export default function CreateUserScreen({ navigation }: Props) {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ContentContainer>
         {step === 'social' && (
           <View>
             <AppText style={styles.sectionTitle}>Social Profile</AppText>
@@ -248,7 +257,7 @@ export default function CreateUserScreen({ navigation }: Props) {
               onPress={() => { setTempDob(dob ?? new Date(2005, 0, 1)); setShowDobPicker(true); }}
               activeOpacity={0.75}
             >
-              <AppText style={[styles.pickerBtnTxt, !dob && { color: COLORS.bloomMuted }]}>
+              <AppText style={[styles.pickerBtnTxt, !dob && { color: NICO.textMuted }]}>
                 {dob ? dob.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Select date of birth…'}
               </AppText>
               <AppText style={{ fontSize: 18 }}>📅</AppText>
@@ -266,7 +275,7 @@ export default function CreateUserScreen({ navigation }: Props) {
               placeholder="e.g. alex123"
               autoCapitalize="none"
               autoCorrect={false}
-              placeholderTextColor={COLORS.bloomMuted}
+              placeholderTextColor={NICO.textMuted}
             />
             {checkingUsername && <AppText style={styles.checkingText}>Checking availability...</AppText>}
             {!checkingUsername && usernameError ? <AppText style={styles.errorText}>{usernameError}</AppText> : null}
@@ -326,7 +335,6 @@ export default function CreateUserScreen({ navigation }: Props) {
         {step === 'location' && (
           <View>
             <AppText style={styles.sectionTitle}>Location</AppText>
-            <AppText style={styles.sectionSubtitle}>Where is this person based?</AppText>
 
             <DropdownPicker
               label="Country"
@@ -375,7 +383,7 @@ export default function CreateUserScreen({ navigation }: Props) {
             </View>
           </View>
         )}
-
+        </ContentContainer>
       </ScrollView>
 
       <View style={styles.navRow}>
@@ -390,7 +398,7 @@ export default function CreateUserScreen({ navigation }: Props) {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={styles.nextBtn} onPress={handleSubmit} disabled={loading}>
-            {loading ? <ActivityIndicator color={COLORS.bloomOnAccent} /> : <AppText style={styles.nextBtnText}>Create Profile</AppText>}
+            {loading ? <ActivityIndicator color={NICO.textOnAccent} /> : <AppText style={styles.nextBtnText}>Create Profile</AppText>}
           </TouchableOpacity>
         )}
       </View>
@@ -437,7 +445,7 @@ function Field({ label, ...props }: { label: string } & React.ComponentProps<typ
       <AppText style={styles.label}>
         {baseLabel}{isRequired && <AppText style={styles.required}> *</AppText>}
       </AppText>
-      <TextInput style={styles.input} placeholderTextColor={COLORS.bloomMuted} {...props} />
+      <TextInput style={styles.input} placeholderTextColor={NICO.textMuted} {...props} />
     </>
   );
 }
@@ -454,76 +462,82 @@ function Toggle({ label, value, onToggle }: { label: string; value: boolean; onT
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bloomBody },
+  container: { flex: 1, backgroundColor: NICO.screenBg },
   scroll: { flex: 1 },
-  stepRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
-  stepIndicator: { flex: 1, flexDirection: 'row', justifyContent: 'center', gap: 8 },
-  cancelLink: { fontSize: 14, color: COLORS.bloomMuted, fontWeight: '500' },
-  stepDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.bloomBorder },
-  stepDotActive: { backgroundColor: COLORS.bloomAccent },
-  inner: { padding: 24, paddingBottom: 48 },
-  sectionTitle: { fontSize: 24, fontWeight: '700', color: COLORS.bloomText, marginBottom: 4 },
-  sectionSubtitle: { fontSize: 14, color: COLORS.bloomMuted, marginBottom: 20 },
+  stepRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
+  stepIndicator: { flex: 1, flexDirection: 'row', justifyContent: 'center', gap: SPACING.sm },
+  cancelLink: { fontSize: FONT_SIZE.md, color: NICO.textMuted, fontWeight: FONT_WEIGHT.medium },
+  stepDot: { width: scale(10), height: scale(10), borderRadius: scale(5), backgroundColor: NICO.border },
+  stepDotActive: { backgroundColor: NICO.primary },
+  inner: { padding: SPACING.xl, paddingBottom: SPACING['3xl'] },
+  sectionTitle: { ...TEXT_STYLE.sectionTitle, marginBottom: SPACING.xs },
+  sectionSubtitle: { ...TEXT_STYLE.hint, marginBottom: SPACING.lg },
   photoPicker: {
-    width: 100, height: 100, borderRadius: 50,
-    backgroundColor: COLORS.bloomActiveBg,
+    width: scale(100), height: scale(100), borderRadius: scale(50),
+    backgroundColor: NICO.primaryLight,
     justifyContent: 'center', alignItems: 'center',
-    alignSelf: 'center', marginBottom: 24,
+    alignSelf: 'center', marginBottom: SPACING.xl,
   },
-  photo: { width: 100, height: 100, borderRadius: 50 },
-  photoText: { color: COLORS.bloomActiveText, fontSize: 13, textAlign: 'center' },
-  label: { fontSize: 14, fontWeight: '600', color: COLORS.bloomText, marginBottom: 8, marginTop: 16 },
-  required: { color: COLORS.error, fontWeight: '700' },
-  usernameHint: { fontSize: 13, color: COLORS.bloomMuted, lineHeight: 18, marginBottom: 8 },
+  photo: { width: scale(100), height: scale(100), borderRadius: scale(50) },
+  photoText: { color: NICO.primary, fontSize: FONT_SIZE.base, textAlign: 'center' },
+  label: { ...TEXT_STYLE.fieldLabel, marginBottom: SPACING.sm, marginTop: SPACING.base },
+  required: { color: NICO.error, fontWeight: FONT_WEIGHT.bold },
+  usernameHint: { fontSize: FONT_SIZE.base, color: NICO.textMuted, lineHeight: 18, marginBottom: SPACING.sm },
   input: {
-    backgroundColor: COLORS.bloomCard,
-    borderWidth: 1,
-    borderColor: COLORS.bloomBorder,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-    color: COLORS.bloomText,
+    backgroundColor: NICO.surface,
+    borderWidth: 1.5,
+    borderColor: NICO.border,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    fontSize: FONT_SIZE.lg,
+    color: NICO.text,
     marginBottom: 4,
   },
-  inputError: { borderColor: COLORS.error },
-  errorText: { fontSize: 13, color: COLORS.error, marginTop: 2, marginBottom: 4 },
-  checkingText: { fontSize: 13, color: COLORS.bloomMuted, marginTop: 2, marginBottom: 4 },
-  availableText: { fontSize: 13, color: COLORS.bloomActiveText, marginTop: 2, marginBottom: 4 },
-  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
-  toggleLabel: { fontSize: 16, color: COLORS.bloomText },
-  toggle: { width: 52, height: 30, borderRadius: 15, backgroundColor: COLORS.bloomBorder, justifyContent: 'center', padding: 2 },
-  toggleOn: { backgroundColor: COLORS.bloomAccent },
-  toggleThumb: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff' },
+  inputError: { borderColor: NICO.error },
+  errorText: { fontSize: FONT_SIZE.base, color: NICO.error, marginTop: 2, marginBottom: 4 },
+  checkingText: { fontSize: FONT_SIZE.base, color: NICO.textMuted, marginTop: 2, marginBottom: 4 },
+  availableText: { fontSize: FONT_SIZE.base, color: NICO.success, marginTop: 2, marginBottom: 4 },
+  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.md },
+  toggleLabel: { ...TEXT_STYLE.body },
+  toggle: { width: scale(52), height: scale(30), borderRadius: scale(15), backgroundColor: NICO.border, justifyContent: 'center', padding: 2 },
+  toggleOn: { backgroundColor: NICO.primary },
+  toggleThumb: { width: scale(26), height: scale(26), borderRadius: scale(13), backgroundColor: '#fff' },
   toggleThumbOn: { alignSelf: 'flex-end' },
-  navRow: { flexDirection: 'row', gap: 12, padding: 16, paddingBottom: 32, backgroundColor: COLORS.bloomBody, borderTopWidth: 1, borderTopColor: COLORS.bloomBorder },
-  charCount: { fontSize: 12, color: COLORS.bloomMuted, textAlign: 'right', marginTop: 4 },
-  emptyHint: { color: COLORS.bloomMuted, fontSize: 14, marginTop: 16, textAlign: 'center' },
-  backBtn: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.bloomBorder, alignItems: 'center' },
-  backBtnText: { color: COLORS.bloomText, fontSize: 16, fontWeight: '600' },
-  nextBtn: { flex: 2, backgroundColor: COLORS.bloomAccent, borderRadius: 12, padding: 16, alignItems: 'center' },
-  nextBtnText: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '600' },
+  navRow: {
+    flexDirection: 'row', gap: SPACING.md, padding: SPACING.base, paddingBottom: SPACING['2xl'],
+    backgroundColor: NICO.screenBg, borderTopWidth: 1, borderTopColor: NICO.border,
+  },
+  charCount: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, textAlign: 'right', marginTop: 4 },
+  emptyHint: { ...TEXT_STYLE.hint, marginTop: SPACING.base, textAlign: 'center' },
+  backBtn: {
+    flex: 1, padding: SPACING.base, borderRadius: RADIUS.md,
+    borderWidth: 1.5, borderColor: NICO.border, alignItems: 'center',
+  },
+  backBtnText: { ...TEXT_STYLE.bodyMedium },
+  nextBtn: { flex: 2, ...BTN_VARIANT.primary, borderRadius: RADIUS.md, padding: SPACING.base, alignItems: 'center' },
+  nextBtnText: { ...TEXT_STYLE.buttonPrimary },
 
   disclaimer: {
-    marginTop: 20, backgroundColor: COLORS.bloomActiveBg, borderRadius: 12,
-    borderWidth: 1.5, borderColor: COLORS.bloomSageMid, padding: 16,
+    marginTop: SPACING.lg, backgroundColor: NICO.warningLight, borderRadius: RADIUS.md,
+    borderWidth: 1.5, borderColor: NICO.warning, padding: SPACING.base,
   },
-  disclaimerText: { fontSize: 13, color: COLORS.bloomText, lineHeight: 20 },
-  disclaimerBold: { fontWeight: '800' },
-  disclaimerEmail: { fontWeight: '700', color: COLORS.bloomActiveText },
+  disclaimerText: { fontSize: FONT_SIZE.base, color: NICO.text, lineHeight: 20 },
+  disclaimerBold: { fontWeight: FONT_WEIGHT.extraBold },
+  disclaimerEmail: { fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 
   pickerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: COLORS.bloomCard, borderWidth: 1, borderColor: COLORS.bloomBorder,
-    borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, marginBottom: 4,
+    backgroundColor: NICO.surface, borderWidth: 1.5, borderColor: NICO.border,
+    borderRadius: RADIUS.md, paddingHorizontal: SPACING.md, paddingVertical: SPACING.md, marginBottom: 4,
   },
-  pickerBtnTxt: { fontSize: 16, color: COLORS.bloomText, flex: 1 },
+  pickerBtnTxt: { fontSize: FONT_SIZE.lg, color: NICO.text, flex: 1 },
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: COLORS.bloomCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 32 },
+  sheet: { backgroundColor: NICO.surface, borderTopLeftRadius: RADIUS['3xl'], borderTopRightRadius: RADIUS['3xl'], paddingBottom: SPACING.xl },
   sheetHdr: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base, borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  sheetTitle:  { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
-  sheetCancel: { fontSize: 15, color: COLORS.bloomMuted },
-  sheetDone:   { fontSize: 15, fontWeight: '700', color: COLORS.bloomAccent },
+  sheetTitle:  { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  sheetCancel: { fontSize: FONT_SIZE.lg, color: NICO.textMuted },
+  sheetDone:   { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 });

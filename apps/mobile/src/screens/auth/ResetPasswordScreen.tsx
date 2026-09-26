@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import {
   View, TextInput, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
 import { supabase } from '../../lib/supabase';
-import { COLORS } from '../../constants';
+import ContentContainer from '../../components/ContentContainer';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, INPUT, BTN_SIZE, BTN_VARIANT, BUTTERFLY_BORDER,
+} from '../../constants/theme';
 
 export default function ResetPasswordScreen() {
   const [password, setPassword]   = useState('');
@@ -30,66 +34,98 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <AppText style={s.emoji}>🔐</AppText>
-      <AppText style={s.title}>Set new password</AppText>
-      <AppText style={s.body}>Choose a strong password for your NICO account.</AppText>
-
-      <TextInput
-        style={s.input}
-        value={password}
-        onChangeText={setPassword}
-        placeholder="New password"
-        placeholderTextColor={COLORS.bloomMuted}
-        secureTextEntry
-        autoFocus
-        editable={!loading}
-      />
-      <TextInput
-        style={s.input}
-        value={confirm}
-        onChangeText={setConfirm}
-        placeholder="Confirm new password"
-        placeholderTextColor={COLORS.bloomMuted}
-        secureTextEntry
-        editable={!loading}
-      />
-
-      <TouchableOpacity
-        style={[s.btn, (!password || !confirm || loading) && s.btnDisabled]}
-        onPress={handleReset}
-        disabled={!password || !confirm || loading}
-        activeOpacity={0.8}
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView
+        contentContainerStyle={s.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {loading
-          ? <ActivityIndicator color={COLORS.bloomOnAccent} />
-          : <AppText style={s.btnText}>Update password</AppText>
-        }
-      </TouchableOpacity>
+        <ContentContainer>
+        <View style={s.content}>
+          <AppText style={s.emoji}>🔐</AppText>
+          <AppText style={s.title}>Set new password</AppText>
+          <AppText style={s.subtitle}>Choose a strong password for your NICO account.</AppText>
+
+          <LinearGradient
+            colors={[...BUTTERFLY_BORDER.colors]}
+            start={BUTTERFLY_BORDER.start}
+            end={BUTTERFLY_BORDER.end}
+            style={s.inputBorder}
+          >
+            <TextInput
+              style={s.input}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="New password"
+              placeholderTextColor={NICO.textMuted}
+              secureTextEntry
+              autoFocus
+              editable={!loading}
+            />
+          </LinearGradient>
+
+          <LinearGradient
+            colors={[...BUTTERFLY_BORDER.colors]}
+            start={BUTTERFLY_BORDER.start}
+            end={BUTTERFLY_BORDER.end}
+            style={s.inputBorder}
+          >
+            <TextInput
+              style={s.input}
+              value={confirm}
+              onChangeText={setConfirm}
+              placeholder="Confirm new password"
+              placeholderTextColor={NICO.textMuted}
+              secureTextEntry
+              editable={!loading}
+            />
+          </LinearGradient>
+
+          <TouchableOpacity
+            style={[s.btn, (!password || !confirm || loading) && s.btnDisabled]}
+            onPress={handleReset}
+            disabled={!password || !confirm || loading}
+            activeOpacity={0.85}
+          >
+            {loading
+              ? <ActivityIndicator color={NICO.textOnAccent} />
+              : <AppText style={s.btnText}>Update password</AppText>
+            }
+          </TouchableOpacity>
+        </View>
+        </ContentContainer>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  container: {
-    flex: 1, backgroundColor: COLORS.bloomBody,
-    alignItems: 'center', justifyContent: 'center',
-    padding: 32, gap: 16,
-  },
-  emoji: { fontSize: 56, marginBottom: 4 },
-  title: { fontSize: 26, fontWeight: '900', color: COLORS.bloomText, textAlign: 'center' },
-  body:  { fontSize: 16, color: COLORS.bloomMuted, textAlign: 'center', lineHeight: 24 },
+  root:      { flex: 1, backgroundColor: NICO.screenBg },
+  container: { flexGrow: 1, justifyContent: 'center', paddingBottom: '30%' },
 
+  content: {
+    paddingHorizontal: SPACING.base,
+    paddingVertical:   SPACING['3xl'],
+    alignItems:        'center',
+    gap:               SPACING.md,
+  },
+
+  emoji:    { fontSize: 56, marginBottom: SPACING.xs },
+  title:    { ...TEXT_STYLE.screenTitle, textAlign: 'center', marginBottom: SPACING.xs },
+  subtitle: { ...TEXT_STYLE.hint, textAlign: 'center', marginBottom: SPACING.md },
+
+  inputBorder: {
+    borderRadius: RADIUS.md + BUTTERFLY_BORDER.width,
+    padding:      BUTTERFLY_BORDER.width,
+    alignSelf:    'stretch',
+    marginBottom: SPACING.sm,
+  },
   input: {
-    width: '100%', borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    borderRadius: 12, padding: 14, fontSize: 16,
-    color: COLORS.bloomText, backgroundColor: COLORS.surface,
+    ...INPUT.base,
+    borderWidth: 0,
   },
 
-  btn: {
-    width: '100%', backgroundColor: COLORS.bloomAccent,
-    borderRadius: 12, paddingVertical: 15, alignItems: 'center',
-  },
+  btn:         { ...BTN_SIZE.lg, ...BTN_VARIANT.primary },
   btnDisabled: { opacity: 0.4 },
-  btnText: { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 16 },
+  btnText:     { ...TEXT_STYLE.buttonPrimary },
 });

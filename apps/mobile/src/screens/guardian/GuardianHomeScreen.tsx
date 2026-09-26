@@ -233,6 +233,24 @@ export default function GuardianHomeScreen() {
               {hasLearner ? `${firstname}'s zone` : 'Your Learner'}
             </AppText>
 
+            {hasLearner && (
+              <View style={s.heroTileRow}>
+                <TouchableOpacity
+                  style={[s.learnerHeroTile, { backgroundColor: LEARNER_TILE_COLOR.bg }]}
+                  onPress={() => navigation.navigate('EditUser', { userId: learners[0].id })}
+                  activeOpacity={0.85}
+                >
+                  {learners[0]?.photo_url ? (
+                    <Image source={{ uri: learners[0].photo_url }} style={s.learnerHeroPhoto} />
+                  ) : (
+                    <View style={s.learnerHeroPhoto}>
+                      <AppText style={s.learnerHeroInitial}>{firstname[0]?.toUpperCase() ?? 'L'}</AppText>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+
             {hasLearner ? (
               <>
                 {([[0, 1], [2, 3]] as [number, number][]).map((pair, ri) => (
@@ -305,7 +323,7 @@ export default function GuardianHomeScreen() {
                     <View style={s.infoCard} onStartShouldSetResponder={() => true}>
                       <AppText style={s.infoTitle}>Text to Speech</AppText>
                       <AppText style={s.infoBody}>
-                        Some pages in the learner zone read content aloud automatically. For some children, unexpected audio can feel startling or overwhelming and may cause distress.{'\n\n'}Enable this setting to turn off all automatic voice reading for your learner.
+                        Some pages in the learner zone read content aloud automatically. For some children, unexpected audio can feel startling or overwhelming and may cause distress.{'\n\n'}Enable this setting to turn off automatic audio for your learner.
                       </AppText>
                       <TouchableOpacity style={s.infoDismiss} onPress={() => setShowTtsInfo(false)} activeOpacity={0.8}>
                         <AppText style={s.infoDismissText}>Got it</AppText>
@@ -435,6 +453,20 @@ const s = StyleSheet.create({
     padding:         SPACING.base,
     gap:             SPACING.md,
   },
+  heroTileRow: { flexDirection: 'row', justifyContent: 'center' },
+  learnerHeroTile: {
+    width: '34%',
+    aspectRatio: 1,
+    alignItems: 'center', justifyContent: 'center',
+    borderRadius: RADIUS['2xl'], padding: SPACING.sm,
+    ...SHADOW.sm,
+  },
+  learnerHeroPhoto: {
+    width: '100%', height: '100%', borderRadius: RADIUS.xl,
+    backgroundColor: NICO.primaryLight,
+    justifyContent: 'center', alignItems: 'center', overflow: 'hidden',
+  },
+  learnerHeroInitial: { ...TEXT_STYLE.displayHero, color: NICO.primary, fontSize: FONT_SIZE['4xl'] },
   zoneLabel: {
     ...TEXT_STYLE.cardTitle,
     textAlign: 'center',
@@ -469,7 +501,7 @@ const s = StyleSheet.create({
     padding: SPACING.lg, gap: SPACING.md, maxWidth: 360, width: '100%',
   },
   infoTitle:       { ...TEXT_STYLE.cardTitle, fontSize: FONT_SIZE.xl },
-  infoBody:        { ...TEXT_STYLE.body, lineHeight: 22, color: NICO.textMuted },
+  infoBody:        { ...TEXT_STYLE.body, lineHeight: 22, color: NICO.text },
   infoDismiss: {
     ...BTN_SIZE.md, ...BTN_VARIANT.primary, alignSelf: 'flex-end',
   },

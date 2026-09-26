@@ -1,6 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS } from '../constants';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import AppText from './AppText';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, FONT_SIZE, FONT_WEIGHT,
+} from '../constants/theme';
 
 interface Props {
   options: string[];
@@ -28,7 +31,7 @@ export default function MultiSelectChips({ options, selected, onToggle, single, 
 
   return (
     <View>
-      {max && <Text style={styles.limitHint}>{selected.length}/{max} selected</Text>}
+      {max && <AppText style={styles.limitHint}>{selected.length}/{max} selected</AppText>}
       <View style={styles.container}>
         {options.map(option => {
           const active = selected.includes(option);
@@ -41,9 +44,9 @@ export default function MultiSelectChips({ options, selected, onToggle, single, 
               delayPressIn={50}
               activeOpacity={disabled ? 1 : 0.7}
             >
-              <Text style={[styles.chipText, active && styles.chipTextActive, disabled && styles.chipTextDisabled]}>
+              <AppText style={[styles.chipText, active && styles.chipTextActive, disabled && styles.chipTextDisabled]}>
                 {option}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           );
         })}
@@ -53,19 +56,19 @@ export default function MultiSelectChips({ options, selected, onToggle, single, 
 }
 
 const styles = StyleSheet.create({
-  limitHint: { fontSize: 12, color: COLORS.textLight, marginBottom: 8 },
-  container: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  limitHint: { ...TEXT_STYLE.caption, marginBottom: SPACING.sm },
+  container: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
     borderWidth: 1.5,
-    borderColor: COLORS.bloomBorder,
-    backgroundColor: COLORS.bloomCard,
+    borderColor: NICO.border,
+    backgroundColor: NICO.surface,
   },
-  chipActive: { borderColor: COLORS.bloomSageMid, backgroundColor: COLORS.bloomActiveBg },
+  chipActive: { borderColor: NICO.primary, backgroundColor: NICO.primaryLight },
   chipDisabled: { opacity: 0.35 },
-  chipText: { fontSize: 14, color: COLORS.bloomText, fontWeight: '500' },
-  chipTextActive: { color: COLORS.bloomActiveText, fontWeight: '700' },
-  chipTextDisabled: { color: COLORS.bloomMuted },
+  chipText: { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.medium },
+  chipTextActive: { color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
+  chipTextDisabled: { color: NICO.textMuted },
 });

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TouchableOpacity, Modal, FlatList,
+  View, TouchableOpacity, Modal, FlatList,
   StyleSheet, SafeAreaView,
 } from 'react-native';
-import { COLORS } from '../constants';
+import AppText from './AppText';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, FONT_SIZE, FONT_WEIGHT,
+} from '../constants/theme';
 
 interface Props {
   label: string;
@@ -30,21 +33,21 @@ export default function MultiSelectDropdown({ label, options, selected, onToggle
 
   return (
     <>
-      <Text style={s.label}>{label}</Text>
+      <AppText style={s.label}>{label}</AppText>
 
       <TouchableOpacity style={s.trigger} onPress={() => setOpen(true)} activeOpacity={0.75}>
-        <Text style={selected.length === 0 ? s.placeholder : s.triggerValue} numberOfLines={1}>
+        <AppText style={selected.length === 0 ? s.placeholder : s.triggerValue} numberOfLines={1}>
           {triggerLabel}
-        </Text>
-        <Text style={s.arrow}>▼</Text>
+        </AppText>
+        <AppText style={s.arrow}>▼</AppText>
       </TouchableOpacity>
 
       {selected.length > 0 && (
         <View style={s.chips}>
           {selected.map(opt => (
             <TouchableOpacity key={opt} style={s.chip} onPress={() => toggle(opt)} activeOpacity={0.7}>
-              <Text style={s.chipText}>{opt}</Text>
-              <Text style={s.chipX}>×</Text>
+              <AppText style={s.chipText}>{opt}</AppText>
+              <AppText style={s.chipX}>×</AppText>
             </TouchableOpacity>
           ))}
         </View>
@@ -52,11 +55,11 @@ export default function MultiSelectDropdown({ label, options, selected, onToggle
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
         <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={() => setOpen(false)}>
-          <SafeAreaView style={s.sheet}>
+          <SafeAreaView style={s.sheet} onStartShouldSetResponder={() => true}>
             <View style={s.sheetHeader}>
-              <Text style={s.sheetTitle}>{label}</Text>
+              <AppText style={s.sheetTitle}>{label}</AppText>
               <TouchableOpacity onPress={() => setOpen(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Text style={s.done}>Done</Text>
+                <AppText style={s.done}>Done</AppText>
               </TouchableOpacity>
             </View>
             <FlatList
@@ -66,9 +69,9 @@ export default function MultiSelectDropdown({ label, options, selected, onToggle
                 const on = selected.includes(item);
                 return (
                   <TouchableOpacity style={s.option} onPress={() => toggle(item)} activeOpacity={0.7}>
-                    <Text style={[s.optionText, on && s.optionTextOn]}>{item}</Text>
+                    <AppText style={[s.optionText, on && s.optionTextOn]}>{item}</AppText>
                     <View style={[s.checkbox, on && s.checkboxOn]}>
-                      {on && <Text style={s.checkmark}>✓</Text>}
+                      {on && <AppText style={s.checkmark}>✓</AppText>}
                     </View>
                   </TouchableOpacity>
                 );
@@ -82,51 +85,51 @@ export default function MultiSelectDropdown({ label, options, selected, onToggle
 }
 
 const s = StyleSheet.create({
-  label: { fontSize: 14, fontWeight: '600', color: COLORS.bloomText, marginBottom: 8, marginTop: 16 },
+  label: { ...TEXT_STYLE.fieldLabel, marginBottom: SPACING.sm, marginTop: SPACING.base },
 
   trigger: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: COLORS.bloomCard, borderWidth: 1, borderColor: COLORS.bloomBorder,
-    borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, marginBottom: 4,
+    backgroundColor: NICO.surface, borderWidth: 1.5, borderColor: NICO.border,
+    borderRadius: RADIUS.md, paddingHorizontal: SPACING.md, paddingVertical: SPACING.md, marginBottom: 4,
   },
-  triggerValue: { fontSize: 15, color: COLORS.bloomText, flex: 1 },
-  placeholder:  { fontSize: 15, color: COLORS.bloomMuted, flex: 1 },
-  arrow: { fontSize: 11, color: COLORS.bloomMuted, marginLeft: 8 },
+  triggerValue: { fontSize: FONT_SIZE.lg, color: NICO.text, flex: 1 },
+  placeholder:  { fontSize: FONT_SIZE.lg, color: NICO.textMuted, flex: 1 },
+  arrow: { fontSize: FONT_SIZE.sm, color: NICO.textMuted, marginLeft: SPACING.sm },
 
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6, marginBottom: 4 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginTop: SPACING.xs, marginBottom: 4 },
   chip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: COLORS.bloomActiveBg, borderRadius: 20,
-    borderWidth: 1, borderColor: COLORS.bloomSageMid,
-    paddingHorizontal: 10, paddingVertical: 5,
+    backgroundColor: NICO.primaryLight, borderRadius: RADIUS.full,
+    borderWidth: 1, borderColor: NICO.primary,
+    paddingHorizontal: SPACING.sm, paddingVertical: 5,
   },
-  chipText: { fontSize: 13, color: COLORS.bloomActiveText, fontWeight: '600' },
-  chipX:    { fontSize: 14, color: COLORS.bloomActiveText, fontWeight: '700', lineHeight: 16 },
+  chipText: { fontSize: FONT_SIZE.base, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
+  chipX:    { fontSize: FONT_SIZE.md, color: NICO.primary, fontWeight: FONT_WEIGHT.bold, lineHeight: 16 },
 
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: {
-    backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '65%',
+    backgroundColor: NICO.surface, borderTopLeftRadius: RADIUS['3xl'], borderTopRightRadius: RADIUS['3xl'], maxHeight: '65%',
   },
   sheetHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 16, borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    padding: SPACING.base, borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  sheetTitle: { fontSize: 16, fontWeight: '700', color: COLORS.bloomText },
-  done:       { fontSize: 16, color: COLORS.bloomActiveText, fontWeight: '700' },
+  sheetTitle: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  done:       { fontSize: FONT_SIZE.xl, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
 
   option: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    paddingHorizontal: SPACING.base, paddingVertical: SPACING.md,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  optionText:   { fontSize: 15, color: COLORS.bloomText, flex: 1, fontWeight: '400' },
-  optionTextOn: { color: COLORS.bloomActiveText, fontWeight: '700' },
+  optionText:   { fontSize: FONT_SIZE.lg, color: NICO.text, flex: 1, fontWeight: FONT_WEIGHT.regular },
+  optionTextOn: { color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
 
   checkbox: {
-    width: 22, height: 22, borderRadius: 6,
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
+    width: 22, height: 22, borderRadius: RADIUS.xs,
+    borderWidth: 1.5, borderColor: NICO.border,
     justifyContent: 'center', alignItems: 'center',
   },
-  checkboxOn: { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
-  checkmark:  { color: '#fff', fontSize: 13, fontWeight: '900' },
+  checkboxOn: { backgroundColor: NICO.primary, borderColor: NICO.primary },
+  checkmark:  { color: NICO.textOnAccent, fontSize: FONT_SIZE.base, fontWeight: FONT_WEIGHT.black },
 });
