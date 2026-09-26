@@ -45,7 +45,35 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Delete from auth.users — cascades to guardians → all learner data
+    // A learner can have their own direct-login auth account (user_profiles.auth_user_id,
+    // separate from the guardian's). That FK is ON DELETE SET NULL, not cascade — deleting
+    // the guardian (and therefore the learner's user_profiles row) would NOT delete this
+    // auth.users row on its own, leaving an orphaned but still-functional login. Look it up
+    // before we cascade the profile away, same pattern as delete-learner.
+    const { data: learners } = await supabaseAdmin
+      .from('user_profiles')
+      .select('auth_user_id')
+      .eq('guardian_id', user.id);
+
+    for (const learner of learners ?? []) {
+      if (learner.auth_user_id) {
+        await supabaseAdmin.auth.admin.deleteUser(learner.auth_user_id);
+      }
+    }
+
+    // Delete the guardians row directly first. This cascades to all of the
+    // guardian's own data (and, via user_profiles' guardian_id cascade, to
+    // their learner's data too), and — unlike auth.admin.deleteUser(), which
+    // wraps any failure in a generic "Database error deleting user" message —
+    // a plain Postgrest delete surfaces the real constraint-violation detail
+    // if something unexpected is still blocking it.
+    const { error: guardianDeleteErr } = await supabaseAdmin
+      .from('guardians')
+      .delete()
+      .eq('id', user.id);
+    if (guardianDeleteErr) throw new Error(guardianDeleteErr.message);
+
+    // Now remove the guardian's own auth user.
     const { error: deleteErr } = await supabaseAdmin.auth.admin.deleteUser(user.id);
     if (deleteErr) throw new Error(deleteErr.message);
 

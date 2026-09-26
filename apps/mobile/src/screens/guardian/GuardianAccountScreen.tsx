@@ -90,8 +90,16 @@ export default function GuardianAccountScreen() {
   }
 
   async function confirmDeleteAccount() {
-    const { error } = await supabase.functions.invoke('delete-guardian');
-    if (error) { Alert.alert('Failed to delete account', error.message); return; }
+    const { data, error } = await supabase.functions.invoke('delete-guardian');
+    if (error || data?.error) {
+      let detail = data?.error ?? error?.message ?? 'Something went wrong';
+      try {
+        const body = await (error as any)?.context?.json?.();
+        if (body?.error) detail = body.error;
+      } catch {}
+      Alert.alert('Failed to delete account', detail);
+      return;
+    }
     await supabase.auth.signOut();
   }
 
