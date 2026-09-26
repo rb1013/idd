@@ -1,20 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, ScrollView, TouchableOpacity, StyleSheet,
   Image, ActivityIndicator, Alert,
 } from 'react-native';
 import AppText from '../../components/AppText';
+import RainbowDivider from '../../components/RainbowDivider';
+import useNicoHeader from '../../hooks/useNicoHeader';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS, calcAge } from '../../constants';
+import { calcAge } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
+import {
+  NICO, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, scale, IS_TABLET,
+} from '../../constants/theme';
 
 type Nav   = NativeStackNavigationProp<GuardianNavParamList>;
 type Route = RouteProp<GuardianNavParamList, 'LearnerPublicProfile'>;
 
-const AVATAR_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, COLORS.statusAmber, COLORS.statusBlue, COLORS.statusPink];
+const AVATAR_COLORS = [NICO.teal, NICO.orange, NICO.coral, NICO.pink, NICO.purple, NICO.primary];
 
 type ConnectionStatus = 'none' | 'pending_sent' | 'pending_received' | 'accepted';
 
@@ -41,6 +47,8 @@ export default function LearnerPublicProfileScreen() {
   const route = useRoute<Route>();
   const { learnerId } = route.params;
   const { guardian } = useAuth();
+
+  useNicoHeader(navigation);
 
   const [profile, setProfile] = useState<LearnerProfile | null>(null);
   const [myLearnerIds, setMyLearnerIds] = useState<string[]>([]);
@@ -133,7 +141,7 @@ export default function LearnerPublicProfileScreen() {
   }
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
+    return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
   }
   if (!profile) {
     return <View style={s.center}><AppText style={s.errorText}>Profile not found</AppText></View>;
@@ -142,73 +150,76 @@ export default function LearnerPublicProfileScreen() {
   const avatarColor = AVATAR_COLORS[profile.name.charCodeAt(0) % AVATAR_COLORS.length];
 
   return (
-    <ScrollView style={s.container} contentContainerStyle={s.content}>
-      {/* Header card */}
-      <View style={s.headerCard}>
-        {profile.photo_url ? (
-          <Image source={{ uri: profile.photo_url }} style={s.avatar} />
-        ) : (
-          <View style={[s.avatar, { backgroundColor: avatarColor }]}>
-            <AppText style={s.avatarInitial}>{profile.name[0]?.toUpperCase()}</AppText>
-          </View>
-        )}
-        <AppText style={s.name}>{profile.name}</AppText>
-        <AppText style={s.subMeta}>
-          {calcAge(profile.date_of_birth) ?? '—'} years old · {profile.city}, {profile.region}
-        </AppText>
-      </View>
+    <View style={s.root}>
+      <RainbowDivider />
+      <ScrollView contentContainerStyle={s.content}>
+        {/* Header card */}
+        <View style={s.headerCard}>
+          {profile.photo_url ? (
+            <Image source={{ uri: profile.photo_url }} style={s.avatar} />
+          ) : (
+            <View style={[s.avatar, { backgroundColor: avatarColor }]}>
+              <AppText style={s.avatarInitial}>{profile.name[0]?.toUpperCase()}</AppText>
+            </View>
+          )}
+          <AppText style={s.name}>{profile.name}</AppText>
+          <AppText style={s.subMeta}>
+            {calcAge(profile.date_of_birth) ?? '—'} years old · {profile.city}, {profile.region}
+          </AppText>
+        </View>
 
-      {/* About */}
-      <View style={s.section}>
-        <InfoRow label="Likes"               value={profile.likes.join(', ')}        fallback="None added" />
-        <InfoRow label="Dislikes"            value={profile.dislikes.join(', ')}     fallback="None added" />
-        <InfoRow label="What I Can Do"       value={profile.abilities.join(', ')}    fallback="None added" />
-        <InfoRow label="Languages"           value={profile.languages.join(', ')}    fallback="Not set" />
-        <InfoRow label="Comprehension Level" value={profile.comprehension_level}     fallback="Not set" />
-        <InfoRow label="Medical Conditions"  value={profile.medicalConditions.join(', ')} fallback="None recorded" />
-      </View>
+        {/* About */}
+        <View style={s.section}>
+          <InfoRow label="Likes"               value={profile.likes.join(', ')}        fallback="None added" />
+          <InfoRow label="Dislikes"            value={profile.dislikes.join(', ')}     fallback="None added" />
+          <InfoRow label="What I Can Do"       value={profile.abilities.join(', ')}    fallback="None added" />
+          <InfoRow label="Languages"           value={profile.languages.join(', ')}    fallback="Not set" />
+          <InfoRow label="Comprehension Level" value={profile.comprehension_level}     fallback="Not set" />
+          <InfoRow label="Medical Conditions"  value={profile.medicalConditions.join(', ')} fallback="None recorded" />
+        </View>
 
-      {/* Connect action — pinned to bottom */}
-      <View style={s.actionCard}>
-        {profile.connectionStatus === 'accepted' && (
-          <View style={s.statusRow}>
-            <AppText style={s.statusIcon}>✅</AppText>
-            <AppText style={s.statusText}>Already friends</AppText>
-          </View>
-        )}
-        {profile.connectionStatus === 'pending_sent' && (
-          <View style={s.statusRow}>
-            <AppText style={s.statusIcon}>⏳</AppText>
-            <AppText style={s.statusText}>Friend request sent — waiting for guardian to accept</AppText>
-          </View>
-        )}
-        {profile.connectionStatus === 'pending_received' && (
-          <TouchableOpacity
-            style={s.connectBtn}
-            onPress={() => navigation.navigate('LearnerFriendRequests')}
-          >
-            <AppText style={s.connectBtnText}>Respond to friend request →</AppText>
-          </TouchableOpacity>
-        )}
-        {profile.connectionStatus === 'none' && (
-          <>
-            <AppText style={s.connectHint}>
-              Sending a request will notify {profile.name}'s guardian. They can accept or decline on behalf of their learner.
-            </AppText>
+        {/* Connect action — pinned to bottom */}
+        <View style={s.actionCard}>
+          {profile.connectionStatus === 'accepted' && (
+            <View style={s.statusRow}>
+              <AppText style={s.statusIcon}>✅</AppText>
+              <AppText style={s.statusText}>Already friends</AppText>
+            </View>
+          )}
+          {profile.connectionStatus === 'pending_sent' && (
+            <View style={s.statusRow}>
+              <AppText style={s.statusIcon}>⏳</AppText>
+              <AppText style={s.statusText}>Friend request sent — waiting for guardian to accept</AppText>
+            </View>
+          )}
+          {profile.connectionStatus === 'pending_received' && (
             <TouchableOpacity
-              style={[s.connectBtn, sending && { opacity: 0.6 }]}
-              onPress={sendRequest}
-              disabled={sending}
+              style={s.connectBtn}
+              onPress={() => navigation.navigate('LearnerFriendRequests')}
             >
-              {sending
-                ? <ActivityIndicator color={COLORS.bloomAccent} />
-                : <AppText style={s.connectBtnText}>Send Friend Request</AppText>
-              }
+              <AppText style={s.connectBtnText}>Respond to friend request →</AppText>
             </TouchableOpacity>
-          </>
-        )}
-      </View>
-    </ScrollView>
+          )}
+          {profile.connectionStatus === 'none' && (
+            <>
+              <AppText style={s.connectHint}>
+                Sending a request will notify {profile.name}'s guardian. They can accept or decline on behalf of their learner.
+              </AppText>
+              <TouchableOpacity
+                style={[s.connectBtn, sending && s.btnDisabled]}
+                onPress={sendRequest}
+                disabled={sending}
+              >
+                {sending
+                  ? <ActivityIndicator color={NICO.textOnAccent} />
+                  : <AppText style={s.connectBtnText}>Send Friend Request</AppText>
+                }
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -224,46 +235,43 @@ function InfoRow({ label, value, fallback }: { label: string; value: string | nu
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bloomBody },
-  content: { padding: 16, paddingBottom: 48, gap: 14 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: { fontSize: 16, color: COLORS.bloomMuted },
+  root:    { flex: 1, backgroundColor: NICO.screenBg },
+  content: { padding: SPACING.base, paddingBottom: 48, gap: SPACING.md },
+  center:  { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText: { fontSize: IS_TABLET ? FONT_SIZE.lg : FONT_SIZE.md, color: NICO.textMuted },
 
   headerCard: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 20, padding: 24,
-    alignItems: 'center', gap: 8,
-    borderWidth: 1, borderColor: COLORS.bloomBorder,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 10, elevation: 3,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.xl, padding: SPACING.lg,
+    alignItems: 'center', gap: SPACING.sm,
+    borderWidth: 1, borderColor: NICO.border,
+    ...SHADOW.md,
   },
-  avatar: { width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  avatarInitial: { fontSize: 36, fontWeight: '900', color: '#fff' },
-  name: { fontSize: 24, fontWeight: '900', color: COLORS.bloomText },
-  subMeta: { fontSize: 14, color: COLORS.bloomMuted, fontWeight: '500' },
+  avatar: { width: scale(88), height: scale(88), borderRadius: scale(44), justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+  avatarInitial: { fontSize: IS_TABLET ? FONT_SIZE['5xl'] : FONT_SIZE['4xl'], fontWeight: FONT_WEIGHT.black, color: '#fff' },
+  name: { fontSize: IS_TABLET ? FONT_SIZE['3xl'] : FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.text },
+  subMeta: { fontSize: IS_TABLET ? FONT_SIZE.md : FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold },
 
   section: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8,
-    borderWidth: 1, borderColor: COLORS.bloomBorder,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.xl, paddingHorizontal: SPACING.base, paddingVertical: SPACING.xs,
+    borderWidth: 1, borderColor: NICO.border,
   },
   infoRow: {
     flexDirection: 'row', alignItems: 'flex-start',
-    paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    paddingVertical: SPACING.sm + 3, borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  infoLabel: { fontSize: 13, fontWeight: '700', color: COLORS.bloomMuted, width: 140, marginRight: 12 },
-  infoValue:  { fontSize: 13, color: COLORS.bloomText, flex: 1, fontWeight: '500', textTransform: 'capitalize' },
-  infoEmpty:  { color: COLORS.bloomMuted, fontStyle: 'italic', textTransform: 'none' },
+  infoLabel: { fontSize: IS_TABLET ? FONT_SIZE.md : FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, width: scale(140), marginRight: SPACING.md },
+  infoValue: { fontSize: IS_TABLET ? FONT_SIZE.md : FONT_SIZE.sm, color: NICO.text, flex: 1, fontWeight: FONT_WEIGHT.medium, textTransform: 'capitalize' },
+  infoEmpty: { color: NICO.textMuted, fontStyle: 'italic', textTransform: 'none' },
 
   actionCard: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 16, padding: 16, gap: 12,
-    borderWidth: 1, borderColor: COLORS.bloomBorder,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.xl, padding: SPACING.base, gap: SPACING.md,
+    borderWidth: 1, borderColor: NICO.border,
   },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  statusIcon: { fontSize: 20 },
-  statusText: { fontSize: 14, color: COLORS.bloomText, fontWeight: '600', flex: 1 },
-  connectHint: { fontSize: 13, color: COLORS.bloomMuted, lineHeight: 18 },
-  connectBtn: {
-    backgroundColor: COLORS.bloomAccent, borderRadius: 12,
-    paddingVertical: 14, alignItems: 'center',
-  },
-  connectBtnText: { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 15 },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  statusIcon: { fontSize: IS_TABLET ? FONT_SIZE['2xl'] : FONT_SIZE.xl },
+  statusText: { fontSize: IS_TABLET ? FONT_SIZE.lg : FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, flex: 1 },
+  connectHint: { fontSize: IS_TABLET ? FONT_SIZE.md : FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 18 },
+  connectBtn:     { ...BTN_SIZE.lg, ...BTN_VARIANT.primary },
+  btnDisabled:    { opacity: 0.6 },
+  connectBtnText: { color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.bold, fontSize: IS_TABLET ? FONT_SIZE.lg : FONT_SIZE.md },
 });

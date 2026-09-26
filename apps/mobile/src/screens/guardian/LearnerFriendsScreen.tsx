@@ -2,22 +2,31 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, FlatList, TouchableOpacity, StyleSheet,
   Image, ActivityIndicator, Alert, Modal,
-  ScrollView, TextInput, Dimensions, Platform,
+  ScrollView, TextInput,
 } from 'react-native';
 import AppText from '../../components/AppText';
+import RainbowDivider from '../../components/RainbowDivider';
+import GuardianTabBar from '../../components/GuardianTabBar';
+import MoreFiltersLink from '../../components/MoreFiltersLink';
+import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
+import useNicoHeader from '../../hooks/useNicoHeader';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS, COMPREHENSION_LEVELS, calcAge } from '../../constants';
+import { COMPREHENSION_LEVELS, calcAge } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, scale,
+} from '../../constants/theme';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 type Tab = 'friends' | 'requests' | 'find' | 'blocked';
 
-const { height: SCREEN_H } = Dimensions.get('window');
-const AVATAR_COLORS = [COLORS.statusRed, COLORS.statusPurple, COLORS.statusTeal, COLORS.statusAmber, COLORS.statusBlue, COLORS.statusPink];
+const AVATAR_COLORS = [NICO.teal, NICO.orange, NICO.coral, NICO.pink, NICO.purple, NICO.primary];
 const AGE_GROUPS    = ['Under 10', '10–14', '15–18', '19–25', '26–35', '36+'];
 
 function getAgeGroup(dob: string | null): string | null {
@@ -96,41 +105,7 @@ function Avatar({ name, photo, size = 48 }: { name: string; photo: string | null
   if (photo) return <Image source={{ uri: photo }} style={{ width: size, height: size, borderRadius: r }} />;
   return (
     <View style={{ width: size, height: size, borderRadius: r, backgroundColor: color, justifyContent: 'center', alignItems: 'center' }}>
-      <AppText style={{ fontSize: size * 0.4, fontWeight: '800', color: '#fff' }}>{name[0]?.toUpperCase()}</AppText>
-    </View>
-  );
-}
-
-// ── Filter sheet section ──────────────────────────────────────────────────────
-
-function SheetSection({ id, emoji, title, options, selected, onToggle, openId, setOpenId }: {
-  id: string; emoji: string; title: string; options: string[];
-  selected: string[]; onToggle: (v: string) => void;
-  openId: string | null; setOpenId: (v: string | null) => void;
-}) {
-  const open = openId === id;
-  return (
-    <View style={s.sheetSec}>
-      <TouchableOpacity style={s.sheetSecHdr} onPress={() => setOpenId(open ? null : id)} activeOpacity={0.7}>
-        <AppText style={s.sheetSecTitle}>{emoji}  {title}</AppText>
-        <View style={s.sheetSecRight}>
-          {selected.length > 0 && (
-            <View style={s.sheetSecBadge}><AppText style={s.sheetSecBadgeTxt}>{selected.length}</AppText></View>
-          )}
-          <AppText style={s.sheetSecArr}>{open ? '▲' : '▼'}</AppText>
-        </View>
-      </TouchableOpacity>
-      {open && options.map(opt => {
-        const on = selected.includes(opt);
-        return (
-          <TouchableOpacity key={opt} style={s.optRow} onPress={() => onToggle(opt)} activeOpacity={0.7}>
-            <AppText style={[s.optTxt, on && s.optTxtOn]}>{opt}</AppText>
-            <View style={[s.optCheck, on && s.optCheckOn]}>
-              {on && <AppText style={s.optCheckMark}>✓</AppText>}
-            </View>
-          </TouchableOpacity>
-        );
-      })}
+      <AppText style={{ fontSize: size * 0.4, fontWeight: FONT_WEIGHT.extraBold, color: '#fff' }}>{name[0]?.toUpperCase()}</AppText>
     </View>
   );
 }
@@ -141,6 +116,8 @@ export default function LearnerFriendsScreen() {
   const navigation = useNavigation<Nav>();
   const { guardian } = useAuth();
   const [tab, setTab] = useState<Tab>('friends');
+
+  useNicoHeader(navigation);
 
   // shared state
   const [myLearnerIds, setMyLearnerIds] = useState<string[]>([]);
@@ -176,14 +153,7 @@ export default function LearnerFriendsScreen() {
   const [filterDislikes,  setFilterDislikes]  = useState<string[]>([]);
   const [filterAbilities, setFilterAbilities] = useState<string[]>([]);
   const [filterMedical,   setFilterMedical]   = useState<string[]>([]);
-  const [draftAgeGroups,  setDraftAgeGroups]  = useState<string[]>([]);
-  const [draftLevels,     setDraftLevels]     = useState<string[]>([]);
-  const [draftLikes,      setDraftLikes]      = useState<string[]>([]);
-  const [draftDislikes,   setDraftDislikes]   = useState<string[]>([]);
-  const [draftAbilities,  setDraftAbilities]  = useState<string[]>([]);
-  const [draftMedical,    setDraftMedical]    = useState<string[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [openSec,   setOpenSec]   = useState<string | null>('age');
 
   useFocusEffect(useCallback(() => {
     if (guardian) loadAll(guardian.id);
@@ -573,20 +543,10 @@ export default function LearnerFriendsScreen() {
     if (type === 'medical') setFilterMedical(p => p.filter(x => x !== val));
   }
 
-  function applySheet() {
-    setFilterAgeGroups([...draftAgeGroups]);
-    setFilterLevels([...draftLevels]);
-    setFilterLikes([...draftLikes]);
-    setFilterDislikes([...draftDislikes]);
-    setFilterAbilities([...draftAbilities]);
-    setFilterMedical([...draftMedical]);
-    setSheetOpen(false);
-  }
-
-  function clearDraft() {
-    setDraftAgeGroups([]); setDraftLevels([]);
-    setDraftLikes([]);     setDraftDislikes([]);
-    setDraftAbilities([]); setDraftMedical([]);
+  function clearAllFilters() {
+    setFilterAgeGroups([]); setFilterLevels([]);
+    setFilterLikes([]);     setFilterDislikes([]);
+    setFilterAbilities([]); setFilterMedical([]);
   }
 
   function applyFilters(list: LearnerResult[]) {
@@ -605,22 +565,7 @@ export default function LearnerFriendsScreen() {
     });
   }
 
-  function applyDraftFilters(list: LearnerResult[]) {
-    return list.filter(l => {
-      if (hiddenIds.has(l.id)) return false;
-      if (l.connectionStatus === 'accepted' || l.connectionStatus === 'pending_received') return false;
-      if (draftAgeGroups.length > 0 && !draftAgeGroups.includes(getAgeGroup(l.date_of_birth) ?? '')) return false;
-      if (draftLevels.length > 0 && !draftLevels.some(fl => fl.toLowerCase() === l.comprehension_level)) return false;
-      if (draftLikes.length > 0 && !l.likes.some(lk => draftLikes.includes(lk))) return false;
-      if (draftDislikes.length > 0 && !l.dislikes.some(d => draftDislikes.includes(d))) return false;
-      if (draftAbilities.length > 0 && !l.abilities.some(a => draftAbilities.includes(a))) return false;
-      if (draftMedical.length > 0 && !l.medicalConditions.some(m => draftMedical.includes(m))) return false;
-      return true;
-    });
-  }
-
-  const filtered     = useMemo(() => applyFilters(learners),     [learners, searchName, searchCity, filterAgeGroups, filterLevels, filterLikes, filterDislikes, filterAbilities, filterMedical]);
-  const draftPreview = useMemo(() => applyDraftFilters(learners), [learners, draftAgeGroups, draftLevels, draftLikes, draftDislikes, draftAbilities, draftMedical]);
+  const filtered     = useMemo(() => applyFilters(learners), [learners, searchName, searchCity, filterAgeGroups, filterLevels, filterLikes, filterDislikes, filterAbilities, filterMedical]);
   const levelLabels  = COMPREHENSION_LEVELS.map((c: any) => c.label as string);
 
   const findResetKey = `${searchName}|${searchCity}|${filterAgeGroups.join(',')}|${filterLevels.join(',')}|${filterLikes.join(',')}|${filterDislikes.join(',')}|${filterAbilities.join(',')}|${filterMedical.join(',')}`;
@@ -633,25 +578,30 @@ export default function LearnerFriendsScreen() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
+    return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
   }
 
   return (
     <View style={s.container}>
+      <RainbowDivider />
 
       {/* Tab bar */}
       <View style={s.tabBar}>
         {(['friends', 'requests', 'find', 'blocked'] as Tab[]).map(t => (
-          <TouchableOpacity key={t} style={[s.tabBtn, tab === t && s.tabBtnActive]} onPress={() => setTab(t)} activeOpacity={0.7}>
-            <AppText style={[s.tabLabel, tab === t && s.tabLabelActive]}>
-              {t === 'friends' ? '👥 Friends' : t === 'requests' ? '🤝 Requests' : t === 'find' ? '🔍 Find' : '🚫 Blocked'}
-            </AppText>
-            {t === 'requests' && pendingCount > 0 && (
-              <View style={s.tabBadge}><AppText style={s.tabBadgeTxt}>{pendingCount}</AppText></View>
-            )}
+          <TouchableOpacity key={t} style={[s.tab, tab === t && s.tabActive]} onPress={() => setTab(t)} activeOpacity={0.75}>
+            <View style={s.tabInner}>
+              <AppText style={[s.tabTxt, tab === t && s.tabTxtActive]}>
+                {t === 'friends' ? '👥 Friends' : t === 'requests' ? '🤝 Requests' : t === 'find' ? '🔍 Find' : '🚫 Blocked'}
+              </AppText>
+              {t === 'requests' && pendingCount > 0 && (
+                <View style={s.tabBadge}><AppText style={s.tabBadgeTxt}>{pendingCount}</AppText></View>
+              )}
+            </View>
           </TouchableOpacity>
         ))}
       </View>
+
+      <View style={s.tabPane}>
 
       {/* ── Friends tab ──────────────────────────────────────────────────────── */}
       {tab === 'friends' && (() => {
@@ -667,20 +617,24 @@ export default function LearnerFriendsScreen() {
             data={visibleFriends}
             keyExtractor={f => f.friendshipId}
             contentContainerStyle={s.listContent}
-            renderItem={({ item: f }) => {
+            renderItem={({ item: f, index }) => {
               const isReported = reportedMap.has(f.learnerId);
               const reportReason = reportedMap.get(f.learnerId) ?? null;
+              const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
               return (
                 <TouchableOpacity
-                  style={s.card}
+                  style={[s.card, { backgroundColor: tileBg, borderColor: 'transparent' }]}
                   onPress={() => navigation.navigate('LearnerPublicProfile', { learnerId: f.learnerId })}
                   activeOpacity={0.85}
                 >
-                  <Avatar name={f.learnerName} photo={f.learnerPhoto} size={52} />
+                  <View style={s.avatarCol}>
+                    <Avatar name={f.learnerName} photo={f.learnerPhoto} size={scale(52)} />
+                    {f.learnerAge != null && <AppText style={s.avatarAge}>{f.learnerAge} yrs</AppText>}
+                  </View>
                   <View style={s.cardInfo}>
                     <AppText style={s.cardName}>{f.learnerName}</AppText>
                     <AppText style={s.cardMeta}>
-                      {f.learnerAge != null ? `${f.learnerAge} yrs · ` : ''}{f.learnerCity}{f.learnerRegion ? `, ${f.learnerRegion}` : ''}
+                      {f.learnerCity}{f.learnerRegion ? `, ${f.learnerRegion}` : ''}
                     </AppText>
                     {f.guardianName && (
                       <AppText style={s.cardMeta}>Guardian: {f.guardianName}</AppText>
@@ -688,8 +642,6 @@ export default function LearnerFriendsScreen() {
                     {f.medicalConditions.length > 0 && (
                       <AppText style={s.cardMedical}>🏥 {f.medicalConditions.join(', ')}</AppText>
                     )}
-                  </View>
-                  <View style={s.friendCardRight}>
                     {isReported && (
                       <View style={s.reportedRow}>
                         <View style={s.reportedPill}>
@@ -703,21 +655,18 @@ export default function LearnerFriendsScreen() {
                         </TouchableOpacity>
                       </View>
                     )}
-                    {!isReported && (
-                      <View style={s.friendBadge}><AppText style={s.friendBadgeTxt}>✓ Friends</AppText></View>
-                    )}
-                    {removing === f.friendshipId ? (
-                      <ActivityIndicator size="small" color={COLORS.statusRed} />
-                    ) : (
-                      <TouchableOpacity
-                        style={s.removeBtn}
-                        onPress={() => removeFriend(f.friendshipId, f.learnerName)}
-                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                      >
-                        <AppText style={s.removeBtnTxt}>Remove</AppText>
-                      </TouchableOpacity>
-                    )}
                   </View>
+                  {removing === f.friendshipId ? (
+                    <ActivityIndicator size="small" color={NICO.error} style={s.cardCornerIcon} />
+                  ) : (
+                    <TouchableOpacity
+                      style={[s.cardCornerIcon, s.cardRemoveIcon]}
+                      onPress={() => removeFriend(f.friendshipId, f.learnerName)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <AppText style={s.cardRemoveIconTxt}>✕</AppText>
+                    </TouchableOpacity>
+                  )}
                 </TouchableOpacity>
               );
             }}
@@ -743,11 +692,12 @@ export default function LearnerFriendsScreen() {
                 {incomingRequests.length > 0 && (
                   <>
                     <AppText style={s.sectionTitle}>INCOMING ({incomingRequests.length})</AppText>
-                    {incomingRequests.map(req => {
+                    {incomingRequests.map((req, index) => {
                       const isProcessing = processing === req.friendshipId;
+                      const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
                       return (
-                        <View key={req.friendshipId} style={s.card}>
-                          <Avatar name={req.requesterName} photo={req.requesterPhoto} size={52} />
+                        <View key={req.friendshipId} style={[s.card, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
+                          <Avatar name={req.requesterName} photo={req.requesterPhoto} size={scale(52)} />
                           <View style={s.cardInfo}>
                             <AppText style={s.cardName}>{req.requesterName}</AppText>
                             <AppText style={s.cardMeta}>{req.requesterAge} yrs · {req.requesterCity}, {req.requesterRegion}</AppText>
@@ -755,12 +705,12 @@ export default function LearnerFriendsScreen() {
                             {req.medicalConditions.length > 0 && <AppText style={s.cardMedical}>🏥 {req.medicalConditions.join(', ')}</AppText>}
                           </View>
                           <View style={s.reqActions}>
-                            {isProcessing ? <ActivityIndicator color={COLORS.bloomAccent} /> : (
+                            {isProcessing ? <ActivityIndicator color={NICO.primary} /> : (
                               <>
-                                <TouchableOpacity style={s.acceptBtn} onPress={() => accept(req)}>
+                                <TouchableOpacity style={[s.reqBtn, s.acceptBtn]} onPress={() => accept(req)} activeOpacity={0.8}>
                                   <AppText style={s.acceptBtnTxt}>✓ Accept</AppText>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={s.declineBtn} onPress={() => decline(req)}>
+                                <TouchableOpacity style={[s.reqBtn, s.declineBtn]} onPress={() => decline(req)} activeOpacity={0.8}>
                                   <AppText style={s.declineBtnTxt}>Decline</AppText>
                                 </TouchableOpacity>
                               </>
@@ -773,14 +723,15 @@ export default function LearnerFriendsScreen() {
                 )}
                 {outgoingRequests.length > 0 && (
                   <>
-                    <AppText style={[s.sectionTitle, { marginTop: incomingRequests.length > 0 ? 24 : 0 }]}>
+                    <AppText style={[s.sectionTitle, { marginTop: incomingRequests.length > 0 ? SPACING.xl : 0 }]}>
                       SENT ({outgoingRequests.length})
                     </AppText>
-                    {outgoingRequests.map(req => {
+                    {outgoingRequests.map((req, index) => {
                       const isProcessing = processing === req.friendshipId;
+                      const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
                       return (
-                        <View key={req.friendshipId} style={s.card}>
-                          <Avatar name={req.requesterName} photo={req.requesterPhoto} size={52} />
+                        <View key={req.friendshipId} style={[s.card, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
+                          <Avatar name={req.requesterName} photo={req.requesterPhoto} size={scale(52)} />
                           <View style={s.cardInfo}>
                             <AppText style={s.cardName}>{req.requesterName}</AppText>
                             <AppText style={s.cardMeta}>{req.requesterAge} yrs · {req.requesterCity}, {req.requesterRegion}</AppText>
@@ -788,8 +739,8 @@ export default function LearnerFriendsScreen() {
                             {req.medicalConditions.length > 0 && <AppText style={s.cardMedical}>🏥 {req.medicalConditions.join(', ')}</AppText>}
                           </View>
                           <View style={s.reqActions}>
-                            {isProcessing ? <ActivityIndicator color={COLORS.bloomMuted} /> : (
-                              <TouchableOpacity style={s.cancelBtn} onPress={() => cancelRequest(req)}>
+                            {isProcessing ? <ActivityIndicator color={NICO.textMuted} /> : (
+                              <TouchableOpacity style={[s.reqBtn, s.cancelBtn]} onPress={() => cancelRequest(req)} activeOpacity={0.8}>
                                 <AppText style={s.cancelBtnTxt}>Cancel</AppText>
                               </TouchableOpacity>
                             )}
@@ -810,47 +761,41 @@ export default function LearnerFriendsScreen() {
         <View style={s.findContainer}>
           {/* Search */}
           <View style={s.searchRow}>
-            <View style={s.searchInp}>
-              <AppText style={s.searchIcon}>🔍</AppText>
-              <TextInput style={s.searchText} value={searchName} onChangeText={setSearchName}
-                placeholder="Name…" placeholderTextColor={COLORS.bloomMuted} clearButtonMode="while-editing" />
-            </View>
-            <View style={s.searchInp}>
-              <AppText style={s.searchIcon}>📍</AppText>
-              <TextInput style={s.searchText} value={searchCity} onChangeText={setSearchCity}
-                placeholder="City…" placeholderTextColor={COLORS.bloomMuted} clearButtonMode="while-editing" />
-            </View>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
+              <View style={s.searchInputRow}>
+                <AppText style={s.searchIcon}>🔍</AppText>
+                <TextInput style={s.searchInputText} value={searchName} onChangeText={setSearchName}
+                  placeholder="Name…" placeholderTextColor={NICO.textMuted} clearButtonMode="while-editing" />
+              </View>
+            </LinearGradient>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
+              <View style={s.searchInputRow}>
+                <AppText style={s.searchIcon}>📍</AppText>
+                <TextInput style={s.searchInputText} value={searchCity} onChangeText={setSearchCity}
+                  placeholder="City…" placeholderTextColor={NICO.textMuted} clearButtonMode="while-editing" />
+              </View>
+            </LinearGradient>
           </View>
 
           {/* Filter bar */}
           <View style={s.filterBar}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.pillsScroll} contentContainerStyle={s.pillsContent}>
-              {activePills.map(p => (
-                <TouchableOpacity key={p.key} style={s.pill} onPress={() => removePill(p.type, p.raw)} activeOpacity={0.75}>
-                  <AppText style={s.pillTxt}>{p.label}</AppText>
-                  <AppText style={s.pillX}>×</AppText>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <TouchableOpacity style={s.filterBtn} onPress={() => {
-              setDraftAgeGroups([...filterAgeGroups]);
-              setDraftLevels([...filterLevels]);
-              setDraftLikes([...filterLikes]);
-              setDraftDislikes([...filterDislikes]);
-              setDraftAbilities([...filterAbilities]);
-              setDraftMedical([...filterMedical]);
-              setSheetOpen(true);
-            }} activeOpacity={0.8}>
-              <AppText style={s.filterBtnTxt}>More Filters</AppText>
-              {totalActive > 0 && (
-                <View style={s.filterBadge}><AppText style={s.filterBadgeTxt}>{totalActive}</AppText></View>
-              )}
-            </TouchableOpacity>
+            <AppText style={s.resultCount}>{filtered.length} learner{filtered.length !== 1 ? 's' : ''} found</AppText>
+            <MoreFiltersLink onPress={() => setSheetOpen(true)} isActive={totalActive > 0} />
           </View>
 
-          <View style={s.resBar}>
-            <AppText style={s.resCount}>{filtered.length} learner{filtered.length !== 1 ? 's' : ''} found</AppText>
-          </View>
+          {activePills.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipsRow} contentContainerStyle={s.chipsContent}>
+              {activePills.map(p => (
+                <TouchableOpacity key={p.key} style={s.chip} onPress={() => removePill(p.type, p.raw)} activeOpacity={0.75}>
+                  <AppText style={s.chipText}>{p.label}</AppText>
+                  <AppText style={s.chipX}>×</AppText>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={s.clearAllChip} onPress={clearAllFilters} activeOpacity={0.75}>
+                <AppText style={s.clearAllChipText}>Clear all</AppText>
+              </TouchableOpacity>
+            </ScrollView>
+          )}
 
           <FlatList
             data={visibleFind}
@@ -858,13 +803,14 @@ export default function LearnerFriendsScreen() {
             contentContainerStyle={s.listContent}
             renderItem={({ item: l, index }) => {
               const isSending = sending === l.id;
+              const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
               return (
                 <TouchableOpacity
-                  style={s.card}
+                  style={[s.card, { backgroundColor: tileBg, borderColor: 'transparent' }]}
                   onPress={() => navigation.navigate('LearnerPublicProfile', { learnerId: l.id })}
                   activeOpacity={0.85}
                 >
-                  <Avatar name={l.name} photo={l.photo_url} size={42} />
+                  <Avatar name={l.name} photo={l.photo_url} size={scale(42)} />
                   <View style={s.cardInfo}>
                     <AppText style={s.cardName} numberOfLines={1}>{l.name}</AppText>
                     <AppText style={s.cardMeta} numberOfLines={1}>
@@ -881,15 +827,15 @@ export default function LearnerFriendsScreen() {
                     <View style={s.pendingBadge}><AppText style={s.pendingBadgeTxt}>Pending</AppText></View>
                   )}
                   {l.connectionStatus === 'pending_received' && (
-                    <TouchableOpacity style={s.respondBtn} onPress={() => setTab('requests')} activeOpacity={0.8}>
+                    <TouchableOpacity style={[s.reqBtn, s.respondBtn]} onPress={() => setTab('requests')} activeOpacity={0.8}>
                       <AppText style={s.respondBtnTxt}>Respond</AppText>
                     </TouchableOpacity>
                   )}
                   {l.connectionStatus === 'none' && (
-                    <TouchableOpacity style={[s.connectBtn, isSending && { opacity: 0.6 }]}
+                    <TouchableOpacity style={[s.reqBtn, s.connectBtn, isSending && s.btnDisabled]}
                       onPress={() => sendRequest(l)} disabled={isSending} activeOpacity={0.8}>
                       {isSending
-                        ? <ActivityIndicator size="small" color="#fff" />
+                        ? <ActivityIndicator size="small" color={NICO.textOnAccent} />
                         : <AppText style={s.connectBtnTxt}>Connect</AppText>
                       }
                     </TouchableOpacity>
@@ -932,21 +878,26 @@ export default function LearnerFriendsScreen() {
             data={blockedUsers}
             keyExtractor={b => b.blockId}
             contentContainerStyle={s.listContent}
-            renderItem={({ item: b }) => (
-              <View style={s.card}>
-                <Avatar name={b.blockedLearnerName} photo={b.blockedLearnerPhoto} size={52} />
-                <View style={s.cardInfo}>
-                  <AppText style={s.cardName}>{b.blockedLearnerName}</AppText>
-                  {b.reason && <AppText style={s.cardMeta}>Reason: {b.reason}</AppText>}
+            renderItem={({ item: b, index }) => {
+              const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
+              return (
+                <View style={[s.card, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
+                  <Avatar name={b.blockedLearnerName} photo={b.blockedLearnerPhoto} size={scale(52)} />
+                  <View style={s.cardInfo}>
+                    <AppText style={s.cardName}>{b.blockedLearnerName}</AppText>
+                    {b.reason && <AppText style={s.cardMeta}>Reason: {b.reason}</AppText>}
+                  </View>
+                  <TouchableOpacity style={[s.reqBtn, s.unblockBtn]} onPress={() => unblock(b.blockId)} activeOpacity={0.8}>
+                    <AppText style={s.unblockBtnTxt}>Unblock</AppText>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={s.unblockBtn} onPress={() => unblock(b.blockId)} activeOpacity={0.8}>
-                  <AppText style={s.unblockBtnTxt}>Unblock</AppText>
-                </TouchableOpacity>
-              </View>
-            )}
+              );
+            }}
           />
         )
       )}
+
+      </View>
 
       {/* Report reason nudge */}
       <Modal visible={!!reasonModal} transparent animationType="fade" onRequestClose={() => setReasonModal(null)}>
@@ -964,33 +915,52 @@ export default function LearnerFriendsScreen() {
       </Modal>
 
       {/* Filter sheet */}
-      <Modal visible={sheetOpen} transparent animationType="slide" onRequestClose={() => setSheetOpen(false)}>
-        <TouchableOpacity style={s.sheetOverlay} activeOpacity={1} onPress={() => setSheetOpen(false)}>
-          <View style={s.sheet} onStartShouldSetResponder={() => true}>
-            <View style={s.sheetHandle} />
-            <View style={s.sheetHdr}>
-              <AppText style={s.sheetTitle}>Filter Learners</AppText>
-              <TouchableOpacity onPress={clearDraft} activeOpacity={0.75}>
-                <AppText style={s.sheetClear}>Clear all</AppText>
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={s.sheetBody} showsVerticalScrollIndicator={false}>
-              <SheetSection id="age" emoji="🎂" title="Age Group" options={AGE_GROUPS} selected={draftAgeGroups} onToggle={val => setDraftAgeGroups(p => toggle(p, val))} openId={openSec} setOpenId={setOpenSec} />
-              <SheetSection id="level" emoji="🧠" title="Comprehension Level" options={levelLabels} selected={draftLevels} onToggle={val => setDraftLevels(p => toggle(p, val))} openId={openSec} setOpenId={setOpenSec} />
-              <SheetSection id="likes" emoji="❤️" title="Likes" options={catLikes} selected={draftLikes} onToggle={val => setDraftLikes(p => toggle(p, val))} openId={openSec} setOpenId={setOpenSec} />
-              <SheetSection id="dislikes" emoji="🙅" title="Dislikes" options={catDislikes} selected={draftDislikes} onToggle={val => setDraftDislikes(p => toggle(p, val))} openId={openSec} setOpenId={setOpenSec} />
-              <SheetSection id="abilities" emoji="⭐" title="What can they do?" options={catAbilities} selected={draftAbilities} onToggle={val => setDraftAbilities(p => toggle(p, val))} openId={openSec} setOpenId={setOpenSec} />
-              {catMedical.length > 0 && (
-                <SheetSection id="medical" emoji="🏥" title="Medical Condition" options={catMedical} selected={draftMedical} onToggle={val => setDraftMedical(p => toggle(p, val))} openId={openSec} setOpenId={setOpenSec} />
-              )}
-            </ScrollView>
-            <TouchableOpacity style={s.sheetApply} onPress={applySheet} activeOpacity={0.85}>
-              <AppText style={s.sheetApplyTxt}>Show {draftPreview.length} Results</AppText>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      <FilterSheet
+        visible={sheetOpen}
+        title="Filter Learners"
+        onClearAll={clearAllFilters}
+        onDone={() => setSheetOpen(false)}
+        sections={[
+          {
+            key: 'age', emoji: '🎂', title: 'Age Group',
+            options: AGE_GROUPS.map(g => ({ key: g, label: g })),
+            selected: filterAgeGroups,
+            onToggle: val => setFilterAgeGroups(p => toggle(p, val)),
+          },
+          {
+            key: 'level', emoji: '🧠', title: 'Comprehension Level',
+            options: levelLabels.map(l => ({ key: l, label: l })),
+            selected: filterLevels,
+            onToggle: val => setFilterLevels(p => toggle(p, val)),
+          },
+          {
+            key: 'likes', emoji: '❤️', title: 'Likes',
+            options: catLikes.map(l => ({ key: l, label: l })),
+            selected: filterLikes,
+            onToggle: val => setFilterLikes(p => toggle(p, val)),
+          },
+          {
+            key: 'dislikes', emoji: '🙅', title: 'Dislikes',
+            options: catDislikes.map(l => ({ key: l, label: l })),
+            selected: filterDislikes,
+            onToggle: val => setFilterDislikes(p => toggle(p, val)),
+          },
+          {
+            key: 'abilities', emoji: '⭐', title: 'What can they do?',
+            options: catAbilities.map(l => ({ key: l, label: l })),
+            selected: filterAbilities,
+            onToggle: val => setFilterAbilities(p => toggle(p, val)),
+          },
+          ...(catMedical.length > 0 ? [{
+            key: 'medical', emoji: '🏥', title: 'Medical Condition',
+            options: catMedical.map(l => ({ key: l, label: l })),
+            selected: filterMedical,
+            onToggle: (val: string) => setFilterMedical(p => toggle(p, val)),
+          }] : []),
+        ] satisfies FilterSheetSection[]}
+      />
 
+      <GuardianTabBar />
     </View>
   );
 }
@@ -998,192 +968,142 @@ export default function LearnerFriendsScreen() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  container:   { flex: 1, backgroundColor: COLORS.bloomBody },
+  container:     { flex: 1, backgroundColor: NICO.screenBg },
   findContainer: { flex: 1 },
-  center:      { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 32 },
-  listContent: { padding: 16, paddingBottom: 48 },
+  center:        { flex: 1, justifyContent: 'center', alignItems: 'center', gap: SPACING.md, padding: SPACING.xl },
+  listContent:   { padding: SPACING.base, paddingBottom: 48 },
 
   // Tab bar
   tabBar: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.bloomCard,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    flexDirection: 'row', backgroundColor: NICO.surface,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  tabBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 13, gap: 5,
+  tab: {
+    flex: 1, alignItems: 'center', paddingVertical: SPACING.md,
+    borderBottomWidth: 2.5, borderBottomColor: 'transparent',
   },
-  tabBtnActive: {
-    borderBottomWidth: 2.5, borderBottomColor: COLORS.bloomAccent,
-  },
-  tabLabel:       { fontSize: 13, fontWeight: '600', color: COLORS.bloomMuted },
-  tabLabelActive: { color: COLORS.bloomText, fontWeight: '800' },
+  tabActive:      { borderBottomColor: NICO.primary },
+  tabInner:       { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
+  tabTxt:         { ...TEXT_STYLE.tabLabel },
+  tabTxtActive:   { ...TEXT_STYLE.tabLabel, color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold },
+  tabPane:        { flex: 1, backgroundColor: NICO.screenBg },
   tabBadge: {
-    backgroundColor: COLORS.statusRed, borderRadius: 9,
-    paddingHorizontal: 5, paddingVertical: 1,
+    backgroundColor: NICO.error, borderRadius: RADIUS.full,
+    minWidth: scale(16), height: scale(16), paddingHorizontal: 3,
+    justifyContent: 'center', alignItems: 'center',
   },
-  tabBadgeTxt: { fontSize: 10, fontWeight: '900', color: '#fff' },
+  tabBadgeTxt: { fontSize: scale(9), fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
 
   // Empty
-  emptyEmoji: { fontSize: 56 },
-  emptyText:  { fontSize: 20, fontWeight: '800', color: COLORS.bloomText },
-  emptyHint:  { fontSize: 14, color: COLORS.bloomMuted, textAlign: 'center' },
+  emptyEmoji: { fontSize: scale(56) },
+  emptyText:  { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  emptyHint:  { ...TEXT_STYLE.screenHint, textAlign: 'center' },
 
   // Card (shared across tabs)
   card: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: COLORS.bloomCard, borderRadius: 18, padding: 14, marginBottom: 10,
-    borderWidth: 1, borderColor: COLORS.bloomBorder,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.md,
+    borderRadius: RADIUS.xl, padding: SPACING.md, marginBottom: SPACING.sm,
+    borderWidth: 1, borderColor: 'transparent',
+    ...SHADOW.md,
   },
   cardInfo:    { flex: 1, minWidth: 0, gap: 2 },
-  cardName:    { fontSize: 15, fontWeight: '800', color: COLORS.bloomText },
-  cardMeta:    { fontSize: 12, color: COLORS.bloomMuted },
-  cardMedical: { fontSize: 12, color: COLORS.bloomMuted, fontWeight: '500' },
+  cardName:    { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  cardMeta:    { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.medium },
+  cardMedical: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, fontWeight: FONT_WEIGHT.medium },
 
-  sectionTitle: { fontSize: 11, fontWeight: '900', color: COLORS.bloomMuted, letterSpacing: 1.2, marginBottom: 12 },
+  avatarCol: { alignItems: 'center', gap: 2 },
+  avatarAge: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, fontWeight: FONT_WEIGHT.semiBold },
+
+  sectionTitle: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.black, color: NICO.textMuted, letterSpacing: 1, marginBottom: SPACING.md },
 
   // Friends tab
-  friendBadge: { backgroundColor: COLORS.bloomActiveBg, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 6 },
-  friendBadgeTxt: { fontSize: 12, fontWeight: '700', color: COLORS.bloomActiveText },
+  friendBadge: { backgroundColor: NICO.successLight, borderRadius: RADIUS.md, paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs },
+  friendBadgeTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.success },
 
-  // Requests tab
-  reqActions: { alignItems: 'center', gap: 6 },
-  acceptBtn: { backgroundColor: COLORS.bloomAccent, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
-  acceptBtnTxt: { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 13 },
-  declineBtn: { backgroundColor: COLORS.statusRedLight, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
-  declineBtnTxt: { color: COLORS.statusRedDark, fontWeight: '700', fontSize: 13 },
-  cancelBtn: { backgroundColor: COLORS.bloomBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
-  cancelBtnTxt: { color: COLORS.bloomMuted, fontWeight: '600', fontSize: 12 },
+  // Request/action buttons (shared small pill buttons across tabs)
+  reqActions: { alignItems: 'center', gap: SPACING.xs },
+  reqBtn:        { ...BTN_SIZE.sm },
+  acceptBtn:     { ...BTN_VARIANT.primary },
+  acceptBtnTxt:  { color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.sm },
+  declineBtn:    { backgroundColor: NICO.errorLight, alignItems: 'center' },
+  declineBtnTxt: { color: NICO.error, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.sm },
+  cancelBtn:     { backgroundColor: NICO.background, alignItems: 'center' },
+  cancelBtnTxt:  { color: NICO.textMuted, fontWeight: FONT_WEIGHT.semiBold, fontSize: FONT_SIZE.sm },
+  btnDisabled:   { opacity: 0.6 },
 
   // Find tab
-  searchRow:    { flexDirection: 'row', gap: 8, padding: 14, paddingBottom: 8 },
-  searchInp:    {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: COLORS.bloomCard, borderRadius: 13,
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    paddingHorizontal: 10, height: 42,
+  searchRow:    { flexDirection: 'row', gap: SPACING.sm, padding: SPACING.base, paddingBottom: SPACING.sm },
+  searchGradient: { flex: 1, padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
+  searchInputRow: {
+    ...INPUT.base, borderWidth: 0,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, paddingVertical: SPACING.sm,
   },
-  searchIcon:   { fontSize: 13 },
-  searchText:   { flex: 1, fontSize: 13, fontWeight: '600', color: COLORS.bloomText },
+  searchIcon:     { fontSize: FONT_SIZE.sm },
+  searchInputText:{ flex: 1, fontSize: FONT_SIZE.md, color: NICO.text, padding: 0 },
 
-  filterBar:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingBottom: 6, gap: 8 },
-  pillsScroll:  { flex: 1 },
-  pillsContent: { gap: 6, flexDirection: 'row' },
-  pill: {
+  filterBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.base, paddingBottom: SPACING.sm },
+  resultCount:  { ...TEXT_STYLE.caption, color: NICO.textMuted },
+
+  chipsRow:     { maxHeight: 40 },
+  chipsContent: { paddingHorizontal: SPACING.base, paddingBottom: SPACING.sm, gap: SPACING.xs, alignItems: 'center' },
+  chip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE',
-    borderRadius: 18, paddingHorizontal: 10, paddingVertical: 5,
+    backgroundColor: NICO.primaryLight, borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.sm, paddingVertical: 4,
   },
-  pillTxt: { fontSize: 11, fontWeight: '800', color: '#1D4ED8' },
-  pillX:   { fontSize: 11, color: '#93C5FD', fontWeight: '900' },
+  chipText: { ...TEXT_STYLE.caption, color: NICO.primary },
+  chipX:    { fontSize: FONT_SIZE.xs, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
+  clearAllChip: {
+    paddingHorizontal: SPACING.sm, paddingVertical: 4,
+    borderRadius: RADIUS.full, borderWidth: 1, borderColor: NICO.border,
+  },
+  clearAllChipText: { ...TEXT_STYLE.caption, color: NICO.textMuted },
 
-  filterBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: COLORS.bloomCard, borderWidth: 1.5, borderColor: COLORS.bloomAccent,
-    borderRadius: 18, paddingHorizontal: 12, paddingVertical: 7,
-  },
-  filterBtnTxt:   { fontSize: 12, fontWeight: '800', color: COLORS.bloomActiveText },
-  filterBadge:    { backgroundColor: COLORS.bloomAccent, borderRadius: 9, paddingHorizontal: 6, paddingVertical: 1 },
-  filterBadgeTxt: { fontSize: 10, fontWeight: '900', color: COLORS.bloomOnAccent },
+  pendingBadge:    { backgroundColor: NICO.background, borderRadius: RADIUS.md, paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs },
+  pendingBadgeTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
+  respondBtn:      { ...BTN_VARIANT.primary },
+  respondBtnTxt:   { color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.sm },
+  connectBtn:      { ...BTN_VARIANT.primary },
+  connectBtnTxt:   { color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.sm },
 
-  resBar:   { paddingHorizontal: 14, paddingBottom: 6 },
-  resCount: { fontSize: 12, fontWeight: '700', color: COLORS.bloomMuted },
-
-  pendingBadge:  { backgroundColor: COLORS.bloomBorder, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 6 },
-  pendingBadgeTxt: { fontSize: 12, fontWeight: '600', color: COLORS.bloomMuted },
-  respondBtn:    { backgroundColor: COLORS.bloomAccent, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 7 },
-  respondBtnTxt: { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 12 },
-  connectBtn:    { backgroundColor: COLORS.bloomAccent, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 7 },
-  connectBtnTxt: { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 12 },
-
-  // Filter sheet
-  sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
-  sheet: {
-    height: SCREEN_H * 0.72,
-    backgroundColor: COLORS.bloomCard,
-    borderTopLeftRadius: 26, borderTopRightRadius: 26,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
-    overflow: 'hidden',
+  // Friends tab
+  reportedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  infoIcon: { fontSize: FONT_SIZE.md },
+  cardCornerIcon: { position: 'absolute', top: SPACING.sm, right: SPACING.sm },
+  cardRemoveIcon: {
+    width: scale(26), height: scale(26), borderRadius: RADIUS.full,
+    backgroundColor: 'rgba(255,255,255,0.75)',
+    justifyContent: 'center', alignItems: 'center',
   },
-  sheetHandle: { width: 38, height: 4, backgroundColor: COLORS.bloomBorder, borderRadius: 2, alignSelf: 'center', marginTop: 10, marginBottom: 2 },
-  sheetHdr: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 18, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
-  },
-  sheetTitle: { fontSize: 15, fontWeight: '900', color: COLORS.bloomText },
-  sheetClear: { fontSize: 13, fontWeight: '700', color: COLORS.bloomAccent },
-  sheetBody:  { flex: 1 },
-  sheetSec:   { borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder },
-  sheetSecHdr: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 18, paddingVertical: 13,
-  },
-  sheetSecRight:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sheetSecTitle:    { fontSize: 13, fontWeight: '800', color: COLORS.bloomText },
-  sheetSecBadge:    { backgroundColor: COLORS.bloomAccent, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 1 },
-  sheetSecBadgeTxt: { fontSize: 10, fontWeight: '900', color: COLORS.bloomOnAccent },
-  sheetSecArr:      { fontSize: 10, color: COLORS.bloomMuted },
-  optRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 18, paddingVertical: 11,
-    borderTopWidth: 1, borderTopColor: COLORS.bloomBorder,
-  },
-  optTxt:       { fontSize: 14, color: COLORS.bloomText, flex: 1 },
-  optTxtOn:     { color: COLORS.bloomAccent, fontWeight: '600' },
-  optCheck:     { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: COLORS.bloomBorder, justifyContent: 'center', alignItems: 'center' },
-  optCheckOn:   { backgroundColor: COLORS.bloomAccent, borderColor: COLORS.bloomAccent },
-  optCheckMark: { color: COLORS.bloomOnAccent, fontSize: 11, fontWeight: '900' },
-  sheetApply:   { marginHorizontal: 18, marginTop: 10, backgroundColor: COLORS.bloomAccent, borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
-  sheetApplyTxt: { color: COLORS.bloomOnAccent, fontWeight: '900', fontSize: 15 },
-
-  // Friends tab right column
-  friendCardRight: { alignItems: 'flex-end', gap: 6 },
-  reportedRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  infoIcon: { fontSize: 16 },
-  removeBtn: {
-    backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',
-    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
-  },
-  removeBtnTxt: { fontSize: 11, fontWeight: '700', color: '#DC2626' },
+  cardRemoveIconTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.extraBold, color: NICO.error },
   reportedPill: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: '#FED7AA',
-    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
+    backgroundColor: NICO.warningLight,
+    borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm, paddingVertical: 4,
   },
-  reportedPillTxt: { fontSize: 11, fontWeight: '700', color: '#C2410C' },
+  reportedPillTxt: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.warning },
 
   // Report reason nudge modal
   nudgeOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center', alignItems: 'center', padding: 32,
+    justifyContent: 'center', alignItems: 'center', padding: SPACING.xl,
   },
   nudge: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 20,
-    padding: 24, width: '100%', gap: 14,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18, shadowRadius: 20, elevation: 10,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.xl,
+    padding: SPACING.lg, width: '100%', gap: SPACING.md,
+    ...SHADOW.lg,
   },
-  nudgeTitle: { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
-  nudgeBody:  { fontSize: 14, color: COLORS.bloomMuted, lineHeight: 22 },
-  nudgeClose: {
-    alignSelf: 'flex-end', backgroundColor: COLORS.bloomAccent,
-    borderRadius: 10, paddingHorizontal: 20, paddingVertical: 9,
-  },
-  nudgeCloseTxt: { fontSize: 14, fontWeight: '700', color: COLORS.bloomOnAccent },
+  nudgeTitle: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  nudgeBody:  { fontSize: FONT_SIZE.md, color: NICO.textMuted, lineHeight: 22 },
+  nudgeClose: { ...BTN_SIZE.sm, ...BTN_VARIANT.primary, alignSelf: 'flex-end' },
+  nudgeCloseTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.textOnAccent },
 
   // Blocked tab
-  unblockBtn: { backgroundColor: '#FEF2F2', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: '#FECACA' },
-  unblockBtnTxt: { fontSize: 12, fontWeight: '700', color: '#DC2626' },
+  unblockBtn:    { backgroundColor: NICO.errorLight },
+  unblockBtnTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.error },
 
-  loadMoreBtn: {
-    marginHorizontal: 16, marginBottom: 16, paddingVertical: 14,
-    borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    alignItems: 'center', backgroundColor: COLORS.bloomCard,
-  },
-  loadMoreText:   { fontSize: 13, fontWeight: '700', color: COLORS.bloomNavy },
-  capMessage:     { alignItems: 'center', paddingVertical: 16 },
-  capMessageText: { fontSize: 13, color: COLORS.bloomMuted, fontStyle: 'italic' },
+  loadMoreBtn:    { ...BTN_SIZE.sm, ...BTN_VARIANT.outline, alignSelf: 'center', marginTop: SPACING.base },
+  loadMoreText:   { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary },
+  capMessage:     { alignItems: 'center', paddingVertical: SPACING.base },
+  capMessageText: { ...TEXT_STYLE.hint, fontStyle: 'italic' },
 });

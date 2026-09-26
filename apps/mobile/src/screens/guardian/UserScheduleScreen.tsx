@@ -1,17 +1,23 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView,
+  View, TouchableOpacity, StyleSheet, ScrollView,
   TextInput, Alert, ActivityIndicator, Modal, FlatList,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
 import AppText from '../../components/AppText';
+import RainbowDivider from '../../components/RainbowDivider';
+import GuardianTabBar from '../../components/GuardianTabBar';
+import useNicoHeader from '../../hooks/useNicoHeader';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import { ScheduleTemplate, ScheduleEvent } from '../../types';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, BUTTERFLY_TILES, scale,
+} from '../../constants/theme';
 
 type Route = RouteProp<GuardianNavParamList, 'UserSchedule'>;
 type Nav   = NativeStackNavigationProp<GuardianNavParamList>;
@@ -107,23 +113,23 @@ function TimePicker({
   const [visible, setVisible] = useState(false);
   return (
     <>
-      <TouchableOpacity style={styles.fbox} onPress={() => setVisible(true)}>
-        <AppText style={styles.fboxText}>{value}</AppText>
+      <TouchableOpacity style={s.fbox} onPress={() => setVisible(true)}>
+        <AppText style={s.fboxText}>{value}</AppText>
       </TouchableOpacity>
       <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
-        <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={() => setVisible(false)}>
-          <View style={styles.pickerCard}>
-            <AppText style={styles.pickerTitle}>Select time</AppText>
+        <TouchableOpacity style={s.pickerOverlay} activeOpacity={1} onPress={() => setVisible(false)}>
+          <View style={s.pickerCard}>
+            <AppText style={s.pickerTitle}>Select time</AppText>
             <FlatList
               data={TIMES}
               keyExtractor={t => t}
               style={{ maxHeight: 260 }}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[styles.pickerItem, value === item && styles.pickerItemSel]}
+                  style={[s.pickerItem, value === item && s.pickerItemSel]}
                   onPress={() => { onChange(item); setVisible(false); }}
                 >
-                  <AppText style={[styles.pickerItemTxt, value === item && styles.pickerItemTxtSel]}>{item}</AppText>
+                  <AppText style={[s.pickerItemTxt, value === item && s.pickerItemTxtSel]}>{item}</AppText>
                 </TouchableOpacity>
               )}
             />
@@ -141,23 +147,23 @@ function DatePicker({
   const options = minDate ? DATE_OPTIONS.filter(d => d >= minDate) : DATE_OPTIONS;
   return (
     <>
-      <TouchableOpacity style={styles.fbox} onPress={() => setVisible(true)}>
-        <AppText style={styles.fboxText}>{formatDate(value)}</AppText>
+      <TouchableOpacity style={s.fbox} onPress={() => setVisible(true)}>
+        <AppText style={s.fboxText}>{formatDate(value)}</AppText>
       </TouchableOpacity>
       <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
-        <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={() => setVisible(false)}>
-          <View style={styles.pickerCard}>
-            <AppText style={styles.pickerTitle}>Select date</AppText>
+        <TouchableOpacity style={s.pickerOverlay} activeOpacity={1} onPress={() => setVisible(false)}>
+          <View style={s.pickerCard}>
+            <AppText style={s.pickerTitle}>Select date</AppText>
             <FlatList
               data={options}
               keyExtractor={d => d}
               style={{ maxHeight: 260 }}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[styles.pickerItem, value === item && styles.pickerItemSel]}
+                  style={[s.pickerItem, value === item && s.pickerItemSel]}
                   onPress={() => { onChange(item); setVisible(false); }}
                 >
-                  <AppText style={[styles.pickerItemTxt, value === item && styles.pickerItemTxtSel]}>
+                  <AppText style={[s.pickerItemTxt, value === item && s.pickerItemTxtSel]}>
                     {formatDateLong(item)}
                   </AppText>
                 </TouchableOpacity>
@@ -172,14 +178,14 @@ function DatePicker({
 
 function EmojiRow({ emojis, selected, onSelect }: { emojis: string[]; selected: string; onSelect: (e: string) => void }) {
   return (
-    <View style={styles.emojiRow}>
+    <View style={s.emojiRow}>
       {emojis.map(e => (
         <TouchableOpacity
           key={e}
-          style={[styles.emojiChip, selected === e && styles.emojiChipSel]}
+          style={[s.emojiChip, selected === e && s.emojiChipSel]}
           onPress={() => onSelect(e)}
         >
-          <AppText style={styles.emojiChipTxt}>{e}</AppText>
+          <AppText style={s.emojiChipTxt}>{e}</AppText>
         </TouchableOpacity>
       ))}
     </View>
@@ -194,6 +200,7 @@ export default function UserScheduleScreen() {
   const { userId, userName } = route.params;
   const { guardian } = useAuth();
 
+  useNicoHeader(navigation);
   useLayoutEffect(() => {
     navigation.setOptions({ title: `${userName}'s Schedule` });
   }, [userName]);
@@ -350,32 +357,36 @@ export default function UserScheduleScreen() {
 
   function renderWeekly() {
     return (
-      <ScrollView contentContainerStyle={styles.tabContent}>
+      <ScrollView contentContainerStyle={s.tabContent}>
         {DAYS.map((day, dow) => {
           const dayTemplates = templates.filter(t => t.day_of_week === dow);
+          const tileBg = BUTTERFLY_TILES[dow % BUTTERFLY_TILES.length].bg;
           return (
-            <View key={dow} style={styles.dayBlock}>
-              <AppText style={styles.dayLabel}>{day.toUpperCase()}</AppText>
-              {dayTemplates.length === 0
-                ? <AppText style={styles.emptyDay}>No classes</AppText>
-                : dayTemplates.map(t => (
-                  <View key={t.id} style={styles.classCard}>
-                    <AppText style={styles.classEmoji}>{t.emoji}</AppText>
-                    <View style={styles.classInfo}>
-                      <AppText style={styles.classTitle}>{t.title}</AppText>
-                      <AppText style={styles.classTime}>
-                        {formatTime(t.start_time)} – {formatTime(t.end_time)}
-                        {' · '}Until {formatDate(t.valid_until)}
-                      </AppText>
+            <View key={dow} style={s.dayBlock}>
+              {dayTemplates.length === 0 ? (
+                <AppText style={s.dayLabel}>{day.toUpperCase()} - No Classes</AppText>
+              ) : (
+                <>
+                  <AppText style={s.dayLabel}>{day.toUpperCase()}</AppText>
+                  {dayTemplates.map(t => (
+                    <View key={t.id} style={[s.classCard, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
+                      <AppText style={s.classEmoji}>{t.emoji}</AppText>
+                      <View style={s.classInfo}>
+                        <AppText style={s.classTitle}>{t.title}</AppText>
+                        <AppText style={s.classTime}>
+                          {formatTime(t.start_time)} – {formatTime(t.end_time)}
+                          {' · '}Until {formatDate(t.valid_until)}
+                        </AppText>
+                      </View>
+                      <TouchableOpacity style={s.delBtn} onPress={() => deleteTemplate(t.id)}>
+                        <AppText style={s.delBtnTxt}>✕</AppText>
+                      </TouchableOpacity>
                     </View>
-                    <TouchableOpacity style={styles.delBtn} onPress={() => deleteTemplate(t.id)}>
-                      <AppText style={styles.delBtnTxt}>✕</AppText>
-                    </TouchableOpacity>
-                  </View>
-                ))
-              }
-              <TouchableOpacity style={styles.addDayBtn} onPress={() => openWeeklySheet(dow)}>
-                <AppText style={styles.addDayBtnTxt}>+ Add {DAYS_SHORT[dow]} class</AppText>
+                  ))}
+                </>
+              )}
+              <TouchableOpacity style={s.addDayBtn} onPress={() => openWeeklySheet(dow)}>
+                <AppText style={s.addDayBtnTxt}>+ Add {DAYS_SHORT[dow]} class</AppText>
               </TouchableOpacity>
             </View>
           );
@@ -390,39 +401,42 @@ export default function UserScheduleScreen() {
   function renderOneoff() {
     if (events.length === 0) {
       return (
-        <View style={[styles.center, { flex: 1 }]}>
-          <AppText style={{ fontSize: 44, marginBottom: 8 }}>✨</AppText>
-          <AppText style={styles.emptyTitle}>No one-off events</AppText>
-          <AppText style={styles.emptyHint}>Add a special class or cancel a recurring one</AppText>
+        <View style={[s.center, { flex: 1 }]}>
+          <AppText style={s.emptyEmoji}>✨</AppText>
+          <AppText style={s.emptyTitle}>No one-off events</AppText>
+          <AppText style={s.emptyHint}>Add a special class or cancel a recurring one</AppText>
         </View>
       );
     }
     return (
-      <ScrollView contentContainerStyle={styles.tabContent}>
-        {events.map(ev => (
-          <View key={ev.id}>
-            <AppText style={styles.ooDateLabel}>
-              {formatDateLong(ev.event_date)}
-              {ev.is_cancellation ? ' — cancellation' : ''}
-            </AppText>
-            <View style={[styles.classCard, ev.is_cancellation && styles.cancelCard]}>
-              <AppText style={styles.classEmoji}>{ev.is_cancellation ? '🚫' : ev.emoji}</AppText>
-              <View style={styles.classInfo}>
-                <AppText style={[styles.classTitle, ev.is_cancellation && { color: COLORS.statusRedDark }]}>{ev.title}</AppText>
-                <AppText style={[styles.classTime, ev.is_cancellation && { color: COLORS.statusError }]}>
-                  {formatTime(ev.start_time)} – {formatTime(ev.end_time)}
-                  {ev.is_cancellation ? '' : ' · One-off'}
-                </AppText>
+      <ScrollView contentContainerStyle={s.tabContent}>
+        {events.map((ev, index) => {
+          const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
+          return (
+            <View key={ev.id}>
+              <AppText style={s.ooDateLabel}>
+                {formatDateLong(ev.event_date)}
+                {ev.is_cancellation ? ' — cancellation' : ''}
+              </AppText>
+              <View style={[s.classCard, ev.is_cancellation ? s.cancelCard : { backgroundColor: tileBg, borderColor: 'transparent' }]}>
+                <AppText style={s.classEmoji}>{ev.is_cancellation ? '🚫' : ev.emoji}</AppText>
+                <View style={s.classInfo}>
+                  <AppText style={[s.classTitle, ev.is_cancellation && { color: NICO.error }]}>{ev.title}</AppText>
+                  <AppText style={[s.classTime, ev.is_cancellation && { color: NICO.error }]}>
+                    {formatTime(ev.start_time)} – {formatTime(ev.end_time)}
+                    {ev.is_cancellation ? '' : ' · One-off'}
+                  </AppText>
+                </View>
+                {ev.is_cancellation && (
+                  <View style={s.cancelBadge}><AppText style={s.cancelBadgeTxt}>CANCELLED</AppText></View>
+                )}
+                <TouchableOpacity style={s.delBtn} onPress={() => deleteEvent(ev.id)}>
+                  <AppText style={s.delBtnTxt}>✕</AppText>
+                </TouchableOpacity>
               </View>
-              {ev.is_cancellation && (
-                <View style={styles.cancelBadge}><AppText style={styles.cancelBadgeTxt}>CANCELLED</AppText></View>
-              )}
-              <TouchableOpacity style={styles.delBtn} onPress={() => deleteEvent(ev.id)}>
-                <AppText style={styles.delBtnTxt}>✕</AppText>
-              </TouchableOpacity>
             </View>
-          </View>
-        ))}
+          );
+        })}
         <View style={{ height: 32 }} />
       </ScrollView>
     );
@@ -430,89 +444,92 @@ export default function UserScheduleScreen() {
 
   // ── Render ─────────────────────────────────────────────────────────────
 
-  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+  if (loading) return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
 
   const wSuggestions = suggestEmojis(wTitle);
   const ooSuggestions = suggestEmojis(ooTitle);
   const cancellable = cancellableTemplatesForDate(ooDate);
 
   return (
-    <View style={styles.container}>
+    <View style={s.container}>
+      <RainbowDivider />
 
-      {/* Segmented control */}
-      <View style={styles.seg}>
-        <TouchableOpacity style={[styles.segBtn, tab === 'weekly' && styles.segBtnOn]} onPress={() => setTab('weekly')}>
-          <AppText style={[styles.segTxt, tab === 'weekly' && styles.segTxtOn]}>📅  Weekly</AppText>
+      {/* Tab bar */}
+      <View style={s.tabBar}>
+        <TouchableOpacity style={[s.tab, tab === 'weekly' && s.tabActive]} onPress={() => setTab('weekly')} activeOpacity={0.75}>
+          <AppText style={[s.tabTxt, tab === 'weekly' && s.tabTxtActive]}>📅  Weekly</AppText>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.segBtn, tab === 'oneoff' && styles.segBtnOn]} onPress={() => setTab('oneoff')}>
-          <AppText style={[styles.segTxt, tab === 'oneoff' && styles.segTxtOn]}>✨  One-off</AppText>
+        <TouchableOpacity style={[s.tab, tab === 'oneoff' && s.tabActive]} onPress={() => setTab('oneoff')} activeOpacity={0.75}>
+          <AppText style={[s.tabTxt, tab === 'oneoff' && s.tabTxtActive]}>✨  One-off</AppText>
         </TouchableOpacity>
       </View>
 
-      {/* Add button for one-off tab */}
-      {tab === 'oneoff' && (
-        <View style={styles.ooTopRow}>
-          <TouchableOpacity style={styles.addPill} onPress={openOneoffSheet}>
-            <AppText style={styles.addPillTxt}>+ Add</AppText>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View style={s.tabPane}>
+        {/* Add button for one-off tab */}
+        {tab === 'oneoff' && (
+          <View style={s.ooTopRow}>
+            <TouchableOpacity style={s.addPill} onPress={openOneoffSheet} activeOpacity={0.8}>
+              <AppText style={s.addPillTxt}>+ Add</AppText>
+            </TouchableOpacity>
+          </View>
+        )}
 
-      {tab === 'weekly' ? renderWeekly() : renderOneoff()}
+        {tab === 'weekly' ? renderWeekly() : renderOneoff()}
+      </View>
 
       {/* ── Add Weekly Class sheet ── */}
       <Modal visible={weeklySheet} transparent animationType="slide" onRequestClose={() => setWeeklySheet(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-          <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => setWeeklySheet(false)}>
-            <TouchableOpacity style={styles.sheet} activeOpacity={1} onPress={() => {}}>
-              <View style={styles.sheetHandle} />
-              <AppText style={styles.sheetTitle}>Add {DAYS[addDay]} Class</AppText>
+          <TouchableOpacity style={s.sheetOverlay} activeOpacity={1} onPress={() => setWeeklySheet(false)}>
+            <TouchableOpacity style={s.sheet} activeOpacity={1} onPress={() => {}}>
+              <View style={s.sheetHandle} />
+              <AppText style={s.sheetTitle}>Add {DAYS[addDay]} Class</AppText>
 
-              <AppText style={styles.fieldLabel}>Class name</AppText>
+              <AppText style={s.fieldLabel}>Class name</AppText>
               <TextInput
-                style={styles.fieldInput}
+                style={s.fieldInput}
                 value={wTitle}
                 onChangeText={setWTitle}
                 placeholder="e.g. Piano Lesson"
-                placeholderTextColor={COLORS.textLight}
+                placeholderTextColor={NICO.textMuted}
               />
 
-              <AppText style={styles.fieldLabel}>Emoji</AppText>
+              <AppText style={s.fieldLabel}>Emoji</AppText>
               <EmojiRow
                 emojis={wSuggestions}
                 selected={wEmoji}
                 onSelect={setWEmoji}
               />
 
-              <View style={styles.fieldRow}>
+              <View style={s.fieldRow}>
                 <View style={{ flex: 1 }}>
-                  <AppText style={styles.fieldLabel}>Start time</AppText>
+                  <AppText style={s.fieldLabel}>Start time</AppText>
                   <TimePicker value={wStart} onChange={setWStart} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <AppText style={styles.fieldLabel}>End time</AppText>
+                  <AppText style={s.fieldLabel}>End time</AppText>
                   <TimePicker value={wEnd} onChange={setWEnd} />
                 </View>
               </View>
 
-              <View style={styles.fieldRow}>
+              <View style={s.fieldRow}>
                 <View style={{ flex: 1 }}>
-                  <AppText style={styles.fieldLabel}>Valid from</AppText>
+                  <AppText style={s.fieldLabel}>Valid from</AppText>
                   <DatePicker value={wFrom} onChange={setWFrom} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <AppText style={styles.fieldLabel}>Until</AppText>
+                  <AppText style={s.fieldLabel}>Until</AppText>
                   <DatePicker value={wUntil} onChange={v => setWUntil(v)} minDate={wFrom} />
                 </View>
               </View>
-              <AppText style={styles.fieldHint}>Repeats every {DAYS[addDay]} · Max 3 months</AppText>
+              <AppText style={s.fieldHint}>Repeats every {DAYS[addDay]} · Max 3 months</AppText>
 
               <TouchableOpacity
-                style={[styles.saveBtn, wSaving && { opacity: 0.6 }]}
+                style={[s.saveBtn, wSaving && s.btnDisabled]}
                 onPress={saveWeeklyClass}
                 disabled={wSaving}
               >
-                <AppText style={styles.saveBtnTxt}>{wSaving ? 'Saving…' : 'Save Class'}</AppText>
+                <AppText style={s.saveBtnTxt}>{wSaving ? 'Saving…' : 'Save Class'}</AppText>
               </TouchableOpacity>
             </TouchableOpacity>
           </TouchableOpacity>
@@ -522,87 +539,87 @@ export default function UserScheduleScreen() {
       {/* ── Add One-off Event sheet ── */}
       <Modal visible={oneoffSheet} transparent animationType="slide" onRequestClose={() => setOneoffSheet(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-          <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => setOneoffSheet(false)}>
-            <TouchableOpacity style={styles.sheet} activeOpacity={1} onPress={() => {}}>
-              <View style={styles.sheetHandle} />
-              <AppText style={styles.sheetTitle}>Add One-off Event</AppText>
+          <TouchableOpacity style={s.sheetOverlay} activeOpacity={1} onPress={() => setOneoffSheet(false)}>
+            <TouchableOpacity style={s.sheet} activeOpacity={1} onPress={() => {}}>
+              <View style={s.sheetHandle} />
+              <AppText style={s.sheetTitle}>Add One-off Event</AppText>
 
               {/* Radio */}
-              <TouchableOpacity style={[styles.radio, ooMode === 'new' && styles.radioSel]} onPress={() => setOoMode('new')}>
-                <View style={[styles.radioDot, ooMode === 'new' && styles.radioDotSel]} />
+              <TouchableOpacity style={[s.radio, ooMode === 'new' && s.radioSel]} onPress={() => setOoMode('new')}>
+                <View style={[s.radioDot, ooMode === 'new' && s.radioDotSel]} />
                 <View>
-                  <AppText style={styles.radioTitle}>New class on a specific date</AppText>
-                  <AppText style={styles.radioSub}>Add a class that doesn't repeat</AppText>
+                  <AppText style={s.radioTitle}>New class on a specific date</AppText>
+                  <AppText style={s.radioSub}>Add a class that doesn't repeat</AppText>
                 </View>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.radio, ooMode === 'cancel' && styles.radioSel]} onPress={() => setOoMode('cancel')}>
-                <View style={[styles.radioDot, ooMode === 'cancel' && styles.radioDotSel]} />
+              <TouchableOpacity style={[s.radio, ooMode === 'cancel' && s.radioSel]} onPress={() => setOoMode('cancel')}>
+                <View style={[s.radioDot, ooMode === 'cancel' && s.radioDotSel]} />
                 <View>
-                  <AppText style={styles.radioTitle}>Cancel a recurring class</AppText>
-                  <AppText style={styles.radioSub}>Mark one occurrence as cancelled</AppText>
+                  <AppText style={s.radioTitle}>Cancel a recurring class</AppText>
+                  <AppText style={s.radioSub}>Mark one occurrence as cancelled</AppText>
                 </View>
               </TouchableOpacity>
 
-              <AppText style={styles.fieldLabel}>{ooMode === 'cancel' ? 'Date to cancel' : 'Date'}</AppText>
+              <AppText style={s.fieldLabel}>{ooMode === 'cancel' ? 'Date to cancel' : 'Date'}</AppText>
               <DatePicker value={ooDate} onChange={v => { setOoDate(v); setCancelTemplateId(null); }} />
 
               {ooMode === 'new' ? (
                 <>
-                  <AppText style={styles.fieldLabel}>Class name</AppText>
+                  <AppText style={s.fieldLabel}>Class name</AppText>
                   <TextInput
-                    style={styles.fieldInput}
+                    style={s.fieldInput}
                     value={ooTitle}
                     onChangeText={setOoTitle}
                     placeholder="e.g. Theatre Trip"
-                    placeholderTextColor={COLORS.textLight}
+                    placeholderTextColor={NICO.textMuted}
                   />
 
-                  <AppText style={styles.fieldLabel}>Emoji</AppText>
+                  <AppText style={s.fieldLabel}>Emoji</AppText>
                   <EmojiRow emojis={ooSuggestions} selected={ooEmoji} onSelect={setOoEmoji} />
 
-                  <View style={styles.fieldRow}>
+                  <View style={s.fieldRow}>
                     <View style={{ flex: 1 }}>
-                      <AppText style={styles.fieldLabel}>Start time</AppText>
+                      <AppText style={s.fieldLabel}>Start time</AppText>
                       <TimePicker value={ooStart} onChange={setOoStart} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <AppText style={styles.fieldLabel}>End time</AppText>
+                      <AppText style={s.fieldLabel}>End time</AppText>
                       <TimePicker value={ooEnd} onChange={setOoEnd} />
                     </View>
                   </View>
 
                   <TouchableOpacity
-                    style={[styles.saveBtn, ooSaving && { opacity: 0.6 }]}
+                    style={[s.saveBtn, ooSaving && s.btnDisabled]}
                     onPress={saveOneoffEvent}
                     disabled={ooSaving}
                   >
-                    <AppText style={styles.saveBtnTxt}>{ooSaving ? 'Saving…' : 'Save Event'}</AppText>
+                    <AppText style={s.saveBtnTxt}>{ooSaving ? 'Saving…' : 'Save Event'}</AppText>
                   </TouchableOpacity>
                 </>
               ) : (
                 <>
-                  <AppText style={styles.fieldLabel}>Which class to cancel?</AppText>
+                  <AppText style={s.fieldLabel}>Which class to cancel?</AppText>
                   {cancellable.length === 0
-                    ? <AppText style={styles.fieldHint}>No recurring classes on {formatDateLong(ooDate)}</AppText>
+                    ? <AppText style={s.fieldHint}>No recurring classes on {formatDateLong(ooDate)}</AppText>
                     : cancellable.map(t => (
                       <TouchableOpacity
                         key={t.id}
-                        style={[styles.cancelOption, cancelTemplateId === t.id && styles.cancelOptionSel]}
+                        style={[s.cancelOption, cancelTemplateId === t.id && s.cancelOptionSel]}
                         onPress={() => setCancelTemplateId(t.id)}
                       >
-                        <AppText style={styles.cancelOptionEmoji}>{t.emoji}</AppText>
-                        <AppText style={styles.cancelOptionTxt}>
+                        <AppText style={s.cancelOptionEmoji}>{t.emoji}</AppText>
+                        <AppText style={s.cancelOptionTxt}>
                           {t.title}  {formatTime(t.start_time)}
                         </AppText>
                       </TouchableOpacity>
                     ))
                   }
                   <TouchableOpacity
-                    style={[styles.cancelBtn, ooSaving && { opacity: 0.6 }]}
+                    style={[s.cancelSubmitBtn, ooSaving && s.btnDisabled]}
                     onPress={saveOneoffEvent}
                     disabled={ooSaving}
                   >
-                    <AppText style={styles.cancelBtnTxt}>{ooSaving ? 'Saving…' : 'Mark as Cancelled'}</AppText>
+                    <AppText style={s.cancelSubmitBtnTxt}>{ooSaving ? 'Saving…' : 'Mark as Cancelled'}</AppText>
                   </TouchableOpacity>
                 </>
               )}
@@ -611,142 +628,145 @@ export default function UserScheduleScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
+      <GuardianTabBar />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8, padding: 32, backgroundColor: '#F9FAFB' },
-  emptyTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text },
-  emptyHint: { fontSize: 13, color: COLORS.textLight, textAlign: 'center' },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: NICO.screenBg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: SPACING.sm, padding: SPACING.xl, backgroundColor: NICO.screenBg },
+  emptyEmoji: { fontSize: scale(44), marginBottom: SPACING.xs },
+  emptyTitle: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  emptyHint: { ...TEXT_STYLE.screenHint, textAlign: 'center' },
 
-  seg: {
-    flexDirection: 'row', backgroundColor: '#F3F4F6',
-    margin: 12, borderRadius: 12, padding: 3,
+  tabBar: {
+    flexDirection: 'row', backgroundColor: NICO.surface,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  segBtn: { flex: 1, padding: 10, alignItems: 'center', borderRadius: 10 },
-  segBtnOn: { backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
-  segTxt: { fontSize: 14, fontWeight: '700', color: COLORS.statusMidGrey },
-  segTxtOn: { color: COLORS.statusDark },
+  tab: {
+    flex: 1, alignItems: 'center', paddingVertical: SPACING.md,
+    borderBottomWidth: 2.5, borderBottomColor: 'transparent',
+  },
+  tabActive:    { borderBottomColor: NICO.primary },
+  tabTxt:       { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted },
+  tabTxtActive: { color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold },
+  tabPane:      { flex: 1, backgroundColor: NICO.screenBg },
 
-  ooTopRow: { alignItems: 'flex-end', paddingHorizontal: 16, paddingBottom: 8 },
-  addPill: { backgroundColor: COLORS.statusViolet, borderRadius: 12, paddingVertical: 9, paddingHorizontal: 18 },
-  addPillTxt: { color: COLORS.bloomOnAccent, fontSize: 13, fontWeight: '700' },
+  ooTopRow: { alignItems: 'flex-end', paddingHorizontal: SPACING.base, paddingTop: SPACING.sm, paddingBottom: SPACING.xs },
+  addPill: { ...BTN_SIZE.sm, ...BTN_VARIANT.primary, justifyContent: 'center' },
+  addPillTxt: { color: NICO.textOnAccent, fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold },
 
-  tabContent: { padding: 16, paddingBottom: 40 },
+  tabContent: { padding: SPACING.base, paddingBottom: 40 },
 
-  dayBlock: { marginBottom: 16 },
-  dayLabel: { fontSize: 12, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  emptyDay: { fontSize: 13, color: '#C4C9D4', fontStyle: 'italic', marginBottom: 6 },
+  dayBlock: { marginBottom: SPACING.base },
+  dayLabel: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: SPACING.sm },
 
   classCard: {
-    backgroundColor: '#fff', borderRadius: 14,
-    padding: 13, flexDirection: 'row', alignItems: 'center', gap: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
-    marginBottom: 6,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md, flexDirection: 'row', alignItems: 'center', gap: SPACING.md,
+    borderWidth: 1,
+    ...SHADOW.sm,
+    marginBottom: SPACING.xs,
   },
-  cancelCard: { backgroundColor: '#FFF1F2', borderWidth: 1, borderColor: '#FECDD3' },
-  classEmoji: { fontSize: 24, flexShrink: 0 },
+  cancelCard: { backgroundColor: NICO.errorLight, borderWidth: 1, borderColor: NICO.error },
+  classEmoji: { fontSize: scale(24), flexShrink: 0 },
   classInfo: { flex: 1 },
-  classTitle: { fontSize: 15, fontWeight: '700', color: COLORS.statusDark },
-  classTime: { fontSize: 12, color: COLORS.statusMidGrey, marginTop: 2 },
+  classTitle: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  classTime: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text, marginTop: 2 },
   delBtn: {
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center',
+    width: scale(28), height: scale(28), borderRadius: scale(14),
+    backgroundColor: 'white', borderWidth: 1.5, borderColor: NICO.error,
+    justifyContent: 'center', alignItems: 'center',
   },
-  delBtnTxt: { fontSize: 13, color: COLORS.statusError },
+  delBtnTxt: { fontSize: FONT_SIZE.sm, color: NICO.error, fontWeight: FONT_WEIGHT.bold },
 
   addDayBtn: {
-    paddingVertical: 10, paddingHorizontal: 14,
-    borderRadius: 12, borderWidth: 2, borderStyle: 'dashed', borderColor: COLORS.statusGrey,
-    backgroundColor: 'transparent',
+    paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.md, borderWidth: 2, borderStyle: 'dashed', borderColor: NICO.border,
+    backgroundColor: 'transparent', alignSelf: 'flex-start',
   },
-  addDayBtnTxt: { fontSize: 13, fontWeight: '700', color: COLORS.statusViolet },
+  addDayBtnTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 
-  ooDateLabel: { fontSize: 11, fontWeight: '700', color: COLORS.statusMidGrey, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5, marginTop: 4 },
-  cancelBadge: { backgroundColor: COLORS.statusRedLight, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  cancelBadgeTxt: { fontSize: 10, fontWeight: '800', color: COLORS.statusError, letterSpacing: 0.3 },
+  ooDateLabel: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: SPACING.xs, marginTop: SPACING.xs },
+  cancelBadge: { backgroundColor: NICO.errorLight, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm, paddingVertical: 3 },
+  cancelBadgeTxt: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.extraBold, color: NICO.error, letterSpacing: 0.3 },
 
   // Sheet
-  sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,.45)', justifyContent: 'flex-end' },
+  sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: '#fff', borderRadius: 24, padding: 20, paddingBottom: 36,
+    backgroundColor: NICO.surface, borderTopLeftRadius: RADIUS['2xl'], borderTopRightRadius: RADIUS['2xl'],
+    padding: SPACING.lg, paddingBottom: 36,
     maxHeight: '90%',
   },
-  sheetHandle: { width: 40, height: 4, backgroundColor: COLORS.statusGrey, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
-  sheetTitle: { fontSize: 18, fontWeight: '800', color: COLORS.statusDark, textAlign: 'center', marginBottom: 20 },
+  sheetHandle: { width: 40, height: 4, backgroundColor: NICO.border, borderRadius: 2, alignSelf: 'center', marginBottom: SPACING.base },
+  sheetTitle: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, textAlign: 'center', marginBottom: SPACING.lg },
 
-  fieldLabel: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 },
+  fieldLabel: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text, marginBottom: SPACING.xs },
   fieldInput: {
-    borderWidth: 1.5, borderColor: COLORS.statusGrey, borderRadius: 12,
-    padding: 12, fontSize: 15, color: COLORS.statusDark,
-    marginBottom: 14, fontFamily: undefined,
+    borderWidth: 1.5, borderColor: NICO.border, borderRadius: RADIUS.md,
+    padding: SPACING.md, fontSize: FONT_SIZE.md, color: NICO.text,
+    marginBottom: SPACING.md,
   },
-  fieldRow: { flexDirection: 'row', gap: 10, marginBottom: 0 },
-  fieldHint: { fontSize: 12, color: COLORS.statusMidGrey, marginTop: 2, marginBottom: 14 },
+  fieldRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: 0 },
+  fieldHint: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, marginTop: 2, marginBottom: SPACING.md },
 
   fbox: {
-    borderWidth: 1.5, borderColor: COLORS.statusGrey, borderRadius: 12,
-    padding: 12, backgroundColor: '#F9FAFB', marginBottom: 14,
+    borderWidth: 1.5, borderColor: NICO.border, borderRadius: RADIUS.md,
+    padding: SPACING.md, backgroundColor: NICO.background, marginBottom: SPACING.md,
   },
-  fboxText: { fontSize: 15, color: COLORS.statusDark },
+  fboxText: { fontSize: FONT_SIZE.md, color: NICO.text },
 
-  emojiRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  emojiRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.md },
   emojiChip: {
-    width: 46, height: 46, borderRadius: 12,
-    backgroundColor: '#F3F4F6',
+    width: scale(46), height: scale(46), borderRadius: RADIUS.md,
+    backgroundColor: NICO.background,
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 2, borderColor: 'transparent',
   },
-  emojiChipSel: { backgroundColor: '#EDE9FE', borderColor: COLORS.statusViolet },
-  emojiChipTxt: { fontSize: 24 },
+  emojiChipSel: { backgroundColor: NICO.primaryLight, borderColor: NICO.primary },
+  emojiChipTxt: { fontSize: scale(24) },
 
-  saveBtn: {
-    backgroundColor: COLORS.statusViolet, borderRadius: 16, padding: 16,
-    alignItems: 'center', marginTop: 8,
-  },
-  saveBtnTxt: { color: COLORS.bloomOnAccent, fontSize: 16, fontWeight: '800' },
+  saveBtn:    { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.sm },
+  btnDisabled:{ opacity: 0.6 },
+  saveBtnTxt: { color: NICO.textOnAccent, fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold },
 
-  cancelBtn: {
-    backgroundColor: COLORS.statusRedLight, borderRadius: 16, padding: 16,
-    alignItems: 'center', marginTop: 8,
-  },
-  cancelBtnTxt: { color: COLORS.statusError, fontSize: 16, fontWeight: '800' },
+  cancelSubmitBtn:    { ...BTN_SIZE.lg, ...BTN_VARIANT.danger, marginTop: SPACING.sm },
+  cancelSubmitBtnTxt: { color: '#fff', fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold },
 
   radio: {
-    flexDirection: 'row', gap: 12, alignItems: 'flex-start',
-    padding: 12, borderRadius: 14, borderWidth: 2, borderColor: COLORS.statusGrey,
-    marginBottom: 10,
+    flexDirection: 'row', gap: SPACING.md, alignItems: 'flex-start',
+    padding: SPACING.md, borderRadius: RADIUS.lg, borderWidth: 2, borderColor: NICO.border,
+    marginBottom: SPACING.sm,
   },
-  radioSel: { borderColor: COLORS.statusViolet, backgroundColor: '#F5F3FF' },
+  radioSel: { borderColor: NICO.primary, backgroundColor: NICO.primaryLight },
   radioDot: {
-    width: 18, height: 18, borderRadius: 9,
-    borderWidth: 2.5, borderColor: '#D1D5DB', marginTop: 2, flexShrink: 0,
+    width: scale(18), height: scale(18), borderRadius: scale(9),
+    borderWidth: 2.5, borderColor: NICO.border, marginTop: 2, flexShrink: 0,
   },
-  radioDotSel: { borderColor: COLORS.statusViolet, backgroundColor: COLORS.statusViolet },
-  radioTitle: { fontSize: 14, fontWeight: '700', color: '#374151' },
-  radioSub: { fontSize: 12, color: COLORS.statusMidGrey, marginTop: 2 },
+  radioDotSel: { borderColor: NICO.primary, backgroundColor: NICO.primary },
+  radioTitle: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  radioSub: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, marginTop: 2 },
 
   cancelOption: {
-    flexDirection: 'row', gap: 10, alignItems: 'center',
-    padding: 12, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.statusGrey,
-    marginBottom: 8, backgroundColor: '#F9FAFB',
+    flexDirection: 'row', gap: SPACING.sm, alignItems: 'center',
+    padding: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: NICO.border,
+    marginBottom: SPACING.sm, backgroundColor: NICO.background,
   },
-  cancelOptionSel: { borderColor: COLORS.statusViolet, backgroundColor: '#F5F3FF' },
-  cancelOptionEmoji: { fontSize: 20 },
-  cancelOptionTxt: { fontSize: 14, fontWeight: '700', color: '#374151' },
+  cancelOptionSel: { borderColor: NICO.primary, backgroundColor: NICO.primaryLight },
+  cancelOptionEmoji: { fontSize: scale(20) },
+  cancelOptionTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 
   // Pickers
-  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,.4)', justifyContent: 'center', alignItems: 'center' },
+  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
   pickerCard: {
-    backgroundColor: '#fff', borderRadius: 20, padding: 16,
-    width: 240,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.2, shadowRadius: 24, elevation: 12,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.xl, padding: SPACING.base,
+    width: scale(240),
+    ...SHADOW.lg,
   },
-  pickerTitle: { fontSize: 16, fontWeight: '800', color: COLORS.statusDark, textAlign: 'center', marginBottom: 10 },
-  pickerItem: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10 },
-  pickerItemSel: { backgroundColor: '#EDE9FE' },
-  pickerItemTxt: { fontSize: 15, color: '#374151', textAlign: 'center' },
-  pickerItemTxtSel: { color: COLORS.statusViolet, fontWeight: '700' },
+  pickerTitle: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, textAlign: 'center', marginBottom: SPACING.sm },
+  pickerItem: { paddingVertical: SPACING.sm, paddingHorizontal: SPACING.base, borderRadius: RADIUS.md },
+  pickerItemSel: { backgroundColor: NICO.primaryLight },
+  pickerItemTxt: { fontSize: FONT_SIZE.md, color: NICO.text, textAlign: 'center' },
+  pickerItemTxtSel: { color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
 });

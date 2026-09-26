@@ -769,7 +769,7 @@ const s = StyleSheet.create({
   empty:      { alignItems: 'center', paddingTop: 80, gap: SPACING.md },
   emptyEmoji: { fontSize: scale(56) },
   emptyText:  { ...TEXT_STYLE.cardTitle, textAlign: 'center' },
-  emptyHint:  { ...TEXT_STYLE.hint },
+  emptyHint:  { ...TEXT_STYLE.screenHint },
 
 
   // Filter area — butterfly border inputs

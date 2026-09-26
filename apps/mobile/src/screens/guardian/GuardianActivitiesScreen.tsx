@@ -1,14 +1,19 @@
 import React, { useCallback, useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity,
+  View, StyleSheet, TouchableOpacity,
   ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
 import AppText from '../../components/AppText';
-import { useFocusEffect } from '@react-navigation/native';
+import RainbowDivider from '../../components/RainbowDivider';
+import GuardianTabBar from '../../components/GuardianTabBar';
+import useNicoHeader from '../../hooks/useNicoHeader';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
 import { ACTIVITY_PRESETS, PRESET_MAP } from '../../lib/activityPresets';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT, scale,
+} from '../../constants/theme';
 
 const MAX_ACTIVITIES = 10;
 
@@ -52,8 +57,11 @@ function shortDate(iso: string) {
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function GuardianActivitiesScreen() {
+  const navigation = useNavigation();
   const { guardian } = useAuth();
   const [tab, setTab] = useState<'setup' | 'report'>('setup');
+
+  useNicoHeader(navigation);
 
   // Setup state
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
@@ -120,30 +128,30 @@ export default function GuardianActivitiesScreen() {
 
   function renderSetup() {
     if (setupLoading) {
-      return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+      return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
     }
     return (
-      <ScrollView contentContainerStyle={styles.setupContent}>
+      <ScrollView contentContainerStyle={s.setupContent}>
 
         {/* Quota bar */}
-        <View style={styles.quotaCard}>
+        <View style={s.quotaCard}>
           <View>
-            <AppText style={styles.quotaLabel}>Activities selected</AppText>
-            {saveStatus === 'saving' && <AppText style={styles.saveHint}>Saving…</AppText>}
-            {saveStatus === 'saved'  && <AppText style={[styles.saveHint, { color: COLORS.secondary }]}>✓ Saved</AppText>}
+            <AppText style={s.quotaLabel}>Activities selected</AppText>
+            {saveStatus === 'saving' && <AppText style={s.saveHint}>Saving…</AppText>}
+            {saveStatus === 'saved'  && <AppText style={[s.saveHint, { color: NICO.success }]}>✓ Saved</AppText>}
           </View>
-          <View style={styles.quotaRight}>
-            <AppText style={styles.quotaCount}>{selectedKeys.length}</AppText>
-            <AppText style={styles.quotaMax}> / {MAX_ACTIVITIES}</AppText>
+          <View style={s.quotaRight}>
+            <AppText style={s.quotaCount}>{selectedKeys.length}</AppText>
+            <AppText style={s.quotaMax}> / {MAX_ACTIVITIES}</AppText>
           </View>
         </View>
 
-        <AppText style={styles.setupHint}>
+        <AppText style={s.setupHint}>
           These activities will appear every day for all users under your account.
         </AppText>
 
         {/* Preset grid — 3 columns */}
-        <View style={styles.presetGrid}>
+        <View style={s.presetGrid}>
           {ACTIVITY_PRESETS.map(preset => {
             const isSelected = selectedKeys.includes(preset.key);
             const isDisabled = !isSelected && selectedKeys.length >= MAX_ACTIVITIES;
@@ -151,19 +159,19 @@ export default function GuardianActivitiesScreen() {
               <TouchableOpacity
                 key={preset.key}
                 style={[
-                  styles.presetCard,
+                  s.presetCard,
                   isSelected && { borderColor: preset.color, backgroundColor: preset.bgColor },
-                  isDisabled && styles.presetCardDisabled,
+                  isDisabled && s.presetCardDisabled,
                 ]}
                 onPress={() => togglePreset(preset.key)}
                 disabled={isDisabled}
                 activeOpacity={0.75}
               >
-                <AppText style={styles.presetEmoji}>{preset.emoji}</AppText>
-                <AppText style={styles.presetName}>{preset.name}</AppText>
+                <AppText style={s.presetEmoji}>{preset.emoji}</AppText>
+                <AppText style={s.presetName}>{preset.name}</AppText>
                 {isSelected && (
-                  <View style={[styles.presetTick, { backgroundColor: preset.color }]}>
-                    <AppText style={styles.presetTickText}>✓</AppText>
+                  <View style={[s.presetTick, { backgroundColor: preset.color }]}>
+                    <AppText style={s.presetTickText}>✓</AppText>
                   </View>
                 )}
               </TouchableOpacity>
@@ -179,7 +187,7 @@ export default function GuardianActivitiesScreen() {
 
   function renderReport() {
     if (reportLoading) {
-      return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+      return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
     }
 
     const todayIso = new Date().toISOString().slice(0, 10);
@@ -202,10 +210,10 @@ export default function GuardianActivitiesScreen() {
     // (guardian can still see the empty grid even before any completions)
     if (byUser.size === 0) {
       return (
-        <View style={styles.center}>
-          <AppText style={styles.emptyEmoji}>📊</AppText>
-          <AppText style={styles.emptyTitle}>No data yet</AppText>
-          <AppText style={styles.emptyHint}>Activity completions will appear here</AppText>
+        <View style={s.center}>
+          <AppText style={s.emptyEmoji}>📊</AppText>
+          <AppText style={s.emptyTitle}>No data yet</AppText>
+          <AppText style={s.emptyHint}>Activity completions will appear here</AppText>
         </View>
       );
     }
@@ -224,21 +232,21 @@ export default function GuardianActivitiesScreen() {
     });
 
     return (
-      <ScrollView contentContainerStyle={styles.reportContent}>
-        <AppText style={styles.reportHint}>Last 7 days · Data auto-deleted after 7 days</AppText>
+      <ScrollView contentContainerStyle={s.reportContent}>
+        <AppText style={s.reportHint}>Last 7 days · Data auto-deleted after 7 days</AppText>
         {Array.from(byUser.entries()).map(([userId, days]) => {
           const userName = days[0].userName;
           const totalActs = selectedKeys.length;
 
           return (
-            <View key={userId} style={styles.reportUserCard}>
+            <View key={userId} style={s.reportUserCard}>
               {/* User header */}
-              <View style={styles.reportUserHeader}>
-                <View style={[styles.reportAvatar, { backgroundColor: avatarColor(userName) }]}>
-                  <AppText style={styles.reportAvatarText}>{userName[0]}</AppText>
+              <View style={s.reportUserHeader}>
+                <View style={[s.reportAvatar, { backgroundColor: avatarColor(userName) }]}>
+                  <AppText style={s.reportAvatarText}>{userName[0]}</AppText>
                 </View>
-                <View style={styles.reportUserInfo}>
-                  <AppText style={styles.reportUserName}>{userName}</AppText>
+                <View style={s.reportUserInfo}>
+                  <AppText style={s.reportUserName}>{userName}</AppText>
                 </View>
               </View>
 
@@ -247,19 +255,19 @@ export default function GuardianActivitiesScreen() {
                 const isToday = day.logDate === todayIso;
                 const pct = totalActs > 0 ? day.completedKeys.size / totalActs : 0;
                 return (
-                  <View key={day.logDate} style={[styles.reportDayRow, isToday && styles.reportDayRowToday]}>
+                  <View key={day.logDate} style={[s.reportDayRow, isToday && s.reportDayRowToday]}>
                     {/* Line 1: date + bar + count */}
-                    <View style={styles.reportDayTopRow}>
-                      <AppText style={[styles.reportDayLabel, isToday && styles.reportDayLabelToday]}>
+                    <View style={s.reportDayTopRow}>
+                      <AppText style={[s.reportDayLabel, isToday && s.reportDayLabelToday]}>
                         {isToday ? 'Today' : shortDate(day.logDate)}
                       </AppText>
-                      <View style={styles.reportMiniBarBg}>
-                        <View style={[styles.reportMiniBar, { width: `${pct * 100}%` }]} />
+                      <View style={s.reportMiniBarBg}>
+                        <View style={[s.reportMiniBar, { width: `${pct * 100}%` }]} />
                       </View>
-                      <AppText style={styles.reportDayCount}>{day.completedKeys.size}/{totalActs}</AppText>
+                      <AppText style={s.reportDayCount}>{day.completedKeys.size}/{totalActs}</AppText>
                     </View>
                     {/* Line 2: activity pips (wrappable) */}
-                    <View style={styles.reportDayPips}>
+                    <View style={s.reportDayPips}>
                       {selectedKeys.map(key => {
                         const preset = PRESET_MAP[key];
                         const done = day.completedKeys.has(key);
@@ -267,13 +275,13 @@ export default function GuardianActivitiesScreen() {
                           <View
                             key={key}
                             style={[
-                              styles.pip,
+                              s.pip,
                               done
-                                ? { backgroundColor: preset?.bgColor ?? '#D4F5E2', borderColor: preset?.color ?? COLORS.secondary, borderWidth: 2 }
-                                : styles.pipEmpty,
+                                ? { backgroundColor: preset?.bgColor ?? NICO.successLight, borderColor: preset?.color ?? NICO.success, borderWidth: 2 }
+                                : s.pipEmpty,
                             ]}
                           >
-                            <AppText style={[styles.pipEmoji, !done && styles.pipEmojiDim]}>
+                            <AppText style={[s.pipEmoji, !done && s.pipEmojiDim]}>
                               {preset?.emoji ?? '?'}
                             </AppText>
                           </View>
@@ -291,121 +299,131 @@ export default function GuardianActivitiesScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={s.container}>
+      <RainbowDivider />
+
       {/* Segmented tabs */}
-      <View style={styles.tabs}>
+      <View style={s.tabs}>
         <TouchableOpacity
-          style={[styles.tabBtn, tab === 'setup' && styles.tabBtnActive]}
+          style={[s.tabBtn, tab === 'setup' && s.tabBtnActive]}
           onPress={() => switchTab('setup')}
+          activeOpacity={0.75}
         >
-          <AppText style={[styles.tabLabel, tab === 'setup' && styles.tabLabelActive]}>✅  Activities</AppText>
+          <AppText style={[s.tabLabel, tab === 'setup' && s.tabLabelActive]}>✅  Activities</AppText>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tabBtn, tab === 'report' && styles.tabBtnActive]}
+          style={[s.tabBtn, tab === 'report' && s.tabBtnActive]}
           onPress={() => switchTab('report')}
+          activeOpacity={0.75}
         >
-          <AppText style={[styles.tabLabel, tab === 'report' && styles.tabLabelActive]}>📊  Report</AppText>
+          <AppText style={[s.tabLabel, tab === 'report' && s.tabLabelActive]}>📊  Report</AppText>
         </TouchableOpacity>
       </View>
 
-      {tab === 'setup' ? renderSetup() : renderReport()}
+      <View style={s.tabPane}>
+        {tab === 'setup' ? renderSetup() : renderReport()}
+      </View>
+
+      <GuardianTabBar />
     </View>
   );
 }
 
-const AVATAR_COLORS = [COLORS.secondary, '#9B59B6', '#F5A623', COLORS.primary, COLORS.error, '#1ABC9C'];
+const AVATAR_COLORS = [NICO.teal, NICO.orange, NICO.coral, NICO.pink, NICO.purple, NICO.primary];
 function avatarColor(name: string) {
   return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 32 },
-  emptyEmoji: { fontSize: 56 },
-  emptyTitle: { fontSize: 20, fontWeight: '800', color: COLORS.text },
-  emptyHint: { fontSize: 14, color: COLORS.textLight, textAlign: 'center' },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: NICO.screenBg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: SPACING.md, padding: SPACING.xl },
+  emptyEmoji: { fontSize: scale(56) },
+  emptyTitle: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  emptyHint: { ...TEXT_STYLE.screenHint, textAlign: 'center' },
 
   // Tabs
   tabs: {
-    flexDirection: 'row', backgroundColor: COLORS.surface,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    flexDirection: 'row', backgroundColor: NICO.surface,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
   tabBtn: {
-    flex: 1, paddingVertical: 14, alignItems: 'center',
-    borderBottomWidth: 3, borderBottomColor: 'transparent',
+    flex: 1, paddingVertical: SPACING.md, alignItems: 'center',
+    borderBottomWidth: 2.5, borderBottomColor: 'transparent',
   },
-  tabBtnActive: { borderBottomColor: COLORS.primary },
-  tabLabel: { fontSize: 15, fontWeight: '700', color: COLORS.textLight },
-  tabLabelActive: { color: COLORS.primary },
+  tabBtnActive: { borderBottomColor: NICO.primary },
+  tabLabel: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted },
+  tabLabelActive: { color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold },
+  tabPane: { flex: 1, backgroundColor: NICO.screenBg },
 
   // Setup
-  setupContent: { padding: 16, gap: 16, paddingBottom: 40 },
-  setupHint: { fontSize: 13, color: COLORS.textLight, lineHeight: 20 },
+  setupContent: { padding: SPACING.base, gap: SPACING.base, paddingBottom: 40 },
+  setupHint: { ...TEXT_STYLE.screenHint, lineHeight: 20 },
 
   quotaCard: {
-    backgroundColor: COLORS.surface, borderRadius: 16, padding: 16,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.xl, padding: SPACING.base,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    borderWidth: 1, borderColor: NICO.border,
+    ...SHADOW.sm,
   },
-  quotaLabel: { fontSize: 15, fontWeight: '600', color: COLORS.textLight },
-  saveHint: { fontSize: 12, fontWeight: '700', color: COLORS.textLight, marginTop: 2 },
+  quotaLabel: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
+  saveHint: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, marginTop: 2 },
   quotaRight: { flexDirection: 'row', alignItems: 'baseline' },
-  quotaCount: { fontSize: 28, fontWeight: '900', color: COLORS.primary },
-  quotaMax: { fontSize: 16, fontWeight: '700', color: COLORS.textLight },
+  quotaCount: { fontSize: FONT_SIZE['3xl'], fontWeight: FONT_WEIGHT.black, color: NICO.primary },
+  quotaMax: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted },
 
-  presetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  presetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   presetCard: {
-    width: '30%', backgroundColor: COLORS.surface,
-    borderRadius: 16, padding: 12, alignItems: 'center', gap: 6,
+    width: '30%', backgroundColor: NICO.surface,
+    borderRadius: RADIUS.xl, padding: SPACING.md, alignItems: 'center', gap: SPACING.xs,
     borderWidth: 2.5, borderColor: 'transparent',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    ...SHADOW.sm,
     position: 'relative',
   },
   presetCardDisabled: { opacity: 0.35 },
-  presetEmoji: { fontSize: 28 },
-  presetName: { fontSize: 11, fontWeight: '700', color: COLORS.text, textAlign: 'center', lineHeight: 15 },
+  presetEmoji: { fontSize: scale(28) },
+  presetName: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.text, textAlign: 'center', lineHeight: 15 },
   presetTick: {
     position: 'absolute', top: -7, right: -7,
-    width: 22, height: 22, borderRadius: 11,
+    width: scale(22), height: scale(22), borderRadius: scale(11),
     justifyContent: 'center', alignItems: 'center',
   },
-  presetTickText: { fontSize: 12, fontWeight: '900', color: '#fff' },
+  presetTickText: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.black, color: '#fff' },
 
   // Report
-  reportContent: { padding: 16, gap: 14, paddingBottom: 40 },
-  reportHint: { fontSize: 12, color: COLORS.textLight, textAlign: 'center' },
+  reportContent: { padding: SPACING.base, gap: SPACING.md, paddingBottom: 40 },
+  reportHint: { ...TEXT_STYLE.screenHint, textAlign: 'center' },
 
   reportUserCard: {
-    backgroundColor: COLORS.surface, borderRadius: 20, padding: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 3,
-    gap: 10,
+    backgroundColor: NICO.surface, borderRadius: RADIUS['2xl'], padding: SPACING.base,
+    borderWidth: 1, borderColor: NICO.border,
+    ...SHADOW.md,
+    gap: SPACING.sm,
   },
-  reportUserHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
+  reportUserHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: 4 },
   reportAvatar: {
-    width: 44, height: 44, borderRadius: 22,
+    width: scale(44), height: scale(44), borderRadius: scale(22),
     justifyContent: 'center', alignItems: 'center',
   },
-  reportAvatarText: { fontSize: 18, fontWeight: '900', color: '#fff' },
+  reportAvatarText: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.black, color: '#fff' },
   reportUserInfo: { flex: 1 },
-  reportUserName: { fontSize: 17, fontWeight: '900', color: COLORS.text },
-  reportUserSub: { fontSize: 12, color: COLORS.textLight, marginTop: 2 },
+  reportUserName: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.black, color: NICO.text },
 
   reportDayRow: {
-    borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 10, gap: 8,
+    borderTopWidth: 1, borderTopColor: NICO.border, paddingTop: SPACING.sm, gap: SPACING.xs,
   },
-  reportDayRowToday: { backgroundColor: '#EFF6FF', borderRadius: 12, paddingHorizontal: 8, marginHorizontal: -8, paddingBottom: 8 },
-  reportDayTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  reportDayLabel: { fontSize: 12, fontWeight: '700', color: COLORS.textLight, width: 80 },
-  reportDayLabelToday: { color: '#2563EB' },
-  reportDayPips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  reportDayRowToday: { backgroundColor: NICO.primaryLight, borderRadius: RADIUS.lg, paddingHorizontal: SPACING.sm, marginHorizontal: -SPACING.sm, paddingBottom: SPACING.sm },
+  reportDayTopRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  reportDayLabel: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, width: scale(80) },
+  reportDayLabelToday: { color: NICO.primary },
+  reportDayPips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs },
   pip: {
-    width: 34, height: 34, borderRadius: 10,
+    width: scale(34), height: scale(34), borderRadius: RADIUS.md,
     justifyContent: 'center', alignItems: 'center',
   },
-  pipEmpty: { backgroundColor: '#F0F4F8', borderWidth: 2, borderColor: '#E5EAF0' },
-  pipEmoji: { fontSize: 18 },
+  pipEmpty: { backgroundColor: NICO.background, borderWidth: 2, borderColor: NICO.border },
+  pipEmoji: { fontSize: FONT_SIZE.md },
   pipEmojiDim: { opacity: 0.2 },
-  reportMiniBarBg: { flex: 1, height: 7, backgroundColor: COLORS.border, borderRadius: 4, overflow: 'hidden' },
-  reportMiniBar: { height: 7, borderRadius: 4, backgroundColor: COLORS.secondary },
-  reportDayCount: { fontSize: 12, fontWeight: '800', color: COLORS.text, width: 28, textAlign: 'right' },
+  reportMiniBarBg: { flex: 1, height: 7, backgroundColor: NICO.border, borderRadius: 4, overflow: 'hidden' },
+  reportMiniBar: { height: 7, borderRadius: 4, backgroundColor: NICO.success },
+  reportDayCount: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, width: scale(28), textAlign: 'right' },
 });

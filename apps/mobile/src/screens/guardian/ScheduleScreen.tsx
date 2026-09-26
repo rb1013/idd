@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
-import AppText from '../../components/AppText';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COLORS } from '../../constants';
+import { NICO } from '../../constants/theme';
 import { GuardianNavParamList } from '../../navigation';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
@@ -30,11 +29,11 @@ export default function ScheduleScreen() {
 
   return (
     <View style={styles.center}>
-      <ActivityIndicator size="large" color={COLORS.bloomAccent} />
+      <ActivityIndicator size="large" color={NICO.primary} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bloomBody },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: NICO.screenBg },
 });

@@ -825,7 +825,7 @@ gridAvatar:        { width: 56, height: 56, borderRadius: 28, justifyContent: 'c
   empty:       { alignItems: 'center', paddingTop: 60, gap: SPACING.md },
   emptyEmoji:  { fontSize: 56 },
   emptyText:   { ...TEXT_STYLE.cardTitle },
-  emptyHint:   { ...TEXT_STYLE.hint, textAlign: 'center', paddingHorizontal: SPACING['2xl'] },
+  emptyHint:   { ...TEXT_STYLE.screenHint, textAlign: 'center', paddingHorizontal: SPACING['2xl'] },
   emptyBtn:    { ...BTN_SIZE.md, ...BTN_VARIANT.primary, marginTop: SPACING.sm },
   emptyBtnTxt: { ...TEXT_STYLE.buttonSmall },
 

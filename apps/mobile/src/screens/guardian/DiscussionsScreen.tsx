@@ -575,7 +575,7 @@ const s = StyleSheet.create({
 
   empty:     { alignItems: 'center', paddingTop: 60, gap: SPACING.md },
   emptyText: { ...TEXT_STYLE.cardTitle },
-  emptyHint: { ...TEXT_STYLE.hint, textAlign: 'center', paddingHorizontal: SPACING['2xl'] },
+  emptyHint: { ...TEXT_STYLE.screenHint, textAlign: 'center', paddingHorizontal: SPACING['2xl'] },
 
   loadMoreBtn:    { ...BTN_SIZE.sm, ...BTN_VARIANT.outline, alignSelf: 'center', marginTop: SPACING.sm },
   loadMoreText:   { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary },

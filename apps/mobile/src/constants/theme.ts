@@ -209,6 +209,9 @@ export const TEXT_STYLE = {
   bodyMedium: { fontSize: FONT_SIZE.lg,   fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
   bodySmall:  { fontSize: FONT_SIZE.md,   fontWeight: FONT_WEIGHT.regular,  color: NICO.text },
   hint:       { fontSize: FONT_SIZE.base, fontWeight: FONT_WEIGHT.medium,   color: NICO.textMuted },
+  // Descriptive text under a screen/tab header (banners, empty states, section explainers) —
+  // bolder + darker than `hint` on purpose: this is primary reading content, not fine print.
+  screenHint: { fontSize: FONT_SIZE.md,   fontWeight: FONT_WEIGHT.bold,     color: NICO.text },
 
   // ── Labels & captions ─────────────────────────────────────────────────
   label:      { fontSize: FONT_SIZE.lg,   fontWeight: FONT_WEIGHT.bold,     color: NICO.text },

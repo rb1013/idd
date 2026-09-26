@@ -319,5 +319,5 @@ const s = StyleSheet.create({
   empty:      { alignItems: 'center', paddingTop: 80, gap: SPACING.md },
   emptyEmoji: { fontSize: 56 },
   emptyText:  { ...TEXT_STYLE.cardTitle },
-  emptyHint:  { ...TEXT_STYLE.hint, textAlign: 'center', paddingHorizontal: SPACING.xl },
+  emptyHint:  { ...TEXT_STYLE.screenHint, textAlign: 'center', paddingHorizontal: SPACING.xl },
 });
