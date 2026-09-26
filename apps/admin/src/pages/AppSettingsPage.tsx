@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 export default function AppSettingsPage() {
@@ -177,256 +177,234 @@ export default function AppSettingsPage() {
   const dirtyPageSize = parseInt(draftPageSize, 10) !== pageSize;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
       <h1 style={styles.heading}>App Settings</h1>
 
-      <div style={styles.card}>
-        <h2 style={styles.cardTitle}>Tutorial Quota</h2>
-        <p style={styles.cardDesc}>
-          Monthly limit for AI-generated tutorials per guardian. Applies to all guardians.
-          Currently set to <strong>{quotaLimit}</strong>.
-        </p>
-        <form onSubmit={saveQuota} style={styles.form}>
-          <label style={styles.label}>Monthly quota limit</label>
-          <div style={styles.inputRow}>
-            <input
-              type="number" min={1} max={100}
-              value={draftQuota} onChange={e => setDraftQuota(e.target.value)}
-              style={styles.input}
-            />
-            <button
-              type="submit"
-              disabled={savingQuota || !dirtyQuota || parseInt(draftQuota, 10) < 1 || isNaN(parseInt(draftQuota, 10))}
-              style={{ ...styles.btn, ...(savingQuota || !dirtyQuota ? styles.btnDisabled : {}) }}
-            >
-              {savingQuota ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-          {savedQuota && <p style={styles.savedMsg}>✓ Saved successfully</p>}
-          {dirtyQuota && !savedQuota && <p style={styles.hint}>Changed from {quotaLimit} → {draftQuota}</p>}
-        </form>
-      </div>
+      <SectionCard title="Tutorials">
+        <SettingRow
+          label="Tutorial Quota"
+          description="Monthly limit for AI-generated tutorials per guardian. Applies to all guardians."
+          draft={draftQuota} onDraftChange={setDraftQuota} onSave={saveQuota}
+          saving={savingQuota} saved={savedQuota} dirty={dirtyQuota}
+          invalid={isNaN(parseInt(draftQuota, 10)) || parseInt(draftQuota, 10) < 1}
+          min={1} max={100}
+        />
+        <SettingRow
+          label="Tutorial Default Duration"
+          description="Duration (in seconds) used when generating AI tutorials. Applies to all new tutorials."
+          draft={draftDuration} onDraftChange={setDraftDuration} onSave={saveDuration}
+          saving={savingDuration} saved={savedDuration} dirty={dirtyDuration}
+          invalid={isNaN(parseInt(draftDuration, 10)) || parseInt(draftDuration, 10) < 5}
+          min={5} max={120}
+        />
+        <SettingRow
+          label="Frames per Tutorial"
+          description="Number of frames (slides) Claude generates per tutorial. Each frame gets its own image and audio. More frames = richer tutorial but higher cost (~$0.04 per extra frame)."
+          draft={draftFrames} onDraftChange={setDraftFrames} onSave={saveFrames}
+          saving={savingFrames} saved={savedFrames} dirty={dirtyFrames}
+          invalid={isNaN(parseInt(draftFrames, 10)) || parseInt(draftFrames, 10) < 1}
+          min={1} max={10}
+        />
+        <SettingRow
+          label="Image Generation Timeout"
+          description="Maximum time (in milliseconds) to wait for a single DALL·E image call before failing the job. All frames generate in parallel so this is the wall-time cap for the image step regardless of frame count. Free-tier wall-clock limit is 150s — keep this well below that."
+          draft={draftTimeout} onDraftChange={setDraftTimeout} onSave={saveTimeout}
+          saving={savingTimeout} saved={savedTimeout} dirty={dirtyTimeout}
+          invalid={isNaN(parseInt(draftTimeout, 10)) || parseInt(draftTimeout, 10) < 10000}
+          min={10000} max={120000} step={1000} inputWidth={110}
+        />
+      </SectionCard>
 
-      <div style={styles.card}>
-        <h2 style={styles.cardTitle}>Tutorial Default Duration</h2>
-        <p style={styles.cardDesc}>
-          Duration (in seconds) used when generating AI tutorials. Applies to all new tutorials.
-          Currently set to <strong>{defaultDuration}s</strong>.
-        </p>
-        <form onSubmit={saveDuration} style={styles.form}>
-          <label style={styles.label}>Duration (seconds)</label>
-          <div style={styles.inputRow}>
-            <input
-              type="number" min={5} max={120}
-              value={draftDuration} onChange={e => setDraftDuration(e.target.value)}
-              style={styles.input}
-            />
-            <button
-              type="submit"
-              disabled={savingDuration || !dirtyDuration || parseInt(draftDuration, 10) < 5 || isNaN(parseInt(draftDuration, 10))}
-              style={{ ...styles.btn, ...(savingDuration || !dirtyDuration ? styles.btnDisabled : {}) }}
-            >
-              {savingDuration ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-          {savedDuration && <p style={styles.savedMsg}>✓ Saved successfully</p>}
-          {dirtyDuration && !savedDuration && <p style={styles.hint}>Changed from {defaultDuration}s → {draftDuration}s</p>}
-        </form>
-      </div>
+      <SectionCard title="Reports">
+        <SettingRow
+          label="Report Message Snapshot Limit"
+          description="Number of recent messages saved as evidence when a guardian reports a user. Higher values give moderators more context but use more storage."
+          draft={draftSnapshot} onDraftChange={setDraftSnapshot} onSave={saveSnapshotLimit}
+          saving={savingSnapshot} saved={savedSnapshot} dirty={dirtySnapshot}
+          invalid={isNaN(parseInt(draftSnapshot, 10)) || parseInt(draftSnapshot, 10) < 1}
+          min={1} max={100}
+        />
+      </SectionCard>
 
-      <div style={styles.card}>
-        <h2 style={styles.cardTitle}>Frames per Tutorial</h2>
-        <p style={styles.cardDesc}>
-          Number of frames (slides) Claude generates per tutorial. Each frame gets its own image and audio.
-          More frames = richer tutorial but higher cost (~$0.04 per extra frame).
-          Currently set to <strong>{maxFrames} frames</strong>.
-        </p>
-        <form onSubmit={saveFrames} style={styles.form}>
-          <label style={styles.label}>Max frames</label>
-          <div style={styles.inputRow}>
-            <input
-              type="number" min={1} max={10}
-              value={draftFrames} onChange={e => setDraftFrames(e.target.value)}
-              style={styles.input}
-            />
-            <button
-              type="submit"
-              disabled={savingFrames || !dirtyFrames || parseInt(draftFrames, 10) < 1 || isNaN(parseInt(draftFrames, 10))}
-              style={{ ...styles.btn, ...(savingFrames || !dirtyFrames ? styles.btnDisabled : {}) }}
-            >
-              {savingFrames ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-          {savedFrames && <p style={styles.savedMsg}>✓ Saved successfully</p>}
-          {dirtyFrames && !savedFrames && <p style={styles.hint}>Changed from {maxFrames} → {draftFrames} frames</p>}
-        </form>
-      </div>
+      <SectionCard title="Pagination">
+        <SettingRow
+          label="List Pagination Size"
+          description="Number of records shown per page in the mobile app (discussions, tutorials, etc.). Users can load up to 3 pages before being prompted to use filters."
+          draft={draftPageSize} onDraftChange={setDraftPageSize} onSave={savePageSize}
+          saving={savingPageSize} saved={savedPageSize} dirty={dirtyPageSize}
+          invalid={isNaN(parseInt(draftPageSize, 10)) || parseInt(draftPageSize, 10) < 1}
+          min={1} max={50}
+        />
+      </SectionCard>
 
-      <div style={styles.card}>
-        <h2 style={styles.cardTitle}>Report Message Snapshot Limit</h2>
-        <p style={styles.cardDesc}>
-          Number of recent messages saved as evidence when a guardian reports a user.
-          Higher values give moderators more context but use more storage.
-          Currently set to <strong>{snapshotLimit} messages</strong>.
-        </p>
-        <form onSubmit={saveSnapshotLimit} style={styles.form}>
-          <label style={styles.label}>Messages to snapshot</label>
-          <div style={styles.inputRow}>
-            <input
-              type="number" min={1} max={100}
-              value={draftSnapshot} onChange={e => setDraftSnapshot(e.target.value)}
-              style={styles.input}
-            />
-            <button
-              type="submit"
-              disabled={savingSnapshot || !dirtySnapshot || parseInt(draftSnapshot, 10) < 1 || isNaN(parseInt(draftSnapshot, 10))}
-              style={{ ...styles.btn, ...(savingSnapshot || !dirtySnapshot ? styles.btnDisabled : {}) }}
-            >
-              {savingSnapshot ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-          {savedSnapshot && <p style={styles.savedMsg}>✓ Saved successfully</p>}
-          {dirtySnapshot && !savedSnapshot && <p style={styles.hint}>Changed from {snapshotLimit} → {draftSnapshot} messages</p>}
-        </form>
-      </div>
+      <SectionCard title="Notifications">
+        <SettingRow
+          label="Tutorial Notification Window"
+          description="How many hours back the app shows tutorial approval/rejection notifications. Older notifications are hidden automatically."
+          draft={draftTutorialWindow} onDraftChange={setDraftTutorialWindow} onSave={saveTutorialWindow}
+          saving={savingTutorialWindow} saved={savedTutorialWindow} dirty={dirtyTutorialWindow}
+          invalid={isNaN(parseInt(draftTutorialWindow, 10)) || parseInt(draftTutorialWindow, 10) < 1}
+          min={1} max={168}
+        />
+        <SettingRow
+          label="Discussion Notification Limit"
+          description="Maximum number of unread discussion reply notifications shown to a guardian. Only unread notifications are fetched."
+          draft={draftDiscussionLimit} onDraftChange={setDraftDiscussionLimit} onSave={saveDiscussionLimit}
+          saving={savingDiscussionLimit} saved={savedDiscussionLimit} dirty={dirtyDiscussionLimit}
+          invalid={isNaN(parseInt(draftDiscussionLimit, 10)) || parseInt(draftDiscussionLimit, 10) < 1}
+          min={1} max={200}
+        />
+      </SectionCard>
+    </div>
+  );
+}
 
-      <div style={styles.card}>
-        <h2 style={styles.cardTitle}>List Pagination Size</h2>
-        <p style={styles.cardDesc}>
-          Number of records shown per page in the mobile app (discussions, tutorials, etc.).
-          Users can load up to 3 pages before being prompted to use filters.
-          Currently set to <strong>{pageSize} records</strong> (max {pageSize * 3} before filters nudge).
-        </p>
-        <form onSubmit={savePageSize} style={styles.form}>
-          <label style={styles.label}>Records per page</label>
-          <div style={styles.inputRow}>
-            <input
-              type="number" min={1} max={50}
-              value={draftPageSize} onChange={e => setDraftPageSize(e.target.value)}
-              style={styles.input}
-            />
-            <button
-              type="submit"
-              disabled={savingPageSize || !dirtyPageSize || parseInt(draftPageSize, 10) < 1 || isNaN(parseInt(draftPageSize, 10))}
-              style={{ ...styles.btn, ...(savingPageSize || !dirtyPageSize ? styles.btnDisabled : {}) }}
-            >
-              {savingPageSize ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-          {savedPageSize && <p style={styles.savedMsg}>✓ Saved successfully</p>}
-          {dirtyPageSize && !savedPageSize && <p style={styles.hint}>Changed from {pageSize} → {draftPageSize} records</p>}
-        </form>
-      </div>
+// ── Shared row/section components ────────────────────────────────────────
 
-      <div style={styles.card}>
-        <h2 style={styles.cardTitle}>Tutorial Notification Window</h2>
-        <p style={styles.cardDesc}>
-          How many hours back the app shows tutorial approval/rejection notifications.
-          Older notifications are hidden automatically. Currently set to <strong>{tutorialWindow} hours</strong>.
-        </p>
-        <form onSubmit={saveTutorialWindow} style={styles.form}>
-          <label style={styles.label}>Window (hours)</label>
-          <div style={styles.inputRow}>
-            <input
-              type="number" min={1} max={168}
-              value={draftTutorialWindow} onChange={e => setDraftTutorialWindow(e.target.value)}
-              style={styles.input}
-            />
-            <button
-              type="submit"
-              disabled={savingTutorialWindow || !dirtyTutorialWindow || parseInt(draftTutorialWindow, 10) < 1 || isNaN(parseInt(draftTutorialWindow, 10))}
-              style={{ ...styles.btn, ...(savingTutorialWindow || !dirtyTutorialWindow ? styles.btnDisabled : {}) }}
-            >
-              {savingTutorialWindow ? 'Saving…' : 'Save'}
-            </button>
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  const items = React.Children.toArray(children);
+  return (
+    <div>
+      <h2 style={styles.sectionTitle}>{title}</h2>
+      <div style={styles.sectionCard}>
+        {items.map((child, i) => (
+          <div key={i} style={i < items.length - 1 ? styles.rowDivider : undefined}>
+            {child}
           </div>
-          {savedTutorialWindow && <p style={styles.savedMsg}>✓ Saved successfully</p>}
-          {dirtyTutorialWindow && !savedTutorialWindow && <p style={styles.hint}>Changed from {tutorialWindow}h → {draftTutorialWindow}h</p>}
-        </form>
-      </div>
-
-      <div style={styles.card}>
-        <h2 style={styles.cardTitle}>Discussion Notification Limit</h2>
-        <p style={styles.cardDesc}>
-          Maximum number of unread discussion reply notifications shown to a guardian.
-          Only unread notifications are fetched. Currently set to <strong>{discussionLimit}</strong>.
-        </p>
-        <form onSubmit={saveDiscussionLimit} style={styles.form}>
-          <label style={styles.label}>Max notifications</label>
-          <div style={styles.inputRow}>
-            <input
-              type="number" min={1} max={200}
-              value={draftDiscussionLimit} onChange={e => setDraftDiscussionLimit(e.target.value)}
-              style={styles.input}
-            />
-            <button
-              type="submit"
-              disabled={savingDiscussionLimit || !dirtyDiscussionLimit || parseInt(draftDiscussionLimit, 10) < 1 || isNaN(parseInt(draftDiscussionLimit, 10))}
-              style={{ ...styles.btn, ...(savingDiscussionLimit || !dirtyDiscussionLimit ? styles.btnDisabled : {}) }}
-            >
-              {savingDiscussionLimit ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-          {savedDiscussionLimit && <p style={styles.savedMsg}>✓ Saved successfully</p>}
-          {dirtyDiscussionLimit && !savedDiscussionLimit && <p style={styles.hint}>Changed from {discussionLimit} → {draftDiscussionLimit}</p>}
-        </form>
-      </div>
-
-      <div style={styles.card}>
-        <h2 style={styles.cardTitle}>Image Generation Timeout</h2>
-        <p style={styles.cardDesc}>
-          Maximum time (in milliseconds) to wait for a single DALL·E image call before failing the job.
-          All frames generate in parallel so this is the wall-time cap for the image step regardless of frame count.
-          Free-tier wall-clock limit is 150s — keep this well below that. Currently set to <strong>{imageTimeout}ms ({imageTimeout / 1000}s)</strong>.
-        </p>
-        <form onSubmit={saveTimeout} style={styles.form}>
-          <label style={styles.label}>Timeout (milliseconds)</label>
-          <div style={styles.inputRow}>
-            <input
-              type="number" min={10000} max={120000} step={1000}
-              value={draftTimeout} onChange={e => setDraftTimeout(e.target.value)}
-              style={{ ...styles.input, width: 130 }}
-            />
-            <button
-              type="submit"
-              disabled={savingTimeout || !dirtyTimeout || parseInt(draftTimeout, 10) < 10000 || isNaN(parseInt(draftTimeout, 10))}
-              style={{ ...styles.btn, ...(savingTimeout || !dirtyTimeout ? styles.btnDisabled : {}) }}
-            >
-              {savingTimeout ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-          {savedTimeout && <p style={styles.savedMsg}>✓ Saved successfully</p>}
-          {dirtyTimeout && !savedTimeout && <p style={styles.hint}>Changed from {imageTimeout}ms → {draftTimeout}ms</p>}
-        </form>
+        ))}
       </div>
     </div>
   );
 }
 
+interface SettingRowProps {
+  label: string;
+  description: string;
+  draft: string;
+  onDraftChange: (v: string) => void;
+  onSave: (e: React.FormEvent) => void;
+  saving: boolean;
+  saved: boolean;
+  dirty: boolean;
+  invalid: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
+  inputWidth?: number;
+}
+
+function SettingRow({
+  label, description, draft, onDraftChange, onSave,
+  saving, saved, dirty, invalid, min, max, step, inputWidth,
+}: SettingRowProps) {
+  return (
+    <form onSubmit={onSave} style={styles.row}>
+      <div style={styles.rowLeft}>
+        <InfoPopover text={description} />
+        <span style={styles.rowLabel}>{label}</span>
+      </div>
+      <div style={styles.rowRight}>
+        <input
+          type="number" min={min} max={max} step={step}
+          value={draft} onChange={e => onDraftChange(e.target.value)}
+          style={{ ...styles.input, ...(inputWidth ? { width: inputWidth } : {}) }}
+        />
+        <button
+          type="submit"
+          disabled={saving || !dirty || invalid}
+          style={{ ...styles.btn, ...((saving || !dirty || invalid) ? styles.btnDisabled : {}), ...(saved ? styles.btnSaved : {}) }}
+        >
+          {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function InfoPopover({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={styles.infoWrap}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{ ...styles.infoBtn, ...(open ? styles.infoBtnActive : {}) }}
+        aria-label="More info"
+      >
+        ⓘ
+      </button>
+      {open && (
+        <div style={styles.popover}>
+          {text}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const styles: Record<string, React.CSSProperties> = {
-  heading: { fontSize: 24, fontWeight: 700, color: '#2D3748', marginBottom: 24 },
+  heading: { fontSize: 24, fontWeight: 700, color: '#2D3748', margin: 0 },
 
-  card: {
-    background: '#fff', borderRadius: 12,
-    border: '1px solid #E2E8F0', padding: 28, maxWidth: 480,
+  sectionTitle: {
+    fontSize: 12, fontWeight: 700, color: '#2D3748',
+    textTransform: 'uppercase', letterSpacing: '0.06em',
+    margin: '0 0 8px 2px', textAlign: 'left',
   },
-  cardTitle: { fontSize: 17, fontWeight: 700, color: '#2D3748', marginBottom: 6 },
-  cardDesc:  { fontSize: 14, color: '#718096', lineHeight: 1.6, marginBottom: 20 },
+  sectionCard: {
+    background: '#fff', borderRadius: 12,
+    border: '1px solid #E2E8F0', maxWidth: 640,
+    overflow: 'visible',
+  },
+  rowDivider: { borderBottom: '1px solid #EDF2F7' },
 
-  form:     { display: 'flex', flexDirection: 'column', gap: 8 },
-  label:    { fontSize: 13, fontWeight: 600, color: '#4A5568' },
-  inputRow: { display: 'flex', gap: 10, alignItems: 'center' },
+  row: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    flexWrap: 'wrap', gap: 12,
+    padding: '14px 18px',
+  },
+  rowLeft: { display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 },
+  rowLabel: { fontSize: 14, fontWeight: 600, color: '#2D3748', whiteSpace: 'nowrap' },
+  rowRight: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 },
+
   input: {
-    width: 100, padding: '9px 12px', fontSize: 15,
+    width: 80, padding: '7px 10px', fontSize: 14,
     border: '1.5px solid #CBD5E0', borderRadius: 8,
     color: '#2D3748', outline: 'none',
   },
   btn: {
-    padding: '9px 20px', background: '#5B8DB8', color: '#fff',
-    border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600,
-    cursor: 'pointer',
+    padding: '7px 16px', background: '#5B8DB8', color: '#fff',
+    border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600,
+    cursor: 'pointer', whiteSpace: 'nowrap', minWidth: 76,
   },
   btnDisabled: { opacity: 0.45, cursor: 'not-allowed' },
-  savedMsg: { fontSize: 13, color: '#38A169', fontWeight: 600, margin: 0 },
-  hint:     { fontSize: 13, color: '#718096', margin: 0 },
+  btnSaved: { background: '#38A169' },
+
+  // Info icon + popover
+  infoWrap: { position: 'relative', display: 'inline-flex', flexShrink: 0 },
+  infoBtn: {
+    width: 24, height: 24, borderRadius: '50%',
+    border: 'none', background: '#5B8DB8',
+    color: '#fff', fontSize: 14, fontWeight: 700, lineHeight: 1,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer', padding: 0, flexShrink: 0,
+  },
+  infoBtnActive: { background: '#3E6B93' },
+  popover: {
+    position: 'absolute', top: '130%', left: 0, zIndex: 20,
+    width: 280, background: '#2D3748', color: '#F7FAFC',
+    borderRadius: 10, padding: '12px 14px',
+    fontSize: 13, lineHeight: 1.55, fontWeight: 400,
+    boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+  },
 };

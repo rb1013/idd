@@ -19,6 +19,12 @@ Chat in the ELIS app is used by IDD users. Since this is a vulnerable user group
   - `filter.removeWords('word1', 'word2')` — whitelist words (useful for IDD context where some words may be innocent false positives)
   - `new Filter({ list: [...] })` — replace entire list with custom one
 
+**Concrete implementation:** Layer 1 is actually two sources merged into one `Filter` instance in `apps/mobile/src/screens/chat/ChatScreen.tsx`:
+1. The `bad-words` package's own built-in list (ships inside `node_modules`, not part of this repo).
+2. `apps/mobile/src/lib/badWordsList.json` — a static config file with `add` (~280 extra words layered on top of the library list) and `remove` (whitelist, currently empty) arrays, fed into `addWords`/`removeWords` above.
+
+Both require an app release to change — neither is admin-editable.
+
 ### Layer 2 — Server-side (Supabase Edge Function + `blocked_words` table)
 
 - Edge Function acts as gatekeeper before inserting into the `messages` table

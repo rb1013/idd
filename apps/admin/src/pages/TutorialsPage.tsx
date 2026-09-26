@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useVisibleCount } from '../hooks/useVisibleCount';
 import type { Tutorial } from '../../../mobile/src/types';
 
 type Tab = 'library' | 'moderation' | 'upload';
@@ -17,7 +18,6 @@ export default function TutorialsPage() {
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -33,6 +33,12 @@ export default function TutorialsPage() {
   // Library preview
   const [previewing, setPreviewing] = useState<Tutorial | null>(null);
   const [previewFrames, setPreviewFrames] = useState<any[]>([]);
+
+  // Library filters
+  const [filterName,     setFilterName]     = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterFrom,     setFilterFrom]     = useState('');
+  const [filterTo,       setFilterTo]       = useState('');
 
   useEffect(() => {
     fetchTutorials();
@@ -154,7 +160,7 @@ export default function TutorialsPage() {
     });
 
     if (error) alert('Error saving tutorial: ' + error.message);
-    else { setTitle(''); setDescription(''); setCategory(''); setShowForm(false); fetchTutorials(); }
+    else { setTitle(''); setDescription(''); setCategory(''); fetchTutorials(); }
     setUploading(false);
   }
 
@@ -162,6 +168,28 @@ export default function TutorialsPage() {
     if (!confirm('Delete this tutorial? This will remove it from all user learning pages.')) return;
     await supabase.from('tutorials').delete().eq('id', id);
     setTutorials(prev => prev.filter(t => t.id !== id));
+  }
+
+  const filteredTutorials = useMemo(() => {
+    return tutorials.filter(t => {
+      const name = ((t as any).display_name || t.title || '').toLowerCase();
+      if (filterName && !name.includes(filterName.toLowerCase())) return false;
+      if (filterCategory && t.category !== filterCategory) return false;
+      if (filterFrom && new Date(t.created_at) < new Date(filterFrom)) return false;
+      if (filterTo) {
+        const to = new Date(filterTo); to.setHours(23, 59, 59, 999);
+        if (new Date(t.created_at) > to) return false;
+      }
+      return true;
+    });
+  }, [tutorials, filterName, filterCategory, filterFrom, filterTo]);
+
+  const tutorialsResetKey = `${filterName}|${filterCategory}|${filterFrom}|${filterTo}`;
+  const { visible: visibleTutorials, showLoadMore, loadMore, showCapMessage, pageSize } = useVisibleCount(filteredTutorials, tutorialsResetKey);
+
+  const hasLibraryFilters = filterName || filterCategory || filterFrom || filterTo;
+  function clearLibraryFilters() {
+    setFilterName(''); setFilterCategory(''); setFilterFrom(''); setFilterTo('');
   }
 
   return (
@@ -195,33 +223,56 @@ export default function TutorialsPage() {
             </div>
           ) : (
             <>
+              <div style={styles.filterBar}>
+                <input style={styles.filterInput} placeholder="Search by name…" value={filterName} onChange={e => setFilterName(e.target.value)} />
+                <select style={styles.filterInput} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+                  <option value="">All categories</option>
+                  {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                </select>
+                <div style={styles.dateRange}>
+                  <input type="date" style={styles.dateInput} value={filterFrom} onChange={e => setFilterFrom(e.target.value)} title="From date" />
+                  <span style={styles.dateSep}>–</span>
+                  <input type="date" style={styles.dateInput} value={filterTo} onChange={e => setFilterTo(e.target.value)} title="To date" />
+                </div>
+                {hasLibraryFilters && <button style={styles.clearBtn} onClick={clearLibraryFilters}>Clear</button>}
+              </div>
+
               {loading ? <p>Loading…</p> : (
-                <table style={styles.table}>
-                  <thead>
-                    <tr>{['Title', 'Category', 'Format', 'Source', 'Links', 'Date', 'Actions'].map(h => <th key={h} style={styles.th}>{h}</th>)}</tr>
-                  </thead>
-                  <tbody>
-                    {tutorials.map(t => (
-                      <tr key={t.id} style={styles.tr}>
-                        <td style={styles.td}>{(t as any).display_name || t.title}</td>
-                        <td style={styles.td}><span style={styles.badge}>{t.category}</span></td>
-                        <td style={styles.td}><span style={styles.fmtBadge}>{t.format}</span></td>
-                        <td style={styles.td}><span style={{ ...styles.badge, background: (t as any).source === 'ai_generated' ? '#EBF8FF' : '#F0FFF4', color: (t as any).source === 'ai_generated' ? '#3182CE' : '#2F855A' }}>{(t as any).source === 'ai_generated' ? 'AI' : 'Admin'}</span></td>
-                        <td style={styles.td}>{t.link_count > 0 ? `🔗 ${t.link_count}` : '—'}</td>
-                        <td style={styles.td}>{new Date(t.created_at).toLocaleDateString()}</td>
-                        <td style={styles.td}>
-                          {(t as any).source === 'ai_generated'
-                            ? <a style={{ ...styles.viewLink, cursor: 'pointer' }} onClick={() => openPreview(t)}>View</a>
-                            : t.video_url && <a href={t.video_url} target="_blank" style={styles.viewLink} rel="noreferrer">View</a>
-                          }
-                          <button style={{ ...styles.deleteBtn, marginLeft: 8 }} onClick={() => deleteTutorial(t.id)}>Delete</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <>
+                  <div style={styles.resultCount}>Showing {visibleTutorials.length} of {filteredTutorials.length} tutorial{filteredTutorials.length !== 1 ? 's' : ''}</div>
+                  <table style={styles.table}>
+                    <thead>
+                      <tr>{['Title', 'Category', 'Format', 'Source', 'Links', 'Date', 'Actions'].map(h => <th key={h} style={styles.th}>{h}</th>)}</tr>
+                    </thead>
+                    <tbody>
+                      {visibleTutorials.map(t => (
+                        <tr key={t.id} style={styles.tr}>
+                          <td style={styles.td}>{(t as any).display_name || t.title}</td>
+                          <td style={styles.td}><span style={styles.badge}>{t.category}</span></td>
+                          <td style={styles.td}><span style={styles.fmtBadge}>{t.format}</span></td>
+                          <td style={styles.td}><span style={{ ...styles.badge, background: (t as any).source === 'ai_generated' ? '#EBF8FF' : '#F0FFF4', color: (t as any).source === 'ai_generated' ? '#3182CE' : '#2F855A' }}>{(t as any).source === 'ai_generated' ? 'AI' : 'Admin'}</span></td>
+                          <td style={styles.td}>{t.link_count > 0 ? `🔗 ${t.link_count}` : '—'}</td>
+                          <td style={styles.td}>{new Date(t.created_at).toLocaleDateString()}</td>
+                          <td style={styles.td}>
+                            {(t as any).source === 'ai_generated'
+                              ? <a style={{ ...styles.viewLink, cursor: 'pointer' }} onClick={() => openPreview(t)}>View</a>
+                              : t.video_url && <a href={t.video_url} target="_blank" style={styles.viewLink} rel="noreferrer">View</a>
+                            }
+                            <button style={{ ...styles.deleteBtn, marginLeft: 8 }} onClick={() => deleteTutorial(t.id)}>Delete</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {showLoadMore && (
+                    <button style={styles.loadMoreBtn} onClick={loadMore}>Load {Math.min(pageSize, filteredTutorials.length - visibleTutorials.length)} more</button>
+                  )}
+                  {showCapMessage && (
+                    <p style={styles.capMessage}>Use filters to narrow down results</p>
+                  )}
+                </>
               )}
-              {!loading && tutorials.length === 0 && <p style={styles.empty}>No approved tutorials yet.</p>}
+              {!loading && filteredTutorials.length === 0 && <p style={styles.empty}>{tutorials.length === 0 ? 'No approved tutorials yet.' : 'No tutorials match your filters.'}</p>}
             </>
           )}
         </>
@@ -476,6 +527,37 @@ const styles: Record<string, React.CSSProperties> = {
   tabBtn: { background: '#EDF2F7', color: '#4A5568', border: 'none', borderRadius: 8, padding: '9px 18px', cursor: 'pointer', fontWeight: 600, fontSize: 14 },
   tabBtnActive: { background: '#5B8DB8', color: '#fff' },
   badgeDot: { position: 'absolute', top: 4, right: 4, width: 8, height: 8, borderRadius: '50%', background: '#E53E3E', display: 'inline-block' },
+
+  filterBar: {
+    display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center',
+    background: '#fff', border: '1px solid #E2E8F0',
+    borderRadius: 10, padding: '14px 16px', marginBottom: 16,
+  },
+  filterInput: {
+    flex: '1 1 160px', padding: '8px 12px', fontSize: 14,
+    border: '1.5px solid #CBD5E0', borderRadius: 8,
+    color: '#2D3748', outline: 'none',
+  },
+  dateRange: { display: 'flex', alignItems: 'center', gap: 6 },
+  dateInput: {
+    padding: '8px 10px', fontSize: 14,
+    border: '1.5px solid #CBD5E0', borderRadius: 8,
+    color: '#2D3748', outline: 'none',
+  },
+  dateSep: { fontSize: 14, color: '#A0AEC0' },
+  clearBtn: {
+    padding: '8px 16px', fontSize: 13, fontWeight: 600,
+    background: '#FFF5F5', color: '#C53030',
+    border: '1px solid #FED7D7', borderRadius: 8, cursor: 'pointer',
+  },
+  resultCount: { fontSize: 13, color: '#718096', padding: '0 0 10px' },
+  loadMoreBtn: {
+    display: 'block', margin: '20px auto 0', padding: '10px 24px',
+    fontSize: 14, fontWeight: 600, color: '#5B8DB8',
+    background: '#EBF4FF', border: '1px solid #BEE3F8',
+    borderRadius: 8, cursor: 'pointer',
+  },
+  capMessage: { textAlign: 'center', color: '#A0AEC0', fontSize: 13, fontStyle: 'italic', marginTop: 16 },
 
   table: { width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
   th: { padding: '14px 16px', textAlign: 'left', fontSize: 13, fontWeight: 600, color: '#718096', background: '#F7FAFC', borderBottom: '1px solid #E2E8F0' },

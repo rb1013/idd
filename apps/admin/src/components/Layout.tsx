@@ -16,6 +16,7 @@ const METADATA_ITEMS = [
 const TOP_ITEMS = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/tutorials',  label: 'Tutorials' },
+  { to: '/guardians',  label: 'Guardians' },
   { to: '/users',      label: 'Users' },
   { to: '/reports',       label: 'Reports' },
   { to: '/blocked-words', label: 'Blocked Words' },
@@ -98,6 +99,7 @@ const styles: Record<string, React.CSSProperties> = {
   navLink: {
     padding: '12px 24px', textDecoration: 'none', color: '#718096',
     fontSize: 15, fontWeight: 500, borderLeft: '3px solid transparent',
+    textAlign: 'left' as const,
   },
   navLinkActive: { color: '#5B8DB8', borderLeftColor: '#5B8DB8', background: '#EBF4FF' },
 
@@ -112,6 +114,7 @@ const styles: Record<string, React.CSSProperties> = {
   subLink: {
     padding: '10px 24px 10px 36px', textDecoration: 'none', color: '#718096',
     fontSize: 14, fontWeight: 500, borderLeft: '3px solid transparent',
+    textAlign: 'left' as const,
   },
   subLinkActive: { color: '#5B8DB8', borderLeftColor: '#5B8DB8', background: '#EBF4FF' },
 

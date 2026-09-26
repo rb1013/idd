@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useVisibleCount } from '../hooks/useVisibleCount';
 
 interface SnapshotMessage {
   id: string;
@@ -111,6 +112,10 @@ export default function ReportsPage() {
     setReports(prev => prev.filter(r => r.reported_learner?.id !== row.learnerId));
   }
 
+  const reportsResetKey = `${filterReported}|${filterReportedBy}|${filterGuardian}|${filterFrom}|${filterTo}`;
+  const { visible: visibleReports, showLoadMore: showLoadMoreReports, loadMore: loadMoreReports, showCapMessage: showCapReports, pageSize: pageSizeReports } = useVisibleCount(filtered, reportsResetKey);
+  const { visible: visibleStats, showLoadMore: showLoadMoreStats, loadMore: loadMoreStats, showCapMessage: showCapStats, pageSize: pageSizeStats } = useVisibleCount(stats);
+
   const hasFilters = filterReported || filterReportedBy || filterGuardian || filterFrom || filterTo;
 
   function clearFilters() {
@@ -166,13 +171,13 @@ export default function ReportsPage() {
             </div>
           ) : (
             <div style={styles.tableWrap}>
-              <div style={styles.resultCount}>Showing {filtered.length} of {reports.length} report{reports.length !== 1 ? 's' : ''}</div>
+              <div style={styles.resultCount}>Showing {visibleReports.length} of {filtered.length} report{filtered.length !== 1 ? 's' : ''}</div>
               <table style={styles.table}>
                 <thead>
                   <tr>{TABLE_COLS.map(col => <th key={col} style={styles.th}>{col}</th>)}</tr>
                 </thead>
                 <tbody>
-                  {filtered.map((report, i) => {
+                  {visibleReports.map((report, i) => {
                     const expanded = expandedId === report.id;
                     const snapshot = report.message_snapshot ?? [];
                     return (
@@ -231,6 +236,12 @@ export default function ReportsPage() {
                   })}
                 </tbody>
               </table>
+              {showLoadMoreReports && (
+                <button style={styles.loadMoreBtn} onClick={loadMoreReports}>Load {Math.min(pageSizeReports, filtered.length - visibleReports.length)} more</button>
+              )}
+              {showCapReports && (
+                <p style={styles.capMessage}>Use filters to narrow down results</p>
+              )}
             </div>
           )}
         </>
@@ -248,6 +259,7 @@ export default function ReportsPage() {
           ) : (
             <>
               <p style={styles.statsDesc}>Number of times each learner has been reported by other learners.</p>
+              <div style={styles.resultCount}>Showing {visibleStats.length} of {stats.length} learner{stats.length !== 1 ? 's' : ''}</div>
               <div style={styles.tableWrap}>
                 <table style={styles.table}>
                   <thead>
@@ -259,7 +271,7 @@ export default function ReportsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {stats.map((row, i) => (
+                    {visibleStats.map((row, i) => (
                       <tr key={row.learnerId} style={{ background: i % 2 === 0 ? '#fff' : '#F7FAFC' }}>
                         <td style={{ ...styles.td, color: '#A0AEC0', width: 40, fontVariantNumeric: 'tabular-nums' }}>{i + 1}</td>
                         <td style={styles.td}><span style={styles.reportedBadge}>{row.name}</span></td>
@@ -282,6 +294,12 @@ export default function ReportsPage() {
                     ))}
                   </tbody>
                 </table>
+                {showLoadMoreStats && (
+                  <button style={styles.loadMoreBtn} onClick={loadMoreStats}>Load {Math.min(pageSizeStats, stats.length - visibleStats.length)} more</button>
+                )}
+                {showCapStats && (
+                  <p style={styles.capMessage}>Use filters to narrow down results</p>
+                )}
               </div>
             </>
           )}
@@ -330,6 +348,13 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   resultCount: { fontSize: 13, color: '#718096', padding: '10px 0 6px' },
+  loadMoreBtn: {
+    display: 'block', margin: '20px auto 0', padding: '10px 24px',
+    fontSize: 14, fontWeight: 600, color: '#5B8DB8',
+    background: '#EBF4FF', border: '1px solid #BEE3F8',
+    borderRadius: 8, cursor: 'pointer',
+  },
+  capMessage: { textAlign: 'center', color: '#A0AEC0', fontSize: 13, fontStyle: 'italic', marginTop: 16 },
 
   tableWrap: { overflowX: 'auto', borderRadius: 12, border: '1px solid #E2E8F0' },
   table:     { width: '100%', borderCollapse: 'collapse', fontSize: 14 },

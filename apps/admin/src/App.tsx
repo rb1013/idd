@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import LoginPage from './pages/LoginPage';
@@ -7,6 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import TutorialsPage from './pages/TutorialsPage';
 import CategoriesPage from './pages/CategoriesPage';
 import UsersPage from './pages/UsersPage';
+import GuardiansPage from './pages/GuardiansPage';
 import SituationTagsPage from './pages/SituationTagsPage';
 import MedicalConditionsPage from './pages/MedicalConditionsPage';
 import EventCategoriesPage from './pages/EventCategoriesPage';
@@ -44,6 +44,7 @@ function App() {
             <Route path="/tutorials" element={<TutorialsPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/users" element={<UsersPage />} />
+            <Route path="/guardians" element={<GuardiansPage />} />
             <Route path="/situation-tags" element={<SituationTagsPage />} />
             <Route path="/medical-conditions" element={<MedicalConditionsPage />} />
             <Route path="/event-categories" element={<EventCategoriesPage />} />
