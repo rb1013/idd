@@ -39,7 +39,6 @@ function NoFriendsEmptyState() {
           activeOpacity={0.75}
         >
           <AppText style={s.emptySpeakIcon}>🔊</AppText>
-          <AppText style={s.emptySpeakText}>Hear this again</AppText>
         </TouchableOpacity>
       </View>
     </View>
@@ -245,12 +244,11 @@ const s = StyleSheet.create({
   emptyText:  { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.text, textAlign: 'center' },
   emptyHint:  { ...TEXT_STYLE.screenHint, textAlign: 'center', lineHeight: 24 },
   emptySpeakBtn: {
-    marginTop: SPACING.sm, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: RADIUS['2xl'],
+    marginTop: SPACING.sm, justifyContent: 'center', alignItems: 'center',
+    width: scale(48), height: scale(48), borderRadius: scale(24),
     backgroundColor: BUTTERFLY_TILES[2].bg, borderWidth: 1.5, borderColor: BUTTERFLY_TILES[2].accent,
   },
-  emptySpeakIcon: { fontSize: FONT_SIZE.lg },
-  emptySpeakText: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  emptySpeakIcon: { fontSize: FONT_SIZE.xl },
 
   tileGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: SPACING.md },
   tileGridStart: { justifyContent: 'flex-start' },

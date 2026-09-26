@@ -42,7 +42,7 @@ const LEARNER_TILES: LearnerTileDef[] = [
   { label: 'Friends',    emoji: '👥', sub: 'Social',     ci: 0, screen: 'LearnerFriends'                                  },
   { label: 'Learn',      emoji: '📚', sub: 'Tutorials',  ci: 0, screen: 'TutorialLibrary', params: { linkedOnly: true }  },
   { label: 'Activities', emoji: '✅', sub: 'Daily tasks', ci: 0, screen: 'Activities'                                      },
-  { label: 'Schedule',   emoji: '📅', sub: 'Calendar',   ci: 0, screen: 'Schedule'                                        },
+  { label: 'Schedule',   emoji: '📅', sub: 'Calendar',   ci: 0, screen: 'UserSchedule'                                    },
 ];
 
 export default function GuardianHomeScreen() {
@@ -52,10 +52,12 @@ export default function GuardianHomeScreen() {
   const [stats, setStats]                         = useState<Stats>({ learners: 0, tutorials: 0, activities: 0 });
   const [messagingDisabled, setMessagingDisabled] = useState(false);
   const [togglingMsg, setTogglingMsg]             = useState(false);
+  const [showMessagingInfo, setShowMessagingInfo] = useState(false);
   const [pendingConnections, setPendingConnections] = useState(0);
-  const [ttsDisabled, setTtsDisabled]             = useState(false);
-  const [togglingTts, setTogglingTts]             = useState(false);
-  const [showTtsInfo, setShowTtsInfo]             = useState(false);
+  // TTS toggle state — commented out for now, will use it later
+  // const [ttsDisabled, setTtsDisabled]             = useState(false);
+  // const [togglingTts, setTogglingTts]             = useState(false);
+  // const [showTtsInfo, setShowTtsInfo]             = useState(false);
   const insets = useSafeAreaInsets();
 
   function handleSignOut() {
@@ -108,7 +110,7 @@ export default function GuardianHomeScreen() {
 
     if (profileList.length > 0) {
       supabase.from('user_profiles').select('messaging_disabled, tts_disabled').eq('id', profileList[0].id).single()
-        .then(({ data }) => { if (data) { setMessagingDisabled(!!data.messaging_disabled); setTtsDisabled(!!data.tts_disabled); } });
+        .then(({ data }) => { if (data) { setMessagingDisabled(!!data.messaging_disabled); /* setTtsDisabled(!!data.tts_disabled); */ } });
     }
   }
 
@@ -125,6 +127,17 @@ export default function GuardianHomeScreen() {
     }
   }
 
+  function openLearnerTile(tile: LearnerTileDef) {
+    // Schedule needs the learner's id/name as route params — the tile grid only
+    // ever renders once a learner exists, so learners[0] is guaranteed here.
+    if (tile.label === 'Schedule') {
+      if (!learners[0]) return;
+      navigation.navigate('UserSchedule', { userId: learners[0].id, userName: learners[0].name });
+      return;
+    }
+    navigation.navigate(tile.screen as any, tile.params as any);
+  }
+
   async function toggleMessaging() {
     if (!learners[0]) return;
     setTogglingMsg(true);
@@ -134,6 +147,7 @@ export default function GuardianHomeScreen() {
     setTogglingMsg(false);
   }
 
+  /* toggleTts — commented out for now, will use it later, along with the TTS toggle UI below
   async function toggleTts() {
     if (!learners[0]) return;
     setTogglingTts(true);
@@ -142,6 +156,7 @@ export default function GuardianHomeScreen() {
     setTtsDisabled(newVal);
     setTogglingTts(false);
   }
+  */
 
   const initial   = guardian?.full_name?.[0]?.toUpperCase() ?? 'G';
   const firstname = learners[0]?.name?.split(' ')[0] ?? 'Learner';
@@ -184,7 +199,7 @@ export default function GuardianHomeScreen() {
         <ContentContainer>
 
           {/* Your Dashboard */}
-          <AppText style={s.sectionLabel}>Your Dashboard</AppText>
+          <AppText style={s.sectionLabel}>Activities For Guardian</AppText>
           <View style={s.tileGrid}>
             {([[0, 1], [2, 3]] as [number, number][]).map((pair, ri) => (
               <View key={ri} style={s.guardianTileRow}>
@@ -261,7 +276,7 @@ export default function GuardianHomeScreen() {
                         <TouchableOpacity
                           key={tile.label}
                           style={[s.tile, { backgroundColor: LEARNER_TILE_COLOR.bg }]}
-                          onPress={() => navigation.navigate(tile.screen as any, tile.params as any)}
+                          onPress={() => openLearnerTile(tile)}
                           activeOpacity={0.78}
                         >
                           <AppText style={s.tileEmoji}>{tile.emoji}</AppText>
@@ -281,6 +296,13 @@ export default function GuardianHomeScreen() {
                 >
                   <View style={s.settingInfo}>
                     <AppText style={s.settingLabel}>Disable Messaging</AppText>
+                    <TouchableOpacity
+                      onPress={() => setShowMessagingInfo(true)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      activeOpacity={0.7}
+                    >
+                      <AppText style={s.infoIcon}>ⓘ</AppText>
+                    </TouchableOpacity>
                   </View>
                   {togglingMsg ? (
                     <ActivityIndicator size="small" color={TOGGLE_COLOR.accent} />
@@ -291,7 +313,22 @@ export default function GuardianHomeScreen() {
                   )}
                 </TouchableOpacity>
 
-                {/* TTS toggle */}
+                {/* Messaging info modal */}
+                <Modal visible={showMessagingInfo} transparent animationType="fade" onRequestClose={() => setShowMessagingInfo(false)}>
+                  <TouchableOpacity style={s.infoOverlay} activeOpacity={1} onPress={() => setShowMessagingInfo(false)}>
+                    <View style={s.infoCard} onStartShouldSetResponder={() => true}>
+                      <AppText style={s.infoTitle}>Messaging</AppText>
+                      <AppText style={s.infoBody}>
+                        Your learner can chat with friends they've connected with. Enable this setting to turn off messaging entirely — they won't be able to open or send messages in any friend chats.
+                      </AppText>
+                      <TouchableOpacity style={s.infoDismiss} onPress={() => setShowMessagingInfo(false)} activeOpacity={0.8}>
+                        <AppText style={s.infoDismissText}>Got it</AppText>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
+
+                {/* TTS toggle — commented out for now, will use it later
                 <TouchableOpacity
                   style={s.settingRow}
                   onPress={toggleTts}
@@ -317,7 +354,7 @@ export default function GuardianHomeScreen() {
                   )}
                 </TouchableOpacity>
 
-                {/* TTS info modal */}
+                {/* TTS info modal * /}
                 <Modal visible={showTtsInfo} transparent animationType="fade" onRequestClose={() => setShowTtsInfo(false)}>
                   <TouchableOpacity style={s.infoOverlay} activeOpacity={1} onPress={() => setShowTtsInfo(false)}>
                     <View style={s.infoCard} onStartShouldSetResponder={() => true}>
@@ -331,10 +368,11 @@ export default function GuardianHomeScreen() {
                     </View>
                   </TouchableOpacity>
                 </Modal>
+                */}
               </>
             ) : (
               <>
-                <AppText style={s.emptyHint}>Add a learner to unlock their zone</AppText>
+                <AppText style={s.emptyHint}>Add a learner to activate this zone</AppText>
                 <TouchableOpacity
                   style={s.addBtn}
                   onPress={() => navigation.navigate('CreateUser')}
@@ -416,6 +454,7 @@ const s = StyleSheet.create({
     ...TEXT_STYLE.cardTitle,
     color:        NICO.primary,
     marginBottom: SPACING.md,
+    textAlign:    'center',
   },
 
   tileGrid:        { gap: SPACING.md },

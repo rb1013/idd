@@ -33,7 +33,6 @@ import LinkYoutubeScreen from '../screens/guardian/LinkYoutubeScreen';
 import TutorialPreviewScreen from '../screens/tutorials/TutorialPreviewScreen';
 import TutorialLibraryScreen from '../screens/tutorials/TutorialLibraryScreen';
 import GuardianActivitiesScreen from '../screens/guardian/GuardianActivitiesScreen';
-import ScheduleScreen from '../screens/guardian/ScheduleScreen';
 import UserScheduleScreen from '../screens/guardian/UserScheduleScreen';
 import LearnerDiscoveryScreen from '../screens/guardian/LearnerDiscoveryScreen';
 import LearnerPublicProfileScreen from '../screens/guardian/LearnerPublicProfileScreen';
@@ -84,7 +83,6 @@ export type GuardianNavParamList = {
   Activities: undefined;
   Account: undefined;
   EditAccount: undefined;
-  Schedule: undefined;
   UserSchedule: { userId: string; userName: string };
   CreateUser: undefined;
   EditUser: { userId: string };
@@ -264,7 +262,6 @@ function GuardianTabs() {
       <GuardianNav.Screen name="Activities"      component={GuardianActivitiesScreen}    options={{ title: 'Activities', headerRight: undefined }} />
       <GuardianNav.Screen name="Account"         component={GuardianAccountScreen}       options={{ title: 'Account', headerRight: undefined }} />
       <GuardianNav.Screen name="EditAccount"    component={GuardianEditAccountScreen}   options={{ title: 'Edit Profile', headerRight: undefined }} />
-      <GuardianNav.Screen name="Schedule"        component={ScheduleScreen}              options={{ title: 'Schedule' }} />
       <GuardianNav.Screen name="UserSchedule"    component={UserScheduleScreen}          options={{ title: 'Schedule' }} />
       <GuardianNav.Screen name="CreateUser"      component={CreateUserScreen}            options={{ title: 'Create Profile' }} />
       <GuardianNav.Screen name="EditUser"        component={EditUserScreen}              options={{ title: 'Edit Profile' }} />
