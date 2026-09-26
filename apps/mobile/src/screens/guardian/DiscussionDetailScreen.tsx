@@ -78,7 +78,7 @@ export default function DiscussionDetailScreen() {
         .order('created_at', { ascending: true }),
     ]);
 
-    if (p) setPost({ id: p.id, title: p.title, body: p.body, guardianName: p.guardians?.full_name ?? 'Unknown', createdAt: p.created_at });
+    if (p) setPost({ id: p.id, title: p.title, body: p.body, guardianName: (p.guardians as any)?.full_name ?? 'Unknown', createdAt: p.created_at });
     setReplies((r ?? []).map((x: any) => ({ id: x.id, content: x.content, guardianName: x.guardians?.full_name ?? 'Unknown', guardianId: x.guardian_id, createdAt: x.created_at })));
     setLoading(false);
   }

@@ -69,6 +69,12 @@ export type RootStackParamList = {
   GuardianRegister: undefined;
   GuardianTabs: undefined;
   UserHome: undefined;
+  ResetPassword: undefined;
+  EmailVerificationPending: { email: string };
+  OTPVerification: { email: string };
+  ForgotPassword: undefined;
+  ResetOTP: { email: string };
+  Pending: undefined;
 };
 
 export type GuardianNavParamList = {

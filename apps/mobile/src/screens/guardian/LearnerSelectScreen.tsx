@@ -345,7 +345,7 @@ export default function LearnerSelectScreen() {
 const s = StyleSheet.create({
   root:      { flex: 1, backgroundColor: NICO.screenBg },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  container: { flexGrow: 1, paddingBottom: SPACING['4xl'] ?? 80 },
+  container: { flexGrow: 1, paddingBottom: SPACING['3xl'] },
 
   // Header
   headerBorder: {

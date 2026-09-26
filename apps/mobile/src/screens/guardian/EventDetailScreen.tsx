@@ -88,7 +88,7 @@ export default function EventDetailScreen() {
         id: e.id, name: e.name, description: e.description ?? '',
         eventDate: e.event_date, eventTime: e.event_time ?? null,
         venue: e.venue ?? '',
-        guardianName: e.guardians?.full_name ?? 'Unknown', guardianId: e.guardian_id,
+        guardianName: (e.guardians as any)?.full_name ?? 'Unknown', guardianId: e.guardian_id,
       });
     }
 

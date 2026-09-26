@@ -357,6 +357,7 @@ export const BTN_VARIANT = {
   primary: {
     backgroundColor: NICO.primary,
     alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     ...SHADOW.btnPrimary,
   },
   // Outline — no shadow (transparent bg would make shadow look odd)
@@ -365,20 +366,24 @@ export const BTN_VARIANT = {
     borderWidth: 2,
     borderColor: NICO.primary,
     alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   // Ghost — subtle tinted fill, no shadow
   ghost: {
     backgroundColor: NICO.primaryLight,
     alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   teal: {
     backgroundColor: NICO.teal,
     alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     ...SHADOW.btnTeal,
   },
   danger: {
     backgroundColor: NICO.error,
     alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     ...SHADOW.btnDanger,
   },
 };

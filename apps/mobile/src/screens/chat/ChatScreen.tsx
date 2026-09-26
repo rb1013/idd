@@ -504,7 +504,7 @@ export default function ChatScreen() {
                   placeholder="e.g. Inappropriate language, bullying…"
                   placeholderTextColor={NICO.textMuted}
                   multiline
-                  maxLength={300}
+                  maxLength={100}
                   autoFocus
                 />
                 <View style={guardianStyles.btnRow}>

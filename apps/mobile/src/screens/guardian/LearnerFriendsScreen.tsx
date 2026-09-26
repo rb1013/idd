@@ -1025,9 +1025,9 @@ const s = StyleSheet.create({
   reqBtn:        { ...BTN_SIZE.sm },
   acceptBtn:     { ...BTN_VARIANT.primary },
   acceptBtnTxt:  { color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.sm },
-  declineBtn:    { backgroundColor: NICO.errorLight, alignItems: 'center' },
+  declineBtn:    { backgroundColor: NICO.errorLight, alignItems: 'center', justifyContent: 'center' },
   declineBtnTxt: { color: NICO.error, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.sm },
-  cancelBtn:     { backgroundColor: NICO.background, alignItems: 'center' },
+  cancelBtn:     { backgroundColor: NICO.background, alignItems: 'center', justifyContent: 'center' },
   cancelBtnTxt:  { color: NICO.textMuted, fontWeight: FONT_WEIGHT.semiBold, fontSize: FONT_SIZE.sm },
   btnDisabled:   { opacity: 0.6 },
 
@@ -1099,7 +1099,7 @@ const s = StyleSheet.create({
   nudgeCloseTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.textOnAccent },
 
   // Blocked tab
-  unblockBtn:    { backgroundColor: NICO.errorLight },
+  unblockBtn:    { backgroundColor: NICO.errorLight, alignItems: 'center', justifyContent: 'center' },
   unblockBtnTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.error },
 
   loadMoreBtn:    { ...BTN_SIZE.sm, ...BTN_VARIANT.outline, alignSelf: 'center', marginTop: SPACING.base },

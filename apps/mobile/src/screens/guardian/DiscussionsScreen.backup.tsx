@@ -540,7 +540,7 @@ const s = StyleSheet.create({
     ...SHADOW.md,
   },
   postTitle: { ...TEXT_STYLE.cardTitle },
-  postBody:  { fontSize: FONT_SIZE.md, color: NICO.textSecondary, lineHeight: 20 },
+  postBody:  { fontSize: FONT_SIZE.md, color: NICO.textMuted, lineHeight: 20 },
   postMeta:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: SPACING.xs },
   metaText:  { ...TEXT_STYLE.caption },
   metaDot:   { fontSize: FONT_SIZE.sm, color: NICO.border },
