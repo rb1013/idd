@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, Pressable, StyleSheet, Image, SafeAreaView,
+  View, TouchableOpacity, Pressable, StyleSheet,
   Modal, Dimensions, ScrollView, Animated, StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
 import * as Speech from 'expo-speech';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -10,11 +12,15 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { loadGuardianCredentials } from '../../lib/biometricStore';
-import { COLORS, USER_TEXT, USER_TILES, USER_HEADER } from '../../constants';
 import { UserStackParamList } from '../../navigation';
 import { ScheduleItem } from '../../types';
 import { refreshScheduleNotifications } from '../../lib/scheduleNotifications';
 import AvatarWithMood from '../../components/AvatarWithMood';
+import ContentContainer from '../../components/ContentContainer';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
+  BUTTERFLY_BORDER, BUTTERFLY_TILES, MAX_CONTENT_WIDTH, IS_TABLET, scale,
+} from '../../constants/theme';
 
 function LogoutIcon() {
   const c = '#fff';
@@ -55,7 +61,14 @@ const MOODS = [
 ];
 
 const { width } = Dimensions.get('window');
-const TILE_W = (width - 48 - 16) / 2;
+const CONTENT_W = IS_TABLET && MAX_CONTENT_WIDTH ? MAX_CONTENT_WIDTH : width;
+const TILE_W = (CONTENT_W - 48 - 16) / 2;
+
+// Fixed feature colors — consistent with the guardian dashboard's own tile assignments
+const FRIENDS_COLOR    = BUTTERFLY_TILES[0]; // teal
+const ACTIVITIES_COLOR = BUTTERFLY_TILES[1]; // green
+const LEARN_COLOR      = BUTTERFLY_TILES[2]; // orange — matches guardian's own "Tutorials" tile
+const MOOD_COLOR       = BUTTERFLY_TILES[4]; // pink
 
 // ── Schedule helpers ──────────────────────────────────────────────────────
 
@@ -167,30 +180,37 @@ export default function UserHomeScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={USER_HEADER.backgroundColor} />
-      <SafeAreaView style={styles.safeHeader}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.homeBtn} onPress={handleReturnHome} activeOpacity={0.75}>
-          <AppText style={styles.homeIcon}>🏠</AppText>
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <AppText style={styles.greeting}>Hi, {firstName}</AppText>
-        </View>
-        <TouchableOpacity style={styles.avatarBtn} onPress={openUserCard} activeOpacity={0.85}>
-          <AvatarWithMood
-            name={activeUser?.name ?? '?'}
-            photo={activeUser?.photo_url}
-            size={68}
-            mood={activeUser?.current_mood}
-          />
-        </TouchableOpacity>
-      </View>
+    <View style={s.root}>
+      <StatusBar barStyle="dark-content" backgroundColor={NICO.background} />
+      <SafeAreaView edges={['top']} style={s.safeHeader}>
+        <LinearGradient
+          colors={[...BUTTERFLY_BORDER.colors]}
+          start={BUTTERFLY_BORDER.start}
+          end={BUTTERFLY_BORDER.end}
+          style={s.headerBorder}
+        >
+          <View style={s.headerInner}>
+            <TouchableOpacity style={s.homeBtn} onPress={handleReturnHome} activeOpacity={0.75}>
+              <AppText style={s.homeIcon}>🏠</AppText>
+            </TouchableOpacity>
+            <View style={s.headerCenter}>
+              <AppText style={s.greeting}>Hi, {firstName}</AppText>
+            </View>
+            <TouchableOpacity style={s.avatarBtn} onPress={openUserCard} activeOpacity={0.85}>
+              <AvatarWithMood
+                name={activeUser?.name ?? '?'}
+                photo={activeUser?.photo_url}
+                size={56}
+                mood={activeUser?.current_mood}
+              />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
       </SafeAreaView>
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={s.scrollContent}
         showsVerticalScrollIndicator={false}
       >
 
@@ -198,38 +218,38 @@ export default function UserHomeScreen() {
         {nextClass && (
           <TouchableOpacity
             style={[
-              styles.scheduleTile,
-              nextClass.state === 'now' ? styles.scheduleTileNow : styles.scheduleTileUpcoming,
+              s.scheduleTile,
+              nextClass.state === 'now' ? s.scheduleTileNow : s.scheduleTileUpcoming,
             ]}
             activeOpacity={0.88}
           >
-            <View style={styles.scheduleLeft}>
-              <AppText style={styles.scheduleEmoji}>{nextClass.item.emoji}</AppText>
+            <View style={s.scheduleLeft}>
+              <AppText style={s.scheduleEmoji}>{nextClass.item.emoji}</AppText>
               <View>
-                <AppText style={styles.scheduleTitle}>{nextClass.item.title}</AppText>
-                <AppText style={styles.scheduleTime}>
+                <AppText style={s.scheduleTitle}>{nextClass.item.title}</AppText>
+                <AppText style={s.scheduleTime}>
                   {formatTime(nextClass.item.start_time)} – {formatTime(nextClass.item.end_time)}
                 </AppText>
               </View>
             </View>
-            <View style={styles.scheduleRight}>
+            <View style={s.scheduleRight}>
               {nextClass.state === 'now' ? (
-                <View style={styles.nowBadge}>
-                  <Animated.View style={[styles.nowDot, { opacity: pulseAnim }]} />
-                  <AppText style={styles.nowBadgeTxt}>Now</AppText>
+                <View style={s.nowBadge}>
+                  <Animated.View style={[s.nowDot, { opacity: pulseAnim }]} />
+                  <AppText style={s.nowBadgeTxt}>Now</AppText>
                 </View>
               ) : (
-                <AppText style={styles.untilTxt}>{timeUntil(nextClass.item.start_time)}</AppText>
+                <AppText style={s.untilTxt}>{timeUntil(nextClass.item.start_time)}</AppText>
               )}
               <Pressable
-                style={styles.scheduleSpeakBtn}
+                style={s.scheduleSpeakBtn}
                 hitSlop={10}
                 onPress={() => {
                   const when = nextClass.state === 'now' ? 'right now' : `today at ${formatTime(nextClass.item.start_time)}`;
                   Speech.speak(`${nextClass.item.title}, ${when}`, { rate: 0.65, pitch: 1.0 });
                 }}
               >
-                <AppText style={styles.scheduleSpeakIcon}>🔊</AppText>
+                <AppText style={s.scheduleSpeakIcon}>🔊</AppText>
               </Pressable>
             </View>
           </TouchableOpacity>
@@ -237,77 +257,71 @@ export default function UserHomeScreen() {
 
         {/* Explore section */}
 
-        <View style={styles.grid}>
-          <TouchableOpacity style={[styles.tile, styles.friendsTile]} onPress={() => navigation.navigate('FriendsHub')} activeOpacity={0.85}>
-            <AppText style={styles.tileEmoji}>🤝</AppText>
-            <AppText style={styles.tileTitle}>Friends</AppText>
-            <AppText style={styles.tileSub}>Meet new people{'\n'}and connect</AppText>
-            <Pressable style={styles.tileSpeakBtn} onPress={() => Speech.speak('Friends. Meet new people and connect.', { rate: 0.65, pitch: 1.0 })}>
-              <AppText style={styles.tileSpeakIcon}>🔊</AppText>
+        <ContentContainer style={s.gridContainer}>
+        <View style={s.grid}>
+          <TouchableOpacity style={[s.tile, { backgroundColor: FRIENDS_COLOR.bg, borderColor: FRIENDS_COLOR.accent }]} onPress={() => navigation.navigate('FriendsHub')} activeOpacity={0.85}>
+            <AppText style={s.tileEmoji}>🤝</AppText>
+            <AppText style={s.tileTitle}>Friends</AppText>
+            <AppText style={s.tileSub}>Meet new people{'\n'}and connect</AppText>
+            <Pressable style={s.tileSpeakBtn} onPress={() => Speech.speak('Friends. Meet new people and connect.', { rate: 0.65, pitch: 1.0 })}>
+              <AppText style={s.tileSpeakIcon}>🔊</AppText>
             </Pressable>
           </TouchableOpacity>
 
           {/* Activities tile */}
-          <TouchableOpacity style={[styles.tile, styles.activitiesTile]} onPress={() => navigation.navigate('Activities')} activeOpacity={0.85}>
-            <AppText style={styles.tileEmoji}>✅</AppText>
-            <AppText style={styles.tileTitle}>Activities</AppText>
+          <TouchableOpacity style={[s.tile, { backgroundColor: ACTIVITIES_COLOR.bg, borderColor: ACTIVITIES_COLOR.accent }]} onPress={() => navigation.navigate('Activities')} activeOpacity={0.85}>
+            <AppText style={s.tileEmoji}>✅</AppText>
+            <AppText style={s.tileTitle}>Activities</AppText>
             {activityProgress.total > 0 ? (
-              <AppText style={styles.actProgress}>
+              <AppText style={s.actProgress}>
                 {activityProgress.done === activityProgress.total ? '🎉 All done!' : `${activityProgress.done}/${activityProgress.total} done`}
               </AppText>
             ) : (
-              <AppText style={styles.tileSub}>Your daily{'\n'}activities</AppText>
+              <AppText style={s.tileSub}>Your daily{'\n'}activities</AppText>
             )}
-            <Pressable style={styles.tileSpeakBtn} onPress={() => Speech.speak(
+            <Pressable style={s.tileSpeakBtn} onPress={() => Speech.speak(
               activityProgress.total > 0
                 ? `Activities. ${activityProgress.done} of ${activityProgress.total} done.`
                 : 'Activities. Your daily activities.',
               { rate: 0.65, pitch: 1.0 }
             )}>
-              <AppText style={styles.tileSpeakIcon}>🔊</AppText>
+              <AppText style={s.tileSpeakIcon}>🔊</AppText>
             </Pressable>
           </TouchableOpacity>
 
-          {/* Messages tile removed — messaging is accessible inside Friends
-          <TouchableOpacity style={[styles.tile, styles.messagesTile]} onPress={() => navigation.navigate('Messages')} activeOpacity={0.85}>
-            <AppText style={styles.tileEmoji}>💬</AppText>
-            <AppText style={styles.tileTitle}>Messages</AppText>
-            <AppText style={styles.tileSub}>Chat with{'\n'}your friends</AppText>
-          </TouchableOpacity>
-          */}
-
-          <TouchableOpacity style={[styles.tile, styles.moodTile]} onPress={() => setShowMoodPicker(true)} activeOpacity={0.85}>
-            <AppText style={styles.tileEmoji}>{activeUser?.current_mood ?? '😊'}</AppText>
-            <AppText style={styles.tileTitle}>My Mood</AppText>
-            <AppText style={styles.tileSub}>How are you{'\n'}feeling today?</AppText>
-            <Pressable style={styles.tileSpeakBtn} onPress={() => Speech.speak('My Mood. How are you feeling today?', { rate: 0.65, pitch: 1.0 })}>
-              <AppText style={styles.tileSpeakIcon}>🔊</AppText>
+          <TouchableOpacity style={[s.tile, { backgroundColor: MOOD_COLOR.bg, borderColor: MOOD_COLOR.accent }]} onPress={() => setShowMoodPicker(true)} activeOpacity={0.85}>
+            <AppText style={s.tileEmoji}>{activeUser?.current_mood ?? '😊'}</AppText>
+            <AppText style={s.tileTitle}>My Mood</AppText>
+            <AppText style={s.tileSub}>How are you{'\n'}feeling today?</AppText>
+            <Pressable style={s.tileSpeakBtn} onPress={() => Speech.speak('My Mood. How are you feeling today?', { rate: 0.65, pitch: 1.0 })}>
+              <AppText style={s.tileSpeakIcon}>🔊</AppText>
             </Pressable>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.tile, styles.learnTile]} onPress={() => navigation.navigate('Tutorials')} activeOpacity={0.85}>
-            <AppText style={styles.tileEmoji}>📚</AppText>
-            <AppText style={styles.tileTitle}>Learn</AppText>
-            <AppText style={styles.tileSub}>Watch videos and{'\n'}discover new things</AppText>
-            <Pressable style={styles.tileSpeakBtn} onPress={() => Speech.speak('Learn. Watch videos and discover new things.', { rate: 0.65, pitch: 1.0 })}>
-              <AppText style={styles.tileSpeakIcon}>🔊</AppText>
+          <TouchableOpacity style={[s.tile, { backgroundColor: LEARN_COLOR.bg, borderColor: LEARN_COLOR.accent }]} onPress={() => navigation.navigate('Tutorials')} activeOpacity={0.85}>
+            <AppText style={s.tileEmoji}>📚</AppText>
+            <AppText style={s.tileTitle}>Learn</AppText>
+            <AppText style={s.tileSub}>Watch videos and{'\n'}discover new things</AppText>
+            <Pressable style={s.tileSpeakBtn} onPress={() => Speech.speak('Learn. Watch videos and discover new things.', { rate: 0.65, pitch: 1.0 })}>
+              <AppText style={s.tileSpeakIcon}>🔊</AppText>
             </Pressable>
           </TouchableOpacity>
         </View>
+        </ContentContainer>
 
         <View style={{ height: 32 }} />
       </ScrollView>
 
       {/* User card */}
       <Modal visible={showUserCard} transparent animationType="fade" onRequestClose={() => setShowUserCard(false)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowUserCard(false)}>
-          <TouchableOpacity style={styles.userCard} activeOpacity={1} onPress={() => {}}>
+        <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={() => setShowUserCard(false)}>
+          <TouchableOpacity style={s.userCard} activeOpacity={1} onPress={() => {}}>
             <TouchableOpacity
-              style={styles.closeBtn}
+              style={s.closeBtn}
               onPress={() => setShowUserCard(false)}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <AppText style={styles.closeBtnText}>✕</AppText>
+              <AppText style={s.closeBtnText}>✕</AppText>
             </TouchableOpacity>
             <AvatarWithMood
               name={activeUser?.name ?? '?'}
@@ -315,9 +329,9 @@ export default function UserHomeScreen() {
               size={88}
               mood={activeUser?.current_mood}
             />
-            <AppText style={styles.userCardName}>Hi, {activeUser?.name}!</AppText>
+            <AppText style={s.userCardName}>Hi, {activeUser?.name}!</AppText>
             <TouchableOpacity
-              style={styles.logoutBtn}
+              style={s.logoutBtn}
               onPress={signOut}
               onLongPress={() => Speech.speak('Log out', { rate: 0.65, pitch: 1.0 })}
               delayLongPress={400}
@@ -331,27 +345,27 @@ export default function UserHomeScreen() {
 
       {/* Mood picker */}
       <Modal visible={showMoodPicker} transparent animationType="fade" onRequestClose={() => setShowMoodPicker(false)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowMoodPicker(false)}>
-          <TouchableOpacity style={styles.pickerCard} activeOpacity={1} onPress={() => {}}>
+        <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={() => setShowMoodPicker(false)}>
+          <TouchableOpacity style={s.pickerCard} activeOpacity={1} onPress={() => {}}>
             <TouchableOpacity
-              style={styles.closeBtn}
+              style={s.closeBtn}
               onPress={() => setShowMoodPicker(false)}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <AppText style={styles.closeBtnText}>✕</AppText>
+              <AppText style={s.closeBtnText}>✕</AppText>
             </TouchableOpacity>
-            <AppText style={styles.pickerTitle}>How are you feeling?</AppText>
-            <View style={styles.moodRow}>
+            <AppText style={s.pickerTitle}>How are you feeling?</AppText>
+            <View style={s.moodRow}>
               {MOODS.map(m => (
                 <TouchableOpacity
                   key={m.emoji}
-                  style={[styles.moodOption, activeUser?.current_mood === m.emoji && styles.moodOptionSelected]}
+                  style={[s.moodOption, activeUser?.current_mood === m.emoji && s.moodOptionSelected]}
                   onPress={() => selectMood(m)}
                   onLongPress={() => speakMood(m.label)}
                   delayLongPress={400}
                   activeOpacity={0.8}
                 >
-                  <AppText style={styles.moodEmoji}>{m.emoji}</AppText>
+                  <AppText style={s.moodEmoji}>{m.emoji}</AppText>
                 </TouchableOpacity>
               ))}
             </View>
@@ -362,164 +376,128 @@ export default function UserHomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container:  { flex: 1, backgroundColor: USER_HEADER.pageBackground },
-  safeHeader: { backgroundColor: USER_HEADER.backgroundColor },
+const s = StyleSheet.create({
+  root:       { flex: 1, backgroundColor: NICO.screenBg },
+  safeHeader: { backgroundColor: NICO.background },
 
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 20,
-    gap: 8,
-    backgroundColor: USER_HEADER.backgroundColor,
+  headerBorder: {
+    paddingBottom: BUTTERFLY_BORDER.width,
+    paddingLeft:   BUTTERFLY_BORDER.width,
+    paddingRight:  BUTTERFLY_BORDER.width,
+  },
+  headerInner: {
+    flexDirection:     'row',
+    justifyContent:    'space-between',
+    alignItems:        'center',
+    backgroundColor:   NICO.background,
+    paddingHorizontal: SPACING.base,
+    paddingVertical:   SPACING.sm,
+    gap:               SPACING.sm,
   },
   homeBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: USER_HEADER.btnBackground,
+    width: scale(44), height: scale(44), borderRadius: scale(22),
+    backgroundColor: NICO.primaryLight,
     justifyContent: 'center', alignItems: 'center',
     flexShrink: 0,
+    marginTop: SPACING.sm,
   },
-  homeIcon: { fontSize: 22 },
-  headerCenter: { flex: 1 },
-  greeting: { ...USER_TEXT.greeting },
-  subGreeting: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 3 },
+  homeIcon: { fontSize: FONT_SIZE.xl },
+  headerCenter: { flex: 1, alignItems: 'center' },
+  greeting: { ...TEXT_STYLE.cardTitle, fontSize: FONT_SIZE.xl, marginTop: '15%' },
 
   avatarBtn: { position: 'relative' },
-  avatar: { width: 68, height: 68, borderRadius: 34 },
-  avatarPlaceholder: {
-    width: 68, height: 68, borderRadius: 34,
-    backgroundColor: COLORS.primaryLight,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  avatarText: { fontSize: 26, fontWeight: '700', color: COLORS.primary },
-  moodBadge: {
-    position: 'absolute', bottom: -2, right: -2,
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2, shadowRadius: 4, elevation: 4,
-    borderWidth: 2, borderColor: COLORS.background,
-  },
-  moodBadgeEmoji: { fontSize: 16 },
 
-  scrollContent: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 16, gap: 14 },
+  scrollContent: { paddingHorizontal: SPACING.base, paddingTop: SPACING.md, paddingBottom: SPACING.base, gap: SPACING.md },
 
   // Schedule tile
   scheduleTile: {
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderRadius: RADIUS.lg,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    ...SHADOW.sm,
   },
-  scheduleTileUpcoming: { backgroundColor: '#FDEADB', borderLeftColor: USER_HEADER.backgroundColor },
-  scheduleTileNow:      { backgroundColor: '#D1FAE5', borderLeftColor: '#059669' },
-  scheduleLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
-  scheduleEmoji: { fontSize: 36 },
-  scheduleTitle: { ...USER_TEXT.bannerTitle, marginBottom: 2 },
-  scheduleTime:  { ...USER_TEXT.bannerTime },
-  scheduleRight: { alignItems: 'flex-end', paddingLeft: 8, gap: 8 },
-  scheduleSpeakBtn: { padding: 4, backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 14, width: 28, height: 28, justifyContent: 'center', alignItems: 'center' },
-  scheduleSpeakIcon: { fontSize: 14 },
-  untilTxt: { ...USER_TEXT.bannerUntil },
-  nowBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#A7F3D0', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
-  nowDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#059669' },
-  nowBadgeTxt: { fontSize: 13, fontWeight: '800', color: '#065F46' },
+  scheduleTileUpcoming: { backgroundColor: BUTTERFLY_TILES[2].bg, borderLeftColor: BUTTERFLY_TILES[2].accent },
+  scheduleTileNow:      { backgroundColor: NICO.successLight, borderLeftColor: NICO.success },
+  scheduleLeft: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, flex: 1 },
+  scheduleEmoji: { fontSize: scale(36) },
+  scheduleTitle: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: 2 },
+  scheduleTime:  { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
+  scheduleRight: { alignItems: 'flex-end', paddingLeft: SPACING.sm, gap: SPACING.sm },
+  scheduleSpeakBtn: { padding: 4, backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: RADIUS.md, width: scale(28), height: scale(28), justifyContent: 'center', alignItems: 'center' },
+  scheduleSpeakIcon: { fontSize: FONT_SIZE.sm },
+  untilTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted },
+  nowBadge: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, backgroundColor: NICO.success, borderRadius: RADIUS.full, paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs },
+  nowDot: { width: scale(8), height: scale(8), borderRadius: scale(4), backgroundColor: '#fff' },
+  nowBadgeTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
 
-  // Activities tile
-  activitiesTile: { ...USER_TILES.activities, borderWidth: 2 },
-  actProgress:    { fontSize: 15, fontWeight: '800', color: '#5A2E14', marginTop: 4 },
-
-  // Section label
-  sectionLabel: { fontSize: 20, fontWeight: '800', color: COLORS.text, paddingLeft: 4, marginTop: 10 },
+  actProgress: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginTop: SPACING.xs, textAlign: 'center' },
 
   // Feature grid
+  gridContainer: { alignSelf: 'center' },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    justifyContent: 'center',
+    gap: SPACING.md,
   },
   tile: {
     width: TILE_W,
-    borderRadius: 22,
+    borderRadius: RADIUS['2xl'],
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 4,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    ...SHADOW.md,
   },
-  friendsTile:  { ...USER_TILES.friends,    borderWidth: 2 },
-  moodTile:     { ...USER_TILES.mood,       borderWidth: 2 },
-  learnTile:    { ...USER_TILES.learn,      borderWidth: 2 },
-  tileEmoji: { fontSize: 40, marginBottom: 8 },
-  tileTitle: { ...USER_TEXT.tileTitle, marginBottom: 4 },
-  tileSub:   { ...USER_TEXT.tileSub, textAlign: 'center', lineHeight: 16 },
+  tileEmoji: { fontSize: scale(40), marginBottom: SPACING.sm },
+  tileTitle: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: SPACING.xs },
+  tileSub:   { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted, textAlign: 'center', lineHeight: 16 },
   tileSpeakBtn: {
-    marginTop: 10, backgroundColor: 'rgba(0,0,0,0.08)',
-    borderRadius: 16, paddingHorizontal: 12, paddingVertical: 4,
+    marginTop: SPACING.sm, backgroundColor: 'rgba(0,0,0,0.08)',
+    borderRadius: RADIUS.md, paddingHorizontal: SPACING.md, paddingVertical: 4,
   },
-  tileSpeakIcon: { fontSize: 15 },
+  tileSpeakIcon: { fontSize: FONT_SIZE.sm },
 
   // User card
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
   userCard: {
-    backgroundColor: '#fff', borderRadius: 28,
-    paddingHorizontal: 32, paddingTop: 16, paddingBottom: 36,
+    backgroundColor: NICO.surface, borderRadius: RADIUS['3xl'],
+    paddingHorizontal: SPACING.xl, paddingTop: SPACING.base, paddingBottom: SPACING['2xl'],
     width: width - 80, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.25, shadowRadius: 24, elevation: 12,
+    ...SHADOW.lg,
   },
-  userCardAvatar: { width: 88, height: 88, borderRadius: 44, marginBottom: 16 },
-  userCardAvatarPlaceholder: {
-    width: 88, height: 88, borderRadius: 44,
-    backgroundColor: COLORS.primaryLight,
-    justifyContent: 'center', alignItems: 'center', marginBottom: 16,
-  },
-  userCardAvatarText: { fontSize: 36, fontWeight: '800', color: COLORS.primary },
-  userCardName: { ...USER_TEXT.heading, marginBottom: 28 },
+  userCardName: { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.text, marginBottom: SPACING.xl },
   logoutBtn: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: '#E53E3E',
+    width: scale(72), height: scale(72), borderRadius: scale(36),
+    backgroundColor: NICO.error,
     justifyContent: 'center', alignItems: 'center',
-    shadowColor: '#E53E3E', shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
+    ...SHADOW.md,
   },
 
   // Mood picker
   pickerCard: {
-    backgroundColor: '#fff', borderRadius: 28,
-    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 28,
+    backgroundColor: NICO.surface, borderRadius: RADIUS['3xl'],
+    paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: SPACING.xl,
     width: width - 48, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.25, shadowRadius: 24, elevation: 12,
+    ...SHADOW.lg,
   },
   closeBtn: {
-    alignSelf: 'flex-end', width: 40, height: 40, borderRadius: 12,
+    alignSelf: 'flex-end', width: scale(40), height: scale(40), borderRadius: RADIUS.md,
     justifyContent: 'center', alignItems: 'center',
-    backgroundColor: COLORS.border, marginBottom: 8,
+    backgroundColor: NICO.background, marginBottom: SPACING.sm,
   },
-  closeBtnText: { fontSize: 20, fontWeight: '900', color: COLORS.text, lineHeight: 22 },
-  pickerTitle: { ...USER_TEXT.heading, marginBottom: 20 },
-  moodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
+  closeBtnText: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.black, color: NICO.text, lineHeight: 22 },
+  pickerTitle: { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.text, marginBottom: SPACING.lg },
+  moodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, justifyContent: 'center' },
   moodOption: {
-    alignItems: 'center', gap: 4, padding: 10, borderRadius: 16, width: 72,
-    backgroundColor: COLORS.surface, borderWidth: 2, borderColor: 'transparent',
+    alignItems: 'center', gap: 4, padding: SPACING.sm, borderRadius: RADIUS.lg, width: scale(72),
+    backgroundColor: NICO.background, borderWidth: 2, borderColor: 'transparent',
   },
-  moodOptionSelected: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
-  moodEmoji: { fontSize: 34 },
-  moodLabel: { fontSize: 11, fontWeight: '700', color: COLORS.textLight, textAlign: 'center' },
+  moodOptionSelected: { borderColor: NICO.primary, backgroundColor: NICO.primaryLight },
+  moodEmoji: { fontSize: scale(34) },
 });

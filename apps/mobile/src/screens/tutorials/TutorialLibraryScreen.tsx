@@ -461,7 +461,7 @@ const s = StyleSheet.create({
   filterBar: { paddingHorizontal: SPACING.base, paddingBottom: SPACING.sm, alignItems: 'flex-end' },
 
   gridList: { padding: SPACING.md, paddingBottom: SPACING['2xl'] },
-  gridRow:  { gap: SPACING.md, marginBottom: SPACING.md },
+  gridRow:  { gap: SPACING.md, marginBottom: SPACING.md, justifyContent: 'flex-start' },
   gridCard: {
     width: GRID_CARD_W, borderRadius: RADIUS.xl,
     borderWidth: 1, borderColor: 'transparent', overflow: 'hidden',

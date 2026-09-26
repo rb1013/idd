@@ -864,7 +864,7 @@ const styles = StyleSheet.create({
 
   // Search tab grid
   gridList: { padding: SPACING.md, paddingBottom: SPACING['2xl'] },
-  gridRow:  { gap: SPACING.md, marginBottom: SPACING.md },
+  gridRow:  { gap: SPACING.md, marginBottom: SPACING.md, justifyContent: 'flex-start' },
   gridCard: {
     width: GRID_CARD_W, backgroundColor: 'white', borderRadius: RADIUS.xl,
     borderWidth: 1, borderColor: NICO.border, overflow: 'hidden',

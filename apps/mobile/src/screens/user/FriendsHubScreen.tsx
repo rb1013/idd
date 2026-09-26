@@ -92,6 +92,10 @@ export default function FriendsHubScreen() {
 
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
 
+  useFocusEffect(useCallback(() => {
+    return () => { Speech.stop(); };
+  }, []));
+
   useEffect(() => {
     if (!activeUser) return;
     loadFriends(activeUser.id);
