@@ -186,7 +186,7 @@ export default function ChatScreen() {
       headerTitleAlign: 'center',
       headerRight: () => (
         <TouchableOpacity onPress={handleShieldPress} style={guardianStyles.shieldBtn} activeOpacity={0.75}>
-          <Text style={guardianStyles.shieldIcon}>🛡️</Text>
+          <Image source={require('../../../assets/red-shield.png')} style={guardianStyles.shieldIcon} resizeMode="contain" />
         </TouchableOpacity>
       ),
       headerTitle: () => (
@@ -735,7 +735,7 @@ const guardianStyles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     marginRight: 4,
   },
-  shieldIcon: { fontSize: FONT_SIZE.xl },
+  shieldIcon: { width: scale(22), height: scale(22) },
 
   overlay: {
     flex: 1, justifyContent: 'flex-end',

@@ -93,7 +93,7 @@ export type GuardianNavParamList = {
   LearnerDiscovery: undefined;
   LearnerPublicProfile: { learnerId: string };
   LearnerFriendRequests: undefined;
-  LearnerFriends: undefined;
+  LearnerFriends: { initialTab?: 'requests' } | undefined;
   GuardianConnections: { initialTab?: 'connected' | 'requests' | 'find'; initialSubTab?: 'sent' | 'received' } | undefined;
   Discussions: undefined;
   DiscussionDetail: { postId: string };

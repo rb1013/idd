@@ -1,11 +1,12 @@
 import React, { useCallback, useState } from 'react';
 import {
   View, TouchableOpacity, StyleSheet, Modal,
-  ScrollView, StatusBar, Image, Platform, Alert, ActivityIndicator,
+  ScrollView, StatusBar, Image, Platform, ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
 import ContentContainer from '../../components/ContentContainer';
+import GuardianTabBar from '../../components/GuardianTabBar';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -47,25 +48,19 @@ const LEARNER_TILES: LearnerTileDef[] = [
 
 export default function GuardianHomeScreen() {
   const navigation = useNavigation<Nav>();
-  const { guardian, signOut } = useAuth();
+  const { guardian } = useAuth();
   const [learners, setLearners]                   = useState<Learner[]>([]);
   const [stats, setStats]                         = useState<Stats>({ learners: 0, tutorials: 0, activities: 0 });
   const [messagingDisabled, setMessagingDisabled] = useState(false);
   const [togglingMsg, setTogglingMsg]             = useState(false);
   const [showMessagingInfo, setShowMessagingInfo] = useState(false);
   const [pendingConnections, setPendingConnections] = useState(0);
+  const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
   // TTS toggle state — commented out for now, will use it later
   // const [ttsDisabled, setTtsDisabled]             = useState(false);
   // const [togglingTts, setTogglingTts]             = useState(false);
   // const [showTtsInfo, setShowTtsInfo]             = useState(false);
   const insets = useSafeAreaInsets();
-
-  function handleSignOut() {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: signOut },
-    ]);
-  }
 
   useFocusEffect(
     useCallback(() => {
@@ -90,16 +85,26 @@ export default function GuardianHomeScreen() {
     setPendingConnections(pendingCount ?? 0);
 
     const profileList = profiles ?? [];
+    const learnerIds  = profileList.map(p => p.id);
 
-    const enriched = await Promise.all(
-      profileList.map(async p => {
-        const { count } = await supabase
-          .from('user_tutorials')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', p.id);
-        return { ...p, tutorialCount: count ?? 0 } as Learner;
-      })
-    );
+    const [enriched, { count: pendingFriendCount }] = await Promise.all([
+      Promise.all(
+        profileList.map(async p => {
+          const { count } = await supabase
+            .from('user_tutorials')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', p.id);
+          return { ...p, tutorialCount: count ?? 0 } as Learner;
+        })
+      ),
+      // Incoming = someone else's learner asked to friend one of mine — mirrors the
+      // 'incoming' direction LearnerFriendsScreen's own Requests tab computes.
+      learnerIds.length > 0
+        ? supabase.from('friendships').select('id', { count: 'exact', head: true })
+            .in('addressee_id', learnerIds).eq('status', 'pending')
+        : Promise.resolve({ count: 0 }),
+    ]);
+    setPendingFriendRequests(pendingFriendCount ?? 0);
 
     setLearners(enriched);
     setStats({
@@ -133,6 +138,10 @@ export default function GuardianHomeScreen() {
     if (tile.label === 'Schedule') {
       if (!learners[0]) return;
       navigation.navigate('UserSchedule', { userId: learners[0].id, userName: learners[0].name });
+      return;
+    }
+    if (tile.label === 'Friends' && pendingFriendRequests > 0) {
+      navigation.navigate('LearnerFriends', { initialTab: 'requests' });
       return;
     }
     navigation.navigate(tile.screen as any, tile.params as any);
@@ -272,6 +281,7 @@ export default function GuardianHomeScreen() {
                   <View key={ri} style={s.tileRow}>
                     {pair.map(idx => {
                       const tile = LEARNER_TILES[idx];
+                      const showBadge = tile.label === 'Friends' && pendingFriendRequests > 0;
                       return (
                         <TouchableOpacity
                           key={tile.label}
@@ -279,6 +289,13 @@ export default function GuardianHomeScreen() {
                           onPress={() => openLearnerTile(tile)}
                           activeOpacity={0.78}
                         >
+                          {showBadge && (
+                            <View style={s.tileBadge}>
+                              <AppText style={s.tileBadgeText}>
+                                {pendingFriendRequests > 9 ? '9+' : pendingFriendRequests}
+                              </AppText>
+                            </View>
+                          )}
                           <AppText style={s.tileEmoji}>{tile.emoji}</AppText>
                           <AppText style={s.tileLabel}>{tile.label}</AppText>
                         </TouchableOpacity>
@@ -388,35 +405,11 @@ export default function GuardianHomeScreen() {
         </ContentContainer>
       </ScrollView>
 
-      {/* ── Bottom bar ── */}
-      <View style={s.bottomBar}>
-        <View style={[s.bottomBarInner, { paddingBottom: insets.bottom || SPACING.sm }]}>
-          <TouchableOpacity style={s.navItem} onPress={() => navigation.navigate('LearnerSelect')} activeOpacity={0.75}>
-            <AppText style={s.navIcon}>🏠</AppText>
-            <AppText style={[s.navLabel, s.navLabelActive]}>Home</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.navItem} onPress={() => navigation.navigate('Notifications')} activeOpacity={0.75}>
-            <AppText style={s.navIcon}>🔔</AppText>
-            <AppText style={s.navLabel}>Notifications</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={s.navItem}
-            onPress={() => navigation.navigate('Account')}
-            activeOpacity={0.75}
-          >
-            <AppText style={s.navIcon}>👤</AppText>
-            <AppText style={s.navLabel}>Account</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={s.navItem}
-            onPress={handleSignOut}
-            activeOpacity={0.75}
-          >
-            <AppText style={s.navIcon}>🚪</AppText>
-            <AppText style={[s.navLabel, s.navLabelSignOut]}>Sign Out</AppText>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <GuardianTabBar
+        homeIcon="🏠"
+        homeLabel="Home"
+        onHomePress={() => navigation.navigate('LearnerSelect')}
+      />
     </View>
   );
 }
@@ -553,19 +546,4 @@ const s = StyleSheet.create({
   toggleThumb:   { width: 22, height: 22, borderRadius: 11, backgroundColor: NICO.surface },
   toggleThumbOn: { alignSelf: 'flex-end' },
 
-  bottomBar: {
-    backgroundColor: NICO.surface,
-    borderTopWidth:  1,
-    borderTopColor:  NICO.border,
-  },
-  bottomBarInner: {
-    flexDirection:    'row',
-    paddingTop:       SPACING.sm,
-    paddingHorizontal: SPACING.sm,
-  },
-  navItem:         { flex: 1, alignItems: 'center', gap: 3, paddingVertical: SPACING.xs },
-  navIcon:         { fontSize: 22 },
-  navLabel:        { ...TEXT_STYLE.caption, color: NICO.textMuted },
-  navLabelActive:  { color: NICO.primary },
-  navLabelSignOut: { color: NICO.error },
 });

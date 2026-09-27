@@ -5,21 +5,32 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppText from './AppText';
 import { useAuth } from '../lib/AuthContext';
+import useHasUnreadNotifications from '../hooks/useHasUnreadNotifications';
 import { GuardianNavParamList } from '../navigation';
 import { NICO, TEXT_STYLE, SPACING, FONT_WEIGHT, scale } from '../constants/theme';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
+interface GuardianTabBarProps {
+  /** Defaults to the tile screens' "Dashboard" item, which just navigates back to GuardianHome. */
+  homeIcon?: string;
+  homeLabel?: string;
+  onHomePress?: () => void;
+}
+
 /**
- * Persistent bottom bar shown only on the 4 top-level guardian tile screens
- * (Tutorials, Connections, Discussions, Events) — not on their sub-pages.
- * Mirrors the links on the guardian dashboard's own bottom bar.
+ * Persistent bottom bar. Used both on the 4 top-level guardian tile screens
+ * (Tutorials, Connections, Discussions, Events) and, via the home-item props,
+ * on the dashboard screen itself — previously the dashboard had its own
+ * hand-rolled copy of this bar with a slightly different "Home" item; that
+ * copy is gone now and this is the single implementation.
  */
-export default function GuardianTabBar() {
+export default function GuardianTabBar({ homeIcon = '🗂️', homeLabel = 'Dashboard', onHomePress }: GuardianTabBarProps) {
   const navigation = useNavigation<Nav>();
   const route = useRoute();
   const insets = useSafeAreaInsets();
-  const { signOut } = useAuth();
+  const { signOut, guardian } = useAuth();
+  const hasUnread = useHasUnreadNotifications(guardian?.id);
 
   function handleSignOut() {
     Alert.alert('Sign out', 'Are you sure you want to sign out?', [
@@ -35,12 +46,19 @@ export default function GuardianTabBar() {
   return (
     <View style={s.bar}>
       <View style={[s.inner, { paddingBottom: insets.bottom || SPACING.sm }]}>
-        <TouchableOpacity style={s.item} onPress={() => navigation.navigate('GuardianHome')} activeOpacity={0.75}>
-          <AppText style={s.icon}>🗂️</AppText>
-          <AppText style={[s.label, dashboardActive && s.labelActive]}>Dashboard</AppText>
+        <TouchableOpacity
+          style={s.item}
+          onPress={onHomePress ?? (() => navigation.navigate('GuardianHome'))}
+          activeOpacity={0.75}
+        >
+          <AppText style={s.icon}>{homeIcon}</AppText>
+          <AppText style={[s.label, dashboardActive && s.labelActive]}>{homeLabel}</AppText>
         </TouchableOpacity>
         <TouchableOpacity style={s.item} onPress={() => navigation.navigate('Notifications')} activeOpacity={0.75}>
-          <AppText style={s.icon}>🔔</AppText>
+          <View>
+            <AppText style={s.icon}>🔔</AppText>
+            {hasUnread && <View style={s.unreadDot} />}
+          </View>
           <AppText style={[s.label, notificationsActive && s.labelActive]}>Notifications</AppText>
         </TouchableOpacity>
         <TouchableOpacity style={s.item} onPress={() => navigation.navigate('Account')} activeOpacity={0.75}>
@@ -72,4 +90,9 @@ const s = StyleSheet.create({
   label:        { ...TEXT_STYLE.caption, color: NICO.textMuted },
   labelActive:  { color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold },
   labelSignOut: { color: NICO.error },
+  unreadDot: {
+    position: 'absolute', top: -2, right: -4,
+    width: 9, height: 9, borderRadius: 5,
+    backgroundColor: NICO.error,
+  },
 });

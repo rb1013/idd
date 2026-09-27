@@ -166,10 +166,7 @@ export default function GuardianNotificationsScreen() {
         activeOpacity={0.8}
       >
         {wasUnread && <View style={s.unreadStripe} />}
-        {wasUnread
-          ? <View style={s.unreadDot} />
-          : <AppText style={s.readTick}>✓</AppText>
-        }
+        {!wasUnread && <AppText style={s.readTick}>✓</AppText>}
         <AppText style={s.cardIcon}>{meta.icon}</AppText>
         <View style={s.cardBody}>
           <AppText style={s.cardLabel}>{meta.label}</AppText>
@@ -296,11 +293,6 @@ const s = StyleSheet.create({
     position: 'absolute', left: 0, top: 0, bottom: 0,
     width: 4, backgroundColor: NICO.teal,
     borderTopLeftRadius: RADIUS.xl, borderBottomLeftRadius: RADIUS.xl,
-  },
-  unreadDot: {
-    position: 'absolute', top: SPACING.md, right: SPACING.md,
-    width: 9, height: 9, borderRadius: 5,
-    backgroundColor: NICO.error,
   },
   readTick: {
     position: 'absolute', top: SPACING.sm, right: SPACING.md,

@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { buildTutorialPrompt } from '../_shared/tutorialPrompt.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,7 +45,7 @@ Deno.serve(async (req) => {
 
     const { data: tutorial, error: fetchErr } = await supabase
       .from('tutorials')
-      .select('id, status, admin_notes, created_by_guardian_id')
+      .select('id, status, admin_notes, created_by_guardian_id, category, core_action, format, visual_style, image_style, pacing_label, tone_label, duration_seconds, comprehension_level')
       .eq('id', tutorial_id)
       .single();
 
@@ -83,9 +84,10 @@ Deno.serve(async (req) => {
     const month = new Date().toISOString().slice(0, 7);
     const [{ data: quota }, { data: appSettings }] = await Promise.all([
       supabase.from('guardian_tutorial_quota').select('count').eq('guardian_id', guardian_id).eq('month', month).single(),
-      supabase.from('app_settings').select('tutorial_quota_limit').eq('id', 1).single(),
+      supabase.from('app_settings').select('tutorial_quota_limit, tutorial_max_frames').eq('id', 1).single(),
     ]);
     const quotaLimit = appSettings?.tutorial_quota_limit ?? 10;
+    const maxFrames = appSettings?.tutorial_max_frames ?? 4;
     const currentCount = quota?.count ?? 0;
 
     if (currentCount >= quotaLimit) {
@@ -102,9 +104,27 @@ Deno.serve(async (req) => {
         { onConflict: 'guardian_id,month' },
       );
 
+    // Rebuild the prompt fresh from the tutorial's saved settings, rather than replaying whatever
+    // was frozen into ai_prompt at original creation time — this is what lets prompt-wording
+    // improvements (e.g. accessibility guidance) apply retroactively when an old tutorial is
+    // regenerated, not just to brand-new ones.
+    const ai_prompt = buildTutorialPrompt({
+      target_skill: tutorial.category,
+      core_action: tutorial.core_action,
+      format: tutorial.format,
+      visual_style: tutorial.visual_style,
+      image_style: tutorial.image_style,
+      pacing_label: tutorial.pacing_label,
+      tone_label: tutorial.tone_label,
+      duration_seconds: tutorial.duration_seconds,
+      comprehension_level: tutorial.comprehension_level,
+      language: 'English',
+      frameCount: maxFrames,
+    });
+
     // Reset the tutorial and queue a fresh generation job (DB Webhook fires process-tutorial-job)
     await supabase.from('tutorial_frames').delete().eq('tutorial_id', tutorial_id);
-    await supabase.from('tutorials').update({ status: 'generating', updated_at: new Date().toISOString() }).eq('id', tutorial_id);
+    await supabase.from('tutorials').update({ ai_prompt, status: 'generating', updated_at: new Date().toISOString() }).eq('id', tutorial_id);
     const { error: jobError } = await supabase.from('tutorial_jobs').insert({ tutorial_id });
     if (jobError) throw new Error(`Failed to queue job: ${jobError.message}`);
 

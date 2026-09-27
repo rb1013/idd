@@ -211,7 +211,7 @@ export default function TutorialPreviewScreen() {
         : `${tutorial?.topic ?? ''}: ${editTts}`);
     const visualStyle = tutorial?.visual_style ?? '2D Animation';
     const imageStyle = tutorial?.image_style ?? 'Simple & Bold';
-    const imagePrompt = `${guardianDescription}. Style: ${visualStyle}, ${imageStyle}.`;
+    const imagePrompt = `${guardianDescription}. Style: ${visualStyle}, ${imageStyle}. Use soft, muted, low-saturation colours — avoid neon or harshly bright colours, since intense colour can be overstimulating for IDD users.`;
     setRegeneratingImage(true);
     try {
       const { data, error } = await supabase.functions.invoke('regenerate-frame', {
