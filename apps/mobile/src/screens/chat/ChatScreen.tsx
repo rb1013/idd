@@ -587,10 +587,17 @@ export default function ChatScreen() {
                       <Text style={guardianStyles.warningTxt}>⚠️ This cannot be undone. Chat history will be permanently deleted for both learners.</Text>
                     </View>
                   )}
-                  {selectedAction === 'block_user' && (
+                  {(selectedAction === 'block_user' || selectedAction === 'block_delete') && (
                     <View style={guardianStyles.noteBox}>
                       <Text style={guardianStyles.noteTxt}>
-                        ℹ️ This will not delete the chat. If you want to delete the chat as well, select "Block & Delete Chat" instead.
+                        ℹ️ {participantName} will be removed from friends list. You can unblock from Learner's Friends page.
+                      </Text>
+                    </View>
+                  )}
+                  {selectedAction === 'report_user' && (
+                    <View style={guardianStyles.noteBox}>
+                      <Text style={guardianStyles.noteTxt}>
+                        ℹ️ {participantName} will be reported to admin to take any further action. They will still be your learner's friend.
                       </Text>
                     </View>
                   )}
