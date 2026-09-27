@@ -1,12 +1,15 @@
 import React, { useRef, useState } from 'react';
 import {
   View, TextInput, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import AppText from '../../components/AppText';
+import ContentContainer from '../../components/ContentContainer';
 import { supabase } from '../../lib/supabase';
-import { COLORS } from '../../constants';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, BTN_SIZE, BTN_VARIANT, FONT_SIZE, FONT_WEIGHT, scale,
+} from '../../constants/theme';
 
 type RouteParams = { email: string };
 
@@ -75,111 +78,134 @@ export default function OTPVerificationScreen() {
   const code = digits.join('');
 
   return (
-    <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <AppText style={s.emoji}>✉️</AppText>
-      <AppText style={s.title}>Enter your code</AppText>
-      <AppText style={s.body}>
-        We sent a 6-digit code to{'\n'}
-        <AppText style={s.email}>{email}</AppText>
-      </AppText>
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView
+        contentContainerStyle={s.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <ContentContainer>
+        <View style={s.content}>
+          <AppText style={s.emoji}>✉️</AppText>
+          <AppText style={s.title}>Enter your code</AppText>
+          <AppText style={s.body}>
+            We sent a 6-digit code to{'\n'}
+            <AppText style={s.emailHighlight}>{email}</AppText>
+          </AppText>
 
-      <View style={s.boxRow}>
-        {digits.map((d, i) => (
-          <TextInput
-            key={i}
-            ref={el => { inputs.current[i] = el; }}
-            style={[s.box, d ? s.boxFilled : null]}
-            value={d}
-            onChangeText={text => handleChange(text, i)}
-            onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, i)}
-            keyboardType="number-pad"
-            maxLength={1}
-            selectTextOnFocus
-            autoFocus={i === 0}
-            editable={!verifying}
-          />
-        ))}
-      </View>
+          <View style={s.boxRow}>
+            {digits.map((d, i) => (
+              <TextInput
+                key={i}
+                ref={el => { inputs.current[i] = el; }}
+                style={[s.box, d ? s.boxFilled : null]}
+                value={d}
+                onChangeText={text => handleChange(text, i)}
+                onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, i)}
+                keyboardType="number-pad"
+                maxLength={1}
+                selectTextOnFocus
+                autoFocus={i === 0}
+                editable={!verifying}
+              />
+            ))}
+          </View>
 
-      {verifying && (
-        <View style={s.verifyingRow}>
-          <ActivityIndicator color={COLORS.bloomAccent} />
-          <AppText style={s.verifyingText}>Verifying…</AppText>
+          {verifying && (
+            <View style={s.verifyingRow}>
+              <ActivityIndicator color={NICO.primary} />
+              <AppText style={s.verifyingText}>Verifying…</AppText>
+            </View>
+          )}
+
+          {resent && (
+            <View style={s.resentBadge}>
+              <AppText style={s.resentText}>✓ New code sent</AppText>
+            </View>
+          )}
+
+          {!verifying && (
+            <TouchableOpacity
+              style={[s.btn, code.length < 6 && s.btnDisabled]}
+              onPress={() => verify(code)}
+              disabled={code.length < 6}
+              activeOpacity={0.85}
+            >
+              <AppText style={s.btnText}>Verify</AppText>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity onPress={resend} disabled={resending} activeOpacity={0.7} style={s.resendBtn}>
+            {resending
+              ? <ActivityIndicator color={NICO.primary} />
+              : <AppText style={s.resendText}>Didn't get it? Resend code</AppText>
+            }
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => navigation.navigate('Login')} style={s.backBtn} activeOpacity={0.7}>
+            <AppText style={s.backBtnText}>← Back to sign in</AppText>
+          </TouchableOpacity>
         </View>
-      )}
-
-      {resent && (
-        <View style={s.resentBadge}>
-          <AppText style={s.resentText}>✓ New code sent</AppText>
-        </View>
-      )}
-
-      {!verifying && (
-        <TouchableOpacity
-          style={[s.verifyBtn, code.length < 6 && s.verifyBtnDisabled]}
-          onPress={() => verify(code)}
-          disabled={code.length < 6}
-          activeOpacity={0.8}
-        >
-          <AppText style={s.verifyBtnText}>Verify</AppText>
-        </TouchableOpacity>
-      )}
-
-      <TouchableOpacity onPress={resend} disabled={resending} activeOpacity={0.7} style={s.resendBtn}>
-        {resending
-          ? <ActivityIndicator color={COLORS.bloomAccent} />
-          : <AppText style={s.resendText}>Didn't get it? Resend code</AppText>
-        }
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.navigate('Login')} style={s.backBtn} activeOpacity={0.7}>
-        <AppText style={s.backBtnText}>← Back to sign in</AppText>
-      </TouchableOpacity>
+        </ContentContainer>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  container: {
-    flex: 1, backgroundColor: COLORS.bloomBody,
-    alignItems: 'center', justifyContent: 'center',
-    padding: 32, gap: 16,
-  },
-  emoji: { fontSize: 56, marginBottom: 4 },
-  title: { fontSize: 26, fontWeight: '900', color: COLORS.bloomText, textAlign: 'center' },
-  body:  { fontSize: 16, color: COLORS.bloomMuted, textAlign: 'center', lineHeight: 24 },
-  email: { fontWeight: '700', color: COLORS.bloomText },
+  root:      { flex: 1, backgroundColor: NICO.screenBg },
+  container: { flexGrow: 1, justifyContent: 'center', paddingBottom: '30%' },
 
-  boxRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  content: {
+    paddingHorizontal: SPACING.base,
+    paddingVertical:   SPACING['3xl'],
+    alignItems:        'center',
+    gap:               SPACING.md,
+  },
+
+  emoji:          { fontSize: scale(56), marginBottom: SPACING.xs },
+  title:          { ...TEXT_STYLE.screenTitle, textAlign: 'center', marginBottom: SPACING.xs },
+  body:           { ...TEXT_STYLE.hint, textAlign: 'center' },
+  emailHighlight: { ...TEXT_STYLE.hint, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+
+  boxRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.sm },
   box: {
-    width: 46, height: 56, borderRadius: 10,
-    borderWidth: 1.5, borderColor: COLORS.bloomBorder,
-    backgroundColor: COLORS.surface,
-    fontSize: 24, fontWeight: '700', color: COLORS.bloomText,
-    textAlign: 'center',
+    width:           46,
+    height:          56,
+    borderRadius:    RADIUS.md,
+    borderWidth:     1.5,
+    borderColor:     NICO.border,
+    backgroundColor: NICO.surface,
+    fontSize:        FONT_SIZE['2xl'],
+    fontWeight:      FONT_WEIGHT.bold,
+    color:           NICO.text,
+    textAlign:       'center',
   },
-  boxFilled: { borderColor: COLORS.bloomAccent, backgroundColor: COLORS.bloomActiveBg },
-
-  verifyingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  verifyingText: { color: COLORS.bloomMuted, fontSize: 14 },
-
-  verifyBtn: {
-    marginTop: 4, backgroundColor: COLORS.bloomAccent,
-    borderRadius: 12, paddingVertical: 14, paddingHorizontal: 40,
+  boxFilled: {
+    borderColor:     NICO.primary,
+    backgroundColor: NICO.primaryLight,
   },
-  verifyBtnDisabled: { opacity: 0.4 },
-  verifyBtnText: { color: COLORS.bloomOnAccent, fontWeight: '700', fontSize: 16 },
+
+  verifyingRow:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  verifyingText: { ...TEXT_STYLE.hint },
+
+  btn:         { ...BTN_SIZE.lg, ...BTN_VARIANT.primary },
+  btnDisabled: { opacity: 0.4 },
+  btnText:     { ...TEXT_STYLE.buttonPrimary },
 
   resentBadge: {
-    backgroundColor: COLORS.bloomActiveBg, borderRadius: 10,
-    paddingVertical: 10, paddingHorizontal: 20,
-    borderWidth: 1.5, borderColor: COLORS.bloomSageMid,
+    backgroundColor: NICO.primaryLight,
+    borderRadius:    RADIUS.md,
+    paddingVertical:   SPACING.sm,
+    paddingHorizontal: SPACING.base,
+    borderWidth:     1.5,
+    borderColor:     NICO.primary,
   },
-  resentText: { color: COLORS.bloomActiveText, fontWeight: '700', fontSize: 14 },
+  resentText: { color: NICO.primary, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.sm },
 
-  resendBtn: { marginTop: 4 },
-  resendText: { fontSize: 14, color: COLORS.bloomAccent, fontWeight: '600' },
+  resendBtn:  { marginTop: SPACING.xs },
+  resendText: { ...TEXT_STYLE.link },
 
-  backBtn: { marginTop: 4 },
-  backBtnText: { fontSize: 14, color: COLORS.bloomMuted, fontWeight: '600' },
+  backBtn:     { marginTop: SPACING.xs },
+  backBtnText: { ...TEXT_STYLE.link },
 });

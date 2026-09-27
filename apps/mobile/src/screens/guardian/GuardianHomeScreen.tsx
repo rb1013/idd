@@ -140,10 +140,6 @@ export default function GuardianHomeScreen() {
       navigation.navigate('UserSchedule', { userId: learners[0].id, userName: learners[0].name });
       return;
     }
-    if (tile.label === 'Friends' && pendingFriendRequests > 0) {
-      navigation.navigate('LearnerFriends', { initialTab: 'requests' });
-      return;
-    }
     navigation.navigate(tile.screen as any, tile.params as any);
   }
 
@@ -221,12 +217,7 @@ export default function GuardianHomeScreen() {
                     <TouchableOpacity
                       key={tile.label}
                       style={[s.tile, s.guardianTile, { backgroundColor: color.bg }]}
-                      onPress={() => navigation.navigate(
-                        tile.screen as any,
-                        isConnections && pendingConnections > 0
-                          ? { initialTab: 'requests', initialSubTab: 'received' }
-                          : undefined,
-                      )}
+                      onPress={() => navigation.navigate(tile.screen as any)}
                       activeOpacity={0.78}
                     >
                       {showBadge && (

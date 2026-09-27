@@ -10,6 +10,7 @@ import AppText from '../components/AppText';
 import { useAuth } from '../lib/AuthContext';
 import { supabase } from '../lib/supabase';
 import { COLORS } from '../constants';
+import { NICO } from '../constants/theme';
 
 // Auth screens
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -93,8 +94,8 @@ export type GuardianNavParamList = {
   LearnerDiscovery: undefined;
   LearnerPublicProfile: { learnerId: string };
   LearnerFriendRequests: undefined;
-  LearnerFriends: { initialTab?: 'requests' } | undefined;
-  GuardianConnections: { initialTab?: 'connected' | 'requests' | 'find'; initialSubTab?: 'sent' | 'received' } | undefined;
+  LearnerFriends: undefined;
+  GuardianConnections: undefined;
   Discussions: undefined;
   DiscussionDetail: { postId: string };
   Events: { tab?: 'mine' | 'upcoming' } | undefined;
@@ -340,7 +341,7 @@ export default function Navigation() {
             <Stack.Screen name="EmailVerificationPending" component={EmailVerificationPendingScreen}
               options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Verify your email', headerBackVisible: false }} />
             <Stack.Screen name="OTPVerification" component={OTPVerificationScreen}
-              options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Verify your email', headerBackVisible: false }} />
+              options={{ headerShown: true, headerStyle: { backgroundColor: NICO.screenBg }, headerTintColor: NICO.text, title: 'Verify your email', headerBackVisible: false }} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen}
               options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Reset password', headerBackVisible: false }} />
             <Stack.Screen name="ResetOTP" component={ResetOTPScreen}

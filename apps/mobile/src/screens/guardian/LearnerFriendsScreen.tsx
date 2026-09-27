@@ -11,7 +11,7 @@ import MoreFiltersLink from '../../components/MoreFiltersLink';
 import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
@@ -114,9 +114,8 @@ function Avatar({ name, photo, size = 48 }: { name: string; photo: string | null
 
 export default function LearnerFriendsScreen() {
   const navigation = useNavigation<Nav>();
-  const route = useRoute<RouteProp<GuardianNavParamList, 'LearnerFriends'>>();
   const { guardian } = useAuth();
-  const [tab, setTab] = useState<Tab>(route.params?.initialTab ?? 'friends');
+  const [tab, setTab] = useState<Tab>('friends');
 
   useNicoHeader(navigation);
 
@@ -158,8 +157,7 @@ export default function LearnerFriendsScreen() {
 
   useFocusEffect(useCallback(() => {
     if (guardian) loadAll(guardian.id);
-    if (route.params?.initialTab) setTab(route.params.initialTab);
-  }, [guardian, route.params]));
+  }, [guardian]));
 
   async function loadAll(guardianId: string) {
     setLoading(true);

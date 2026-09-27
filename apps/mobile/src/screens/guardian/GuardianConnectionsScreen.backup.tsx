@@ -64,11 +64,10 @@ interface GuardianResult {
 export default function GuardianConnectionsScreen() {
   const { guardian } = useAuth();
   const navigation = useNavigation();
-  const route = useRoute<RouteProp<GuardianNavParamList, 'GuardianConnections'>>();
   useNicoHeader(navigation);
 
-  const [activeTab, setActiveTab]               = useState<Tab>(route.params?.initialTab ?? 'connected');
-  const [activeRequestsTab, setActiveRequestsTab] = useState<RequestsSubTab>(route.params?.initialSubTab ?? 'sent');
+  const [activeTab, setActiveTab]               = useState<Tab>('connected');
+  const [activeRequestsTab, setActiveRequestsTab] = useState<RequestsSubTab>('sent');
   const [peekGuardian, setPeekGuardian]         = useState<GuardianResult | null>(null);
   const [situationTagOptions, setSituationTagOptions] = useState<string[]>([]);
 
@@ -95,9 +94,7 @@ export default function GuardianConnectionsScreen() {
       supabase.from('situation_tag_options').select('label').order('label').then(({ data }) => {
         if (data) setSituationTagOptions(data.map((r: any) => r.label));
       });
-      if (route.params?.initialTab) setActiveTab(route.params.initialTab);
-      if (route.params?.initialSubTab) setActiveRequestsTab(route.params.initialSubTab);
-    }, [guardian, route.params]),
+    }, [guardian]),
   );
 
   async function load(myId: string) {
