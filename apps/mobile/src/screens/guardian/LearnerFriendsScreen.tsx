@@ -96,6 +96,7 @@ interface LearnerResult {
   abilities:         string[];
   medicalConditions: string[];
   connectionStatus: 'none' | 'pending_sent' | 'pending_received' | 'accepted';
+  guardianName: string | null;
 }
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
@@ -380,13 +381,15 @@ export default function LearnerFriendsScreen() {
   async function loadDiscovery(myIds: string[], guardianId: string) {
     const { data: profiles } = await supabase
       .from('user_profiles')
-      .select('id, name, date_of_birth, photo_url, city, region')
+      .select('id, name, date_of_birth, photo_url, city, region, guardian_id')
       .neq('guardian_id', guardianId)
       .order('name');
     if (!profiles) return;
 
     const otherIds = profiles.map((p: any) => p.id);
     const none = Promise.resolve({ data: [] });
+
+    const otherGuardianIds = [...new Set(profiles.map((p: any) => p.guardian_id).filter(Boolean))];
 
     const [
       { data: categories },
@@ -397,6 +400,7 @@ export default function LearnerFriendsScreen() {
       { data: friendships },
       { data: medicalOptions },
       { data: medicalData },
+      { data: otherGuardians },
     ] = await Promise.all([
       supabase.from('categories').select('name, type').order('name'),
       otherIds.length > 0 ? supabase.from('chat_preferences').select('user_id, comprehension_level').in('user_id', otherIds) : none,
@@ -406,7 +410,11 @@ export default function LearnerFriendsScreen() {
       myIds.length > 0 ? supabase.from('friendships').select('requester_id, addressee_id, status').or(myIds.map((id: string) => `requester_id.eq.${id},addressee_id.eq.${id}`).join(',')) : none,
       supabase.from('medical_conditions').select('label').order('label'),
       otherIds.length > 0 ? supabase.from('user_medical_conditions').select('user_id, medical_conditions(label)').in('user_id', otherIds) : none,
+      otherGuardianIds.length > 0 ? supabase.from('guardians').select('id, full_name').in('id', otherGuardianIds) : none,
     ]);
+
+    const guardianNameMap: Record<string, string> = {};
+    (otherGuardians ?? []).forEach((g: any) => { guardianNameMap[g.id] = g.full_name; });
 
     const cats = (categories ?? []) as { name: string; type: string }[];
     setCatLikes(cats.filter(c => c.type === 'like').map(c => c.name));
@@ -454,6 +462,7 @@ export default function LearnerFriendsScreen() {
       abilities:         (abilitiesMap[p.id] ?? []).slice(0, 8),
       medicalConditions: medicalMap[p.id]    ?? [],
       connectionStatus: getStatus(p.id),
+      guardianName: p.guardian_id ? (guardianNameMap[p.guardian_id] ?? null) : null,
     })));
   }
 
@@ -644,19 +653,6 @@ export default function LearnerFriendsScreen() {
                     {f.medicalConditions.length > 0 && (
                       <AppText style={s.cardMedical}>🏥 {f.medicalConditions.join(', ')}</AppText>
                     )}
-                    {isReported && (
-                      <View style={s.reportedRow}>
-                        <View style={s.reportedPill}>
-                          <AppText style={s.reportedPillTxt}>⚠️ Reported</AppText>
-                        </View>
-                        <TouchableOpacity
-                          onPress={() => setReasonModal({ name: f.learnerName, reason: reportReason })}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <AppText style={s.infoIcon}>ℹ️</AppText>
-                        </TouchableOpacity>
-                      </View>
-                    )}
                   </View>
                   {removing === f.friendshipId ? (
                     <ActivityIndicator size="small" color={NICO.error} style={s.cardCornerIcon} />
@@ -668,6 +664,19 @@ export default function LearnerFriendsScreen() {
                     >
                       <AppText style={s.cardRemoveIconTxt}>✕</AppText>
                     </TouchableOpacity>
+                  )}
+                  {isReported && (
+                    <View style={s.reportedCorner}>
+                      <View style={s.reportedPill}>
+                        <AppText style={s.reportedPillTxt}>⚠️ Reported</AppText>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => setReasonModal({ name: f.learnerName, reason: reportReason })}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <AppText style={s.infoIcon}>ℹ️</AppText>
+                      </TouchableOpacity>
+                    </View>
                   )}
                 </TouchableOpacity>
               );
@@ -843,12 +852,18 @@ export default function LearnerFriendsScreen() {
                   onPress={() => navigation.navigate('LearnerPublicProfile', { learnerId: l.id })}
                   activeOpacity={0.85}
                 >
-                  <Avatar name={l.name} photo={l.photo_url} size={scale(42)} />
+                  <View style={s.avatarCol}>
+                    <Avatar name={l.name} photo={l.photo_url} size={scale(52)} />
+                    {calcAge(l.date_of_birth) != null && <AppText style={s.avatarAge}>{calcAge(l.date_of_birth)} yrs</AppText>}
+                  </View>
                   <View style={s.cardInfo}>
                     <AppText style={s.cardName} numberOfLines={1}>{l.name}</AppText>
                     <AppText style={s.cardMeta} numberOfLines={1}>
-                      {calcAge(l.date_of_birth) ?? '—'} yrs · {l.city}{l.region ? `, ${l.region}` : ''}
+                      {l.city}{l.region ? `, ${l.region}` : ''}
                     </AppText>
+                    {l.guardianName && (
+                      <AppText style={s.cardMeta}>Guardian: {l.guardianName}</AppText>
+                    )}
                     {l.medicalConditions.length > 0 && (
                       <AppText style={s.cardMedical}>🏥 {l.medicalConditions.join(', ')}</AppText>
                     )}
@@ -1119,9 +1134,12 @@ const s = StyleSheet.create({
   connectBtnTxt:   { color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.sm },
 
   // Friends tab
-  reportedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   infoIcon: { fontSize: FONT_SIZE.md },
   cardCornerIcon: { position: 'absolute', top: SPACING.sm, right: SPACING.sm },
+  reportedCorner: {
+    position: 'absolute', top: SPACING.sm + scale(26) + SPACING.xs, right: SPACING.sm,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+  },
   cardRemoveIcon: {
     width: scale(26), height: scale(26), borderRadius: RADIUS.full,
     backgroundColor: 'rgba(255,255,255,0.75)',
@@ -1130,10 +1148,10 @@ const s = StyleSheet.create({
   cardRemoveIconTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.extraBold, color: NICO.error },
   reportedPill: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: NICO.warningLight,
+    backgroundColor: NICO.errorLight,
     borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm, paddingVertical: 4,
   },
-  reportedPillTxt: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.warning },
+  reportedPillTxt: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.error },
 
   // Report reason nudge modal
   nudgeOverlay: {

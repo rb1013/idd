@@ -204,7 +204,6 @@ export default function ChatScreen() {
                 </View>
               )
             }
-            <Text style={styles.headerSpeaker}>📢</Text>
           </View>
           <Text style={styles.headerName}>{participantName}</Text>
           {isOnline && <Text style={styles.headerOnline}>● Online</Text>}
@@ -397,7 +396,7 @@ export default function ChatScreen() {
             returnKeyType="send"
             onSubmitEditing={() => sendMessage(text, true)}
             submitBehavior="submit"
-            maxLength={500}
+            maxLength={150}
           />
           <TouchableOpacity
             style={[styles.sendBtn, !text.trim() && styles.sendBtnDisabled]}
@@ -428,7 +427,10 @@ export default function ChatScreen() {
           onPress={() => { setPinModalVisible(false); setPinValue(''); setPinError(''); }}
         >
           <View style={guardianStyles.pinCard} onStartShouldSetResponder={() => true}>
-            <Text style={guardianStyles.pinTitle}>🛡️  Guardian PIN</Text>
+            <View style={guardianStyles.pinTitleRow}>
+              <Image source={require('../../../assets/red-shield.png')} style={guardianStyles.pinTitleIcon} resizeMode="contain" />
+              <Text style={guardianStyles.pinTitle}>Guardian PIN</Text>
+            </View>
             <Text style={guardianStyles.pinSub}>Enter your 6-digit PIN to continue</Text>
             <TextInput
               style={guardianStyles.pinInput}
@@ -508,7 +510,7 @@ export default function ChatScreen() {
                   autoFocus
                 />
                 <View style={guardianStyles.btnRow}>
-                  <TouchableOpacity style={guardianStyles.backBtn} onPress={() => setActionStep('menu')} activeOpacity={0.8}>
+                  <TouchableOpacity style={guardianStyles.backBtn} onPress={resetGuardianModal} activeOpacity={0.8}>
                     <Text style={guardianStyles.backBtnTxt}>Back</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -585,6 +587,13 @@ export default function ChatScreen() {
                       <Text style={guardianStyles.warningTxt}>⚠️ This cannot be undone. Chat history will be permanently deleted for both learners.</Text>
                     </View>
                   )}
+                  {selectedAction === 'block_user' && (
+                    <View style={guardianStyles.noteBox}>
+                      <Text style={guardianStyles.noteTxt}>
+                        ℹ️ This will not delete the chat. If you want to delete the chat as well, select "Block & Delete Chat" instead.
+                      </Text>
+                    </View>
+                  )}
                   <View style={guardianStyles.btnRow}>
                     <TouchableOpacity style={guardianStyles.backBtn} onPress={() => setActionStep(action?.needsDelete ? 'scope' : 'reason')} activeOpacity={0.8}>
                       <Text style={guardianStyles.backBtnTxt}>Back</Text>
@@ -617,7 +626,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: NICO.screenBg },
 
   // Header
-  headerTitle: { flexDirection: 'column', alignItems: 'center', gap: 2, marginTop: 28, paddingBottom: 10 },
+  headerTitle: { flexDirection: 'column', alignItems: 'center', gap: 2, paddingVertical: 6 },
   headerPhotoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   headerPhoto: { width: scale(50), height: scale(50), borderRadius: scale(25), borderWidth: 2.5, borderColor: NICO.primary },
   headerPhotoPlaceholder: {
@@ -626,7 +635,6 @@ const styles = StyleSheet.create({
     borderWidth: 2.5, borderColor: NICO.primary,
   },
   headerInitial: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
-  headerSpeaker: { fontSize: FONT_SIZE.xl },
   headerName: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
   headerOnline: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.success },
 
@@ -720,6 +728,8 @@ const guardianStyles = StyleSheet.create({
     backgroundColor: NICO.surface, borderRadius: RADIUS['3xl'], padding: SPACING.xl, margin: SPACING['2xl'],
     gap: SPACING.md, ...SHADOW.xl,
   },
+  pinTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.xs },
+  pinTitleIcon: { width: scale(24), height: scale(24) },
   pinTitle: { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, textAlign: 'center' },
   pinSub:   { fontSize: FONT_SIZE.base, color: NICO.textMuted, textAlign: 'center' },
   pinInput: {
@@ -791,6 +801,12 @@ const guardianStyles = StyleSheet.create({
     borderWidth: 1, borderColor: NICO.error,
   },
   warningTxt: { fontSize: FONT_SIZE.base, color: NICO.error, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 18 },
+
+  noteBox: {
+    backgroundColor: NICO.primaryLight, borderRadius: RADIUS.md, padding: SPACING.md,
+    borderWidth: 1, borderColor: NICO.primary,
+  },
+  noteTxt: { fontSize: FONT_SIZE.base, color: NICO.primary, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 18 },
 
   btnRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: 4 },
   backBtn: {
