@@ -180,37 +180,20 @@ export default function ChatScreen() {
     ? Date.now() - new Date(friendLastSeen).getTime() < 5 * 60 * 1000
     : false;
 
-  // Custom header: friend photo centred, tap speaks name
+  // Native header stays a thin bar (native back pill on the left, shield on the
+  // right) — the photo+name block moved into its own custom banner rendered in
+  // the screen body below, since native-stack's headerStyle only supports
+  // backgroundColor (no height), so a tall custom headerTitle has nowhere to
+  // grow into and gets clipped by the notch instead.
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitleAlign: 'center',
       headerRight: () => (
         <TouchableOpacity onPress={handleShieldPress} style={guardianStyles.shieldBtn} activeOpacity={0.75}>
           <Image source={require('../../../assets/red-shield.png')} style={guardianStyles.shieldIcon} resizeMode="contain" />
         </TouchableOpacity>
       ),
-      headerTitle: () => (
-        <TouchableOpacity
-          style={styles.headerTitle}
-          onPress={() => Speech.speak(participantName, { rate: 0.65, pitch: 1.0 })}
-          activeOpacity={0.75}
-        >
-          <View style={styles.headerPhotoRow}>
-            {participantPhoto
-              ? <Image source={{ uri: participantPhoto }} style={styles.headerPhoto} />
-              : (
-                <View style={[styles.headerPhotoPlaceholder, { backgroundColor: avatarColor(participantName) }]}>
-                  <Text style={styles.headerInitial}>{participantName[0]}</Text>
-                </View>
-              )
-            }
-          </View>
-          <Text style={styles.headerName}>{participantName}</Text>
-          {isOnline && <Text style={styles.headerOnline}>● Online</Text>}
-        </TouchableOpacity>
-      ),
     });
-  }, [navigation, participantName, participantPhoto, isOnline]);
+  }, [navigation]);
 
   // Fetch friend's last_seen_at for online status
   useEffect(() => {
@@ -316,11 +299,34 @@ export default function ChatScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={headerHeight}
-    >
+    <View style={styles.root}>
+      {/* Sub-header: friend photo + name, tap speaks name. Its own banner below
+          the native header, so it can be as tall as it needs without fighting
+          native-stack's fixed header height. */}
+      <TouchableOpacity
+        style={styles.subHeader}
+        onPress={() => Speech.speak(participantName, { rate: 0.65, pitch: 1.0 })}
+        activeOpacity={0.75}
+      >
+        <View style={styles.headerPhotoRow}>
+          {participantPhoto
+            ? <Image source={{ uri: participantPhoto }} style={styles.headerPhoto} />
+            : (
+              <View style={[styles.headerPhotoPlaceholder, { backgroundColor: avatarColor(participantName) }]}>
+                <Text style={styles.headerInitial}>{participantName[0]}</Text>
+              </View>
+            )
+          }
+        </View>
+        <Text style={styles.headerName}>{participantName}</Text>
+        {isOnline && <Text style={styles.headerOnline}>● Online</Text>}
+      </TouchableOpacity>
+
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={headerHeight}
+      >
       {/* Messages list */}
       <FlatList
         ref={flatListRef}
@@ -624,16 +630,23 @@ export default function ChatScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: NICO.screenBg },
   container: { flex: 1, backgroundColor: NICO.screenBg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: NICO.screenBg },
 
-  // Header
-  headerTitle: { flexDirection: 'column', alignItems: 'center', gap: 2, paddingVertical: 6 },
+  // Sub-header banner (below the native header): friend photo + name
+  subHeader: {
+    flexDirection: 'column', alignItems: 'center', gap: 2,
+    backgroundColor: NICO.background,
+    paddingTop: SPACING.sm, paddingBottom: SPACING.lg,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
+  },
   headerPhotoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   headerPhoto: { width: scale(50), height: scale(50), borderRadius: scale(25), borderWidth: 2.5, borderColor: NICO.primary },
   headerPhotoPlaceholder: {
