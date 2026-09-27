@@ -48,6 +48,7 @@ export default function TutorialPreviewScreen() {
   const [tutorial, setTutorial] = useState<TutorialWithFrames | null>(null);
   const [loading, setLoading] = useState(true);
   const [frameIndex, setFrameIndex] = useState(0);
+  const [viewTab, setViewTab] = useState<'video' | 'slides'>('video');
 
   useNicoHeader(navigation);
 
@@ -99,6 +100,7 @@ export default function TutorialPreviewScreen() {
   const [editImagePrompt, setEditImagePrompt] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [regeneratingImage, setRegeneratingImage] = useState(false);
+  const [regeneratingTutorial, setRegeneratingTutorial] = useState(false);
   const [savingCaption, setSavingCaption] = useState(false);
   const [savingNarration, setSavingNarration] = useState(false);
   const [editingCaption, setEditingCaption] = useState(false);
@@ -169,7 +171,14 @@ export default function TutorialPreviewScreen() {
       const { data, error } = await supabase.functions.invoke('regenerate-frame', {
         body: { frame_id: editingFrame.id, tts_text: editTts },
       });
-      if (error || data?.error) throw new Error(data?.error ?? error?.message);
+      if (error || data?.error) {
+        let detail = data?.error ?? error?.message ?? 'Something went wrong';
+        try {
+          const body = await (error as any)?.context?.json?.();
+          if (body?.error) detail = body.error;
+        } catch {}
+        throw new Error(detail);
+      }
       const updatedFrame = data.frame as TutorialFrame;
       // Preserve potentially cache-busted image_url — narration save never changes the image
       if (editingFrame.image_url) updatedFrame.image_url = editingFrame.image_url;
@@ -183,7 +192,18 @@ export default function TutorialPreviewScreen() {
     }
   }
 
-  async function regenerateFrameImage() {
+  function regenerateFrameImage() {
+    Alert.alert(
+      'Regenerate Image',
+      'This will replace the current image for this slide. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Regenerate', onPress: doRegenerateFrameImage },
+      ],
+    );
+  }
+
+  async function doRegenerateFrameImage() {
     if (!editingFrame) return;
     const guardianDescription = editImagePrompt.trim()
       || (editCaption
@@ -197,7 +217,14 @@ export default function TutorialPreviewScreen() {
       const { data, error } = await supabase.functions.invoke('regenerate-frame', {
         body: { frame_id: editingFrame.id, image_prompt: imagePrompt },
       });
-      if (error || data?.error) throw new Error(data?.error ?? error?.message);
+      if (error || data?.error) {
+        let detail = data?.error ?? error?.message ?? 'Something went wrong';
+        try {
+          const body = await (error as any)?.context?.json?.();
+          if (body?.error) detail = body.error;
+        } catch {}
+        throw new Error(detail);
+      }
       const updatedFrame = data.frame as TutorialFrame;
       // Bust the image cache — storage path is unchanged so React Native would serve the old image
       if (updatedFrame.image_url) {
@@ -246,20 +273,47 @@ export default function TutorialPreviewScreen() {
     ]);
   }
 
-  async function regenerateTutorial() {
-    Alert.alert('Re-generate Tutorial', 'This will discard the current frames and generate the tutorial again using the same settings.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Re-generate', onPress: async () => {
-          await supabase.from('tutorial_frames').delete().eq('tutorial_id', tutorialId);
-          await supabase.from('tutorials').update({ status: 'generating', updated_at: new Date().toISOString() }).eq('id', tutorialId);
-          setTutorial(prev => prev ? { ...prev, status: 'generating', frames: [] } : prev);
-          setFrameIndex(0);
-          await supabase.from('tutorial_jobs').insert({ tutorial_id: tutorialId });
-          load();
-        },
-      },
-    ]);
+  function regenerateTutorial() {
+    Alert.alert(
+      'Re-generate Tutorial',
+      'This will discard the current frames and generate the tutorial again using the same settings. This uses one of your monthly tutorial slots.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Re-generate', onPress: doRegenerateTutorial },
+      ],
+    );
+  }
+
+  async function doRegenerateTutorial() {
+    setRegeneratingTutorial(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke('regenerate-tutorial', {
+        body: { tutorial_id: tutorialId },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (error || data?.error) {
+        let detail = data?.error ?? error?.message ?? 'Something went wrong';
+        try {
+          const body = await (error as any)?.context?.json?.();
+          if (body?.error) detail = body.error;
+        } catch {}
+        throw new Error(detail);
+      }
+      setTutorial(prev => prev ? { ...prev, status: 'generating', frames: [] } : prev);
+      setFrameIndex(0);
+      load();
+    } catch (err: unknown) {
+      Alert.alert('Could not regenerate', err instanceof Error ? err.message : 'Something went wrong.');
+    } finally {
+      setRegeneratingTutorial(false);
+    }
+  }
+
+  function switchTab(tab: 'video' | 'slides') {
+    setAutoPlay(false);
+    player.pause();
+    setViewTab(tab);
   }
 
   if (loading) {
@@ -287,22 +341,36 @@ export default function TutorialPreviewScreen() {
   const frames = tutorial.frames ?? [];
   const currentFrame = frames[frameIndex];
   const isCreator = guardian?.id === tutorial.created_by_guardian_id;
+  // The generation pipeline auto-rejects a tutorial on any failure (e.g. a Claude API
+  // error), writing into the same status/admin_notes fields a human admin rejection
+  // uses. This prefix is how the pipeline marks that — no human admin ever types it —
+  // so it's a safe way to tell "system failure" apart from "a person reviewed and said no".
+  const isTechnicalError = tutorial.status === 'rejected' && !!tutorial.admin_notes?.startsWith('Generation failed:');
 
   return (
     <View style={s.container}>
       <RainbowDivider />
       <ScrollView contentContainerStyle={s.content}>
-        {/* Status banner — creator only, not shown when approved */}
-        {isCreator && tutorial.status !== 'approved' && (
+        {/* Status banner — creator only, not shown when approved or preview */}
+        {isCreator && tutorial.status !== 'approved' && tutorial.status !== 'preview' && (
           <View style={[s.statusBanner, { backgroundColor: STATUS_COLORS[tutorial.status as TutorialStatus].bg }]}>
             <AppText style={[s.statusBannerText, { color: STATUS_COLORS[tutorial.status as TutorialStatus].text }]}>
-              {STATUS_LABELS[tutorial.status as TutorialStatus]}
+              {isTechnicalError ? 'Technical Error' : STATUS_LABELS[tutorial.status as TutorialStatus]}
             </AppText>
           </View>
         )}
 
-        {/* Rejected admin notes — creator only */}
-        {isCreator && tutorial.status === 'rejected' && tutorial.admin_notes && (
+        {/* Technical failure — creator only: hide the raw error, point them to support */}
+        {isCreator && isTechnicalError && (
+          <View style={s.adminNotesCard}>
+            <AppText style={s.adminNotesText}>
+              ⚠️  Something went wrong generating this tutorial. Please contact <AppText style={s.adminNotesEmail}>nicosupport@gmail.com</AppText> for help.
+            </AppText>
+          </View>
+        )}
+
+        {/* Rejected admin notes — creator only, real admin rejections only */}
+        {isCreator && tutorial.status === 'rejected' && !isTechnicalError && tutorial.admin_notes && (
           <View style={s.adminNotesCard}>
             <AppText style={s.adminNotesLabel}>Admin Notes</AppText>
             <AppText style={s.adminNotesText}>{tutorial.admin_notes}</AppText>
@@ -327,23 +395,53 @@ export default function TutorialPreviewScreen() {
           );
         })()}
 
+        {/* Video / Slides tabs (slideshow only) */}
+        {tutorial.source !== 'youtube' && frames.length > 0 && (
+          <View style={s.viewTabs}>
+            <TouchableOpacity style={[s.viewTab, viewTab === 'video' && s.viewTabActive]} onPress={() => switchTab('video')} activeOpacity={0.75}>
+              <AppText style={[s.viewTabText, viewTab === 'video' && s.viewTabTextActive]}>🎬 Video</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.viewTab, viewTab === 'slides' && s.viewTabActive]} onPress={() => switchTab('slides')} activeOpacity={0.75}>
+              <AppText style={[s.viewTabText, viewTab === 'slides' && s.viewTabTextActive]}>📑 Slides</AppText>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Frame viewer (slideshow only) */}
         {tutorial.source !== 'youtube' && frames.length > 0 && (
           <View style={s.frameContainer}>
-            {/* Play All — top */}
+            {/* Top row: mode control (left) + small regenerate button (right) */}
             <View style={s.frameActions}>
-              <TouchableOpacity
-                style={[s.autoPlayBtn, autoPlay && s.autoPlayBtnActive]}
-                onPress={() => {
-                  if (!autoPlay) { setFrameIndex(0); setAutoPlay(true); }
-                  else setAutoPlay(false);
-                }}
-                disabled={(tutorial?.frames?.length ?? 0) <= 1}
-              >
-                <AppText style={s.autoPlayBtnText}>
-                  {autoPlay ? '⏸  Stop' : '▶  Play video'}
-                </AppText>
-              </TouchableOpacity>
+              {viewTab === 'video' ? (
+                <TouchableOpacity
+                  style={[s.autoPlayBtn, autoPlay && s.autoPlayBtnActive]}
+                  onPress={() => {
+                    if (!autoPlay) { setFrameIndex(0); setAutoPlay(true); }
+                    else setAutoPlay(false);
+                  }}
+                  disabled={frames.length <= 1}
+                >
+                  <AppText style={s.autoPlayBtnText}>
+                    {autoPlay ? '⏸  Stop' : '▶  Play'}
+                  </AppText>
+                </TouchableOpacity>
+              ) : (
+                <AppText style={s.frameCounter}>Frame {frameIndex + 1} of {frames.length}</AppText>
+              )}
+              <View style={{ flex: 1 }} />
+              {isCreator && tutorial.source === 'ai_generated' && ['preview', 'rejected'].includes(tutorial.status) && !isTechnicalError && (
+                <TouchableOpacity
+                  style={[s.regenSmallBtn, regeneratingTutorial && s.regenSmallBtnDisabled]}
+                  onPress={regenerateTutorial}
+                  disabled={regeneratingTutorial}
+                  activeOpacity={0.8}
+                >
+                  {regeneratingTutorial
+                    ? <ActivityIndicator size="small" color={NICO.text} />
+                    : <AppText style={s.regenSmallBtnText}>🔄  Re-generate {viewTab === 'video' ? 'Video' : 'Slides'}</AppText>
+                  }
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Frame image */}
@@ -359,44 +457,41 @@ export default function TutorialPreviewScreen() {
               }
             </View>
 
-            {/* Replay + Edit — below frame, above counter */}
-            <View style={s.frameSlideActions}>
-              {currentFrame?.audio_url && (
-                <TouchableOpacity
-                  style={s.audioBtn}
-                  onPress={() => {
-                    if (playerStatus.playing) { player.pause(); }
-                    else { player.pause(); player.seekTo(0); player.play(); }
-                  }}
-                >
-                  <AppText style={s.audioBtnText}>
-                    {playerStatus.playing ? '⏸  Pause' : '🔊  Replay slide'}
-                  </AppText>
-                </TouchableOpacity>
-              )}
-              {isCreator && ['preview', 'rejected'].includes(tutorial.status) && (
-                <TouchableOpacity
-                  style={s.editBtn}
-                  onPress={() => {
-                    if (currentFrame) {
-                      setEditCaption(currentFrame.caption ?? '');
-                      setEditTts(currentFrame.tts_text ?? '');
-                      setEditImagePrompt('');
-                      setEditingCaption(false);
-                      setEditingNarration(false);
-                      setEditingFrame(currentFrame);
-                    }
-                  }}
-                >
-                  <AppText style={s.editBtnText}>✏️  Edit slide</AppText>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Frame counter */}
-            <View style={s.frameHeader}>
-              <AppText style={s.frameCounter}>Frame {frameIndex + 1} of {frames.length}</AppText>
-            </View>
+            {/* Replay + Edit — Slides tab only */}
+            {viewTab === 'slides' && (
+              <View style={s.frameSlideActions}>
+                {currentFrame?.audio_url && (
+                  <TouchableOpacity
+                    style={s.audioBtn}
+                    onPress={() => {
+                      if (playerStatus.playing) { player.pause(); }
+                      else { player.pause(); player.seekTo(0); player.play(); }
+                    }}
+                  >
+                    <AppText style={s.audioBtnText}>
+                      {playerStatus.playing ? '⏸  Pause' : '🔊  Replay slide'}
+                    </AppText>
+                  </TouchableOpacity>
+                )}
+                {isCreator && ['preview', 'rejected'].includes(tutorial.status) && (
+                  <TouchableOpacity
+                    style={s.editBtn}
+                    onPress={() => {
+                      if (currentFrame) {
+                        setEditCaption(currentFrame.caption ?? '');
+                        setEditTts(currentFrame.tts_text ?? '');
+                        setEditImagePrompt('');
+                        setEditingCaption(false);
+                        setEditingNarration(false);
+                        setEditingFrame(currentFrame);
+                      }
+                    }}
+                  >
+                    <AppText style={s.editBtnText}>✏️  Edit slide</AppText>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
 
             {/* Caption + narration */}
             <View style={s.frameText}>
@@ -408,30 +503,32 @@ export default function TutorialPreviewScreen() {
               )}
             </View>
 
-            {/* Frame navigation */}
-            <View style={s.frameNav}>
-              <TouchableOpacity
-                style={[s.navBtn, frameIndex === 0 && s.navBtnDisabled]}
-                onPress={() => setFrameIndex(i => Math.max(0, i - 1))}
-                disabled={frameIndex === 0}
-              >
-                <AppText style={s.navBtnText}>← Prev</AppText>
-              </TouchableOpacity>
-              <View style={s.frameDots}>
-                {frames.map((_, i) => (
-                  <TouchableOpacity key={i} onPress={() => setFrameIndex(i)}>
-                    <View style={[s.dot, i === frameIndex && s.dotActive]} />
-                  </TouchableOpacity>
-                ))}
+            {/* Frame navigation — Slides tab only */}
+            {viewTab === 'slides' && (
+              <View style={s.frameNav}>
+                <TouchableOpacity
+                  style={[s.navBtn, frameIndex === 0 && s.navBtnDisabled]}
+                  onPress={() => setFrameIndex(i => Math.max(0, i - 1))}
+                  disabled={frameIndex === 0}
+                >
+                  <AppText style={s.navBtnText}>← Prev</AppText>
+                </TouchableOpacity>
+                <View style={s.frameDots}>
+                  {frames.map((_, i) => (
+                    <TouchableOpacity key={i} onPress={() => setFrameIndex(i)}>
+                      <View style={[s.dot, i === frameIndex && s.dotActive]} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TouchableOpacity
+                  style={[s.navBtn, frameIndex === frames.length - 1 && s.navBtnDisabled]}
+                  onPress={() => setFrameIndex(i => Math.min(frames.length - 1, i + 1))}
+                  disabled={frameIndex === frames.length - 1}
+                >
+                  <AppText style={s.navBtnText}>Next →</AppText>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={[s.navBtn, frameIndex === frames.length - 1 && s.navBtnDisabled]}
-                onPress={() => setFrameIndex(i => Math.min(frames.length - 1, i + 1))}
-                disabled={frameIndex === frames.length - 1}
-              >
-                <AppText style={s.navBtnText}>Next →</AppText>
-              </TouchableOpacity>
-            </View>
+            )}
           </View>
         )}
 
@@ -451,7 +548,7 @@ export default function TutorialPreviewScreen() {
               <AppText style={s.actionBtnTextPrimary}>Withdraw from Review</AppText>
             </TouchableOpacity>
           )}
-          {tutorial.status === 'rejected' && (
+          {tutorial.status === 'rejected' && !isTechnicalError && (
             <TouchableOpacity
               style={[s.actionBtn, s.actionBtnPrimary, submitting && s.actionBtnDisabled]}
               onPress={submitForReview}
@@ -470,24 +567,6 @@ export default function TutorialPreviewScreen() {
           </TouchableOpacity>
         </View>}
 
-        {/* Guardian inputs used to generate this tutorial — creator only */}
-        {isCreator && tutorial.source === 'ai_generated' && (
-          <View style={s.inputsCard}>
-            <AppText style={s.inputsCardTitle}>Generation Settings</AppText>
-            <View style={s.inputsGrid}>
-              {tutorial.category      && <InputRow label="Skill"       value={tutorial.category} />}
-              {tutorial.core_action   && <InputRow label="Action"       value={tutorial.core_action} />}
-              {tutorial.duration_seconds && <InputRow label="Duration" value={`${tutorial.duration_seconds}s`} />}
-              {tutorial.comprehension_level && <InputRow label="Level" value={tutorial.comprehension_level} />}
-            </View>
-
-            {['preview', 'rejected'].includes(tutorial.status) && (
-              <TouchableOpacity style={s.regenTutorialBtn} onPress={regenerateTutorial} activeOpacity={0.8}>
-                <AppText style={s.regenTutorialBtnText}>🔄  Re-generate Tutorial</AppText>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
       </ScrollView>
 
       {/* Frame editor modal */}
@@ -637,15 +716,6 @@ export default function TutorialPreviewScreen() {
   );
 }
 
-function InputRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={s.inputRow}>
-      <AppText style={s.inputRowLabel}>{label}</AppText>
-      <AppText style={s.inputRowValue} numberOfLines={2}>{value}</AppText>
-    </View>
-  );
-}
-
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: NICO.screenBg },
   content:   { padding: SPACING.base, paddingBottom: 48 },
@@ -660,21 +730,30 @@ const s = StyleSheet.create({
   adminNotesCard:  { backgroundColor: NICO.errorLight, borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: NICO.error, padding: 14, marginBottom: 12 },
   adminNotesLabel: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.error, marginBottom: 4 },
   adminNotesText:  { fontSize: FONT_SIZE.md, color: NICO.text, lineHeight: 20 },
+  adminNotesEmail: { fontWeight: FONT_WEIGHT.extraBold, color: NICO.error },
 
   title: { fontSize: FONT_SIZE['4xl'], fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: 10 },
 
+  viewTabs:          { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.sm },
+  viewTab:           { flex: 1, alignItems: 'center', paddingVertical: SPACING.sm, borderRadius: RADIUS.md, backgroundColor: NICO.background },
+  viewTabActive:     { backgroundColor: NICO.primary },
+  viewTabText:       { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted },
+  viewTabTextActive: { color: NICO.textOnAccent },
+
   frameContainer:    { backgroundColor: NICO.surface, borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 20, ...SHADOW.sm },
-  frameActions:      { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, padding: 14, paddingBottom: SPACING.sm },
+  frameActions:      { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: SPACING.sm, padding: 14, paddingBottom: SPACING.sm },
   frameSlideActions: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 },
-  frameHeader:       { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 10 },
-  frameCounter:      { ...TEXT_STYLE.caption, color: NICO.textMuted },
+  frameCounter:      { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 
-  autoPlayBtn:       { backgroundColor: NICO.primary, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
-  autoPlayBtnActive: { backgroundColor: NICO.primaryDark },
-  autoPlayBtnText:   { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.textOnAccent },
+  autoPlayBtn:       { backgroundColor: NICO.background, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
+  autoPlayBtnActive: { backgroundColor: NICO.border },
+  autoPlayBtnText:   { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  regenSmallBtn:     { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADIUS.full, backgroundColor: NICO.background, justifyContent: 'center', alignItems: 'center' },
+  regenSmallBtnDisabled: { opacity: 0.5 },
+  regenSmallBtnText: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 
-  audioBtn:     { backgroundColor: NICO.successLight, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderWidth: 1, borderColor: NICO.success },
-  audioBtnText: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.success },
+  audioBtn:     { backgroundColor: NICO.primaryLight, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderWidth: 1, borderColor: NICO.primary },
+  audioBtnText: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
   editBtn:      { backgroundColor: NICO.primaryLight, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderWidth: 1, borderColor: NICO.primary },
   editBtnText:  { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 
@@ -686,7 +765,7 @@ const s = StyleSheet.create({
 
   frameText:  { padding: 18, gap: 10 },
   caption:    { fontSize: FONT_SIZE['4xl'], fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
-  narration:  { fontSize: FONT_SIZE.xl, color: NICO.text, lineHeight: 24, opacity: 0.75 },
+  narration:  { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, lineHeight: 24 },
 
   frameNav:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.base, paddingBottom: SPACING.base },
   navBtn:      { paddingHorizontal: SPACING.base, paddingVertical: 10, borderRadius: RADIUS.sm, backgroundColor: NICO.primary },
@@ -707,18 +786,6 @@ const s = StyleSheet.create({
   actionBtnDelete:     { ...BTN_VARIANT.danger },
   actionBtnTextDelete: { ...TEXT_STYLE.buttonPrimary },
 
-  inputsCard: {
-    marginTop: 20, backgroundColor: NICO.surface, borderRadius: RADIUS.xl,
-    borderWidth: 1.5, borderColor: NICO.border, padding: 18, gap: 14,
-  },
-  inputsCardTitle: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, textTransform: 'uppercase', letterSpacing: 0.6 },
-  inputsGrid:      { gap: 0 },
-  inputRow:        { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: NICO.border },
-  inputRowLabel:   { width: scale(100), fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
-  inputRowValue:   { flex: 1, fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, textTransform: 'capitalize' },
-
-  regenTutorialBtn:     { backgroundColor: NICO.primaryLight, borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center', marginTop: 4 },
-  regenTutorialBtnText: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 
   // Frame editor modal
   editorContainer: { flex: 1, backgroundColor: NICO.screenBg },
@@ -729,13 +796,13 @@ const s = StyleSheet.create({
   },
   editorTitle:       { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
   editorClose:       { padding: 4 },
-  editorCloseText:   { fontSize: FONT_SIZE.xl, color: NICO.textMuted },
+  editorCloseText:   { fontSize: FONT_SIZE['3xl'], fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
   editorContent:     { flex: 1 },
   editorSection:     { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base },
   editorDivider:     { height: 1, backgroundColor: NICO.border, marginHorizontal: SPACING.lg },
   editorFieldRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  editorFieldLabel:  { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  editorFieldValue:  { fontSize: FONT_SIZE.md, color: NICO.text, lineHeight: 22 },
+  editorFieldLabel:  { ...TEXT_STYLE.fieldLabel },
+  editorFieldValue:  { ...TEXT_STYLE.fieldValue, lineHeight: 22 },
   editorPencilBtn:   { padding: 4 },
   editorPencilText:  { fontSize: FONT_SIZE.lg },
   editorInlineRow:   { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },

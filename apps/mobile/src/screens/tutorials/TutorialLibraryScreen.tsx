@@ -169,18 +169,39 @@ export default function TutorialLibraryScreen() {
     if (users.length === 0) { Alert.alert('No learner', 'No learner profile found.'); return; }
     const userId = users[0].id;
     const isLinked = linkedTutorialIds.has(tutorial.id);
-    setTogglingLinkId(tutorial.id);
-    if (isLinked) {
-      await supabase.from('user_tutorials').delete().eq('user_id', userId).eq('tutorial_id', tutorial.id);
-      setLinkedTutorialIds(prev => { const next = new Set(prev); next.delete(tutorial.id); return next; });
-    } else {
-      await supabase.from('user_tutorials').upsert(
-        [{ user_id: userId, tutorial_id: tutorial.id, added_by_guardian_id: guardian?.id ?? null }],
-        { onConflict: 'user_id,tutorial_id' },
+
+    const proceed = async () => {
+      setTogglingLinkId(tutorial.id);
+      if (isLinked) {
+        await supabase.from('user_tutorials').delete().eq('user_id', userId).eq('tutorial_id', tutorial.id);
+        setLinkedTutorialIds(prev => { const next = new Set(prev); next.delete(tutorial.id); return next; });
+      } else {
+        await supabase.from('user_tutorials').upsert(
+          [{ user_id: userId, tutorial_id: tutorial.id, added_by_guardian_id: guardian?.id ?? null }],
+          { onConflict: 'user_id,tutorial_id' },
+        );
+        setLinkedTutorialIds(prev => new Set([...prev, tutorial.id]));
+      }
+      setTogglingLinkId(null);
+    };
+
+    // YouTube-linked tutorials may show ads — confirm before adding (never fires on remove/unlink).
+    // In practice this never triggers here: the Find tab only lists is_public tutorials, and YouTube
+    // links are always saved private; the Learner tab's toggle only ever removes. Kept for safety/parity
+    // with GuardianTutorialsScreen's toggleLink.
+    if (!isLinked && tutorial.source === 'youtube') {
+      Alert.alert(
+        'Ads warning',
+        "This video might contain ads. Please supervise your learner while it plays. Add it to their profile anyway?",
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Add Anyway', onPress: proceed },
+        ],
       );
-      setLinkedTutorialIds(prev => new Set([...prev, tutorial.id]));
+      return;
     }
-    setTogglingLinkId(null);
+
+    await proceed();
   }
 
   // ── Rendering ──────────────────────────────────────────────────────────────

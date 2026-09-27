@@ -143,6 +143,36 @@ async function processJob(
     await supabase.from('tutorial_jobs')
       .update({ status: 'failed', error: message, updated_at: new Date().toISOString() })
       .eq('id', jobId);
+
+    // Refund the monthly quota slot this tutorial reserved at request time (create-tutorial
+    // increments eagerly, before generation runs) — a technical failure isn't the guardian's
+    // fault and shouldn't cost them a slot.
+    try {
+      const { data: failed } = await supabase
+        .from('tutorials')
+        .select('created_by_guardian_id, created_at')
+        .eq('id', tutorialId)
+        .single();
+      if (failed?.created_by_guardian_id) {
+        const month = failed.created_at.slice(0, 7);
+        const { data: quotaRow } = await supabase
+          .from('guardian_tutorial_quota')
+          .select('count')
+          .eq('guardian_id', failed.created_by_guardian_id)
+          .eq('month', month)
+          .single();
+        if (quotaRow && quotaRow.count > 0) {
+          await supabase
+            .from('guardian_tutorial_quota')
+            .update({ count: quotaRow.count - 1 })
+            .eq('guardian_id', failed.created_by_guardian_id)
+            .eq('month', month);
+        }
+      }
+    } catch (refundErr: unknown) {
+      // Don't let a refund failure mask the original generation failure above.
+      console.error(`[job:${jobId}] quota refund failed:`, refundErr instanceof Error ? refundErr.message : String(refundErr));
+    }
   }
 }
 
@@ -170,7 +200,11 @@ async function generateScript(prompt: string): Promise<{ frames: FrameScript[] }
     }),
   });
 
-  if (!res.ok) throw new Error(`Claude API error: ${res.status}`);
+  if (!res.ok) {
+    let detail = '';
+    try { detail = JSON.stringify(await res.json()); } catch { detail = await res.text().catch(() => ''); }
+    throw new Error(`Claude API error: ${res.status} — ${detail}`);
+  }
   const data = await res.json();
   const text = data.content?.[0]?.text ?? '';
   const jsonMatch = text.match(/\{[\s\S]*\}/);

@@ -277,7 +277,7 @@ const s = StyleSheet.create({
     borderLeftWidth: 4, borderLeftColor: BUTTERFLY_TILES[2].accent,
     padding: SPACING.md,
   },
-  infoText: { fontSize: FONT_SIZE.sm, color: NICO.text, lineHeight: 18 },
+  infoText: { fontSize: FONT_SIZE.md, color: NICO.text, lineHeight: 20, fontWeight: FONT_WEIGHT.semiBold },
 
   formCard: {
     backgroundColor: NICO.surface, borderRadius: RADIUS.xl, padding: SPACING.base,
@@ -287,13 +287,13 @@ const s = StyleSheet.create({
   // Field
   fieldBlock: { gap: SPACING.sm, paddingVertical: 14 },
   fieldLabel: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
-  fieldHint:  { fontSize: FONT_SIZE.xs, color: NICO.textMuted },
+  fieldHint:  { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.medium },
   divider:    { height: 1, backgroundColor: NICO.border },
 
   // Input with butterfly border
   inputGradient:  { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
   input:          { ...INPUT.base, borderWidth: 0 },
-  charCount:      { fontSize: FONT_SIZE.xs, color: NICO.textMuted, alignSelf: 'flex-end' },
+  charCount:      { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.medium, alignSelf: 'flex-end' },
 
   // Skill selector
   selectGradient: { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
@@ -318,7 +318,7 @@ const s = StyleSheet.create({
   submitBtn:        { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, ...SHADOW.md },
   submitBtnDisabled:{ opacity: 0.5 },
   submitText:       { ...TEXT_STYLE.buttonPrimary },
-  footerNote:       { fontSize: FONT_SIZE.xs, color: NICO.textMuted, textAlign: 'center', lineHeight: 18 },
+  footerNote:       { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.medium, textAlign: 'center', lineHeight: 18 },
 
   // Skill picker sheet
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },

@@ -201,21 +201,37 @@ export default function GuardianTutorialsScreen() {
     ]);
   }
 
-  async function toggleLink(tutorial: Tutorial) {
+  // Add-only — this screen never unlinks. Unlinking a tutorial from a learner is only
+  // possible from the Learn tile on the guardian dashboard (TutorialLibraryScreen's
+  // "Learner's Tutorials" tab), so there's a single place that action can happen.
+  async function addToLearner(tutorial: Tutorial) {
     if (!learnerUserId) { Alert.alert('No learner', 'No learner profile found.'); return; }
-    const isLinked = linkedIds.has(tutorial.id);
-    setTogglingId(tutorial.id);
-    if (isLinked) {
-      await supabase.from('user_tutorials').delete().eq('user_id', learnerUserId).eq('tutorial_id', tutorial.id);
-      setLinkedIds(prev => { const n = new Set(prev); n.delete(tutorial.id); return n; });
-    } else {
+    if (linkedIds.has(tutorial.id)) return;
+
+    const proceed = async () => {
+      setTogglingId(tutorial.id);
       await supabase.from('user_tutorials').upsert(
         [{ user_id: learnerUserId, tutorial_id: tutorial.id, added_by_guardian_id: guardian?.id ?? null }],
         { onConflict: 'user_id,tutorial_id' },
       );
       setLinkedIds(prev => new Set([...prev, tutorial.id]));
+      setTogglingId(null);
+    };
+
+    // YouTube-linked tutorials may show ads — confirm before adding
+    if (tutorial.source === 'youtube') {
+      Alert.alert(
+        'Ads warning',
+        "This video might contain ads. Please supervise your learner while it plays. Add it to their profile anyway?",
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Add Anyway', onPress: proceed },
+        ],
+      );
+      return;
     }
-    setTogglingId(null);
+
+    await proceed();
   }
 
   const filteredMy = myTutorials.filter(t => {
@@ -371,8 +387,8 @@ export default function GuardianTutorialsScreen() {
                       )}
                       <TouchableOpacity
                         style={[styles.gridAddBtn, isLinked && styles.gridAddBtnLinked]}
-                        onPress={() => toggleLink(t)}
-                        disabled={toggling}
+                        onPress={() => addToLearner(t)}
+                        disabled={toggling || isLinked}
                         activeOpacity={0.75}
                       >
                         <AppText style={[styles.gridAddBtnText, isLinked && styles.gridAddBtnTextLinked]}>
@@ -591,8 +607,8 @@ export default function GuardianTutorialsScreen() {
                     {t.status === 'approved' && learnerUserId && (
                       <TouchableOpacity
                         style={[styles.gridAddBtn, linkedIds.has(t.id) && styles.gridAddBtnLinked]}
-                        onPress={() => toggleLink(t)}
-                        disabled={togglingId === t.id}
+                        onPress={() => addToLearner(t)}
+                        disabled={togglingId === t.id || linkedIds.has(t.id)}
                         activeOpacity={0.75}
                       >
                         <AppText style={[styles.gridAddBtnText, linkedIds.has(t.id) && styles.gridAddBtnTextLinked]}>
@@ -895,9 +911,13 @@ const styles = StyleSheet.create({
   },
   gridDeleteIcon: { fontSize: FONT_SIZE.md, color: GRID_CARD.deleteColor, fontWeight: FONT_WEIGHT.bold },
   gridAddBtn:           { ...BTN_SIZE.sm, ...BTN_VARIANT.primary, alignSelf: CARD_BTN_ALIGN, marginTop: SPACING.xs },
-  gridAddBtnLinked:     { backgroundColor: NICO.successLight, ...SHADOW.none },
+  gridAddBtnLinked:     {
+    backgroundColor: 'transparent', borderWidth: 0,
+    paddingVertical: SPACING.xs, paddingHorizontal: 0, minHeight: 0,
+    shadowOpacity: 0, shadowRadius: 0, shadowOffset: { width: 0, height: 0 }, elevation: 0,
+  },
   gridAddBtnText:       { ...TEXT_STYLE.buttonSmall },
-  gridAddBtnTextLinked: { ...TEXT_STYLE.buttonSmall, color: NICO.success },
+  gridAddBtnTextLinked: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.success },
 
   // Quota bar (Create tab)
   quotaGradient: {

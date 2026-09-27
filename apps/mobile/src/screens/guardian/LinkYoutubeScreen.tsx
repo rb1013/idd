@@ -70,6 +70,14 @@ export default function LinkYoutubeScreen() {
     }
   }
 
+  function cancelPreview() {
+    setUrl('');
+    setVideoId(null);
+    setTitle('');
+    setThumbnail(null);
+    setFetchError('');
+  }
+
   async function handleSave() {
     if (!videoId || !guardian) return;
     setSaving(true);
@@ -145,6 +153,14 @@ export default function LinkYoutubeScreen() {
         {/* Preview card */}
         {videoId && (
           <View style={s.previewCard}>
+            <TouchableOpacity
+              style={s.closeBtn}
+              onPress={cancelPreview}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.75}
+            >
+              <AppText style={s.closeBtnText}>✕</AppText>
+            </TouchableOpacity>
             {thumbnail && (
               <Image source={{ uri: thumbnail }} style={s.thumbImage} resizeMode="cover" />
             )}
@@ -156,6 +172,7 @@ export default function LinkYoutubeScreen() {
                 onChangeText={setTitle}
                 placeholder="Video title"
                 placeholderTextColor={NICO.textMuted}
+                maxLength={30}
               />
             </LinearGradient>
             <AppText style={s.videoIdNote}>Video ID: {videoId}</AppText>
@@ -179,7 +196,7 @@ export default function LinkYoutubeScreen() {
           <AppText style={s.infoTitle}>How this works</AppText>
           <AppText style={s.infoText}>• The video is not downloaded or stored — only the YouTube link is saved.</AppText>
           <AppText style={s.infoText}>• The video plays inside the NICO app using YouTube's embedded player.</AppText>
-          <AppText style={s.infoText}>• Saved as private — visible only to you and your learner.</AppText>
+          <AppText style={s.infoText}>• Saved as private — visible only to you.</AppText>
           <AppText style={s.infoText}>• No admin review needed for YouTube links.</AppText>
           <AppText style={s.infoText}>• Only <AppText style={s.infoTextBold}>public</AppText> YouTube videos can be linked. Private, unlisted, or age-restricted videos will not work.</AppText>
         </View>
@@ -212,9 +229,17 @@ const s = StyleSheet.create({
 
   previewCard: {
     backgroundColor: NICO.surface, borderRadius: RADIUS.xl, overflow: 'hidden',
-    borderWidth: 1, borderColor: NICO.border,
+    borderWidth: 1, borderColor: NICO.border, position: 'relative',
     ...SHADOW.sm,
   },
+  closeBtn: {
+    position: 'absolute', top: SPACING.sm, right: SPACING.sm, zIndex: 2,
+    width: scale(32), height: scale(32), borderRadius: scale(16),
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    justifyContent: 'center', alignItems: 'center',
+    ...SHADOW.sm,
+  },
+  closeBtnText: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.black, color: NICO.text },
   thumbImage:   { width: '100%', height: width * 0.5, backgroundColor: NICO.background },
   titleLabel:   { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, marginTop: SPACING.md, marginHorizontal: SPACING.base },
   titleInputGradient: { marginHorizontal: SPACING.base, marginTop: SPACING.xs, padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
@@ -229,6 +254,6 @@ const s = StyleSheet.create({
     ...SHADOW.sm,
   },
   infoTitle:    { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: 2 },
-  infoText:     { fontSize: FONT_SIZE.sm, color: NICO.text, lineHeight: 20 },
+  infoText:     { fontSize: FONT_SIZE.sm, color: NICO.text, lineHeight: 20, fontWeight: FONT_WEIGHT.semiBold },
   infoTextBold: { fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
 });

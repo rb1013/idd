@@ -102,7 +102,11 @@ async function regenerateImage(
     }),
   });
 
-  if (!res.ok) throw new Error(`Image error: ${res.status}`);
+  if (!res.ok) {
+    let detail = '';
+    try { detail = JSON.stringify(await res.json()); } catch { detail = await res.text().catch(() => ''); }
+    throw new Error(`Image error: ${res.status} — ${detail}`);
+  }
   const json = await res.json();
   const b64 = json.data?.[0]?.b64_json;
   if (!b64) throw new Error('No image data from gpt-image-1');
@@ -144,7 +148,11 @@ async function regenerateAudio(
     }),
   });
 
-  if (!res.ok) throw new Error(`TTS error: ${res.status}`);
+  if (!res.ok) {
+    let detail = '';
+    try { detail = JSON.stringify(await res.json()); } catch { detail = await res.text().catch(() => ''); }
+    throw new Error(`TTS error: ${res.status} — ${detail}`);
+  }
   const audioData = await res.arrayBuffer();
 
   const { error: uploadErr } = await supabase.storage
