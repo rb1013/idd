@@ -67,7 +67,7 @@ export default function GuardianConnectionsScreen() {
   useNicoHeader(navigation);
 
   const [activeTab, setActiveTab]               = useState<Tab>('connected');
-  const [activeRequestsTab, setActiveRequestsTab] = useState<RequestsSubTab>('sent');
+  const [activeRequestsTab, setActiveRequestsTab] = useState<RequestsSubTab>('received');
   const [peekGuardian, setPeekGuardian]         = useState<GuardianResult | null>(null);
   const [situationTagOptions, setSituationTagOptions] = useState<string[]>([]);
 
@@ -400,6 +400,11 @@ export default function GuardianConnectionsScreen() {
             <AppText style={[s.tabTxt, activeTab === tab && s.tabTxtActive]}>
               {tab === 'connected' ? 'My Connections' : tab === 'requests' ? 'Requests' : 'Find'}
             </AppText>
+            {tab === 'requests' && receivedRequests.length > 0 && (
+              <View style={s.tabBadge}>
+                <AppText style={s.tabBadgeTxt}>{receivedRequests.length > 9 ? '9+' : receivedRequests.length}</AppText>
+              </View>
+            )}
           </TouchableOpacity>
         ))}
       </View>
@@ -475,28 +480,34 @@ export default function GuardianConnectionsScreen() {
           {/* Sub-tab bar */}
           <View style={s.subTabBar}>
             {([
-              { key: 'sent',     label: 'Sent',     count: sentRequests.length },
               { key: 'received', label: 'Received', count: receivedRequests.length },
+              { key: 'sent',     label: 'Sent',     count: sentRequests.length },
             ] as { key: RequestsSubTab; label: string; count: number }[]).map(({ key, label, count }) => {
               const isActive = activeRequestsTab === key;
               return (
-                <LinearGradient
-                  key={key}
-                  colors={[...BUTTERFLY_BORDER.colors]}
-                  start={BUTTERFLY_BORDER.start}
-                  end={BUTTERFLY_BORDER.end}
-                  style={[s.subTabGradient, !isActive && s.subTabGradientDim]}
-                >
-                  <TouchableOpacity
-                    style={[s.subTabInner, isActive && s.subTabInnerActive]}
-                    onPress={() => setActiveRequestsTab(key)}
-                    activeOpacity={0.8}
+                <View key={key} style={s.subTabWrap}>
+                  <LinearGradient
+                    colors={[...BUTTERFLY_BORDER.colors]}
+                    start={BUTTERFLY_BORDER.start}
+                    end={BUTTERFLY_BORDER.end}
+                    style={[s.subTabGradient, !isActive && s.subTabGradientDim]}
                   >
-                    <AppText style={[s.subTabTxt, isActive && s.subTabTxtActive]}>
-                      {label}{count > 0 ? `  ${count}` : ''}
-                    </AppText>
-                  </TouchableOpacity>
-                </LinearGradient>
+                    <TouchableOpacity
+                      style={[s.subTabInner, isActive && s.subTabInnerActive]}
+                      onPress={() => setActiveRequestsTab(key)}
+                      activeOpacity={0.8}
+                    >
+                      <AppText style={[s.subTabTxt, isActive && s.subTabTxtActive]}>
+                        {label}
+                      </AppText>
+                    </TouchableOpacity>
+                  </LinearGradient>
+                  {key === 'received' && count > 0 && (
+                    <View style={s.tabBadge}>
+                      <AppText style={s.tabBadgeTxt}>{count > 9 ? '9+' : count}</AppText>
+                    </View>
+                  )}
+                </View>
               );
             })}
           </View>
@@ -721,6 +732,12 @@ const s = StyleSheet.create({
   tabActive:    { borderBottomColor: NICO.primary },
   tabTxt:       { ...TEXT_STYLE.tabLabel },
   tabTxtActive: { ...TEXT_STYLE.tabLabel, color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold },
+  tabBadge: {
+    backgroundColor: NICO.error, borderRadius: RADIUS.full,
+    minWidth: scale(16), height: scale(16), paddingHorizontal: 3,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  tabBadgeTxt: { fontSize: scale(9), fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
 
   // Secondary (Requests) sub-tab bar
   subTabBar: {
@@ -729,11 +746,13 @@ const s = StyleSheet.create({
     paddingHorizontal: SPACING.base, paddingVertical: SPACING.sm,
     gap: SPACING.xl,
   },
+  subTabWrap:        { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
   subTabGradient:    { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.full },
   subTabGradientDim: { opacity: 0.35 },
   subTabInner: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
     paddingVertical: SPACING.xs, paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.full, backgroundColor: NICO.screenBg, alignItems: 'center' as const,
+    borderRadius: RADIUS.full, backgroundColor: NICO.screenBg,
   },
   subTabInnerActive: { backgroundColor: NICO.primaryLight },
   subTabTxt:         { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },

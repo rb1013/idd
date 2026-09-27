@@ -25,6 +25,7 @@ import {
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 type Tab = 'friends' | 'requests' | 'find' | 'blocked';
+type RequestsSubTab = 'sent' | 'received';
 
 const AVATAR_COLORS = [NICO.teal, NICO.orange, NICO.coral, NICO.pink, NICO.purple, NICO.primary];
 const AGE_GROUPS    = ['Under 10', '10–14', '15–18', '19–25', '26–35', '36+'];
@@ -130,6 +131,7 @@ export default function LearnerFriendsScreen() {
   // Requests tab
   const [requests,   setRequests]   = useState<FriendRequest[]>([]);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [activeRequestsTab, setActiveRequestsTab] = useState<RequestsSubTab>('received');
 
   // Find tab
   const [learners,      setLearners]      = useState<LearnerResult[]>([]);
@@ -676,84 +678,115 @@ export default function LearnerFriendsScreen() {
 
       {/* ── Requests tab ─────────────────────────────────────────────────────── */}
       {tab === 'requests' && (
-        requests.length === 0 ? (
-          <View style={s.center}>
-            <AppText style={s.emptyEmoji}>🤝</AppText>
-            <AppText style={s.emptyText}>No pending requests</AppText>
-            <AppText style={s.emptyHint}>Use the Find tab to send requests to other learners</AppText>
+        <>
+          {/* Sub-tab bar */}
+          <View style={s.subTabBar}>
+            {([
+              { key: 'received', label: 'Received', count: incomingRequests.length },
+              { key: 'sent',     label: 'Sent',     count: outgoingRequests.length },
+            ] as { key: RequestsSubTab; label: string; count: number }[]).map(({ key, label, count }) => {
+              const isActive = activeRequestsTab === key;
+              return (
+                <View key={key} style={s.subTabWrap}>
+                  <LinearGradient
+                    colors={[...BUTTERFLY_BORDER.colors]}
+                    start={BUTTERFLY_BORDER.start}
+                    end={BUTTERFLY_BORDER.end}
+                    style={[s.subTabGradient, !isActive && s.subTabGradientDim]}
+                  >
+                    <TouchableOpacity
+                      style={[s.subTabInner, isActive && s.subTabInnerActive]}
+                      onPress={() => setActiveRequestsTab(key)}
+                      activeOpacity={0.8}
+                    >
+                      <AppText style={[s.subTabTxt, isActive && s.subTabTxtActive]}>
+                        {label}
+                      </AppText>
+                    </TouchableOpacity>
+                  </LinearGradient>
+                  {key === 'received' && count > 0 && (
+                    <View style={s.tabBadge}>
+                      <AppText style={s.tabBadgeTxt}>{count > 9 ? '9+' : count}</AppText>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
           </View>
-        ) : (
-          <FlatList
-            data={[]}
-            renderItem={null}
-            contentContainerStyle={s.listContent}
-            ListHeaderComponent={
-              <>
-                {incomingRequests.length > 0 && (
-                  <>
-                    <AppText style={s.sectionTitle}>INCOMING ({incomingRequests.length})</AppText>
-                    {incomingRequests.map((req, index) => {
-                      const isProcessing = processing === req.friendshipId;
-                      const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
-                      return (
-                        <View key={req.friendshipId} style={[s.card, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
-                          <Avatar name={req.requesterName} photo={req.requesterPhoto} size={scale(52)} />
-                          <View style={s.cardInfo}>
-                            <AppText style={s.cardName}>{req.requesterName}</AppText>
-                            <AppText style={s.cardMeta}>{req.requesterAge} yrs · {req.requesterCity}, {req.requesterRegion}</AppText>
-                            {req.requesterGuardianName && <AppText style={s.cardMeta}>Guardian: {req.requesterGuardianName}</AppText>}
-                            {req.medicalConditions.length > 0 && <AppText style={s.cardMedical}>🏥 {req.medicalConditions.join(', ')}</AppText>}
-                          </View>
-                          <View style={s.reqActions}>
-                            {isProcessing ? <ActivityIndicator color={NICO.primary} /> : (
-                              <>
-                                <TouchableOpacity style={[s.reqBtn, s.acceptBtn]} onPress={() => accept(req)} activeOpacity={0.8}>
-                                  <AppText style={s.acceptBtnTxt}>✓ Accept</AppText>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[s.reqBtn, s.declineBtn]} onPress={() => decline(req)} activeOpacity={0.8}>
-                                  <AppText style={s.declineBtnTxt}>Decline</AppText>
-                                </TouchableOpacity>
-                              </>
-                            )}
-                          </View>
-                        </View>
-                      );
-                    })}
-                  </>
-                )}
-                {outgoingRequests.length > 0 && (
-                  <>
-                    <AppText style={[s.sectionTitle, { marginTop: incomingRequests.length > 0 ? SPACING.xl : 0 }]}>
-                      SENT ({outgoingRequests.length})
-                    </AppText>
-                    {outgoingRequests.map((req, index) => {
-                      const isProcessing = processing === req.friendshipId;
-                      const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
-                      return (
-                        <View key={req.friendshipId} style={[s.card, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
-                          <Avatar name={req.requesterName} photo={req.requesterPhoto} size={scale(52)} />
-                          <View style={s.cardInfo}>
-                            <AppText style={s.cardName}>{req.requesterName}</AppText>
-                            <AppText style={s.cardMeta}>{req.requesterAge} yrs · {req.requesterCity}, {req.requesterRegion}</AppText>
-                            {req.requesterGuardianName && <AppText style={s.cardMeta}>Guardian: {req.requesterGuardianName}</AppText>}
-                            {req.medicalConditions.length > 0 && <AppText style={s.cardMedical}>🏥 {req.medicalConditions.join(', ')}</AppText>}
-                          </View>
-                          <View style={s.reqActions}>
-                            {isProcessing ? <ActivityIndicator color={NICO.textMuted} /> : (
-                              <TouchableOpacity style={[s.reqBtn, s.cancelBtn]} onPress={() => cancelRequest(req)} activeOpacity={0.8}>
-                                <AppText style={s.cancelBtnTxt}>Cancel</AppText>
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                        </View>
-                      );
-                    })}
-                  </>
-                )}
-              </>
-            }
-          />
-        )
+
+          {activeRequestsTab === 'received' ? (
+            incomingRequests.length === 0 ? (
+              <View style={s.center}>
+                <AppText style={s.emptyEmoji}>🤝</AppText>
+                <AppText style={s.emptyText}>No pending requests</AppText>
+                <AppText style={s.emptyHint}>Use the Find tab to send requests to other learners</AppText>
+              </View>
+            ) : (
+              <ScrollView contentContainerStyle={s.listContent}>
+                {incomingRequests.map((req, index) => {
+                  const isProcessing = processing === req.friendshipId;
+                  const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
+                  return (
+                    <View key={req.friendshipId} style={[s.card, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
+                      <Avatar name={req.requesterName} photo={req.requesterPhoto} size={scale(52)} />
+                      <View style={s.cardInfo}>
+                        <AppText style={s.cardName}>{req.requesterName}</AppText>
+                        <AppText style={s.cardMeta}>{req.requesterAge} yrs · {req.requesterCity}, {req.requesterRegion}</AppText>
+                        {req.requesterGuardianName && <AppText style={s.cardMeta}>Guardian: {req.requesterGuardianName}</AppText>}
+                        {req.medicalConditions.length > 0 && <AppText style={s.cardMedical}>🏥 {req.medicalConditions.join(', ')}</AppText>}
+                      </View>
+                      <View style={s.reqActions}>
+                        {isProcessing ? <ActivityIndicator color={NICO.primary} /> : (
+                          <>
+                            <TouchableOpacity style={[s.reqBtn, s.acceptBtn]} onPress={() => accept(req)} activeOpacity={0.8}>
+                              <AppText style={s.acceptBtnTxt}>✓ Accept</AppText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[s.reqBtn, s.declineBtn]} onPress={() => decline(req)} activeOpacity={0.8}>
+                              <AppText style={s.declineBtnTxt}>Decline</AppText>
+                            </TouchableOpacity>
+                          </>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            )
+          ) : (
+            outgoingRequests.length === 0 ? (
+              <View style={s.center}>
+                <AppText style={s.emptyEmoji}>📤</AppText>
+                <AppText style={s.emptyText}>No sent requests</AppText>
+                <AppText style={s.emptyHint}>Requests you send will appear here.</AppText>
+              </View>
+            ) : (
+              <ScrollView contentContainerStyle={s.listContent}>
+                {outgoingRequests.map((req, index) => {
+                  const isProcessing = processing === req.friendshipId;
+                  const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
+                  return (
+                    <View key={req.friendshipId} style={[s.card, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
+                      <Avatar name={req.requesterName} photo={req.requesterPhoto} size={scale(52)} />
+                      <View style={s.cardInfo}>
+                        <AppText style={s.cardName}>{req.requesterName}</AppText>
+                        <AppText style={s.cardMeta}>{req.requesterAge} yrs · {req.requesterCity}, {req.requesterRegion}</AppText>
+                        {req.requesterGuardianName && <AppText style={s.cardMeta}>Guardian: {req.requesterGuardianName}</AppText>}
+                        {req.medicalConditions.length > 0 && <AppText style={s.cardMedical}>🏥 {req.medicalConditions.join(', ')}</AppText>}
+                      </View>
+                      <View style={s.reqActions}>
+                        {isProcessing ? <ActivityIndicator color={NICO.textMuted} /> : (
+                          <TouchableOpacity style={[s.reqBtn, s.cancelBtn]} onPress={() => cancelRequest(req)} activeOpacity={0.8}>
+                            <AppText style={s.cancelBtnTxt}>Cancel</AppText>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            )
+          )}
+        </>
       )}
 
       {/* ── Find tab ─────────────────────────────────────────────────────────── */}
@@ -993,6 +1026,25 @@ const s = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   tabBadgeTxt: { fontSize: scale(9), fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
+
+  // Requests sub-tab bar (Sent / Received)
+  subTabBar: {
+    flexDirection: 'row', backgroundColor: NICO.screenBg,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
+    paddingHorizontal: SPACING.base, paddingVertical: SPACING.sm,
+    gap: SPACING.xl,
+  },
+  subTabWrap:        { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
+  subTabGradient:    { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.full },
+  subTabGradientDim: { opacity: 0.35 },
+  subTabInner: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
+    paddingVertical: SPACING.xs, paddingHorizontal: SPACING.lg,
+    borderRadius: RADIUS.full, backgroundColor: NICO.screenBg,
+  },
+  subTabInnerActive: { backgroundColor: NICO.primaryLight },
+  subTabTxt:         { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
+  subTabTxtActive:   { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary },
 
   // Empty
   emptyEmoji: { fontSize: scale(56) },
