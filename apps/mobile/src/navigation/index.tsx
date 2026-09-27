@@ -257,7 +257,7 @@ function GuardianTabs() {
       }}
     >
       <GuardianNav.Screen name="LearnerSelect"   component={LearnerSelectScreen}         options={{ headerShown: false, headerBackTitle: '' }} />
-      <GuardianNav.Screen name="GuardianHome"    component={GuardianHomeScreen}          options={{ headerShown: false, headerBackTitle: '' }} />
+      <GuardianNav.Screen name="GuardianHome"    component={GuardianHomeScreen}          options={{ headerShown: false, headerBackTitle: '', title: 'Dashboard' }} />
       <GuardianNav.Screen name="Notifications"   component={GuardianNotificationsScreen} options={{ title: 'Notifications', headerRight: undefined }} />
       <GuardianNav.Screen name="Learning"        component={GuardianTutorialsScreen}     options={{ title: 'Tutorials', headerRight: undefined }} />
       <GuardianNav.Screen name="Activities"      component={GuardianActivitiesScreen}    options={{ title: 'Activities', headerRight: undefined }} />

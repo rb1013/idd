@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, StyleSheet, TouchableOpacity,
   ScrollView, ActivityIndicator,
@@ -26,13 +26,7 @@ interface ActivityItem {
 const NO_ACTIVITIES_MSG = "No activities yet! Ask your guardian to add some fun activities for you!";
 
 function NoActivitiesState() {
-  const spokenRef = useRef(false);
   useFocusEffect(useCallback(() => {
-    if (!spokenRef.current) {
-      spokenRef.current = true;
-      const t = setTimeout(() => Speech.speak(NO_ACTIVITIES_MSG, { rate: 0.65, pitch: 1.0 }), 600);
-      return () => { clearTimeout(t); Speech.stop(); };
-    }
     return () => { Speech.stop(); };
   }, []));
 
@@ -49,7 +43,6 @@ function NoActivitiesState() {
           activeOpacity={0.75}
         >
           <AppText style={noActStyles.speakIcon}>🔊</AppText>
-          <AppText style={noActStyles.speakText}>Hear this again</AppText>
         </TouchableOpacity>
       </View>
     </View>
@@ -63,12 +56,11 @@ const noActStyles = StyleSheet.create({
   title:    { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.text, textAlign: 'center' },
   hint:     { ...TEXT_STYLE.screenHint, textAlign: 'center', lineHeight: 24 },
   speakBtn: {
-    marginTop: SPACING.sm, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: RADIUS['2xl'],
+    marginTop: SPACING.sm, alignItems: 'center', justifyContent: 'center',
+    width: scale(52), height: scale(52), borderRadius: RADIUS.full,
     backgroundColor: BUTTERFLY_TILES[2].bg, borderWidth: 1.5, borderColor: BUTTERFLY_TILES[2].accent,
   },
   speakIcon: { fontSize: FONT_SIZE.lg },
-  speakText: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 });
 
 function todayLabel(): string {

@@ -308,18 +308,18 @@ export default function ChatScreen() {
         onPress={() => Speech.speak(participantName, { rate: 0.65, pitch: 1.0 })}
         activeOpacity={0.75}
       >
-        <View style={styles.headerPhotoRow}>
-          {participantPhoto
-            ? <Image source={{ uri: participantPhoto }} style={styles.headerPhoto} />
-            : (
-              <View style={[styles.headerPhotoPlaceholder, { backgroundColor: avatarColor(participantName) }]}>
-                <Text style={styles.headerInitial}>{participantName[0]}</Text>
-              </View>
-            )
-          }
+        {participantPhoto
+          ? <Image source={{ uri: participantPhoto }} style={styles.headerPhoto} />
+          : (
+            <View style={[styles.headerPhotoPlaceholder, { backgroundColor: avatarColor(participantName) }]}>
+              <Text style={styles.headerInitial}>{participantName[0]}</Text>
+            </View>
+          )
+        }
+        <View style={styles.headerNameCol}>
+          <Text style={styles.headerName}>{participantName}</Text>
+          {isOnline && <Text style={styles.headerOnline}>● Online</Text>}
         </View>
-        <Text style={styles.headerName}>{participantName}</Text>
-        {isOnline && <Text style={styles.headerOnline}>● Online</Text>}
       </TouchableOpacity>
 
       <KeyboardAvoidingView
@@ -642,19 +642,19 @@ const styles = StyleSheet.create({
 
   // Sub-header banner (below the native header): friend photo + name
   subHeader: {
-    flexDirection: 'column', alignItems: 'center', gap: 2,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: NICO.background,
-    paddingTop: SPACING.sm, paddingBottom: SPACING.lg,
+    paddingHorizontal: SPACING.base, paddingVertical: SPACING.xs,
     borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  headerPhotoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  headerPhoto: { width: scale(50), height: scale(50), borderRadius: scale(25), borderWidth: 2.5, borderColor: NICO.primary },
+  headerNameCol: { alignItems: 'flex-end', gap: 2 },
+  headerPhoto: { width: scale(40), height: scale(40), borderRadius: scale(20), borderWidth: 2.5, borderColor: NICO.primary },
   headerPhotoPlaceholder: {
-    width: scale(50), height: scale(50), borderRadius: scale(25),
+    width: scale(40), height: scale(40), borderRadius: scale(20),
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 2.5, borderColor: NICO.primary,
   },
-  headerInitial: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
+  headerInitial: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
   headerName: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
   headerOnline: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.success },
 
