@@ -493,20 +493,20 @@ export default function GuardianConnectionsScreen() {
                     style={[s.subTabGradient, !isActive && s.subTabGradientDim]}
                   >
                     <TouchableOpacity
-                      style={[s.subTabInner, isActive && s.subTabInnerActive]}
+                      style={[s.subTabInner, key === 'received' && s.subTabInnerWide, isActive && s.subTabInnerActive]}
                       onPress={() => setActiveRequestsTab(key)}
                       activeOpacity={0.8}
                     >
                       <AppText style={[s.subTabTxt, isActive && s.subTabTxtActive]}>
                         {label}
                       </AppText>
+                      {key === 'received' && count > 0 && (
+                        <View style={s.subTabBadge}>
+                          <AppText style={s.tabBadgeTxt}>{count > 9 ? '9+' : count}</AppText>
+                        </View>
+                      )}
                     </TouchableOpacity>
                   </LinearGradient>
-                  {key === 'received' && count > 0 && (
-                    <View style={s.tabBadge}>
-                      <AppText style={s.tabBadgeTxt}>{count > 9 ? '9+' : count}</AppText>
-                    </View>
-                  )}
                 </View>
               );
             })}
@@ -753,6 +753,15 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
     paddingVertical: SPACING.xs, paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.full, backgroundColor: NICO.screenBg,
+    position: 'relative',
+  },
+  // Wider than the default pill — only the "Received" sub-tab gets this.
+  subTabInnerWide: { paddingHorizontal: SPACING['2xl'] },
+  subTabBadge: {
+    position: 'absolute', top: 2, right: 2,
+    backgroundColor: NICO.error, borderRadius: RADIUS.full,
+    minWidth: scale(16), height: scale(16), paddingHorizontal: 3,
+    justifyContent: 'center', alignItems: 'center',
   },
   subTabInnerActive: { backgroundColor: NICO.primaryLight },
   subTabTxt:         { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },

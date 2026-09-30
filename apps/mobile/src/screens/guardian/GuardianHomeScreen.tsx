@@ -1,12 +1,12 @@
 import React, { useCallback, useState } from 'react';
 import {
-  View, TouchableOpacity, StyleSheet, Modal,
+  View, TouchableOpacity, Pressable, StyleSheet, Modal,
   ScrollView, StatusBar, Image, Platform, ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
 import ContentContainer from '../../components/ContentContainer';
-import GuardianTabBar from '../../components/GuardianTabBar';
+import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -26,24 +26,22 @@ type Stats   = { learners: number; tutorials: number; activities: number };
 type TileDef = { label: string; emoji: string; sub: string; ci: number; screen: keyof GuardianNavParamList };
 
 const GUARDIAN_TILES: TileDef[] = [
-  { label: 'Tutorials',   emoji: '📚', sub: 'Manage content', ci: 2, screen: 'Learning'           },
-  { label: 'Connections', emoji: '👥', sub: 'My network',     ci: 1, screen: 'GuardianConnections' },
-  { label: 'Discussions', emoji: '💬', sub: 'Community',      ci: 5, screen: 'Discussions'         },
-  { label: 'Events',      emoji: '🎉', sub: 'Coming up',      ci: 4, screen: 'Events'              },
+  { label: 'Tutorials',   emoji: '📚', sub: 'Create & assign tutorials', ci: 2, screen: 'Learning'           },
+  { label: 'Connections', emoji: '👥', sub: 'Connect, share & support', ci: 1, screen: 'GuardianConnections' },
+  { label: 'Discussions', emoji: '💬', sub: 'Share stories, advice & everyday moments', ci: 5, screen: 'Discussions'         },
+  { label: 'Events',      emoji: '🎉', sub: 'Plan meet-ups and events', ci: 4, screen: 'Events'              },
 ];
 
 type LearnerTileDef = TileDef & { params?: Record<string, unknown> };
 
-// Coral (ci:3) — learner tiles
-const LEARNER_TILE_COLOR = BUTTERFLY_TILES[3];
 // Teal (ci:0) — messaging toggle
 const TOGGLE_COLOR = BUTTERFLY_TILES[0];
 
 const LEARNER_TILES: LearnerTileDef[] = [
-  { label: 'Friends',    emoji: '👥', sub: 'Social',     ci: 0, screen: 'LearnerFriends'                                  },
-  { label: 'Learn',      emoji: '📚', sub: 'Tutorials',  ci: 0, screen: 'TutorialLibrary', params: { linkedOnly: true }  },
-  { label: 'Activities', emoji: '✅', sub: 'Daily tasks', ci: 0, screen: 'Activities'                                      },
-  { label: 'Schedule',   emoji: '📅', sub: 'Calendar',   ci: 0, screen: 'UserSchedule'                                    },
+  { label: 'Friends',    emoji: '👥', sub: 'Find friends & create a social circle for your child', ci: 0, screen: 'LearnerFriends'                                  },
+  { label: 'Learn',      emoji: '📚', sub: 'Manage tutorials for great learning experience',        ci: 0, screen: 'TutorialLibrary', params: { linkedOnly: true }  },
+  { label: 'Activities', emoji: '✅', sub: 'Assign daily activities to keep track on',               ci: 0, screen: 'Activities'                                      },
+  { label: 'Schedule',   emoji: '📅', sub: 'Mark calendar with upcoming classes.',                   ci: 0, screen: 'UserSchedule'                                    },
 ];
 
 export default function GuardianHomeScreen() {
@@ -56,6 +54,10 @@ export default function GuardianHomeScreen() {
   const [showMessagingInfo, setShowMessagingInfo] = useState(false);
   const [pendingConnections, setPendingConnections] = useState(0);
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
+  // Learner tile hover/press feedback: label -> a randomly-picked butterfly
+  // color while the cursor/finger is on it, reverting to the default grey
+  // once it moves away.
+  const [tileHoverBg, setTileHoverBg] = useState<Record<string, string>>({});
   // TTS toggle state — commented out for now, will use it later
   // const [ttsDisabled, setTtsDisabled]             = useState(false);
   // const [togglingTts, setTogglingTts]             = useState(false);
@@ -143,6 +145,20 @@ export default function GuardianHomeScreen() {
     navigation.navigate(tile.screen as any, tile.params as any);
   }
 
+  function pickTileHoverColor(label: string) {
+    const random = BUTTERFLY_TILES[Math.floor(Math.random() * BUTTERFLY_TILES.length)];
+    setTileHoverBg(prev => ({ ...prev, [label]: random.bg }));
+  }
+
+  function clearTileHoverColor(label: string) {
+    setTileHoverBg(prev => {
+      if (!(label in prev)) return prev;
+      const next = { ...prev };
+      delete next[label];
+      return next;
+    });
+  }
+
   async function toggleMessaging() {
     if (!learners[0]) return;
     setTogglingMsg(true);
@@ -173,14 +189,14 @@ export default function GuardianHomeScreen() {
 
       {/* ── Header ── */}
       <SafeAreaView edges={['top']} style={s.safeHeader}>
-        <LinearGradient
-          colors={[...BUTTERFLY_BORDER.colors]}
-          start={BUTTERFLY_BORDER.start}
-          end={BUTTERFLY_BORDER.end}
-          style={s.headerBorder}
-        >
-          <View style={s.headerInner}>
-            <View style={s.guardianLeft}>
+        <View style={s.headerInner}>
+          <View style={s.guardianLeft}>
+            <LinearGradient
+              colors={[...BUTTERFLY_BORDER.colors]}
+              start={BUTTERFLY_BORDER.start}
+              end={BUTTERFLY_BORDER.end}
+              style={s.avatarRing}
+            >
               {guardian?.photo_url ? (
                 <Image source={{ uri: guardian.photo_url }} style={s.avatarCircle} />
               ) : (
@@ -188,112 +204,130 @@ export default function GuardianHomeScreen() {
                   <AppText style={s.avatarInitial}>{initial}</AppText>
                 </View>
               )}
-              <AppText style={s.guardianName}>{guardian?.full_name ?? 'Guardian'}</AppText>
-            </View>
-
+            </LinearGradient>
+            <AppText style={s.guardianName}>{guardian?.full_name ?? 'Guardian'}</AppText>
           </View>
-        </LinearGradient>
+        </View>
       </SafeAreaView>
 
       {/* ── Body ── */}
       <ScrollView
         style={s.body}
-        contentContainerStyle={[s.bodyContent, { paddingBottom: SPACING['2xl'] + insets.bottom }]}
+        contentContainerStyle={s.bodyContent}
         showsVerticalScrollIndicator={false}
       >
-        <ContentContainer>
+        {/* Grey zone: header's own background continues behind the guardian tiles,
+            no white gap — hugs its content (label + horizontal tile scroller). */}
+        <View style={s.greyZone}>
+          <ContentContainer>
+            <View style={s.sectionHeaderRow}>
+              <AppText style={s.sectionLabel}>Activities For Guardian</AppText>
+              <AppText style={s.scrollHintArrow}>→</AppText>
+            </View>
+          </ContentContainer>
 
-          {/* Your Dashboard */}
-          <AppText style={s.sectionLabel}>Activities For Guardian</AppText>
-          <View style={s.tileGrid}>
-            {([[0, 1], [2, 3]] as [number, number][]).map((pair, ri) => (
-              <View key={ri} style={s.guardianTileRow}>
-                {pair.map(idx => {
-                  const tile = GUARDIAN_TILES[idx];
-                  const color = BUTTERFLY_TILES[tile.ci];
-                  const isConnections = tile.screen === 'GuardianConnections';
-                  const showBadge = isConnections && pendingConnections > 0;
-                  return (
-                    <TouchableOpacity
-                      key={tile.label}
-                      style={[s.tile, s.guardianTile, { backgroundColor: color.bg }]}
-                      onPress={() => navigation.navigate(tile.screen as any)}
-                      activeOpacity={0.78}
-                    >
-                      {showBadge && (
-                        <View style={s.tileBadge}>
-                          <AppText style={s.tileBadgeText}>
-                            {pendingConnections > 9 ? '9+' : pendingConnections}
-                          </AppText>
-                        </View>
-                      )}
-                      <AppText style={s.tileEmoji}>{tile.emoji}</AppText>
-                      <AppText style={s.tileLabel}>{tile.label}</AppText>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            ))}
-          </View>
-
-          {/* Learner zone */}
-          <LinearGradient
-            colors={[...BUTTERFLY_BORDER.colors]}
-            start={BUTTERFLY_BORDER.start}
-            end={BUTTERFLY_BORDER.end}
-            style={s.zoneBorder}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.guardianScrollContent}
           >
-          <View style={s.zoneCard}>
-            <AppText style={s.zoneLabel}>
-              {hasLearner ? `${firstname}'s zone` : 'Your Learner'}
-            </AppText>
-
-            {hasLearner && (
-              <View style={s.heroTileRow}>
+            {GUARDIAN_TILES.map(tile => {
+              const color = BUTTERFLY_TILES[tile.ci];
+              const isConnections = tile.screen === 'GuardianConnections';
+              const showBadge = isConnections && pendingConnections > 0;
+              return (
                 <TouchableOpacity
-                  style={[s.learnerHeroTile, { backgroundColor: LEARNER_TILE_COLOR.bg }]}
-                  onPress={() => navigation.navigate('EditUser', { userId: learners[0].id })}
-                  activeOpacity={0.85}
+                  key={tile.label}
+                  style={[s.guardianCard, { backgroundColor: color.bg }]}
+                  onPress={() => navigation.navigate(tile.screen as any)}
+                  activeOpacity={0.78}
                 >
-                  {learners[0]?.photo_url ? (
-                    <Image source={{ uri: learners[0].photo_url }} style={s.learnerHeroPhoto} />
-                  ) : (
-                    <View style={s.learnerHeroPhoto}>
-                      <AppText style={s.learnerHeroInitial}>{firstname[0]?.toUpperCase() ?? 'L'}</AppText>
+                  {showBadge && (
+                    <View style={s.tileBadge}>
+                      <AppText style={s.tileBadgeText}>
+                        {pendingConnections > 9 ? '9+' : pendingConnections}
+                      </AppText>
                     </View>
                   )}
+                  <View style={s.guardianCardIconWrap}>
+                    <AppText style={s.guardianCardIcon}>{tile.emoji}</AppText>
+                  </View>
+                  <AppText style={s.guardianCardTitle}>{tile.label}</AppText>
+                  <AppText style={s.guardianCardDesc}>{tile.sub}</AppText>
                 </TouchableOpacity>
-              </View>
-            )}
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Off-white learner panel: rounded top edges, sits over the grey zone above,
+            fills the rest of the screen. */}
+        <View style={s.learnerPanel}>
+          <ContentContainer style={s.learnerPanelInner}>
+
+            {/* Learner zone hero */}
+            <View style={s.heroRow}>
+              {hasLearner ? (
+                <LinearGradient
+                  colors={[...BUTTERFLY_BORDER.colors]}
+                  start={BUTTERFLY_BORDER.start}
+                  end={BUTTERFLY_BORDER.end}
+                  style={s.learnerHeroRing}
+                >
+                  <TouchableOpacity
+                    style={s.learnerHeroTile}
+                    onPress={() => navigation.navigate('EditUser', { userId: learners[0].id })}
+                    activeOpacity={0.85}
+                  >
+                    {learners[0]?.photo_url ? (
+                      <Image source={{ uri: learners[0].photo_url }} style={s.learnerHeroPhoto} />
+                    ) : (
+                      <View style={s.learnerHeroPhoto}>
+                        <AppText style={s.learnerHeroInitial}>{firstname[0]?.toUpperCase() ?? 'L'}</AppText>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </LinearGradient>
+              ) : null}
+              <AppText style={s.zoneLabel}>
+                {hasLearner ? `${firstname}'s zone` : 'Your Learner'}
+              </AppText>
+            </View>
 
             {hasLearner ? (
               <>
-                {([[0, 1], [2, 3]] as [number, number][]).map((pair, ri) => (
-                  <View key={ri} style={s.tileRow}>
-                    {pair.map(idx => {
-                      const tile = LEARNER_TILES[idx];
-                      const showBadge = tile.label === 'Friends' && pendingFriendRequests > 0;
-                      return (
-                        <TouchableOpacity
-                          key={tile.label}
-                          style={[s.tile, { backgroundColor: LEARNER_TILE_COLOR.bg }]}
-                          onPress={() => openLearnerTile(tile)}
-                          activeOpacity={0.78}
-                        >
-                          {showBadge && (
-                            <View style={s.tileBadge}>
-                              <AppText style={s.tileBadgeText}>
-                                {pendingFriendRequests > 9 ? '9+' : pendingFriendRequests}
-                              </AppText>
-                            </View>
-                          )}
-                          <AppText style={s.tileEmoji}>{tile.emoji}</AppText>
-                          <AppText style={s.tileLabel}>{tile.label}</AppText>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                ))}
+                <View style={s.learnerTileList}>
+                  {LEARNER_TILES.map(tile => {
+                    const showBadge = tile.label === 'Friends' && pendingFriendRequests > 0;
+                    return (
+                      <Pressable
+                        key={tile.label}
+                        style={[s.learnerRow, tileHoverBg[tile.label] && { backgroundColor: tileHoverBg[tile.label] }]}
+                        onPress={() => openLearnerTile(tile)}
+                        onHoverIn={() => pickTileHoverColor(tile.label)}
+                        onHoverOut={() => clearTileHoverColor(tile.label)}
+                        onPressIn={() => pickTileHoverColor(tile.label)}
+                        onPressOut={() => clearTileHoverColor(tile.label)}
+                      >
+                        <View style={s.learnerRowIconWrap}>
+                          <AppText style={s.learnerRowIcon}>{tile.emoji}</AppText>
+                        </View>
+                        <View style={s.learnerRowTextCol}>
+                          <AppText style={s.learnerRowTitle}>{tile.label}</AppText>
+                          <AppText style={s.learnerRowDesc}>{tile.sub}</AppText>
+                        </View>
+                        {showBadge && (
+                          <View style={[s.tileBadge, s.learnerRowBadge]}>
+                            <AppText style={s.tileBadgeText}>
+                              {pendingFriendRequests > 9 ? '9+' : pendingFriendRequests}
+                            </AppText>
+                          </View>
+                        )}
+                        <AppText style={s.learnerRowChevron}>›</AppText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
 
                 {/* Messaging toggle */}
                 <TouchableOpacity
@@ -390,13 +424,11 @@ export default function GuardianHomeScreen() {
                 </TouchableOpacity>
               </>
             )}
-          </View>
-          </LinearGradient>
-
-        </ContentContainer>
+          </ContentContainer>
+        </View>
       </ScrollView>
 
-      <GuardianTabBar
+      <GuardianFloatingTabBar
         homeIcon="🏠"
         homeLabel="Home"
         onHomePress={() => navigation.navigate('LearnerSelect')}
@@ -406,14 +438,9 @@ export default function GuardianHomeScreen() {
 }
 
 const s = StyleSheet.create({
-  root:       { flex: 1, backgroundColor: NICO.screenBg },
+  root:       { flex: 1, backgroundColor: NICO.background },
   safeHeader: { backgroundColor: NICO.background },
 
-  headerBorder: {
-    paddingBottom:   BUTTERFLY_BORDER.width,
-    paddingLeft:     BUTTERFLY_BORDER.width,
-    paddingRight:    BUTTERFLY_BORDER.width,
-  },
   headerInner: {
     flexDirection:    'row',
     justifyContent:   'space-between',
@@ -423,37 +450,55 @@ const s = StyleSheet.create({
     paddingVertical:  SPACING.md,
   },
   guardianLeft: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  avatarRing: {
+    padding: BUTTERFLY_BORDER.width,
+    borderRadius: 20 + BUTTERFLY_BORDER.width,
+  },
   avatarCircle: {
-    width: 36, height: 36, borderRadius: 18,
+    width: 40, height: 40, borderRadius: 20,
     backgroundColor: NICO.primaryLight,
     justifyContent: 'center', alignItems: 'center',
     overflow: 'hidden',
   },
   avatarInitial: { ...TEXT_STYLE.label, color: NICO.primary, fontSize: FONT_SIZE.md },
   guardianName:  { ...TEXT_STYLE.bodyMedium, fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold },
-  body:        { flex: 1 },
-  bodyContent: { padding: SPACING.base, paddingTop: SPACING.xl, gap: SPACING.base },
 
+  body:        { flex: 1, backgroundColor: NICO.background },
+  bodyContent: { flexGrow: 1 },
+
+  // Grey zone — same NICO.background as the header, hugs its own content
+  greyZone: { backgroundColor: NICO.background, paddingTop: SPACING.xl, paddingBottom: SPACING['2xl'] },
+  sectionHeaderRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: SPACING.base,
+    marginBottom: SPACING.xl,
+  },
   sectionLabel: {
     ...TEXT_STYLE.cardTitle,
     color:        NICO.primary,
-    marginBottom: SPACING.md,
-    textAlign:    'center',
+    textAlign:    'left',
   },
+  scrollHintArrow: {
+    fontSize:   FONT_SIZE['3xl'],
+    fontWeight: FONT_WEIGHT.black,
+    color:      NICO.text,
+  },
+  guardianScrollContent: { flexDirection: 'row', gap: SPACING.md, paddingHorizontal: SPACING.base },
+  guardianCard: {
+    width: scale(148),
+    borderRadius: RADIUS.xl,
+    padding: SPACING.md,
+    gap: SPACING.sm,
+  },
+  guardianCardIconWrap: {
+    width: scale(44), height: scale(44), borderRadius: RADIUS.md,
+    backgroundColor: NICO.surface,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  guardianCardIcon:  { fontSize: scale(22) },
+  guardianCardTitle: { ...TEXT_STYLE.bodyMedium, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  guardianCardDesc:  { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.medium, lineHeight: scale(16) },
 
-  tileGrid:        { gap: SPACING.md },
-  tileRow:         { flexDirection: 'row', gap: SPACING.md },
-  guardianTileRow: { flexDirection: 'row', gap: SPACING.sm, justifyContent: 'center' },
-  tile: {
-    flex: 1,
-    borderRadius:      RADIUS.lg,
-    paddingVertical:   SPACING.md,
-    paddingHorizontal: SPACING.sm,
-    alignItems:        'center',
-    gap:               SPACING.xs,
-    ...SHADOW.sm,
-  },
-  guardianTile: { flex: 0, width: '40%' },
   tileBadge: {
     position: 'absolute', top: SPACING.xs, right: SPACING.xs,
     backgroundColor: NICO.error, borderRadius: RADIUS.full,
@@ -461,40 +506,55 @@ const s = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', zIndex: 1,
   },
   tileBadgeText: { fontSize: scale(10), fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
-  tileEmoji: { fontSize: 24 },
-  tileLabel: { ...TEXT_STYLE.bodyMedium, textAlign: 'center' },
 
-  zoneBorder: {
-    borderRadius: RADIUS['2xl'] + BUTTERFLY_BORDER.width,
-    padding:      BUTTERFLY_BORDER.width,
-    marginTop:    SPACING.xl,
-    ...SHADOW.md,
+  // Off-white learner panel — sits over the grey zone, fills the rest of the screen
+  learnerPanel: {
+    flexGrow: 1,
+    backgroundColor: NICO.screenBg,
+    // 20% more than the standard RADIUS['3xl'] (28)
+    borderTopLeftRadius: RADIUS['3xl'] * 1.2,
+    borderTopRightRadius: RADIUS['3xl'] * 1.2,
   },
-  zoneCard: {
-    backgroundColor: NICO.surface,
-    borderRadius:    RADIUS['2xl'],
-    padding:         SPACING.base,
-    gap:             SPACING.md,
-  },
-  heroTileRow: { flexDirection: 'row', justifyContent: 'center' },
-  learnerHeroTile: {
-    width: '34%',
-    aspectRatio: 1,
-    alignItems: 'center', justifyContent: 'center',
-    borderRadius: RADIUS['2xl'], padding: SPACING.sm,
+  learnerPanelInner: { padding: SPACING.base, paddingBottom: SPACING['2xl'], gap: SPACING.base },
+
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  learnerHeroRing: {
+    padding: BUTTERFLY_BORDER.width,
+    borderRadius: RADIUS.xl + BUTTERFLY_BORDER.width,
     ...SHADOW.sm,
   },
+  learnerHeroTile: {
+    width: scale(56), height: scale(56),
+    borderRadius: RADIUS.xl, overflow: 'hidden',
+  },
   learnerHeroPhoto: {
-    width: '100%', height: '100%', borderRadius: RADIUS.xl,
+    width: '100%', height: '100%',
     backgroundColor: NICO.primaryLight,
-    justifyContent: 'center', alignItems: 'center', overflow: 'hidden',
+    justifyContent: 'center', alignItems: 'center',
   },
-  learnerHeroInitial: { ...TEXT_STYLE.displayHero, color: NICO.primary, fontSize: FONT_SIZE['4xl'] },
-  zoneLabel: {
-    ...TEXT_STYLE.cardTitle,
-    textAlign: 'center',
-    color:     NICO.primary,
+  learnerHeroInitial: { ...TEXT_STYLE.displayHero, color: NICO.primary, fontSize: FONT_SIZE['3xl'] },
+  zoneLabel: { ...TEXT_STYLE.cardTitle, color: NICO.primary },
+
+  // Learner tiles — vertical rows, curved off-white pills sitting on the white panel
+  learnerTileList: { gap: SPACING.sm },
+  learnerRow: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.md,
+    backgroundColor: NICO.backgroundLight,
+    borderRadius: RADIUS['2xl'],
+    padding: SPACING.md,
+    position: 'relative',
   },
+  learnerRowIconWrap: {
+    width: scale(44), height: scale(44), borderRadius: RADIUS.full,
+    backgroundColor: NICO.surface,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  learnerRowIcon: { fontSize: scale(20) },
+  learnerRowTextCol: { flex: 1, gap: 2 },
+  learnerRowTitle: { ...TEXT_STYLE.bodyMedium, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  learnerRowDesc: { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.medium, lineHeight: scale(16) },
+  learnerRowBadge: { position: 'absolute', top: SPACING.sm, right: SPACING.xl + SPACING.sm },
+  learnerRowChevron: { fontSize: FONT_SIZE.xl, color: NICO.textMuted },
 
   emptyHint: { ...TEXT_STYLE.hint, textAlign: 'center' },
   addBtn: {
@@ -517,7 +577,7 @@ const s = StyleSheet.create({
   settingLabel:   { ...TEXT_STYLE.bodyMedium, flex: 1 },
   infoIcon:       { fontSize: FONT_SIZE.lg, color: NICO.text, fontWeight: FONT_WEIGHT.extraBold },
 
-  // TTS info modal
+  // Messaging info modal
   infoOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: SPACING.xl },
   infoCard: {
     backgroundColor: NICO.screenBg, borderRadius: RADIUS.xl,

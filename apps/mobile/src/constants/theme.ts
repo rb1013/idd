@@ -87,6 +87,7 @@ export const NICO = {
   // ── Backgrounds & surfaces ──────────────────────────────────────────────
   screenBg:    '#FFFFFF',   // ← single token for every screen root background
   background:  '#E8E7E5',   // section dividers, input areas, subtle contrast zones
+  backgroundLight: '#F2F1EF', // lighter tint of background — subtle contrast zones that need less darkness (e.g. tile rows on a white panel)
   surface:     '#FFFFFF',   // card, sheet, input surface
   surfaceAlt:  '#FDFBF7',   // slightly warmer surface (learner screens)
 
