@@ -16,7 +16,7 @@ import type { Tutorial, TutorialStatus, TutorialSource } from '../../types';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import RainbowDivider from '../../components/RainbowDivider';
-import GuardianTabBar from '../../components/GuardianTabBar';
+import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
@@ -839,7 +839,7 @@ export default function GuardianTutorialsScreen() {
           </TouchableOpacity>
         </View>
       )}
-      <GuardianTabBar />
+      <GuardianFloatingTabBar />
     </View>
   );
 }

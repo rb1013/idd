@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
-import GuardianTabBar from '../../components/GuardianTabBar';
+import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -628,7 +628,7 @@ export default function UserScheduleScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      <GuardianTabBar />
+      <GuardianFloatingTabBar />
     </View>
   );
 }

@@ -40,8 +40,8 @@ const TOGGLE_COLOR = BUTTERFLY_TILES[0];
 const LEARNER_TILES: LearnerTileDef[] = [
   { label: 'Friends',    emoji: '👥', sub: 'Find friends & create a social circle for your child', ci: 0, screen: 'LearnerFriends'                                  },
   { label: 'Learn',      emoji: '📚', sub: 'Manage tutorials for great learning experience',        ci: 0, screen: 'TutorialLibrary', params: { linkedOnly: true }  },
-  { label: 'Activities', emoji: '✅', sub: 'Assign daily activities to keep track on',               ci: 0, screen: 'Activities'                                      },
-  { label: 'Schedule',   emoji: '📅', sub: 'Mark calendar with upcoming classes.',                   ci: 0, screen: 'UserSchedule'                                    },
+  { label: 'Activities', emoji: '✅', sub: 'Assign daily activities to keep a track',                ci: 0, screen: 'Activities'                                      },
+  { label: 'Schedule',   emoji: '📅', sub: 'Mark calendar with upcoming classes',                    ci: 0, screen: 'UserSchedule'                                    },
 ];
 
 export default function GuardianHomeScreen() {

@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
-import GuardianTabBar from '../../components/GuardianTabBar';
+import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
 import useNicoHeader from '../../hooks/useNicoHeader';
@@ -449,7 +449,7 @@ export default function TutorialLibraryScreen() {
         </TouchableOpacity>
       </Modal>
 
-      <GuardianTabBar />
+      <GuardianFloatingTabBar />
     </View>
   );
 }

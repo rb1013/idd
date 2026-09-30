@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
-import GuardianTabBar from '../../components/GuardianTabBar';
+import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
@@ -235,21 +235,10 @@ export default function GuardianActivitiesScreen() {
       <ScrollView contentContainerStyle={s.reportContent}>
         <AppText style={s.reportHint}>Last 7 days · Data auto-deleted after 7 days</AppText>
         {Array.from(byUser.entries()).map(([userId, days]) => {
-          const userName = days[0].userName;
           const totalActs = selectedKeys.length;
 
           return (
             <View key={userId} style={s.reportUserCard}>
-              {/* User header */}
-              <View style={s.reportUserHeader}>
-                <View style={[s.reportAvatar, { backgroundColor: avatarColor(userName) }]}>
-                  <AppText style={s.reportAvatarText}>{userName[0]}</AppText>
-                </View>
-                <View style={s.reportUserInfo}>
-                  <AppText style={s.reportUserName}>{userName}</AppText>
-                </View>
-              </View>
-
               {/* 7-day rows — today always first */}
               {days.map(day => {
                 const isToday = day.logDate === todayIso;
@@ -324,7 +313,7 @@ export default function GuardianActivitiesScreen() {
         {tab === 'setup' ? renderSetup() : renderReport()}
       </View>
 
-      <GuardianTabBar />
+      <GuardianFloatingTabBar />
     </View>
   );
 }
