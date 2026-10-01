@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
+import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -241,12 +242,14 @@ export default function GuardianNotificationsScreen() {
           }
         />
       </View>
+
+      <GuardianFloatingTabBar />
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: NICO.background },
+  container: { flex: 1, backgroundColor: NICO.screenBg },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   tabBar: {
@@ -268,7 +271,7 @@ const s = StyleSheet.create({
   },
   tabBadgeText: { fontSize: scale(9), fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
 
-  tabPane: { flex: 1, backgroundColor: NICO.background },
+  tabPane: { flex: 1, backgroundColor: NICO.screenBg },
   list:    { padding: SPACING.base, paddingBottom: 48, gap: SPACING.sm },
 
   card: {

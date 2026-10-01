@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import AppText from '../../components/AppText';
 import ContentContainer from '../../components/ContentContainer';
+import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
@@ -107,6 +108,7 @@ export default function GuardianAccountScreen() {
   const tags = guardian?.situation_tags ?? [];
 
   return (
+    <View style={s.screen}>
     <ScrollView style={s.root} contentContainerStyle={s.inner} showsVerticalScrollIndicator={false}>
       <ContentContainer>
 
@@ -179,6 +181,8 @@ export default function GuardianAccountScreen() {
 
       </ContentContainer>
     </ScrollView>
+    <GuardianFloatingTabBar />
+    </View>
   );
 }
 
@@ -192,6 +196,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 const s = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: NICO.screenBg },
   root:  { flex: 1, backgroundColor: NICO.screenBg },
   inner: { padding: SPACING.base, paddingBottom: SPACING['3xl'], alignItems: 'stretch' },
 

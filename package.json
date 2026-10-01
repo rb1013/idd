@@ -15,5 +15,8 @@
   },
   "dependencies": {
     "bad-words": "^4.1.5"
+  },
+  "overrides": {
+    "react-native-worklets": "^0.9.3"
   }
 }

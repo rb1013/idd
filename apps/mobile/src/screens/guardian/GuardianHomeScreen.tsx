@@ -536,7 +536,7 @@ const s = StyleSheet.create({
   zoneLabel: { ...TEXT_STYLE.cardTitle, color: NICO.primary },
 
   // Learner tiles — vertical rows, curved off-white pills sitting on the white panel
-  learnerTileList: { gap: SPACING.sm },
+  learnerTileList: { gap: 14 },
   learnerRow: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.md,
     backgroundColor: NICO.backgroundLight,
