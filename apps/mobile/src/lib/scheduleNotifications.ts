@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { ScheduleItem } from '../types';
 
@@ -15,7 +16,9 @@ Notifications.setNotificationHandler({
 const CHANNEL_ID = 'schedule';
 
 async function ensureChannel() {
-  // Android only — no-op on iOS
+  // Android only — notification channels don't exist on iOS, and calling
+  // this there just logs a noisy console warning for no effect.
+  if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
     name: 'Schedule',
     importance: Notifications.AndroidImportance.HIGH,
