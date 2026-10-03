@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
@@ -93,6 +93,18 @@ export default function ResourcesScreen() {
   const navigation = useNavigation<Nav>();
   useNicoHeader(navigation);
 
+  // Collapsed by default so every category header is visible up front — the
+  // user shouldn't have to scroll past one category's cards to discover the next.
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  function toggleCategory(title: string) {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(title)) next.delete(title); else next.add(title);
+      return next;
+    });
+  }
+
   function openWebsite(url: string) {
     Linking.openURL(url).catch(() => {});
   }
@@ -111,24 +123,34 @@ export default function ResourcesScreen() {
             // Explicit, visually-distinct picks rather than cycling by index —
             // teal (0) and green (1) read as near-identical pale tints together.
             const headingBg = BUTTERFLY_TILES[HEADING_COLOR_INDEXES[ci % HEADING_COLOR_INDEXES.length]];
+            const isOpen = expanded.has(category.title);
             return (
               <View key={category.title} style={s.categoryBlock}>
-                <View style={[s.categoryHeading, { backgroundColor: headingBg.bg }]}>
+                <TouchableOpacity
+                  style={[s.categoryHeading, { backgroundColor: headingBg.bg }]}
+                  onPress={() => toggleCategory(category.title)}
+                  activeOpacity={0.75}
+                >
                   <AppText style={[s.categoryTitle, { color: headingBg.accent }]}>{category.title}</AppText>
-                </View>
-                {category.services.map(svc => (
-                  <View key={svc.title} style={s.card}>
-                    <AppText style={s.cardTitle}>{svc.title}</AppText>
-                    <AppText style={s.cardSummary}>{svc.summary}</AppText>
-                    <AppText style={s.cardAudience}>
-                      <AppText style={s.cardAudienceLabel}>Who it's for: </AppText>
-                      <AppText style={s.cardAudienceValue}>{svc.audience}</AppText>
-                    </AppText>
-                    <TouchableOpacity onPress={() => openWebsite(svc.website)} activeOpacity={0.7}>
-                      <AppText style={s.cardLink}>{displayUrl(svc.website)} →</AppText>
-                    </TouchableOpacity>
+                  <AppText style={[s.categoryChevron, { color: headingBg.accent }]}>{isOpen ? '▾' : '▸'}</AppText>
+                </TouchableOpacity>
+                {isOpen && (
+                  <View style={s.categoryServices}>
+                    {category.services.map(svc => (
+                      <View key={svc.title} style={s.card}>
+                        <AppText style={s.cardTitle}>{svc.title}</AppText>
+                        <AppText style={s.cardSummary}>{svc.summary}</AppText>
+                        <AppText style={s.cardAudience}>
+                          <AppText style={s.cardAudienceLabel}>Who it's for: </AppText>
+                          <AppText style={s.cardAudienceValue}>{svc.audience}</AppText>
+                        </AppText>
+                        <TouchableOpacity onPress={() => openWebsite(svc.website)} activeOpacity={0.7}>
+                          <AppText style={s.cardLink}>{displayUrl(svc.website)} →</AppText>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
                   </View>
-                ))}
+                )}
               </View>
             );
           })}
@@ -151,15 +173,16 @@ const s = StyleSheet.create({
   pageTitle:    { ...TEXT_STYLE.screenTitle, marginBottom: SPACING.sm },
   pageSubtitle: { ...TEXT_STYLE.hint, fontSize: FONT_SIZE.md, lineHeight: 22, textAlign: 'justify', marginBottom: SPACING.xl },
 
-  categoryBlock: { marginBottom: SPACING['2xl'] },
+  categoryBlock: { marginBottom: SPACING.lg },
   categoryHeading: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     borderRadius: RADIUS.lg,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.base,
-    marginBottom: SPACING.lg,
-    alignSelf: 'flex-start',
   },
-  categoryTitle: { ...TEXT_STYLE.cardTitle },
+  categoryTitle:   { ...TEXT_STYLE.cardTitle, flexShrink: 1 },
+  categoryChevron: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.black, marginLeft: SPACING.sm },
+  categoryServices: { marginTop: SPACING.lg },
 
   card: {
     backgroundColor: NICO.backgroundLight,
