@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, Image, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, Alert, ActivityIndicator, Modal, Dimensions,
+  StyleSheet, Alert, ActivityIndicator, Modal, Dimensions, Animated,
 } from 'react-native';
 import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
@@ -49,6 +49,8 @@ export default function TutorialPreviewScreen() {
   const [loading, setLoading] = useState(true);
   const [frameIndex, setFrameIndex] = useState(0);
   const [viewTab, setViewTab] = useState<'video' | 'slides'>('video');
+  const [viewTabsWidth, setViewTabsWidth] = useState(0);
+  const viewTabUnderlineX = useRef(new Animated.Value(0)).current;
 
   useNicoHeader(navigation);
 
@@ -314,6 +316,11 @@ export default function TutorialPreviewScreen() {
     setAutoPlay(false);
     player.pause();
     setViewTab(tab);
+    Animated.timing(viewTabUnderlineX, {
+      toValue: tab === 'video' ? 0 : 1,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
   }
 
   if (loading) {
@@ -333,7 +340,8 @@ export default function TutorialPreviewScreen() {
       <View style={s.center}>
         <ActivityIndicator size="large" color={NICO.primary} />
         <AppText style={s.generatingText}>AI is creating your tutorial…</AppText>
-        <AppText style={s.generatingHint}>This usually takes 30–60 seconds</AppText>
+        <AppText style={s.generatingHint}>This usually takes 1-2 mins</AppText>
+        <AppText style={s.generatingWarning}>Please do not press back button or do not re-load the page</AppText>
       </View>
     );
   }
@@ -353,8 +361,9 @@ export default function TutorialPreviewScreen() {
       <ScrollView contentContainerStyle={s.content}>
         {/* Status banner — creator only, not shown when approved or preview */}
         {isCreator && tutorial.status !== 'approved' && tutorial.status !== 'preview' && (
-          <View style={[s.statusBanner, { backgroundColor: STATUS_COLORS[tutorial.status as TutorialStatus].bg }]}>
-            <AppText style={[s.statusBannerText, { color: STATUS_COLORS[tutorial.status as TutorialStatus].text }]}>
+          <View style={s.statusRow}>
+            <View style={[s.statusDot, { backgroundColor: STATUS_COLORS[tutorial.status as TutorialStatus].text }]} />
+            <AppText style={[s.statusText, { color: STATUS_COLORS[tutorial.status as TutorialStatus].text }]}>
               {isTechnicalError ? 'Technical Error' : STATUS_LABELS[tutorial.status as TutorialStatus]}
             </AppText>
           </View>
@@ -397,13 +406,26 @@ export default function TutorialPreviewScreen() {
 
         {/* Video / Slides tabs (slideshow only) */}
         {tutorial.source !== 'youtube' && frames.length > 0 && (
-          <View style={s.viewTabs}>
-            <TouchableOpacity style={[s.viewTab, viewTab === 'video' && s.viewTabActive]} onPress={() => switchTab('video')} activeOpacity={0.75}>
+          <View style={s.viewTabs} onLayout={e => setViewTabsWidth(e.nativeEvent.layout.width)}>
+            <TouchableOpacity style={s.viewTab} onPress={() => switchTab('video')} activeOpacity={0.75}>
               <AppText style={[s.viewTabText, viewTab === 'video' && s.viewTabTextActive]}>🎬 Video</AppText>
             </TouchableOpacity>
-            <TouchableOpacity style={[s.viewTab, viewTab === 'slides' && s.viewTabActive]} onPress={() => switchTab('slides')} activeOpacity={0.75}>
+            <TouchableOpacity style={s.viewTab} onPress={() => switchTab('slides')} activeOpacity={0.75}>
               <AppText style={[s.viewTabText, viewTab === 'slides' && s.viewTabTextActive]}>📑 Slides</AppText>
             </TouchableOpacity>
+            {viewTabsWidth > 0 && (
+              <Animated.View
+                style={[
+                  s.viewTabUnderline,
+                  {
+                    width: viewTabsWidth / 2,
+                    transform: [{
+                      translateX: viewTabUnderlineX.interpolate({ inputRange: [0, 1], outputRange: [0, viewTabsWidth / 2] }),
+                    }],
+                  },
+                ]}
+              />
+            )}
           </View>
         )}
 
@@ -468,8 +490,8 @@ export default function TutorialPreviewScreen() {
                       else { player.pause(); player.seekTo(0); player.play(); }
                     }}
                   >
-                    <AppText style={s.audioBtnText}>
-                      {playerStatus.playing ? '⏸  Pause' : '🔊  Replay slide'}
+                    <AppText style={s.audioBtnIcon}>
+                      {playerStatus.playing ? '⏸' : '🔊'}
                     </AppText>
                   </TouchableOpacity>
                 )}
@@ -723,9 +745,11 @@ const s = StyleSheet.create({
   errorText:     { ...TEXT_STYLE.body, color: NICO.textMuted },
   generatingText:{ fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, textAlign: 'center' },
   generatingHint:{ fontSize: FONT_SIZE.md, color: NICO.textMuted, textAlign: 'center' },
+  generatingWarning:{ fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.error, textAlign: 'center', marginTop: SPACING.md },
 
-  statusBanner:     { borderRadius: RADIUS.lg, paddingHorizontal: SPACING.base, paddingVertical: SPACING.md, marginBottom: 14, alignItems: 'center' },
-  statusBannerText: { fontWeight: FONT_WEIGHT.extraBold, fontSize: FONT_SIZE.md },
+  statusRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: SPACING.xs, marginBottom: 14 },
+  statusDot:  { width: 8, height: 8, borderRadius: RADIUS.full },
+  statusText: { fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.sm, letterSpacing: 0.2 },
 
   adminNotesCard:  { backgroundColor: NICO.errorLight, borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: NICO.error, padding: 14, marginBottom: 12 },
   adminNotesLabel: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.error, marginBottom: 4 },
@@ -734,11 +758,11 @@ const s = StyleSheet.create({
 
   title: { fontSize: FONT_SIZE['4xl'], fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: 10 },
 
-  viewTabs:          { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.sm },
-  viewTab:           { flex: 1, alignItems: 'center', paddingVertical: SPACING.sm, borderRadius: RADIUS.md, backgroundColor: NICO.background },
-  viewTabActive:     { backgroundColor: NICO.primary },
-  viewTabText:       { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted },
-  viewTabTextActive: { color: NICO.textOnAccent },
+  viewTabs:          { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: NICO.border, marginBottom: SPACING.base, position: 'relative' },
+  viewTab:           { flex: 1, alignItems: 'center', paddingVertical: SPACING.sm },
+  viewTabText:       { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
+  viewTabTextActive: { color: NICO.text, fontWeight: FONT_WEIGHT.bold },
+  viewTabUnderline:  { position: 'absolute', bottom: -1, left: 0, height: 3, borderRadius: RADIUS.full, backgroundColor: NICO.primary },
 
   frameContainer:    { backgroundColor: NICO.surface, borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 20, ...SHADOW.sm },
   frameActions:      { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: SPACING.sm, padding: 14, paddingBottom: SPACING.sm },
@@ -752,8 +776,8 @@ const s = StyleSheet.create({
   regenSmallBtnDisabled: { opacity: 0.5 },
   regenSmallBtnText: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 
-  audioBtn:     { backgroundColor: NICO.primaryLight, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderWidth: 1, borderColor: NICO.primary },
-  audioBtnText: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
+  audioBtn:     { width: scale(40), height: scale(40), borderRadius: RADIUS.full, backgroundColor: NICO.primaryLight, borderWidth: 1, borderColor: NICO.primary, justifyContent: 'center', alignItems: 'center' },
+  audioBtnIcon: { fontSize: FONT_SIZE.xl },
   editBtn:      { backgroundColor: NICO.primaryLight, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderWidth: 1, borderColor: NICO.primary },
   editBtnText:  { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 

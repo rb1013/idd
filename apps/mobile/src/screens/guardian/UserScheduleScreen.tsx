@@ -709,7 +709,7 @@ const s = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   fieldRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: 0 },
-  fieldHint: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, marginTop: 2, marginBottom: SPACING.md },
+  fieldHint: { fontSize: FONT_SIZE.sm, color: NICO.text, marginTop: 2, marginBottom: SPACING.md },
 
   fbox: {
     borderWidth: 1.5, borderColor: NICO.border, borderRadius: RADIUS.md,
@@ -746,7 +746,7 @@ const s = StyleSheet.create({
   },
   radioDotSel: { borderColor: NICO.primary, backgroundColor: NICO.primary },
   radioTitle: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
-  radioSub: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, marginTop: 2 },
+  radioSub: { fontSize: FONT_SIZE.sm, color: NICO.text, marginTop: 2 },
 
   cancelOption: {
     flexDirection: 'row', gap: SPACING.sm, alignItems: 'center',

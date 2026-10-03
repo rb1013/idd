@@ -157,15 +157,17 @@ export default function LearnerSelectScreen() {
         <ContentContainer>
           <View style={s.body}>
 
-            {/* Guardian tile */}
+            <AppText style={s.pageHeadline}>Choose your path</AppText>
+
+            {/* Guardian card */}
             <LinearGradient
               colors={[...BUTTERFLY_BORDER.colors]}
               start={BUTTERFLY_BORDER.start}
               end={BUTTERFLY_BORDER.end}
-              style={s.tileBorder}
+              style={s.cardBorder}
             >
-              <TouchableOpacity style={[s.tile, { backgroundColor: NICO.surface }]} onPress={openPinModal} activeOpacity={0.85}>
-                <View style={s.tileBody}>
+              <TouchableOpacity style={[s.card, { backgroundColor: NICO.surface }]} onPress={openPinModal} activeOpacity={0.85}>
+                <View style={s.cardBody}>
                   <View style={s.avatarWrap}>
                     {guardian?.photo_url ? (
                       <Image source={{ uri: guardian.photo_url }} style={s.avatar} />
@@ -175,27 +177,32 @@ export default function LearnerSelectScreen() {
                       </View>
                     )}
                   </View>
-                  <AppText style={s.userName}>{guardian?.full_name ?? 'Guardian'}</AppText>
+                  <View style={s.cardTextCol}>
+                    <AppText style={s.cardEyebrow}>Oversee &amp; Mentor</AppText>
+                    <AppText style={s.cardTitle}>{guardian?.full_name ?? 'Guardian'}</AppText>
+                    <AppText style={s.cardSubtitle}>Manage your network and support each learner.</AppText>
+                  </View>
+                  <AppText style={s.cardChevron}>›</AppText>
                 </View>
               </TouchableOpacity>
             </LinearGradient>
 
-            {/* Learner tiles */}
+            {/* Learner cards */}
             {learners.map((tile) => (
               <LinearGradient
                 key={tile.id}
                 colors={[...BUTTERFLY_BORDER.colors]}
                 start={BUTTERFLY_BORDER.start}
                 end={BUTTERFLY_BORDER.end}
-                style={s.tileBorder}
+                style={s.cardBorder}
               >
                 <TouchableOpacity
-                  style={[s.tile, { backgroundColor: NICO.surface }]}
+                  style={[s.card, { backgroundColor: NICO.surface }]}
                   onPress={() => handleLearnerTap(tile)}
                   activeOpacity={0.85}
                   disabled={!!biometricLoading}
                 >
-                  <View style={s.tileBody}>
+                  <View style={s.cardBody}>
                     <View style={s.avatarWrap}>
                       {tile.photo_url ? (
                         <Image source={{ uri: tile.photo_url }} style={s.avatar} />
@@ -205,10 +212,15 @@ export default function LearnerSelectScreen() {
                         </View>
                       )}
                     </View>
-                    {biometricLoading === tile.id
-                      ? <ActivityIndicator color={NICO.orange} />
-                      : <AppText style={s.userName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.6}>{tile.name}</AppText>
-                    }
+                    <View style={s.cardTextCol}>
+                      <AppText style={s.cardEyebrow}>Grow &amp; Connect</AppText>
+                      {biometricLoading === tile.id
+                        ? <ActivityIndicator color={NICO.orange} style={s.cardLoading} />
+                        : <AppText style={s.cardTitle} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.6}>{tile.name}</AppText>
+                      }
+                      <AppText style={s.cardSubtitle}>Continue lessons, activities, and friendships.</AppText>
+                    </View>
+                    <AppText style={s.cardChevron}>›</AppText>
                   </View>
                 </TouchableOpacity>
               </LinearGradient>
@@ -362,34 +374,47 @@ const s = StyleSheet.create({
     borderBottomRightRadius: RADIUS['2xl'],
   },
 
-  body: { paddingHorizontal: SPACING.base, paddingTop: SPACING.xl, alignItems: 'center', gap: SPACING.md },
+  body: { paddingHorizontal: SPACING.base, paddingTop: SPACING.xl, gap: SPACING.xl },
 
-  // Tiles
-  tileBorder: {
-    width:        '50%',
-    borderRadius: RADIUS.full,
+  pageHeadline: {
+    fontSize: FONT_SIZE['5xl'], fontWeight: FONT_WEIGHT.black, color: NICO.text,
+    alignSelf: 'flex-start', marginBottom: SPACING.sm,
+  },
+
+  // Cards
+  cardBorder: {
+    width:        '100%',
+    borderRadius: RADIUS['2xl'],
     padding:      BUTTERFLY_BORDER.width,
     shadowColor:  '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation:    5,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation:    4,
   },
-  tile: {
-    borderRadius: RADIUS.full,
+  card: {
+    borderRadius: RADIUS['2xl'],
     overflow:     'hidden',
   },
-  tileBar:  { height: 7 },
-  tileBody: { padding: SPACING.base, alignItems: 'center', gap: SPACING.sm },
+  cardBody: { flexDirection: 'row', alignItems: 'center', padding: SPACING.lg, gap: SPACING.base },
 
-  avatarWrap:     { position: 'relative', marginBottom: SPACING.xs },
-  avatar:         { width: 80, height: 80, borderRadius: 40 },
+  avatarWrap:     { flexShrink: 0 },
+  avatar:         { width: 64, height: 64, borderRadius: 32 },
   avatarFallback: { justifyContent: 'center', alignItems: 'center' },
-  avatarInitial:  { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black },
+  avatarInitial:  { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.black },
 
-  userName: { ...TEXT_STYLE.bodyMedium, textAlign: 'center' },
+  cardTextCol:  { flex: 1, gap: 2 },
+  cardEyebrow:  {
+    fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary,
+    textTransform: 'uppercase', letterSpacing: 0.6,
+  },
+  cardTitle:    { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.black, color: NICO.text },
+  cardSubtitle: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, marginTop: 2, lineHeight: 20 },
+  cardLoading:  { alignSelf: 'flex-start', marginVertical: 2 },
+  cardChevron:  { fontSize: FONT_SIZE['3xl'], color: NICO.textMuted, flexShrink: 0 },
 
   signOutBtn: {
+    alignSelf:         'center',
     marginTop:         SPACING.lg,
     paddingVertical:   SPACING.sm,
     paddingHorizontal: SPACING.xl,
