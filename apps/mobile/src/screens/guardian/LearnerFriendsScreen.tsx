@@ -634,39 +634,41 @@ export default function LearnerFriendsScreen() {
               const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
               return (
                 <TouchableOpacity
-                  style={[s.card, { backgroundColor: tileBg, borderColor: 'transparent' }]}
+                  style={[s.card, s.cardColumn, { backgroundColor: tileBg, borderColor: 'transparent' }]}
                   onPress={() => navigation.navigate('LearnerPublicProfile', { learnerId: f.learnerId })}
                   activeOpacity={0.85}
                 >
-                  <View style={s.avatarCol}>
-                    <Avatar name={f.learnerName} photo={f.learnerPhoto} size={scale(52)} />
-                    {f.learnerAge != null && <AppText style={s.avatarAge}>{f.learnerAge} yrs</AppText>}
-                  </View>
-                  <View style={s.cardInfo}>
-                    <AppText style={s.cardName}>{f.learnerName}</AppText>
-                    <AppText style={s.cardMeta}>
-                      {f.learnerCity}{f.learnerRegion ? `, ${f.learnerRegion}` : ''}
-                    </AppText>
-                    {f.guardianName && (
-                      <AppText style={s.cardMeta}>Guardian: {f.guardianName}</AppText>
+                  <View style={s.cardMainRow}>
+                    <View style={s.avatarCol}>
+                      <Avatar name={f.learnerName} photo={f.learnerPhoto} size={scale(52)} />
+                      {f.learnerAge != null && <AppText style={s.avatarAge}>{f.learnerAge} yrs</AppText>}
+                    </View>
+                    <View style={s.cardInfo}>
+                      <AppText style={s.cardName}>{f.learnerName}</AppText>
+                      <AppText style={s.cardMeta}>
+                        {f.learnerCity}{f.learnerRegion ? `, ${f.learnerRegion}` : ''}
+                      </AppText>
+                      {f.guardianName && (
+                        <AppText style={s.cardMeta}>Guardian: {f.guardianName}</AppText>
+                      )}
+                      {f.medicalConditions.length > 0 && (
+                        <AppText style={s.cardMedical}>🏥 {f.medicalConditions.join(', ')}</AppText>
+                      )}
+                    </View>
+                    {removing === f.friendshipId ? (
+                      <ActivityIndicator size="small" color={NICO.error} style={s.cardCornerIcon} />
+                    ) : (
+                      <TouchableOpacity
+                        style={[s.cardCornerIcon, s.cardRemoveIcon]}
+                        onPress={() => removeFriend(f.friendshipId, f.learnerName)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <AppText style={s.cardRemoveIconTxt}>✕</AppText>
+                      </TouchableOpacity>
                     )}
-                    {f.medicalConditions.length > 0 && (
-                      <AppText style={s.cardMedical}>🏥 {f.medicalConditions.join(', ')}</AppText>
-                    )}
                   </View>
-                  {removing === f.friendshipId ? (
-                    <ActivityIndicator size="small" color={NICO.error} style={s.cardCornerIcon} />
-                  ) : (
-                    <TouchableOpacity
-                      style={[s.cardCornerIcon, s.cardRemoveIcon]}
-                      onPress={() => removeFriend(f.friendshipId, f.learnerName)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <AppText style={s.cardRemoveIconTxt}>✕</AppText>
-                    </TouchableOpacity>
-                  )}
                   {isReported && (
-                    <View style={s.reportedCorner}>
+                    <View style={s.reportedRow}>
                       <View style={s.reportedPill}>
                         <AppText style={s.reportedPillTxt}>⚠️ Reported</AppText>
                       </View>
@@ -674,7 +676,9 @@ export default function LearnerFriendsScreen() {
                         onPress={() => setReasonModal({ name: f.learnerName, reason: reportReason })}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
-                        <AppText style={s.infoIcon}>ℹ️</AppText>
+                        <View style={s.infoIconCircle}>
+                          <AppText style={s.infoIconTxt}>i</AppText>
+                        </View>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -952,8 +956,14 @@ export default function LearnerFriendsScreen() {
         <TouchableOpacity style={s.nudgeOverlay} activeOpacity={1} onPress={() => setReasonModal(null)}>
           <View style={s.nudge} onStartShouldSetResponder={() => true}>
             <AppText style={s.nudgeTitle}>Reason for reporting this user</AppText>
-            <AppText style={s.nudgeBody}>
-              {reasonModal?.reason ?? 'No reason was recorded for this report.'}
+            <View style={s.nudgeBodyBox}>
+              <AppText style={s.nudgeBody}>
+                {reasonModal?.reason ?? 'No reason was recorded for this report.'}
+              </AppText>
+            </View>
+            <AppText style={s.nudgeNote}>
+              <AppText style={s.nudgeNoteAsterisk}>*** </AppText>
+              Admin will look into the reason for reporting and decide the next action i.e. to talk to user, delete user or block user.
             </AppText>
             <TouchableOpacity style={s.nudgeClose} onPress={() => setReasonModal(null)} activeOpacity={0.8}>
               <AppText style={s.nudgeCloseTxt}>Close</AppText>
@@ -1073,13 +1083,16 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: 'transparent',
     ...SHADOW.md,
   },
+  // Friends-tab card needs a second row below (Reported pill) — stack instead of a single row.
+  cardColumn:   { flexDirection: 'column', alignItems: 'stretch', gap: 0 },
+  cardMainRow:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   cardInfo:    { flex: 1, minWidth: 0, gap: 2 },
   cardName:    { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
-  cardMeta:    { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.medium },
-  cardMedical: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, fontWeight: FONT_WEIGHT.medium },
+  cardMeta:    { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.medium },
+  cardMedical: { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.medium },
 
   avatarCol: { alignItems: 'center', gap: 2 },
-  avatarAge: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, fontWeight: FONT_WEIGHT.semiBold },
+  avatarAge: { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold },
 
   sectionTitle: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.black, color: NICO.textMuted, letterSpacing: 1, marginBottom: SPACING.md },
 
@@ -1134,11 +1147,16 @@ const s = StyleSheet.create({
   connectBtnTxt:   { color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.sm },
 
   // Friends tab
-  infoIcon: { fontSize: FONT_SIZE.md },
+  infoIconCircle: {
+    width: scale(18), height: scale(18), borderRadius: scale(9),
+    borderWidth: 1.5, borderColor: NICO.textMuted,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  infoIconTxt: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.black, color: NICO.textMuted, lineHeight: scale(14) },
   cardCornerIcon: { position: 'absolute', top: SPACING.sm, right: SPACING.sm },
-  reportedCorner: {
-    position: 'absolute', top: SPACING.sm + scale(26) + SPACING.xs, right: SPACING.sm,
+  reportedRow: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
+    marginTop: SPACING.sm, alignSelf: 'flex-end',
   },
   cardRemoveIcon: {
     width: scale(26), height: scale(26), borderRadius: RADIUS.full,
@@ -1151,7 +1169,7 @@ const s = StyleSheet.create({
     backgroundColor: NICO.errorLight,
     borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm, paddingVertical: 4,
   },
-  reportedPillTxt: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.error },
+  reportedPillTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.error },
 
   // Report reason nudge modal
   nudgeOverlay: {
@@ -1164,7 +1182,13 @@ const s = StyleSheet.create({
     ...SHADOW.lg,
   },
   nudgeTitle: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
-  nudgeBody:  { fontSize: FONT_SIZE.md, color: NICO.textMuted, lineHeight: 22 },
+  nudgeBodyBox: {
+    backgroundColor: NICO.background, borderRadius: RADIUS.lg,
+    padding: SPACING.base, borderWidth: 1, borderColor: NICO.border,
+  },
+  nudgeBody:  { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, lineHeight: 26 },
+  nudgeNote:  { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, lineHeight: 21 },
+  nudgeNoteAsterisk: { color: NICO.warning, fontWeight: FONT_WEIGHT.black, fontSize: FONT_SIZE.lg },
   nudgeClose: { ...BTN_SIZE.sm, ...BTN_VARIANT.primary, alignSelf: 'flex-end' },
   nudgeCloseTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.textOnAccent },
 
