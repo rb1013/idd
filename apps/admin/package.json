@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.107.0",
+    "cookie": "^1.0.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-router-dom": "^7.17.0"
+    "react-router-dom": "^7.17.0",
+    "set-cookie-parser": "^2.6.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
