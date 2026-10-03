@@ -390,7 +390,7 @@ export default function ChatScreen() {
             onPress={() => setBoardVisible(true)}
             activeOpacity={0.8}
           >
-            <Text style={styles.boardBtnIcon}>🗣️</Text>
+            <Text style={styles.boardBtnIcon}>😀</Text>
           </TouchableOpacity>
 
           <TextInput
