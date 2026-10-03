@@ -48,6 +48,7 @@ import CreateEventScreen from '../screens/guardian/CreateEventScreen';
 import EditEventScreen from '../screens/guardian/EditEventScreen';
 import LearnerSelectScreen from '../screens/guardian/LearnerSelectScreen';
 import FavouriteFriendsScreen from '../screens/guardian/FavouriteFriendsScreen';
+import ResourcesScreen from '../screens/guardian/ResourcesScreen';
 
 // User screens
 import UserHomeScreen from '../screens/user/UserHomeScreen';
@@ -103,6 +104,7 @@ export type GuardianNavParamList = {
   CreateEvent: undefined;
   EditEvent: { eventId: string };
   FavouriteFriends: undefined;
+  Resources: undefined;
 };
 
 export type UserStackParamList = {
@@ -282,6 +284,7 @@ function GuardianTabs() {
       <GuardianNav.Screen name="CreateEvent"         component={CreateEventScreen}           options={{ title: 'Create Event' }} />
       <GuardianNav.Screen name="EditEvent"           component={EditEventScreen}             options={{ title: 'Edit Event' }} />
       <GuardianNav.Screen name="FavouriteFriends"   component={FavouriteFriendsScreen}      options={{ title: 'Manage Friends', headerRight: undefined }} />
+      <GuardianNav.Screen name="Resources"           component={ResourcesScreen}             options={{ title: 'Resources', headerRight: undefined }} />
     </GuardianNav.Navigator>
   );
 }

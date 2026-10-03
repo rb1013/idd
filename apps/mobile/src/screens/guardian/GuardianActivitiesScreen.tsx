@@ -19,6 +19,16 @@ const MAX_ACTIVITIES = 10;
 
 // ── Report helpers ────────────────────────────────────────────────────────────
 
+// Pass the guardian's own local calendar date to get_activity_report rather
+// than letting it fall back to the database's current_date (UTC on Supabase),
+// which could shift the 7-day window by a day depending on timezone.
+function toLocalDateStr(d: Date): string {
+  const y  = d.getFullYear();
+  const m  = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
 interface ReportRow {
   user_id: string;
   user_name: string;
@@ -89,7 +99,10 @@ export default function GuardianActivitiesScreen() {
   async function loadReport() {
     if (!guardian || reportLoaded) return;
     setReportLoading(true);
-    const { data } = await supabase.rpc('get_activity_report', { p_guardian_id: guardian.id });
+    const { data } = await supabase.rpc('get_activity_report', {
+      p_guardian_id: guardian.id,
+      p_today: toLocalDateStr(new Date()),
+    });
     setReportRows((data || []) as ReportRow[]);
     setReportLoaded(true);
     setReportLoading(false);

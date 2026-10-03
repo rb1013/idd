@@ -72,6 +72,13 @@ const MOOD_COLOR       = BUTTERFLY_TILES[4]; // pink
 
 // ── Schedule helpers ──────────────────────────────────────────────────────
 
+function toLocalDateStr(d: Date): string {
+  const y  = d.getFullYear();
+  const m  = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
 function nowMinsOfDay(): number {
   const d = new Date();
   return d.getHours() * 60 + d.getMinutes();
@@ -123,9 +130,14 @@ export default function UserHomeScreen() {
 
   useFocusEffect(useCallback(() => {
     if (!activeUser) return;
+    // Pass the learner's own local calendar date rather than letting the RPCs
+    // use the database's current_date (UTC on Supabase) — otherwise evening
+    // hours in any timezone behind UTC make the DB think it's already
+    // tomorrow, silently hiding today's later classes/activities.
+    const today = toLocalDateStr(new Date());
     Promise.all([
-      supabase.rpc('get_user_activities_today', { p_user_id: activeUser.id }),
-      supabase.rpc('get_user_schedule_today',   { p_user_id: activeUser.id }),
+      supabase.rpc('get_user_activities_today', { p_user_id: activeUser.id, p_today: today }),
+      supabase.rpc('get_user_schedule_today',   { p_user_id: activeUser.id, p_today: today }),
     ]).then(([{ data: acts }, { data: sched }]) => {
       const list = (acts || []) as { completed: boolean }[];
       setActivityProgress({ done: list.filter(a => a.completed).length, total: list.length });
@@ -399,15 +411,17 @@ const s = StyleSheet.create({
     backgroundColor: NICO.primaryLight,
     justifyContent: 'center', alignItems: 'center',
     flexShrink: 0,
-    marginTop: SPACING.sm,
   },
   homeIcon: { fontSize: FONT_SIZE.xl },
   headerCenter: { flex: 1, alignItems: 'center' },
-  greeting: { ...TEXT_STYLE.cardTitle, fontSize: FONT_SIZE.xl, marginTop: '15%' },
+  greeting: { ...TEXT_STYLE.cardTitle, fontSize: FONT_SIZE.xl },
 
   avatarBtn: { position: 'relative' },
 
-  scrollContent: { paddingHorizontal: SPACING.base, paddingTop: SPACING.md, paddingBottom: SPACING.base, gap: SPACING.md },
+  scrollContent: {
+    flexGrow: 1, justifyContent: 'center',
+    paddingHorizontal: SPACING.base, paddingTop: SPACING.md, paddingBottom: SPACING.base, gap: SPACING.md,
+  },
 
   // Schedule tile
   scheduleTile: {

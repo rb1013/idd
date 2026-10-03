@@ -25,6 +25,16 @@ interface ActivityItem {
 
 const NO_ACTIVITIES_MSG = "No activities yet! Ask your guardian to add some fun activities for you!";
 
+// Pass the learner's own local calendar date to the RPCs rather than letting
+// them fall back to the database's current_date (UTC on Supabase) — otherwise
+// evening hours in any timezone behind UTC can log/read "today" as tomorrow.
+function toLocalDateStr(d: Date): string {
+  const y  = d.getFullYear();
+  const m  = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
 function NoActivitiesState() {
   useFocusEffect(useCallback(() => {
     return () => { Speech.stop(); };
@@ -77,7 +87,10 @@ export default function ActivitiesScreen() {
 
   const load = useCallback(async () => {
     if (!activeUser) return;
-    const { data } = await supabase.rpc('get_user_activities_today', { p_user_id: activeUser.id });
+    const { data } = await supabase.rpc('get_user_activities_today', {
+      p_user_id: activeUser.id,
+      p_today: toLocalDateStr(new Date()),
+    });
     setActivities((data || []) as ActivityItem[]);
     setLoading(false);
   }, [activeUser]);
@@ -100,6 +113,7 @@ export default function ActivitiesScreen() {
       p_user_id:    activeUser!.id,
       p_activity_id: item.activity_id,
       p_completed:  next,
+      p_today:      toLocalDateStr(new Date()),
     });
   }
 

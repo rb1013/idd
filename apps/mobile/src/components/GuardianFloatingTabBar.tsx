@@ -22,9 +22,8 @@ interface GuardianFloatingTabBarProps {
  * Floating-pill variant of GuardianTabBar — same behavior (unread-notifications
  * dot, sign-out confirmation, per-route active highlighting, home-item props),
  * restyled as a rounded card with margin from the screen edges instead of a
- * flush full-width bar. Kept as its own component so GuardianTabBar — still
- * used by the 8 other guardian tile screens — stays untouched; for now this
- * one is only rendered by the redesigned GuardianHomeScreen.
+ * flush full-width bar. Now the single shared bottom bar across all guardian
+ * tile screens; the original GuardianTabBar is unused but left in place.
  */
 export default function GuardianFloatingTabBar({ homeIcon = '🗂️', homeLabel = 'Dashboard', onHomePress }: GuardianFloatingTabBarProps) {
   const navigation = useNavigation<Nav>();
@@ -43,6 +42,7 @@ export default function GuardianFloatingTabBar({ homeIcon = '🗂️', homeLabel
   const dashboardActive     = route.name === 'GuardianHome';
   const notificationsActive = route.name === 'Notifications';
   const accountActive       = route.name === 'Account';
+  const resourcesActive     = route.name === 'Resources';
 
   return (
     <View style={[s.wrap, { paddingBottom: (insets.bottom || SPACING.sm) + SPACING.xs }]}>
@@ -69,6 +69,12 @@ export default function GuardianFloatingTabBar({ homeIcon = '🗂️', homeLabel
             <AppText style={s.icon}>👤</AppText>
           </View>
           <AppText style={[s.label, accountActive && s.labelActive]}>Account</AppText>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.item} onPress={() => navigation.navigate('Resources')} activeOpacity={0.75}>
+          <View style={[s.iconCircle, resourcesActive && s.iconCircleActive]}>
+            <AppText style={s.icon}>📖</AppText>
+          </View>
+          <AppText style={[s.label, resourcesActive && s.labelActive]}>Resources</AppText>
         </TouchableOpacity>
         <TouchableOpacity style={s.item} onPress={handleSignOut} activeOpacity={0.75}>
           <View style={s.iconCircle}>
