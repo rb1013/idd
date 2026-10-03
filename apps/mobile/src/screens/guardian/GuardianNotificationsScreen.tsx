@@ -324,8 +324,8 @@ const s = StyleSheet.create({
   emptyText:  { ...TEXT_STYLE.cardTitle },
   emptyHint:  { ...TEXT_STYLE.screenHint, textAlign: 'center', paddingHorizontal: SPACING.xl },
   tutorialsHint: {
-    fontSize: FONT_SIZE.sm, color: NICO.textMuted, fontWeight: FONT_WEIGHT.semiBold,
-    paddingHorizontal: SPACING.base, paddingBottom: SPACING.sm, lineHeight: 18,
+    fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold,
+    paddingHorizontal: SPACING.base, paddingBottom: SPACING.sm, lineHeight: 21,
   },
   tutorialsHintAsterisk: { color: NICO.error, fontWeight: FONT_WEIGHT.black },
 });

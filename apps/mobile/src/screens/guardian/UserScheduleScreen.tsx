@@ -364,10 +364,10 @@ export default function UserScheduleScreen() {
           return (
             <View key={dow} style={s.dayBlock}>
               {dayTemplates.length === 0 ? (
-                <AppText style={s.dayLabel}>{day.toUpperCase()} - No Classes</AppText>
+                <AppText style={[s.dayLabel, s.dayLabelEmpty]}>{day.toUpperCase()} - No Classes</AppText>
               ) : (
                 <>
-                  <AppText style={s.dayLabel}>{day.toUpperCase()}</AppText>
+                  <AppText style={[s.dayLabel, s.dayLabelEmpty]}>{day.toUpperCase()}</AppText>
                   {dayTemplates.map(t => (
                     <View key={t.id} style={[s.classCard, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
                       <AppText style={s.classEmoji}>{t.emoji}</AppText>
@@ -454,18 +454,29 @@ export default function UserScheduleScreen() {
     <View style={s.container}>
       <RainbowDivider />
 
+      <View style={s.topNoteBox}>
+        <AppText style={s.topNote}>
+          <AppText style={s.topNoteAsterisk}>*** </AppText>
+          Add schedule for learner's classes
+        </AppText>
+      </View>
+
       {/* Tab bar */}
       <View style={s.tabBar}>
+        {/* Weekly tab — temporarily disabled
         <TouchableOpacity style={[s.tab, tab === 'weekly' && s.tabActive]} onPress={() => setTab('weekly')} activeOpacity={0.75}>
           <AppText style={[s.tabTxt, tab === 'weekly' && s.tabTxtActive]}>📅  Weekly</AppText>
         </TouchableOpacity>
+        */}
+        {/* One-off tab — temporarily disabled
         <TouchableOpacity style={[s.tab, tab === 'oneoff' && s.tabActive]} onPress={() => setTab('oneoff')} activeOpacity={0.75}>
           <AppText style={[s.tabTxt, tab === 'oneoff' && s.tabTxtActive]}>✨  One-off</AppText>
         </TouchableOpacity>
+        */}
       </View>
 
       <View style={s.tabPane}>
-        {/* Add button for one-off tab */}
+        {/* Add button for one-off tab — temporarily disabled
         {tab === 'oneoff' && (
           <View style={s.ooTopRow}>
             <TouchableOpacity style={s.addPill} onPress={openOneoffSheet} activeOpacity={0.8}>
@@ -473,8 +484,9 @@ export default function UserScheduleScreen() {
             </TouchableOpacity>
           </View>
         )}
+        */}
 
-        {tab === 'weekly' ? renderWeekly() : renderOneoff()}
+        {tab === 'weekly' ? renderWeekly() : null /* renderOneoff() — temporarily disabled */}
       </View>
 
       {/* ── Add Weekly Class sheet ── */}
@@ -635,6 +647,13 @@ export default function UserScheduleScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: NICO.screenBg },
+  topNoteBox: {
+    backgroundColor: NICO.background, borderRadius: RADIUS.lg,
+    marginHorizontal: SPACING.base, marginTop: SPACING.sm,
+    paddingHorizontal: SPACING.base, paddingVertical: SPACING.sm,
+  },
+  topNote: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
+  topNoteAsterisk: { color: NICO.error, fontWeight: FONT_WEIGHT.black },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: SPACING.sm, padding: SPACING.xl, backgroundColor: NICO.screenBg },
   emptyEmoji: { fontSize: scale(44), marginBottom: SPACING.xs },
   emptyTitle: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
@@ -661,6 +680,7 @@ const s = StyleSheet.create({
 
   dayBlock: { marginBottom: SPACING.base },
   dayLabel: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: SPACING.sm },
+  dayLabelEmpty: { fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
 
   classCard: {
     borderRadius: RADIUS.lg,
