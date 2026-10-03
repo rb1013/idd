@@ -162,6 +162,10 @@ export const TUTORIAL_AUDIO = ['None', 'Calm Music', 'Upbeat Music'];
 export const TUTORIAL_DURATIONS = [15, 20, 25, 30];
 export const TUTORIAL_COMPREHENSION = ['easy', 'medium', 'complex', 'fluent'];
 
+// The app is California-only for now — state fields are hardcoded/disabled
+// to this value rather than offering a dropdown of all US states.
+export const FIXED_STATE = 'California';
+
 export const US_STATES = [
   'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California',
   'Colorado', 'Connecticut', 'Delaware', 'Florida', 'Georgia',

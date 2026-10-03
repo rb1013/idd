@@ -11,7 +11,7 @@ import AppText from '../../components/AppText';
 import ContentContainer from '../../components/ContentContainer';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
-import { US_STATES } from '../../constants/usStates';
+import { FIXED_STATE } from '../../constants/usStates';
 import { validatePhone, buildE164 } from '../../constants/countryCodes';
 import { emailError, passwordError, passwordMatchError } from '../../lib/validators';
 import {
@@ -28,8 +28,6 @@ export default function RegisterScreen() {
   const [password, setPassword]   = useState('');
   const [confirm, setConfirm]     = useState('');
   const [city, setCity]           = useState('');
-  const [state, setState]         = useState('');
-  const [showStatePicker, setShowStatePicker] = useState(false);
 
   const [tagOptions, setTagOptions]           = useState<string[]>([]);
   const [selectedTags, setSelectedTags]       = useState<string[]>([]);
@@ -63,7 +61,7 @@ export default function RegisterScreen() {
   }
 
   async function handleRegister() {
-    if (!fullName || !email || !password || !state || !city.trim()) { Alert.alert('Please fill in all required fields'); return; }
+    if (!fullName || !email || !password || !city.trim()) { Alert.alert('Please fill in all required fields'); return; }
     const emailErr = emailError(email);
     if (emailErr) { Alert.alert('Invalid email', emailErr); return; }
     const pwdErr = passwordError(password);
@@ -103,7 +101,7 @@ export default function RegisterScreen() {
       fullName,
       phone: buildE164('+1', phone),
       city: city.trim() || null,
-      state: state || null,
+      state: FIXED_STATE,
       selectedTags,
       pin,
       photoUri: photoUri || null,
@@ -202,12 +200,9 @@ export default function RegisterScreen() {
         </View>
 
         <AppText style={styles.label}>State</AppText>
-        <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowStatePicker(true)} activeOpacity={0.7}>
-          <AppText style={[styles.pickerBtnText, !state && styles.placeholder]}>
-            {state || 'Select state...'}
-          </AppText>
-          <AppText style={styles.chevron}>▾</AppText>
-        </TouchableOpacity>
+        <View style={[styles.input, styles.readOnly]}>
+          <AppText style={styles.readOnlyText}>{FIXED_STATE}</AppText>
+        </View>
 
         <AppText style={styles.label}>City</AppText>
         <TextInput
@@ -282,36 +277,6 @@ export default function RegisterScreen() {
         </TouchableOpacity>
         </ContentContainer>
       </ScrollView>
-
-      {/* State picker modal */}
-      <Modal visible={showStatePicker} animationType="slide" transparent onRequestClose={() => setShowStatePicker(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <AppText style={styles.modalTitle}>Select State</AppText>
-              <TouchableOpacity onPress={() => setShowStatePicker(false)}>
-                <AppText style={styles.modalClose}>Done</AppText>
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={US_STATES}
-              keyExtractor={item => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[styles.listItem, state === item && styles.listItemSelected]}
-                  onPress={() => { setState(item); setShowStatePicker(false); }}
-                >
-                  <AppText style={[styles.listItemText, state === item && styles.listItemTextSelected]}>
-                    {item}
-                  </AppText>
-                  {state === item && <AppText style={styles.listCheck}>✓</AppText>}
-                </TouchableOpacity>
-              )}
-              ItemSeparatorComponent={() => <View style={styles.listDivider} />}
-            />
-          </View>
-        </View>
-      </Modal>
 
       {/* Learner situation picker modal */}
       <Modal visible={showTagPicker} animationType="slide" transparent onRequestClose={() => setShowTagPicker(false)}>

@@ -12,7 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COMPREHENSION_LEVELS, GENDERS, LANGUAGES, US_STATES } from '../../constants';
+import { COMPREHENSION_LEVELS, GENDERS, LANGUAGES, FIXED_STATE } from '../../constants';
 import DropdownPicker from '../../components/DropdownPicker';
 import type { Category } from '../../types';
 import MultiSelectChips from '../../components/MultiSelectChips';
@@ -52,7 +52,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
   const [city, setCity] = useState('');
-  const [region, setRegion] = useState('');
+  const region = FIXED_STATE;
   const [country, setCountry] = useState('USA');
   const [selectedLikes, setSelectedLikes] = useState<string[]>([]);
   const [selectedDislikes, setSelectedDislikes] = useState<string[]>([]);
@@ -97,7 +97,6 @@ export default function EditUserScreen({ navigation, route }: Props) {
       setUsername(p.username || '');
       setLanguages(p.languages || []);
       setCity(p.city || '');
-      setRegion(p.region || '');
       setCountry(p.country || 'USA');
       setExistingPhotoUrl(p.photo_url || null);
       setComprehension(chatRes.data?.comprehension_level || 'easy');
@@ -127,7 +126,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
   }
 
   async function handleSave() {
-    if (!name || !dob || !gender || !city || !region) { Alert.alert('Please fill in all required fields'); return; }
+    if (!name || !dob || !gender || !city) { Alert.alert('Please fill in all required fields'); return; }
     setLoading(true);
 
     let photo_url = existingPhotoUrl;
@@ -340,7 +339,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
           <View>
             <AppText style={styles.sectionTitle}>Location</AppText>
             <DropdownPicker label="Country" value={country} options={['USA']} onSelect={setCountry} disabled />
-            <DropdownPicker label="State *" value={region} options={US_STATES} onSelect={setRegion} placeholder="Select state..." />
+            <DropdownPicker label="State" value={region} options={[region]} onSelect={() => {}} disabled />
             <Field label="City *" value={city} onChangeText={setCity} placeholder="e.g. Austin" />
           </View>
         )}

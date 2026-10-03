@@ -7,7 +7,7 @@ import AppText from '../../components/AppText';
 import ContentContainer from '../../components/ContentContainer';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { US_STATES } from '../../constants/usStates';
+import { FIXED_STATE } from '../../constants/usStates';
 import { validatePhone, buildE164 } from '../../constants/countryCodes';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -23,12 +23,10 @@ export default function GuardianEditAccountScreen() {
     const raw = guardian?.phone ?? '';
     return raw.startsWith('+1') ? raw.slice(2) : raw.replace(/\D/g, '');
   });
-  const [state, setState]               = useState(guardian?.state ?? '');
   const [city, setCity]                 = useState(guardian?.city ?? '');
   const [selectedTags, setSelectedTags] = useState<string[]>(guardian?.situation_tags ?? []);
 
   const [tagOptions, setTagOptions]           = useState<string[]>([]);
-  const [showStatePicker, setShowStatePicker] = useState(false);
   const [showTagPicker, setShowTagPicker]     = useState(false);
   const [saving, setSaving]                   = useState(false);
 
@@ -62,7 +60,7 @@ export default function GuardianEditAccountScreen() {
     const { error } = await supabase.from('guardians').update({
       full_name:      name.trim(),
       phone:          buildE164('+1', phone),
-      state:          state || null,
+      state:          FIXED_STATE,
       city:           city.trim() || null,
       country:        'USA',
       situation_tags: selectedTags,
@@ -129,12 +127,9 @@ export default function GuardianEditAccountScreen() {
 
           <View style={s.field}>
             <AppText style={s.label}>State</AppText>
-            <TouchableOpacity style={s.pickerBtn} onPress={() => setShowStatePicker(true)} activeOpacity={0.7}>
-              <AppText style={[s.pickerBtnText, !state && { color: NICO.textMuted }]}>
-                {state || 'Select state...'}
-              </AppText>
-              <AppText style={s.chevron}>▾</AppText>
-            </TouchableOpacity>
+            <View style={s.readonlyInput}>
+              <AppText style={s.readonlyText}>{FIXED_STATE}</AppText>
+            </View>
           </View>
 
           <View style={s.field}>
@@ -187,34 +182,6 @@ export default function GuardianEditAccountScreen() {
 
         </ContentContainer>
       </ScrollView>
-
-      {/* State picker */}
-      <Modal visible={showStatePicker} animationType="slide" transparent onRequestClose={() => setShowStatePicker(false)}>
-        <View style={s.modalOverlay}>
-          <View style={s.modalCard}>
-            <View style={s.modalHeader}>
-              <AppText style={s.modalTitle}>Select State</AppText>
-              <TouchableOpacity onPress={() => setShowStatePicker(false)}>
-                <AppText style={s.modalClose}>Done</AppText>
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={US_STATES}
-              keyExtractor={item => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[s.listItem, state === item && s.listItemSelected]}
-                  onPress={() => { setState(item); setShowStatePicker(false); }}
-                >
-                  <AppText style={[s.listItemText, state === item && s.listItemTextSelected]}>{item}</AppText>
-                  {state === item && <AppText style={s.listCheck}>✓</AppText>}
-                </TouchableOpacity>
-              )}
-              ItemSeparatorComponent={() => <View style={s.listDivider} />}
-            />
-          </View>
-        </View>
-      </Modal>
 
       {/* Tag picker */}
       <Modal visible={showTagPicker} animationType="slide" transparent onRequestClose={() => setShowTagPicker(false)}>

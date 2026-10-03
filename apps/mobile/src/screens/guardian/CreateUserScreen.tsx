@@ -12,7 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { saveBiometricUser, saveCredentialSnapshot } from '../../lib/biometricStore';
-import { COMPREHENSION_LEVELS, GENDERS, LANGUAGES, US_STATES } from '../../constants';
+import { COMPREHENSION_LEVELS, GENDERS, LANGUAGES, FIXED_STATE } from '../../constants';
 import DropdownPicker from '../../components/DropdownPicker';
 import { Category } from '../../types';
 import MultiSelectChips from '../../components/MultiSelectChips';
@@ -58,7 +58,7 @@ export default function CreateUserScreen({ navigation }: Props) {
   const [languages, setLanguages] = useState<string[]>([]);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [city, setCity] = useState('');
-  const [region, setRegion] = useState('');
+  const region = FIXED_STATE;
   const [country, setCountry] = useState('USA');
   const [selectedLikes, setSelectedLikes] = useState<string[]>([]);
   const [selectedDislikes, setSelectedDislikes] = useState<string[]>([]);
@@ -115,7 +115,7 @@ export default function CreateUserScreen({ navigation }: Props) {
   }
 
   async function handleSubmit() {
-    if (!name || !dob || !gender || !city || !region) { Alert.alert('Please fill in all required fields'); return; }
+    if (!name || !dob || !gender || !city) { Alert.alert('Please fill in all required fields'); return; }
     if (!username.trim()) { Alert.alert('Please enter a username'); return; }
 
     // Always do a fresh check at submit time in case the debounce hasn't fired yet
@@ -345,11 +345,11 @@ export default function CreateUserScreen({ navigation }: Props) {
             />
 
             <DropdownPicker
-              label="State *"
+              label="State"
               value={region}
-              options={US_STATES}
-              onSelect={setRegion}
-              placeholder="Select state..."
+              options={[region]}
+              onSelect={() => {}}
+              disabled
             />
 
             <Field label="City *" value={city} onChangeText={setCity} placeholder="e.g. Austin" />
