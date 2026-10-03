@@ -651,9 +651,6 @@ export default function LearnerFriendsScreen() {
                       {f.guardianName && (
                         <AppText style={s.cardMeta}>Guardian: {f.guardianName}</AppText>
                       )}
-                      {f.medicalConditions.length > 0 && (
-                        <AppText style={s.cardMedical}>🏥 {f.medicalConditions.join(', ')}</AppText>
-                      )}
                     </View>
                     {removing === f.friendshipId ? (
                       <ActivityIndicator size="small" color={NICO.error} style={s.cardCornerIcon} />
@@ -680,6 +677,11 @@ export default function LearnerFriendsScreen() {
                           <AppText style={s.infoIconTxt}>i</AppText>
                         </View>
                       </TouchableOpacity>
+                    </View>
+                  )}
+                  {f.medicalConditions.length > 0 && (
+                    <View style={s.medicalStrip}>
+                      <AppText style={s.cardMedical}>🏥 {f.medicalConditions.join(', ')}</AppText>
                     </View>
                   )}
                 </TouchableOpacity>
@@ -740,26 +742,35 @@ export default function LearnerFriendsScreen() {
                   const isProcessing = processing === req.friendshipId;
                   const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
                   return (
-                    <View key={req.friendshipId} style={[s.card, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
-                      <Avatar name={req.requesterName} photo={req.requesterPhoto} size={scale(52)} />
-                      <View style={s.cardInfo}>
-                        <AppText style={s.cardName}>{req.requesterName}</AppText>
-                        <AppText style={s.cardMeta}>{req.requesterAge} yrs · {req.requesterCity}, {req.requesterRegion}</AppText>
-                        {req.requesterGuardianName && <AppText style={s.cardMeta}>Guardian: {req.requesterGuardianName}</AppText>}
-                        {req.medicalConditions.length > 0 && <AppText style={s.cardMedical}>🏥 {req.medicalConditions.join(', ')}</AppText>}
+                    <View key={req.friendshipId} style={[s.card, s.cardColumn, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
+                      <View style={s.cardMainRow}>
+                        <View style={s.avatarCol}>
+                          <Avatar name={req.requesterName} photo={req.requesterPhoto} size={scale(52)} />
+                          {req.requesterAge > 0 && <AppText style={s.avatarAge}>{req.requesterAge} yrs</AppText>}
+                        </View>
+                        <View style={s.cardInfo}>
+                          <AppText style={s.cardName}>{req.requesterName}</AppText>
+                          <AppText style={s.cardMeta}>{req.requesterCity}, {req.requesterRegion}</AppText>
+                          {req.requesterGuardianName && <AppText style={s.cardMeta}>Guardian: {req.requesterGuardianName}</AppText>}
+                        </View>
+                        <View style={s.reqActions}>
+                          {isProcessing ? <ActivityIndicator color={NICO.primary} /> : (
+                            <>
+                              <TouchableOpacity style={[s.reqBtn, s.acceptBtn]} onPress={() => accept(req)} activeOpacity={0.8}>
+                                <AppText style={s.acceptBtnTxt}>✓ Accept</AppText>
+                              </TouchableOpacity>
+                              <TouchableOpacity style={[s.reqBtn, s.declineBtn]} onPress={() => decline(req)} activeOpacity={0.8}>
+                                <AppText style={s.declineBtnTxt}>Decline</AppText>
+                              </TouchableOpacity>
+                            </>
+                          )}
+                        </View>
                       </View>
-                      <View style={s.reqActions}>
-                        {isProcessing ? <ActivityIndicator color={NICO.primary} /> : (
-                          <>
-                            <TouchableOpacity style={[s.reqBtn, s.acceptBtn]} onPress={() => accept(req)} activeOpacity={0.8}>
-                              <AppText style={s.acceptBtnTxt}>✓ Accept</AppText>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[s.reqBtn, s.declineBtn]} onPress={() => decline(req)} activeOpacity={0.8}>
-                              <AppText style={s.declineBtnTxt}>Decline</AppText>
-                            </TouchableOpacity>
-                          </>
-                        )}
-                      </View>
+                      {req.medicalConditions.length > 0 && (
+                        <View style={s.medicalStrip}>
+                          <AppText style={s.cardMedical}>🏥 {req.medicalConditions.join(', ')}</AppText>
+                        </View>
+                      )}
                     </View>
                   );
                 })}
@@ -778,21 +789,30 @@ export default function LearnerFriendsScreen() {
                   const isProcessing = processing === req.friendshipId;
                   const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
                   return (
-                    <View key={req.friendshipId} style={[s.card, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
-                      <Avatar name={req.requesterName} photo={req.requesterPhoto} size={scale(52)} />
-                      <View style={s.cardInfo}>
-                        <AppText style={s.cardName}>{req.requesterName}</AppText>
-                        <AppText style={s.cardMeta}>{req.requesterAge} yrs · {req.requesterCity}, {req.requesterRegion}</AppText>
-                        {req.requesterGuardianName && <AppText style={s.cardMeta}>Guardian: {req.requesterGuardianName}</AppText>}
-                        {req.medicalConditions.length > 0 && <AppText style={s.cardMedical}>🏥 {req.medicalConditions.join(', ')}</AppText>}
+                    <View key={req.friendshipId} style={[s.card, s.cardColumn, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
+                      <View style={s.cardMainRow}>
+                        <View style={s.avatarCol}>
+                          <Avatar name={req.requesterName} photo={req.requesterPhoto} size={scale(52)} />
+                          {req.requesterAge > 0 && <AppText style={s.avatarAge}>{req.requesterAge} yrs</AppText>}
+                        </View>
+                        <View style={s.cardInfo}>
+                          <AppText style={s.cardName}>{req.requesterName}</AppText>
+                          <AppText style={s.cardMeta}>{req.requesterCity}, {req.requesterRegion}</AppText>
+                          {req.requesterGuardianName && <AppText style={s.cardMeta}>Guardian: {req.requesterGuardianName}</AppText>}
+                        </View>
+                        <View style={s.reqActions}>
+                          {isProcessing ? <ActivityIndicator color={NICO.textMuted} /> : (
+                            <TouchableOpacity style={[s.reqBtn, s.cancelBtn]} onPress={() => cancelRequest(req)} activeOpacity={0.8}>
+                              <AppText style={s.cancelBtnTxt}>Cancel</AppText>
+                            </TouchableOpacity>
+                          )}
+                        </View>
                       </View>
-                      <View style={s.reqActions}>
-                        {isProcessing ? <ActivityIndicator color={NICO.textMuted} /> : (
-                          <TouchableOpacity style={[s.reqBtn, s.cancelBtn]} onPress={() => cancelRequest(req)} activeOpacity={0.8}>
-                            <AppText style={s.cancelBtnTxt}>Cancel</AppText>
-                          </TouchableOpacity>
-                        )}
-                      </View>
+                      {req.medicalConditions.length > 0 && (
+                        <View style={s.medicalStrip}>
+                          <AppText style={s.cardMedical}>🏥 {req.medicalConditions.join(', ')}</AppText>
+                        </View>
+                      )}
                     </View>
                   );
                 })}
@@ -852,45 +872,49 @@ export default function LearnerFriendsScreen() {
               const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
               return (
                 <TouchableOpacity
-                  style={[s.card, { backgroundColor: tileBg, borderColor: 'transparent' }]}
+                  style={[s.card, s.cardColumn, { backgroundColor: tileBg, borderColor: 'transparent' }]}
                   onPress={() => navigation.navigate('LearnerPublicProfile', { learnerId: l.id })}
                   activeOpacity={0.85}
                 >
-                  <View style={s.avatarCol}>
-                    <Avatar name={l.name} photo={l.photo_url} size={scale(52)} />
-                    {calcAge(l.date_of_birth) != null && <AppText style={s.avatarAge}>{calcAge(l.date_of_birth)} yrs</AppText>}
-                  </View>
-                  <View style={s.cardInfo}>
-                    <AppText style={s.cardName} numberOfLines={1}>{l.name}</AppText>
-                    <AppText style={s.cardMeta} numberOfLines={1}>
-                      {l.city}{l.region ? `, ${l.region}` : ''}
-                    </AppText>
-                    {l.guardianName && (
-                      <AppText style={s.cardMeta}>Guardian: {l.guardianName}</AppText>
+                  <View style={s.cardMainRow}>
+                    <View style={s.avatarCol}>
+                      <Avatar name={l.name} photo={l.photo_url} size={scale(52)} />
+                      {calcAge(l.date_of_birth) != null && <AppText style={s.avatarAge}>{calcAge(l.date_of_birth)} yrs</AppText>}
+                    </View>
+                    <View style={s.cardInfo}>
+                      <AppText style={s.cardName} numberOfLines={1}>{l.name}</AppText>
+                      <AppText style={s.cardMeta} numberOfLines={1}>
+                        {l.city}{l.region ? `, ${l.region}` : ''}
+                      </AppText>
+                      {l.guardianName && (
+                        <AppText style={s.cardMeta}>Guardian: {l.guardianName}</AppText>
+                      )}
+                    </View>
+                    {l.connectionStatus === 'accepted' && (
+                      <View style={s.friendBadge}><AppText style={s.friendBadgeTxt}>✓ Friends</AppText></View>
                     )}
-                    {l.medicalConditions.length > 0 && (
+                    {l.connectionStatus === 'pending_sent' && (
+                      <View style={s.pendingBadge}><AppText style={s.pendingBadgeTxt}>Pending</AppText></View>
+                    )}
+                    {l.connectionStatus === 'pending_received' && (
+                      <TouchableOpacity style={[s.reqBtn, s.respondBtn]} onPress={() => setTab('requests')} activeOpacity={0.8}>
+                        <AppText style={s.respondBtnTxt}>Respond</AppText>
+                      </TouchableOpacity>
+                    )}
+                    {l.connectionStatus === 'none' && (
+                      <TouchableOpacity style={[s.reqBtn, s.connectBtn, isSending && s.btnDisabled]}
+                        onPress={() => sendRequest(l)} disabled={isSending} activeOpacity={0.8}>
+                        {isSending
+                          ? <ActivityIndicator size="small" color={NICO.textOnAccent} />
+                          : <AppText style={s.connectBtnTxt}>Connect</AppText>
+                        }
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  {l.medicalConditions.length > 0 && (
+                    <View style={s.medicalStrip}>
                       <AppText style={s.cardMedical}>🏥 {l.medicalConditions.join(', ')}</AppText>
-                    )}
-                  </View>
-                  {l.connectionStatus === 'accepted' && (
-                    <View style={s.friendBadge}><AppText style={s.friendBadgeTxt}>✓ Friends</AppText></View>
-                  )}
-                  {l.connectionStatus === 'pending_sent' && (
-                    <View style={s.pendingBadge}><AppText style={s.pendingBadgeTxt}>Pending</AppText></View>
-                  )}
-                  {l.connectionStatus === 'pending_received' && (
-                    <TouchableOpacity style={[s.reqBtn, s.respondBtn]} onPress={() => setTab('requests')} activeOpacity={0.8}>
-                      <AppText style={s.respondBtnTxt}>Respond</AppText>
-                    </TouchableOpacity>
-                  )}
-                  {l.connectionStatus === 'none' && (
-                    <TouchableOpacity style={[s.reqBtn, s.connectBtn, isSending && s.btnDisabled]}
-                      onPress={() => sendRequest(l)} disabled={isSending} activeOpacity={0.8}>
-                      {isSending
-                        ? <ActivityIndicator size="small" color={NICO.textOnAccent} />
-                        : <AppText style={s.connectBtnTxt}>Connect</AppText>
-                      }
-                    </TouchableOpacity>
+                    </View>
                   )}
                 </TouchableOpacity>
               );
@@ -1083,10 +1107,18 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: 'transparent',
     ...SHADOW.md,
   },
-  // Friends-tab card needs a second row below (Reported pill) — stack instead of a single row.
+  // Cards needing extra rows below the main one (Reported pill, medical-conditions strip) — stack instead of a single row.
   cardColumn:   { flexDirection: 'column', alignItems: 'stretch', gap: 0 },
   cardMainRow:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   cardInfo:    { flex: 1, minWidth: 0, gap: 2 },
+  // Bleeds past the card's own padding to span edge-to-edge and sit flush against its bottom corners.
+  medicalStrip: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: NICO.background,
+    marginTop: SPACING.sm, marginHorizontal: -SPACING.md, marginBottom: -SPACING.md,
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+    borderBottomLeftRadius: RADIUS.xl, borderBottomRightRadius: RADIUS.xl,
+  },
   cardName:    { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
   cardMeta:    { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.medium },
   cardMedical: { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.medium },

@@ -226,6 +226,14 @@ export default function GuardianNotificationsScreen() {
           keyExtractor={n => n.id}
           contentContainerStyle={s.list}
           renderItem={({ item: n }) => renderCard(n)}
+          ListHeaderComponent={
+            activeTab === 'tutorials' ? (
+              <AppText style={s.tutorialsHint}>
+                <AppText style={s.tutorialsHintAsterisk}>*** </AppText>
+                Tutorial approvals and rejections from the last 48 hours will appear here..
+              </AppText>
+            ) : null
+          }
           ListEmptyComponent={
             <View style={s.empty}>
               <AppText style={s.emptyEmoji}>🔔</AppText>
@@ -315,4 +323,9 @@ const s = StyleSheet.create({
   emptyEmoji: { fontSize: 56 },
   emptyText:  { ...TEXT_STYLE.cardTitle },
   emptyHint:  { ...TEXT_STYLE.screenHint, textAlign: 'center', paddingHorizontal: SPACING.xl },
+  tutorialsHint: {
+    fontSize: FONT_SIZE.sm, color: NICO.textMuted, fontWeight: FONT_WEIGHT.semiBold,
+    paddingHorizontal: SPACING.base, paddingBottom: SPACING.sm, lineHeight: 18,
+  },
+  tutorialsHintAsterisk: { color: NICO.error, fontWeight: FONT_WEIGHT.black },
 });

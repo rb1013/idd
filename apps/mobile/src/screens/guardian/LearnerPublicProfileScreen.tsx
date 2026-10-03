@@ -32,6 +32,7 @@ interface LearnerProfile {
   city: string;
   region: string;
   country: string;
+  guardianName: string | null;
   likes: string[];
   dislikes: string[];
   abilities: string[];
@@ -67,7 +68,7 @@ export default function LearnerPublicProfileScreen() {
       { data: chat },
       { data: medicalData },
     ] = await Promise.all([
-      supabase.from('user_profiles').select('id, name, date_of_birth, photo_url, city, region, country, languages').eq('id', learnerId).single(),
+      supabase.from('user_profiles').select('id, name, date_of_birth, photo_url, city, region, country, languages, guardian_id').eq('id', learnerId).single(),
       supabase.from('user_profiles').select('id').eq('guardian_id', guardianId),
       supabase.from('user_likes').select('categories(name)').eq('user_id', learnerId),
       supabase.from('user_dislikes').select('categories(name)').eq('user_id', learnerId),
@@ -80,6 +81,12 @@ export default function LearnerPublicProfileScreen() {
 
     const myIds = (mine ?? []).map((r: any) => r.id);
     setMyLearnerIds(myIds);
+
+    let guardianName: string | null = null;
+    if (p.guardian_id) {
+      const { data: g } = await supabase.from('guardians').select('full_name').eq('id', p.guardian_id).single();
+      guardianName = g?.full_name ?? null;
+    }
 
     let connectionStatus: ConnectionStatus = 'none';
     if (myIds.length > 0) {
@@ -107,6 +114,7 @@ export default function LearnerPublicProfileScreen() {
       city: p.city,
       region: p.region,
       country: p.country,
+      guardianName,
       likes: (likes ?? []).map((r: any) => r.categories?.name).filter(Boolean),
       dislikes: (dislikes ?? []).map((r: any) => r.categories?.name).filter(Boolean),
       abilities: (abilities ?? []).map((r: any) => r.categories?.name).filter(Boolean),
@@ -166,6 +174,9 @@ export default function LearnerPublicProfileScreen() {
           <AppText style={s.subMeta}>
             {calcAge(profile.date_of_birth) ?? '—'} years old · {profile.city}, {profile.region}
           </AppText>
+          {profile.guardianName && (
+            <AppText style={s.guardianMeta}>Guardian: {profile.guardianName}</AppText>
+          )}
         </View>
 
         {/* About */}
@@ -248,8 +259,9 @@ const s = StyleSheet.create({
   },
   avatar: { width: scale(88), height: scale(88), borderRadius: scale(44), justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   avatarInitial: { fontSize: IS_TABLET ? FONT_SIZE['5xl'] : FONT_SIZE['4xl'], fontWeight: FONT_WEIGHT.black, color: '#fff' },
-  name: { fontSize: IS_TABLET ? FONT_SIZE['3xl'] : FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.text },
-  subMeta: { fontSize: IS_TABLET ? FONT_SIZE.md : FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold },
+  name: { fontSize: IS_TABLET ? FONT_SIZE['4xl'] : FONT_SIZE['3xl'], fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  subMeta: { fontSize: IS_TABLET ? FONT_SIZE.lg : FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold },
+  guardianMeta: { fontSize: IS_TABLET ? FONT_SIZE.lg : FONT_SIZE.md, color: NICO.textMuted, fontWeight: FONT_WEIGHT.semiBold },
 
   section: {
     backgroundColor: NICO.surface, borderRadius: RADIUS.xl, paddingHorizontal: SPACING.base, paddingVertical: SPACING.xs,
@@ -259,8 +271,8 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'flex-start',
     paddingVertical: SPACING.sm + 3, borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  infoLabel: { fontSize: IS_TABLET ? FONT_SIZE.md : FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, width: scale(140), marginRight: SPACING.md },
-  infoValue: { fontSize: IS_TABLET ? FONT_SIZE.md : FONT_SIZE.sm, color: NICO.text, flex: 1, fontWeight: FONT_WEIGHT.medium, textTransform: 'capitalize' },
+  infoLabel: { fontSize: IS_TABLET ? FONT_SIZE.lg : FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, width: scale(140), marginRight: SPACING.md },
+  infoValue: { fontSize: IS_TABLET ? FONT_SIZE.lg : FONT_SIZE.md, color: NICO.text, flex: 1, fontWeight: FONT_WEIGHT.medium, textTransform: 'capitalize' },
   infoEmpty: { color: NICO.textMuted, fontStyle: 'italic', textTransform: 'none' },
 
   actionCard: {
@@ -268,10 +280,10 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: NICO.border,
   },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  statusIcon: { fontSize: IS_TABLET ? FONT_SIZE['2xl'] : FONT_SIZE.xl },
-  statusText: { fontSize: IS_TABLET ? FONT_SIZE.lg : FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, flex: 1 },
-  connectHint: { fontSize: IS_TABLET ? FONT_SIZE.md : FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 18 },
+  statusIcon: { fontSize: IS_TABLET ? FONT_SIZE['3xl'] : FONT_SIZE['2xl'] },
+  statusText: { fontSize: IS_TABLET ? FONT_SIZE.xl : FONT_SIZE.lg, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, flex: 1 },
+  connectHint: { fontSize: IS_TABLET ? FONT_SIZE.lg : FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 21 },
   connectBtn:     { ...BTN_SIZE.lg, ...BTN_VARIANT.primary },
   btnDisabled:    { opacity: 0.6 },
-  connectBtnText: { color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.bold, fontSize: IS_TABLET ? FONT_SIZE.lg : FONT_SIZE.md },
+  connectBtnText: { color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.bold, fontSize: IS_TABLET ? FONT_SIZE.xl : FONT_SIZE.lg },
 });

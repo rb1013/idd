@@ -157,8 +157,6 @@ export default function LearnerSelectScreen() {
         <ContentContainer>
           <View style={s.body}>
 
-            <AppText style={s.pageHeadline}>Choose your path</AppText>
-
             {/* Guardian card */}
             <LinearGradient
               colors={[...BUTTERFLY_BORDER.colors]}
@@ -178,7 +176,7 @@ export default function LearnerSelectScreen() {
                     )}
                   </View>
                   <View style={s.cardTextCol}>
-                    <AppText style={s.cardEyebrow}>Oversee &amp; Mentor</AppText>
+                    <AppText style={s.cardEyebrow}>Mentor &amp; Connect</AppText>
                     <AppText style={s.cardTitle}>{guardian?.full_name ?? 'Guardian'}</AppText>
                     <AppText style={s.cardSubtitle}>Manage your network and support each learner.</AppText>
                   </View>
@@ -376,11 +374,6 @@ const s = StyleSheet.create({
 
   body: { paddingHorizontal: SPACING.base, paddingTop: SPACING.xl, gap: SPACING.xl },
 
-  pageHeadline: {
-    fontSize: FONT_SIZE['5xl'], fontWeight: FONT_WEIGHT.black, color: NICO.text,
-    alignSelf: 'flex-start', marginBottom: SPACING.sm,
-  },
-
   // Cards
   cardBorder: {
     width:        '100%',
@@ -403,12 +396,12 @@ const s = StyleSheet.create({
   avatarFallback: { justifyContent: 'center', alignItems: 'center' },
   avatarInitial:  { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.black },
 
-  cardTextCol:  { flex: 1, gap: 2 },
+  cardTextCol:  { flex: 1, gap: SPACING.xs },
   cardEyebrow:  {
-    fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary,
+    fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.extraBold, color: NICO.success,
     textTransform: 'uppercase', letterSpacing: 0.6,
   },
-  cardTitle:    { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.black, color: NICO.text },
+  cardTitle:    { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
   cardSubtitle: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, marginTop: 2, lineHeight: 20 },
   cardLoading:  { alignSelf: 'flex-start', marginVertical: 2 },
   cardChevron:  { fontSize: FONT_SIZE['3xl'], color: NICO.textMuted, flexShrink: 0 },

@@ -289,9 +289,13 @@ export default function GuardianHomeScreen() {
                   </TouchableOpacity>
                 </LinearGradient>
               ) : null}
-              <AppText style={s.zoneLabel}>
-                {hasLearner ? `${firstname}'s zone` : 'Your Learner'}
-              </AppText>
+              {hasLearner ? (
+                <TouchableOpacity onPress={() => navigation.navigate('EditUser', { userId: learners[0].id })} activeOpacity={0.7}>
+                  <AppText style={s.zoneLabel}>{`${firstname}'s zone`}</AppText>
+                </TouchableOpacity>
+              ) : (
+                <AppText style={s.zoneLabel}>Your Learner</AppText>
+              )}
             </View>
 
             {hasLearner ? (
