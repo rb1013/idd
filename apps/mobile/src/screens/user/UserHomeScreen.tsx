@@ -66,9 +66,9 @@ const TILE_W = (CONTENT_W - 48 - 16) / 2;
 
 // Fixed feature colors — consistent with the guardian dashboard's own tile assignments
 const FRIENDS_COLOR    = BUTTERFLY_TILES[0]; // teal
-const ACTIVITIES_COLOR = BUTTERFLY_TILES[1]; // green
-const LEARN_COLOR      = BUTTERFLY_TILES[2]; // orange — matches guardian's own "Tutorials" tile
-const MOOD_COLOR       = BUTTERFLY_TILES[4]; // pink
+const ACTIVITIES_COLOR = BUTTERFLY_TILES[1]; // orange
+const LEARN_COLOR      = BUTTERFLY_TILES[2]; // pink — matches guardian's own "Tutorials" tile
+const MOOD_COLOR       = BUTTERFLY_TILES[4]; // coral
 
 // ── Schedule helpers ──────────────────────────────────────────────────────
 

@@ -47,15 +47,21 @@ Deno.serve(async (req) => {
     const senderId = callerUser.id;
 
     // Verify sender is a participant in the conversation
-    const { data: participant } = await supabaseAdmin
+    const { data: participant, error: participantError } = await supabaseAdmin
       .from('guardian_conversation_participants')
       .select('guardian_id')
       .eq('conversation_id', conversation_id)
       .eq('guardian_id', senderId)
-      .single();
+      .maybeSingle();
+
+    if (participantError) {
+      return new Response(JSON.stringify({ error: 'Participant check failed', detail: participantError.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (!participant) {
-      return new Response(JSON.stringify({ error: 'Not a participant' }), {
+      return new Response(JSON.stringify({ error: 'Not a participant', detail: `conversation_id=${conversation_id} sender_id=${senderId}` }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

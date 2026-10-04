@@ -823,7 +823,7 @@ export default function GuardianTutorialsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.createCard, { backgroundColor: BUTTERFLY_TILES[1].bg, borderColor: 'transparent' }]}
+            style={[styles.createCard, { backgroundColor: BUTTERFLY_TILES[4].bg, borderColor: 'transparent' }]}
             onPress={() => navigation.navigate('LinkYoutube')}
             activeOpacity={0.85}
           >

@@ -128,14 +128,19 @@ export const NICO = {
  * Assign by slot index: BUTTERFLY_TILES[index % 6]
  * Each entry: { bg, accent } where bg is the tile background and accent is
  * the text/icon/border colour.
+ *
+ * Order alternates warm/cool hues so that any two consecutive slots (and the
+ * wrap-around from 5 back to 0) stay visually distinct — teal/green and
+ * orange/coral are adjacent in hue and look near-identical as light tints,
+ * so they're kept apart here rather than placed next to each other.
  */
 export const BUTTERFLY_TILES = [
-  { bg: NICO.tealLight,   accent: NICO.teal   },  // 0 — left upper wing
-  { bg: NICO.greenLight,  accent: NICO.green  },  // 1 — teal-orange transition
-  { bg: NICO.orangeLight, accent: NICO.orange },  // 2 — center body
-  { bg: NICO.coralLight,  accent: NICO.coral  },  // 3 — warm tip
-  { bg: NICO.pinkLight,   accent: NICO.pink   },  // 4 — right upper wing
-  { bg: NICO.purpleLight, accent: NICO.purple },  // 5 — right wing
+  { bg: NICO.tealLight,   accent: NICO.teal   },  // 0
+  { bg: NICO.orangeLight, accent: NICO.orange },  // 1
+  { bg: NICO.pinkLight,   accent: NICO.pink   },  // 2
+  { bg: NICO.greenLight,  accent: NICO.green  },  // 3
+  { bg: NICO.coralLight,  accent: NICO.coral  },  // 4
+  { bg: NICO.purpleLight, accent: NICO.purple },  // 5
 ] as const;
 
 // Cycle shorthand: index % 6

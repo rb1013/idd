@@ -6,16 +6,20 @@ import {
 import { Filter } from 'bad-words';
 import wordConfig from '../../lib/badWordsList.json';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { GuardianNavParamList } from '../../navigation';
+import RainbowDivider from '../../components/RainbowDivider';
+import useNicoHeader from '../../hooks/useNicoHeader';
 import {
   NICO, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT, scale,
 } from '../../constants/theme';
 
 type Route = RouteProp<GuardianNavParamList, 'GuardianChat'>;
+type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
 interface GuardianMessage {
   id: string;
@@ -29,8 +33,11 @@ export default function GuardianChatScreen() {
   const { guardian, session } = useAuth();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
+  const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const { conversationId } = route.params;
+
+  useNicoHeader(navigation);
 
   const [messages, setMessages] = useState<GuardianMessage[]>([]);
   const [text, setText] = useState('');
@@ -138,6 +145,8 @@ export default function GuardianChatScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={headerHeight}
     >
+      <RainbowDivider />
+
       <FlatList
         ref={flatListRef}
         data={messages}

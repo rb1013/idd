@@ -18,7 +18,6 @@ import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import CountyFilterPill from '../../components/CountyFilterPill';
-import GuardianPeekSheet from '../../components/GuardianPeekSheet';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
   BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, CARD_BTN_ALIGN,
@@ -74,7 +73,6 @@ export default function GuardianConnectionsScreen() {
 
   const [activeTab, setActiveTab]               = useState<Tab>('connected');
   const [activeRequestsTab, setActiveRequestsTab] = useState<RequestsSubTab>('received');
-  const [peekGuardian, setPeekGuardian]         = useState<GuardianResult | null>(null);
   const [situationTagOptions, setSituationTagOptions] = useState<string[]>([]);
 
   const [results, setResults]       = useState<GuardianResult[]>([]);
@@ -317,7 +315,7 @@ export default function GuardianConnectionsScreen() {
   function renderConnectedCard(item: GuardianResult, index: number) {
     const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
     return (
-      <TouchableOpacity key={item.guardianId} style={[s.connectionCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+      <View key={item.guardianId} style={[s.connectionCard, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
         <View style={s.connectionRow}>
           {item.photoUrl ? (
             <Image source={{ uri: item.photoUrl }} style={s.connectionAvatar} />
@@ -336,7 +334,7 @@ export default function GuardianConnectionsScreen() {
             <View style={s.connectionActions}>
               <TouchableOpacity
                 style={s.connectionMsgBtn}
-                onPress={(e) => { e.stopPropagation(); openChat(item); }}
+                onPress={() => openChat(item)}
                 disabled={openingChat === item.guardianId}
                 activeOpacity={0.7}
               >
@@ -353,7 +351,7 @@ export default function GuardianConnectionsScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={s.disconnectBtn}
-                onPress={(e) => { e.stopPropagation(); disconnect(item); }}
+                onPress={() => disconnect(item)}
                 activeOpacity={0.7}
               >
                 <AppText style={s.disconnectIcon}>✕</AppText>
@@ -366,7 +364,7 @@ export default function GuardianConnectionsScreen() {
             <AppText style={s.connectionTagsText}>👥 {item.situationTags.join(', ')}</AppText>
           </View>
         )}
-      </TouchableOpacity>
+      </View>
     );
   }
 
@@ -377,7 +375,7 @@ export default function GuardianConnectionsScreen() {
       item.status === 'rejected'     ? { label: 'Rejected',   style: s.badgeRejected,  textStyle: s.badgeRejectedTxt  } :
       /* pending_sent */               { label: 'Pending',    style: s.badgePending,   textStyle: s.badgePendingTxt   };
     return (
-      <TouchableOpacity key={item.guardianId} style={[s.connectionCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+      <View key={item.guardianId} style={[s.connectionCard, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
         <View style={s.connectionRow}>
           {item.photoUrl ? (
             <Image source={{ uri: item.photoUrl }} style={s.connectionAvatar} />
@@ -399,7 +397,7 @@ export default function GuardianConnectionsScreen() {
             <AppText style={s.connectionTagsText}>👥 {item.situationTags.join(', ')}</AppText>
           </View>
         )}
-      </TouchableOpacity>
+      </View>
     );
   }
 
@@ -407,7 +405,7 @@ export default function GuardianConnectionsScreen() {
     const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
     const isProcessing = processing === item.guardianId;
     return (
-      <TouchableOpacity key={item.guardianId} style={[s.connectionCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+      <View key={item.guardianId} style={[s.connectionCard, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
         <View style={s.connectionRow}>
           {item.photoUrl ? (
             <Image source={{ uri: item.photoUrl }} style={s.connectionAvatar} />
@@ -427,14 +425,14 @@ export default function GuardianConnectionsScreen() {
             <View style={s.connectionActions}>
               <TouchableOpacity
                 style={[s.connectionMsgBtn, { backgroundColor: NICO.successLight, borderColor: NICO.success }]}
-                onPress={(e) => { e.stopPropagation(); accept(item); }}
+                onPress={() => accept(item)}
                 activeOpacity={0.7}
               >
                 <AppText style={[s.connectionMsgIcon, { color: NICO.success }]}>✓</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={s.disconnectBtn}
-                onPress={(e) => { e.stopPropagation(); decline(item); }}
+                onPress={() => decline(item)}
                 activeOpacity={0.7}
               >
                 <AppText style={s.disconnectIcon}>✕</AppText>
@@ -447,7 +445,7 @@ export default function GuardianConnectionsScreen() {
             <AppText style={s.connectionTagsText}>👥 {item.situationTags.join(', ')}</AppText>
           </View>
         )}
-      </TouchableOpacity>
+      </View>
     );
   }
 
@@ -456,7 +454,7 @@ export default function GuardianConnectionsScreen() {
     const isProcessing = processing === item.guardianId;
     const isSending    = sending === item.guardianId;
     return (
-      <TouchableOpacity key={item.guardianId} style={[s.connectionCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+      <View key={item.guardianId} style={[s.connectionCard, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
         <View style={s.connectionRow}>
           {item.photoUrl ? (
             <Image source={{ uri: item.photoUrl }} style={s.connectionAvatar} />
@@ -472,7 +470,7 @@ export default function GuardianConnectionsScreen() {
           {isProcessing || isSending ? (
             <ActivityIndicator color={NICO.primary} />
           ) : (
-            <TouchableOpacity style={s.connectionMsgBtn} onPress={(e) => { e.stopPropagation(); sendRequest(item); }} activeOpacity={0.8}>
+            <TouchableOpacity style={s.connectionMsgBtn} onPress={() => sendRequest(item)} activeOpacity={0.8}>
               <AppText style={s.connectionMsgIcon}>🤝</AppText>
             </TouchableOpacity>
           )}
@@ -482,7 +480,7 @@ export default function GuardianConnectionsScreen() {
             <AppText style={s.connectionTagsText}>👥 {item.situationTags.join(', ')}</AppText>
           </View>
         )}
-      </TouchableOpacity>
+      </View>
     );
   }
 
@@ -737,43 +735,6 @@ export default function GuardianConnectionsScreen() {
         </View>
       )}
 
-      {/* Quick-look modal */}
-      <GuardianPeekSheet
-        visible={!!peekGuardian}
-        onClose={() => setPeekGuardian(null)}
-        guardian={peekGuardian ? {
-          name: peekGuardian.guardianName,
-          photoUrl: peekGuardian.photoUrl || null,
-          county: peekGuardian.county,
-          situationTags: peekGuardian.situationTags,
-        } : null}
-        footer={peekGuardian && (
-          <View style={s.peekActions}>
-            {peekGuardian.status === 'accepted' ? (
-              <View style={[s.peekActionBtn, { backgroundColor: NICO.successLight }]}>
-                <AppText style={[s.peekActionTxt, { color: NICO.success }]}>✓ Connected</AppText>
-              </View>
-            ) : peekGuardian.status === 'pending_sent' ? (
-              <View style={[s.peekActionBtn, { backgroundColor: NICO.background }]}>
-                <AppText style={[s.peekActionTxt, { color: NICO.text }]}>Request Sent</AppText>
-              </View>
-            ) : peekGuardian.status === 'pending_received' ? (
-              <View style={{ flexDirection: 'row', gap: SPACING.md }}>
-                <TouchableOpacity style={[s.peekActionBtn, { flex: 1, backgroundColor: NICO.primary }]} onPress={() => { accept(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
-                  <AppText style={[s.peekActionTxt, { color: NICO.textOnAccent }]}>✓ Accept</AppText>
-                </TouchableOpacity>
-                <TouchableOpacity style={[s.peekActionBtn, { flex: 1, backgroundColor: NICO.errorLight }]} onPress={() => { decline(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
-                  <AppText style={[s.peekActionTxt, { color: NICO.error }]}>✕ Decline</AppText>
-                </TouchableOpacity>
-              </View>
-            ) : peekGuardian.status === 'rejected' ? (
-              <TouchableOpacity style={[s.peekActionBtn, { backgroundColor: NICO.primary }]} onPress={() => { sendRequest(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
-                <AppText style={[s.peekActionTxt, { color: NICO.textOnAccent }]}>Send Request Again</AppText>
-              </TouchableOpacity>
-            ) : null}
-          </View>
-        )}
-      />
       <GuardianFloatingTabBar />
     </View>
   );
@@ -927,9 +888,4 @@ const s = StyleSheet.create({
   emptyHint:   { ...TEXT_STYLE.screenHint, textAlign: 'center', paddingHorizontal: SPACING['2xl'] },
   emptyBtn:    { ...BTN_SIZE.md, ...BTN_VARIANT.primary, marginTop: SPACING.sm },
   emptyBtnTxt: { ...TEXT_STYLE.buttonSmall },
-
-  // Footer actions injected into the shared GuardianPeekSheet
-  peekActions:   { marginTop: SPACING.base },
-  peekActionBtn: { borderRadius: RADIUS.xl, paddingVertical: SPACING.base, alignItems: 'center' },
-  peekActionTxt: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold },
 });
