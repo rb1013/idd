@@ -176,6 +176,10 @@ function DatePicker({
   );
 }
 
+function RequiredLabel({ text }: { text: string }) {
+  return <AppText style={s.fieldLabel}>{text}<AppText style={s.required}> *</AppText></AppText>;
+}
+
 function EmojiRow({ emojis, selected, onSelect }: { emojis: string[]; selected: string; onSelect: (e: string) => void }) {
   return (
     <View style={s.emojiRow}>
@@ -492,7 +496,7 @@ export default function UserScheduleScreen() {
               <View style={s.sheetHandle} />
               <AppText style={s.sheetTitle}>Add {DAYS[addDay]} Class</AppText>
 
-              <AppText style={s.fieldLabel}>Class name</AppText>
+              <RequiredLabel text="Class name" />
               <TextInput
                 style={s.fieldInput}
                 value={wTitle}
@@ -501,7 +505,7 @@ export default function UserScheduleScreen() {
                 placeholderTextColor={NICO.textMuted}
               />
 
-              <AppText style={s.fieldLabel}>Emoji</AppText>
+              <RequiredLabel text="Emoji" />
               <EmojiRow
                 emojis={wSuggestions}
                 selected={wEmoji}
@@ -510,26 +514,26 @@ export default function UserScheduleScreen() {
 
               <View style={s.fieldRow}>
                 <View style={{ flex: 1 }}>
-                  <AppText style={s.fieldLabel}>Start time</AppText>
+                  <RequiredLabel text="Start time" />
                   <TimePicker value={wStart} onChange={setWStart} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <AppText style={s.fieldLabel}>End time</AppText>
+                  <RequiredLabel text="End time" />
                   <TimePicker value={wEnd} onChange={setWEnd} />
                 </View>
               </View>
 
               <View style={s.fieldRow}>
                 <View style={{ flex: 1 }}>
-                  <AppText style={s.fieldLabel}>Valid from</AppText>
+                  <RequiredLabel text="Valid from" />
                   <DatePicker value={wFrom} onChange={setWFrom} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <AppText style={s.fieldLabel}>Until</AppText>
+                  <RequiredLabel text="Until" />
                   <DatePicker value={wUntil} onChange={v => setWUntil(v)} minDate={wFrom} />
                 </View>
               </View>
-              <AppText style={s.fieldHint}>Repeats every {DAYS[addDay]} · Max 3 months</AppText>
+              <AppText style={s.repeatHint}>Repeats every {DAYS[addDay]} · Max 3 months</AppText>
 
               <TouchableOpacity
                 style={[s.saveBtn, wSaving && s.btnDisabled]}
@@ -567,12 +571,12 @@ export default function UserScheduleScreen() {
                 </View>
               </TouchableOpacity>
 
-              <AppText style={s.fieldLabel}>{ooMode === 'cancel' ? 'Date to cancel' : 'Date'}</AppText>
+              <RequiredLabel text={ooMode === 'cancel' ? 'Date to cancel' : 'Date'} />
               <DatePicker value={ooDate} onChange={v => { setOoDate(v); setCancelTemplateId(null); }} />
 
               {ooMode === 'new' ? (
                 <>
-                  <AppText style={s.fieldLabel}>Class name</AppText>
+                  <RequiredLabel text="Class name" />
                   <TextInput
                     style={s.fieldInput}
                     value={ooTitle}
@@ -581,16 +585,16 @@ export default function UserScheduleScreen() {
                     placeholderTextColor={NICO.textMuted}
                   />
 
-                  <AppText style={s.fieldLabel}>Emoji</AppText>
+                  <RequiredLabel text="Emoji" />
                   <EmojiRow emojis={ooSuggestions} selected={ooEmoji} onSelect={setOoEmoji} />
 
                   <View style={s.fieldRow}>
                     <View style={{ flex: 1 }}>
-                      <AppText style={s.fieldLabel}>Start time</AppText>
+                      <RequiredLabel text="Start time" />
                       <TimePicker value={ooStart} onChange={setOoStart} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <AppText style={s.fieldLabel}>End time</AppText>
+                      <RequiredLabel text="End time" />
                       <TimePicker value={ooEnd} onChange={setOoEnd} />
                     </View>
                   </View>
@@ -605,21 +609,27 @@ export default function UserScheduleScreen() {
                 </>
               ) : (
                 <>
-                  <AppText style={s.fieldLabel}>Which class to cancel?</AppText>
+                  <RequiredLabel text="Which class to cancel?" />
                   {cancellable.length === 0
                     ? <AppText style={s.fieldHint}>No recurring classes on {formatDateLong(ooDate)}</AppText>
-                    : cancellable.map(t => (
-                      <TouchableOpacity
-                        key={t.id}
-                        style={[s.cancelOption, cancelTemplateId === t.id && s.cancelOptionSel]}
-                        onPress={() => setCancelTemplateId(t.id)}
-                      >
-                        <AppText style={s.cancelOptionEmoji}>{t.emoji}</AppText>
-                        <AppText style={s.cancelOptionTxt}>
-                          {t.title}  {formatTime(t.start_time)}
-                        </AppText>
-                      </TouchableOpacity>
-                    ))
+                    : cancellable.map((t, index) => {
+                      const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
+                      const isSel = cancelTemplateId === t.id;
+                      return (
+                        <TouchableOpacity
+                          key={t.id}
+                          style={[s.cancelOption, { backgroundColor: tileBg }, isSel && s.cancelOptionSel]}
+                          onPress={() => setCancelTemplateId(t.id)}
+                          activeOpacity={0.75}
+                        >
+                          <AppText style={s.cancelOptionEmoji}>{t.emoji}</AppText>
+                          <AppText style={s.cancelOptionTxt}>
+                            {t.title}  {formatTime(t.start_time)}
+                          </AppText>
+                          {isSel && <AppText style={s.cancelOptionCheck}>✓</AppText>}
+                        </TouchableOpacity>
+                      );
+                    })
                   }
                   <TouchableOpacity
                     style={[s.cancelSubmitBtn, ooSaving && s.btnDisabled]}
@@ -717,20 +727,22 @@ const s = StyleSheet.create({
   sheetHandle: { width: 40, height: 4, backgroundColor: NICO.border, borderRadius: 2, alignSelf: 'center', marginBottom: SPACING.base },
   sheetTitle: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, textAlign: 'center', marginBottom: SPACING.lg },
 
-  fieldLabel: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text, marginBottom: SPACING.xs },
+  fieldLabel: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.text, marginBottom: SPACING.xs },
+  required:   { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.error },
   fieldInput: {
     borderWidth: 1.5, borderColor: NICO.border, borderRadius: RADIUS.md,
     padding: SPACING.md, fontSize: FONT_SIZE.md, color: NICO.text,
     marginBottom: SPACING.md,
   },
   fieldRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: 0 },
-  fieldHint: { fontSize: FONT_SIZE.sm, color: NICO.text, marginTop: 2, marginBottom: SPACING.md },
+  fieldHint: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, marginTop: 2, marginBottom: SPACING.md },
+  repeatHint: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginTop: 2, marginBottom: SPACING.md },
 
   fbox: {
     borderWidth: 1.5, borderColor: NICO.border, borderRadius: RADIUS.md,
     padding: SPACING.md, backgroundColor: NICO.background, marginBottom: SPACING.md,
   },
-  fboxText: { fontSize: FONT_SIZE.md, color: NICO.text },
+  fboxText: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
 
   emojiRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.md },
   emojiChip: {
@@ -760,17 +772,18 @@ const s = StyleSheet.create({
     borderWidth: 2.5, borderColor: NICO.border, marginTop: 2, flexShrink: 0,
   },
   radioDotSel: { borderColor: NICO.primary, backgroundColor: NICO.primary },
-  radioTitle: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
-  radioSub: { fontSize: FONT_SIZE.sm, color: NICO.text, marginTop: 2 },
+  radioTitle: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  radioSub: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, marginTop: 2 },
 
   cancelOption: {
     flexDirection: 'row', gap: SPACING.sm, alignItems: 'center',
-    padding: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: NICO.border,
-    marginBottom: SPACING.sm, backgroundColor: NICO.background,
+    padding: SPACING.md, borderRadius: RADIUS.md, borderWidth: 2, borderColor: 'transparent',
+    marginBottom: SPACING.sm,
   },
-  cancelOptionSel: { borderColor: NICO.primary, backgroundColor: NICO.primaryLight },
+  cancelOptionSel: { borderColor: NICO.primary },
   cancelOptionEmoji: { fontSize: scale(20) },
-  cancelOptionTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  cancelOptionTxt: { flex: 1, fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  cancelOptionCheck: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.black, color: NICO.primary },
 
   // Pickers
   pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
