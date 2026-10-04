@@ -15,6 +15,7 @@ import RainbowDivider from '../../components/RainbowDivider';
 import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
+import CountyFilterPill from '../../components/CountyFilterPill';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
   BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, CARD_BTN_ALIGN,
@@ -427,14 +428,7 @@ export default function GuardianConnectionsScreen() {
               />
             </LinearGradient>
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
-              <TextInput
-                style={s.searchInput}
-                value={connectedSearchCounty}
-                onChangeText={setConnectedSearchCounty}
-                placeholder="Search by county…"
-                placeholderTextColor={NICO.textMuted}
-                clearButtonMode="while-editing"
-              />
+              <CountyFilterPill value={connectedSearchCounty} onSelect={setConnectedSearchCounty} placeholder="Search by county…" />
             </LinearGradient>
           </View>
 
@@ -557,14 +551,7 @@ export default function GuardianConnectionsScreen() {
               />
             </LinearGradient>
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
-              <TextInput
-                style={s.searchInput}
-                value={searchCounty}
-                onChangeText={setSearchCounty}
-                placeholder="Search by county…"
-                placeholderTextColor={NICO.textMuted}
-                clearButtonMode="while-editing"
-              />
+              <CountyFilterPill value={searchCounty} onSelect={setSearchCounty} placeholder="Search by county…" />
             </LinearGradient>
           </View>
 

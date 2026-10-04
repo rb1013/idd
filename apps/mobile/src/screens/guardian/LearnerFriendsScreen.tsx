@@ -9,6 +9,7 @@ import RainbowDivider from '../../components/RainbowDivider';
 import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
+import CountyFilterPill from '../../components/CountyFilterPill';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -779,11 +780,7 @@ export default function LearnerFriendsScreen() {
               </View>
             </LinearGradient>
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
-              <View style={s.searchInputRow}>
-                <AppText style={s.searchIcon}>📍</AppText>
-                <TextInput style={s.searchInputText} value={searchCounty} onChangeText={setSearchCounty}
-                  placeholder="County…" placeholderTextColor={NICO.textMuted} clearButtonMode="while-editing" />
-              </View>
+              <CountyFilterPill value={searchCounty} onSelect={setSearchCounty} placeholder="County…" icon="📍" />
             </LinearGradient>
           </View>
 
