@@ -78,35 +78,48 @@ export async function loadAACSymbols(): Promise<AACSymbol[]> {
     symbolsDir.create();
   }
 
+  let cached: AACSymbol[] = [];
   if (metadataFile.exists) {
     const raw = await metadataFile.text();
-    return JSON.parse(raw) as AACSymbol[];
+    cached = JSON.parse(raw) as AACSymbol[];
   }
 
-  // First-time setup — fetch from API then download each image locally
-  const results: (AACSymbol | null)[] = await Promise.all(
-    SYMBOL_DEFINITIONS.map(async ({ keyword, name }) => {
-      const remote = await fetchRemoteSymbol(keyword);
-      if (!remote) return null;
+  // Only fetch/download keywords we don't already have cached — so adding a
+  // new keyword to SYMBOL_DEFINITIONS later triggers a one-time, delta-only
+  // top-up on next load instead of re-downloading everything that's unchanged.
+  const cachedByKeyword = new Map(cached.map(s => [s.keyword, s]));
+  const missingDefs = SYMBOL_DEFINITIONS.filter(d => !cachedByKeyword.has(d.keyword));
 
-      const ext = remote.imageUrl.split('.').pop()?.split('?')[0]?.toLowerCase() || 'png';
-      const localFile = new File(symbolsDir, keyword.replace(/ /g, '_') + '.' + ext);
+  if (missingDefs.length > 0) {
+    const fetched = await Promise.all(
+      missingDefs.map(async ({ keyword, name }) => {
+        const remote = await fetchRemoteSymbol(keyword);
+        if (!remote) return null;
 
-      try {
-        await File.downloadFileAsync(remote.imageUrl, localFile);
-        return { keyword, name, imageUrl: remote.imageUrl, localUri: localFile.uri };
-      } catch {
-        // Download failed — keep remote URL so board still works on first open
-        return { keyword, name, imageUrl: remote.imageUrl, localUri: remote.imageUrl };
-      }
-    }),
-  );
+        const ext = remote.imageUrl.split('.').pop()?.split('?')[0]?.toLowerCase() || 'png';
+        const localFile = new File(symbolsDir, keyword.replace(/ /g, '_') + '.' + ext);
 
+        try {
+          await File.downloadFileAsync(remote.imageUrl, localFile);
+          return { keyword, name, imageUrl: remote.imageUrl, localUri: localFile.uri };
+        } catch {
+          // Download failed — keep remote URL so board still works on first open
+          return { keyword, name, imageUrl: remote.imageUrl, localUri: remote.imageUrl };
+        }
+      }),
+    );
+    fetched.forEach(s => { if (s) cachedByKeyword.set(s.keyword, s); });
+  }
+
+  // Re-derive from SYMBOL_DEFINITIONS so order always matches the current list,
+  // and a keyword removed from it quietly drops out of the cache too.
   const ordered = SYMBOL_DEFINITIONS
-    .map(def => results.find(r => r?.keyword === def.keyword) ?? null)
+    .map(def => cachedByKeyword.get(def.keyword))
     .filter(Boolean) as AACSymbol[];
 
-  metadataFile.write(JSON.stringify(ordered));
+  if (missingDefs.length > 0) {
+    metadataFile.write(JSON.stringify(ordered));
+  }
   return ordered;
 }
 
