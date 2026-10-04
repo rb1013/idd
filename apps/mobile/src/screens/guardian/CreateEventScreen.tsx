@@ -74,8 +74,13 @@ export default function CreateEventScreen() {
   });
 
   async function submit() {
-    if (!name.trim()) { Alert.alert('Required', 'Event name is required.'); return; }
-    if (!date)        { Alert.alert('Required', 'Please select a date.'); return; }
+    if (!name.trim())        { Alert.alert('Required', 'Event name is required.'); return; }
+    if (categories.length > 0 && !category) { Alert.alert('Required', 'Please select a category.'); return; }
+    if (!date)                { Alert.alert('Required', 'Please select a date.'); return; }
+    if (!time)                { Alert.alert('Required', 'Please select a time.'); return; }
+    if (!duration.trim())     { Alert.alert('Required', 'Event duration is required.'); return; }
+    if (!venue.trim())        { Alert.alert('Required', 'Venue is required.'); return; }
+    if (!description.trim()) { Alert.alert('Required', 'Description is required.'); return; }
     if (!guardian) return;
 
     setSubmitting(true);
@@ -107,7 +112,8 @@ export default function CreateEventScreen() {
     setSubmitting(false);
   }
 
-  const canSubmit = !!name.trim() && !!date && !submitting;
+  const canSubmit = !!name.trim() && (categories.length === 0 || !!category) && !!date && !!time
+    && !!duration.trim() && !!venue.trim() && !!description.trim() && !submitting;
 
   return (
     <View style={s.root}>
@@ -135,7 +141,7 @@ export default function CreateEventScreen() {
 
           {/* Category picker */}
           {categories.length > 0 && (
-            <Field label="Category">
+            <Field label="Category" required>
               <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.selectGradient}>
                 <TouchableOpacity style={s.pickerBtn} onPress={() => setShowCategoryPicker(true)} activeOpacity={0.75}>
                   <AppText style={[s.pickerBtnTxt, !category && s.pickerPlaceholder]}>
@@ -166,7 +172,7 @@ export default function CreateEventScreen() {
           </Field>
 
           {/* Time picker */}
-          <Field label="Time">
+          <Field label="Time" required>
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.selectGradient}>
               <TouchableOpacity style={s.pickerBtn} onPress={() => { setTempTime(time ?? (() => { const t = new Date(); t.setMinutes(0,0,0); return t; })()); setShowTimePicker(true); }} activeOpacity={0.75}>
                 <AppText style={[s.pickerBtnTxt, !time && s.pickerPlaceholder]}>
@@ -183,7 +189,7 @@ export default function CreateEventScreen() {
             </LinearGradient>
           </Field>
 
-          <Field label="Event duration">
+          <Field label="Event duration" required>
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.inputGradient}>
               <TextInput
                 style={s.input}
@@ -196,7 +202,7 @@ export default function CreateEventScreen() {
             </LinearGradient>
           </Field>
 
-          <Field label="Venue">
+          <Field label="Venue" required>
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.inputGradient}>
               <TextInput
                 style={s.input}
@@ -209,7 +215,7 @@ export default function CreateEventScreen() {
             </LinearGradient>
           </Field>
 
-          <Field label="Description">
+          <Field label="Description" required>
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.inputGradient}>
               <TextInput
                 style={[s.input, s.textArea]}
@@ -314,7 +320,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
   return (
     <View style={s.field}>
       <View style={s.fieldLabelRow}>
-        <AppText style={s.fieldLabel}>{label}{required ? <AppText style={{ color: NICO.error }}> *</AppText> : ''}</AppText>
+        <AppText style={s.fieldLabel}>{label}{required ? <AppText style={s.required}> *</AppText> : ''}</AppText>
       </View>
       {children}
     </View>
@@ -329,6 +335,7 @@ const s = StyleSheet.create({
   field:         { gap: SPACING.sm },
   fieldLabelRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   fieldLabel:    { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  required:      { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.error },
 
   inputGradient: { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
   input:         { ...INPUT.base, borderWidth: 0 },

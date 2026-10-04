@@ -1,15 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal,
 } from 'react-native';
 import AppText from '../../components/AppText';
+import RainbowDivider from '../../components/RainbowDivider';
+import useNicoHeader from '../../hooks/useNicoHeader';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
-import { COLORS } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
+import {
+  NICO, TEXT_STYLE, SPACING, RADIUS, FONT_SIZE, FONT_WEIGHT,
+  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, scale,
+} from '../../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type Route = RouteProp<GuardianNavParamList, 'EditEvent'>;
 type Nav   = NativeStackNavigationProp<GuardianNavParamList>;
@@ -49,11 +55,14 @@ export default function EditEventScreen() {
   const navigation = useNavigation<Nav>();
   const { eventId } = route.params;
 
+  useNicoHeader(navigation);
+
   const [loading, setLoading]           = useState(true);
   const [submitting, setSubmitting]     = useState(false);
   const [name, setName]                 = useState('');
   const [description, setDescription]   = useState('');
   const [venue, setVenue]               = useState('');
+  const [duration, setDuration]         = useState('');
   const [category, setCategory]         = useState('');
   const [categories, setCategories]     = useState<string[]>([]);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
@@ -79,7 +88,7 @@ export default function EditEventScreen() {
     setLoading(true);
     const { data, error } = await supabase
       .from('events')
-      .select('name, description, event_date, event_time, venue, category')
+      .select('name, description, event_date, event_time, venue, duration, category')
       .eq('id', eventId)
       .single();
 
@@ -92,6 +101,7 @@ export default function EditEventScreen() {
     setName(data.name ?? '');
     setDescription(data.description ?? '');
     setVenue(data.venue ?? '');
+    setDuration(data.duration ?? '');
     setCategory(data.category ?? '');
     setDate(parseDateStr(data.event_date));
     if (data.event_time) setTime(parseTimeStr(data.event_time));
@@ -99,8 +109,13 @@ export default function EditEventScreen() {
   }
 
   async function submit() {
-    if (!name.trim()) { Alert.alert('Required', 'Event name is required.'); return; }
-    if (!date)        { Alert.alert('Required', 'Please select a date.'); return; }
+    if (!name.trim())        { Alert.alert('Required', 'Event name is required.'); return; }
+    if (categories.length > 0 && !category) { Alert.alert('Required', 'Please select a category.'); return; }
+    if (!date)                { Alert.alert('Required', 'Please select a date.'); return; }
+    if (!time)                { Alert.alert('Required', 'Please select a time.'); return; }
+    if (!duration.trim())     { Alert.alert('Required', 'Event duration is required.'); return; }
+    if (!venue.trim())        { Alert.alert('Required', 'Venue is required.'); return; }
+    if (!description.trim()) { Alert.alert('Required', 'Description is required.'); return; }
 
     setSubmitting(true);
     const { error } = await supabase
@@ -111,6 +126,7 @@ export default function EditEventScreen() {
         event_date:  formatDate(date),
         event_time:  time ? formatTime24(time) : null,
         venue:       venue.trim() || null,
+        duration:    duration.trim() || null,
         category:    category || null,
       })
       .eq('id', eventId);
@@ -124,128 +140,155 @@ export default function EditEventScreen() {
   }
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator size="large" color={COLORS.bloomAccent} /></View>;
+    return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
   }
 
-  const canSubmit = !!name.trim() && !!date && !submitting;
+  const canSubmit = !!name.trim() && (categories.length === 0 || !!category) && !!date && !!time
+    && !!duration.trim() && !!venue.trim() && !!description.trim() && !submitting;
 
   return (
-    <KeyboardAvoidingView
-      style={s.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
+    <View style={s.root}>
+      <RainbowDivider />
+      <KeyboardAvoidingView
         style={s.container}
-        contentContainerStyle={s.content}
-        keyboardShouldPersistTaps="handled"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Field label="Event name" required>
-          <TextInput
-            style={s.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="e.g. Saturday Play Date"
-            placeholderTextColor={COLORS.bloomMuted}
-            maxLength={100}
-          />
-        </Field>
-
-        {categories.length > 0 && (
-          <Field label="Category" hint="optional">
-            <TouchableOpacity style={s.pickerBtn} onPress={() => setShowCategoryPicker(true)} activeOpacity={0.75}>
-              <AppText style={[s.pickerBtnTxt, !category && s.pickerPlaceholder]}>
-                {category || 'Select category…'}
-              </AppText>
-              {category ? (
-                <TouchableOpacity onPress={() => setCategory('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <AppText style={s.clearTxt}>✕</AppText>
-                </TouchableOpacity>
-              ) : (
-                <AppText style={s.pickerIcon}>🏷️</AppText>
-              )}
-            </TouchableOpacity>
-          </Field>
-        )}
-
-        <Field label="Date" required>
-          <TouchableOpacity
-            style={s.pickerBtn}
-            onPress={() => { setTempDate(date ?? new Date()); setShowDatePicker(true); }}
-            activeOpacity={0.75}
-          >
-            <AppText style={[s.pickerBtnTxt, !date && s.pickerPlaceholder]}>
-              {date
-                ? date.toLocaleDateString(undefined, { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
-                : 'Select date…'}
-            </AppText>
-            <AppText style={s.pickerIcon}>📅</AppText>
-          </TouchableOpacity>
-        </Field>
-
-        <Field label="Time" hint="optional">
-          <TouchableOpacity
-            style={s.pickerBtn}
-            onPress={() => {
-              setTempTime(time ?? (() => { const t = new Date(); t.setMinutes(0,0,0); return t; })());
-              setShowTimePicker(true);
-            }}
-            activeOpacity={0.75}
-          >
-            <AppText style={[s.pickerBtnTxt, !time && s.pickerPlaceholder]}>
-              {time ? formatTimeDisplay(time) : 'Select time…'}
-            </AppText>
-            {time ? (
-              <TouchableOpacity onPress={() => setTime(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <AppText style={s.clearTxt}>✕</AppText>
-              </TouchableOpacity>
-            ) : (
-              <AppText style={s.pickerIcon}>🕐</AppText>
-            )}
-          </TouchableOpacity>
-        </Field>
-
-        <Field label="Venue" hint="optional">
-          <TextInput
-            style={s.input}
-            value={venue}
-            onChangeText={setVenue}
-            placeholder="Central Park, New York"
-            placeholderTextColor={COLORS.bloomMuted}
-            maxLength={200}
-          />
-        </Field>
-
-        <Field label="Description" hint="optional">
-          <TextInput
-            style={[s.input, s.textArea]}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="What's happening? What should people bring?"
-            placeholderTextColor={COLORS.bloomMuted}
-            multiline
-            numberOfLines={4}
-          />
-        </Field>
-
-        <TouchableOpacity
-          style={[s.submitBtn, !canSubmit && { opacity: 0.5 }]}
-          onPress={submit}
-          disabled={!canSubmit}
+        <ScrollView
+          contentContainerStyle={s.content}
+          keyboardShouldPersistTaps="handled"
         >
-          {submitting
-            ? <ActivityIndicator color="#fff" />
-            : <AppText style={s.submitBtnText}>Save Changes</AppText>
-          }
-        </TouchableOpacity>
-      </ScrollView>
+          <Field label="Event name" required>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.inputGradient}>
+              <TextInput
+                style={s.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="e.g. Saturday Play Date"
+                placeholderTextColor={NICO.textMuted}
+                maxLength={100}
+              />
+            </LinearGradient>
+          </Field>
 
+          {categories.length > 0 && (
+            <Field label="Category" required>
+              <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.selectGradient}>
+                <TouchableOpacity style={s.pickerBtn} onPress={() => setShowCategoryPicker(true)} activeOpacity={0.75}>
+                  <AppText style={[s.pickerBtnTxt, !category && s.pickerPlaceholder]}>
+                    {category || 'Select category…'}
+                  </AppText>
+                  {category ? (
+                    <TouchableOpacity onPress={() => setCategory('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <AppText style={s.clearTxt}>✕</AppText>
+                    </TouchableOpacity>
+                  ) : (
+                    <AppText style={s.pickerIcon}>🏷️</AppText>
+                  )}
+                </TouchableOpacity>
+              </LinearGradient>
+            </Field>
+          )}
+
+          <Field label="Date" required>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.selectGradient}>
+              <TouchableOpacity
+                style={s.pickerBtn}
+                onPress={() => { setTempDate(date ?? new Date()); setShowDatePicker(true); }}
+                activeOpacity={0.75}
+              >
+                <AppText style={[s.pickerBtnTxt, !date && s.pickerPlaceholder]}>
+                  {date
+                    ? date.toLocaleDateString(undefined, { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
+                    : 'Select date…'}
+                </AppText>
+                <AppText style={s.pickerIcon}>📅</AppText>
+              </TouchableOpacity>
+            </LinearGradient>
+          </Field>
+
+          <Field label="Time" required>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.selectGradient}>
+              <TouchableOpacity
+                style={s.pickerBtn}
+                onPress={() => {
+                  setTempTime(time ?? (() => { const t = new Date(); t.setMinutes(0,0,0); return t; })());
+                  setShowTimePicker(true);
+                }}
+                activeOpacity={0.75}
+              >
+                <AppText style={[s.pickerBtnTxt, !time && s.pickerPlaceholder]}>
+                  {time ? formatTimeDisplay(time) : 'Select time…'}
+                </AppText>
+                {time ? (
+                  <TouchableOpacity onPress={() => setTime(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <AppText style={s.clearTxt}>✕</AppText>
+                  </TouchableOpacity>
+                ) : (
+                  <AppText style={s.pickerIcon}>🕐</AppText>
+                )}
+              </TouchableOpacity>
+            </LinearGradient>
+          </Field>
+
+          <Field label="Event duration" required>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.inputGradient}>
+              <TextInput
+                style={s.input}
+                value={duration}
+                onChangeText={setDuration}
+                placeholder="e.g. 2 hours"
+                placeholderTextColor={NICO.textMuted}
+                maxLength={50}
+              />
+            </LinearGradient>
+          </Field>
+
+          <Field label="Venue" required>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.inputGradient}>
+              <TextInput
+                style={s.input}
+                value={venue}
+                onChangeText={setVenue}
+                placeholder="Central Park, New York"
+                placeholderTextColor={NICO.textMuted}
+                maxLength={200}
+              />
+            </LinearGradient>
+          </Field>
+
+          <Field label="Description" required>
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.inputGradient}>
+              <TextInput
+                style={[s.input, s.textArea]}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="What's happening? What should people bring?"
+                placeholderTextColor={NICO.textMuted}
+                multiline
+                numberOfLines={4}
+              />
+            </LinearGradient>
+          </Field>
+
+          <TouchableOpacity
+            style={[s.submitBtn, !canSubmit && s.submitBtnDisabled]}
+            onPress={submit}
+            disabled={!canSubmit}
+          >
+            {submitting
+              ? <ActivityIndicator color={NICO.textOnAccent} />
+              : <AppText style={s.submitBtnText}>Save Changes</AppText>
+            }
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Category picker modal */}
       <Modal visible={showCategoryPicker} transparent animationType="slide" onRequestClose={() => setShowCategoryPicker(false)}>
         <TouchableOpacity style={s.sheetBackdrop} activeOpacity={1} onPress={() => setShowCategoryPicker(false)}>
           <View style={s.sheet} onStartShouldSetResponder={() => true}>
             <View style={s.sheetHdr}>
-              <TouchableOpacity onPress={() => setShowCategoryPicker(false)}>
-                <AppText style={s.sheetCancel}>Cancel</AppText>
-              </TouchableOpacity>
+              <View style={{ width: 60 }} />
               <AppText style={s.sheetTitle}>Select Category</AppText>
               <View style={{ width: 60 }} />
             </View>
@@ -253,12 +296,12 @@ export default function EditEventScreen() {
               {categories.map(cat => (
                 <TouchableOpacity
                   key={cat}
-                  style={[s.categoryOption, category === cat && s.categoryOptionActive]}
+                  style={[s.sheetOption, category === cat && s.sheetOptionActive]}
                   onPress={() => { setCategory(cat); setShowCategoryPicker(false); }}
                   activeOpacity={0.7}
                 >
-                  <AppText style={[s.categoryOptionText, category === cat && s.categoryOptionTextActive]}>{cat}</AppText>
-                  {category === cat && <AppText style={s.categoryCheck}>✓</AppText>}
+                  <AppText style={[s.sheetOptionText, category === cat && s.sheetOptionTextActive]}>{cat}</AppText>
+                  {category === cat && <AppText style={s.sheetCheck}>✓</AppText>}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -266,13 +309,12 @@ export default function EditEventScreen() {
         </TouchableOpacity>
       </Modal>
 
+      {/* Date picker modal (iOS) */}
       <Modal visible={showDatePicker} transparent animationType="slide" onRequestClose={() => setShowDatePicker(false)}>
         <TouchableOpacity style={s.sheetBackdrop} activeOpacity={1} onPress={() => setShowDatePicker(false)}>
           <View style={s.sheet} onStartShouldSetResponder={() => true}>
             <View style={s.sheetHdr}>
-              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                <AppText style={s.sheetCancel}>Cancel</AppText>
-              </TouchableOpacity>
+              <View style={{ width: 60 }} />
               <AppText style={s.sheetTitle}>Select Date</AppText>
               <TouchableOpacity onPress={() => { setDate(tempDate); setShowDatePicker(false); }}>
                 <AppText style={s.sheetDone}>Done</AppText>
@@ -290,13 +332,12 @@ export default function EditEventScreen() {
         </TouchableOpacity>
       </Modal>
 
+      {/* Time picker modal (iOS) */}
       <Modal visible={showTimePicker} transparent animationType="slide" onRequestClose={() => setShowTimePicker(false)}>
         <TouchableOpacity style={s.sheetBackdrop} activeOpacity={1} onPress={() => setShowTimePicker(false)}>
           <View style={s.sheet} onStartShouldSetResponder={() => true}>
             <View style={s.sheetHdr}>
-              <TouchableOpacity onPress={() => setShowTimePicker(false)}>
-                <AppText style={s.sheetCancel}>Cancel</AppText>
-              </TouchableOpacity>
+              <View style={{ width: 60 }} />
               <AppText style={s.sheetTitle}>Select Time</AppText>
               <TouchableOpacity onPress={() => { setTime(tempTime); setShowTimePicker(false); }}>
                 <AppText style={s.sheetDone}>Done</AppText>
@@ -312,16 +353,15 @@ export default function EditEventScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
-function Field({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: React.ReactNode }) {
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <View style={s.field}>
       <View style={s.fieldLabelRow}>
-        <AppText style={s.fieldLabel}>{label}{required ? <AppText style={{ color: COLORS.statusError }}> *</AppText> : ''}</AppText>
-        {hint && <AppText style={s.fieldHint}>{hint}</AppText>}
+        <AppText style={s.fieldLabel}>{label}{required ? <AppText style={s.required}> *</AppText> : ''}</AppText>
       </View>
       {children}
     </View>
@@ -329,62 +369,58 @@ function Field({ label, hint, required, children }: { label: string; hint?: stri
 }
 
 const s = StyleSheet.create({
-  root:      { flex: 1, backgroundColor: COLORS.bloomBody },
+  root:      { flex: 1, backgroundColor: NICO.screenBg },
   container: { flex: 1 },
-  content:   { padding: 20, gap: 16, paddingBottom: 40 },
-  center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  content:   { padding: SPACING.base, gap: SPACING.md, paddingBottom: 40 },
+  center:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: NICO.screenBg },
 
-  field:         { gap: 6 },
-  fieldLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  fieldLabel:    { fontSize: 13, fontWeight: '700', color: COLORS.bloomText },
-  fieldHint:     { fontSize: 11, color: COLORS.bloomMuted },
+  field:         { gap: SPACING.sm },
+  fieldLabelRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  fieldLabel:    { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  required:      { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.error },
 
-  input: {
-    backgroundColor: COLORS.bloomCard, borderRadius: 14, borderWidth: 1.5,
-    borderColor: COLORS.bloomBorder, paddingHorizontal: 16, paddingVertical: 14,
-    fontSize: 15, color: COLORS.bloomText,
-  },
-  textArea: { minHeight: 100, textAlignVertical: 'top' },
+  inputGradient: { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
+  input:         { ...INPUT.base, borderWidth: 0 },
+  textArea:      { minHeight: scale(100), textAlignVertical: 'top' },
 
+  selectGradient: { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
   pickerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: COLORS.bloomCard, borderRadius: 14, borderWidth: 1.5,
-    borderColor: COLORS.bloomBorder, paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: NICO.surface, borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.base, paddingVertical: 13,
   },
-  pickerBtnTxt:     { fontSize: 15, color: COLORS.bloomText, flex: 1 },
-  pickerPlaceholder:{ color: COLORS.bloomMuted },
-  pickerIcon:       { fontSize: 18 },
-  clearTxt:         { fontSize: 14, color: COLORS.bloomMuted, fontWeight: '700' },
+  pickerBtnTxt:      { fontSize: FONT_SIZE.md, color: NICO.text, flex: 1 },
+  pickerPlaceholder: { color: NICO.textMuted },
+  pickerIcon:        { fontSize: scale(18) },
+  clearTxt:          { fontSize: FONT_SIZE.sm, color: NICO.textMuted, fontWeight: FONT_WEIGHT.bold },
 
-  submitBtn: {
-    backgroundColor: COLORS.bloomAccent, borderRadius: 16,
-    paddingVertical: 17, alignItems: 'center', marginTop: 8,
-  },
-  submitBtnText: { color: COLORS.bloomOnAccent, fontWeight: '800', fontSize: 16 },
+  submitBtn:         { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.sm },
+  submitBtnDisabled: { opacity: 0.5 },
+  submitBtnText:     { ...TEXT_STYLE.buttonPrimary },
 
-  categoryOption: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
-  },
-  categoryOptionActive:     { backgroundColor: COLORS.bloomTintBg },
-  categoryOptionText:       { fontSize: 15, color: COLORS.bloomText },
-  categoryOptionTextActive: { color: COLORS.bloomNavy, fontWeight: '700' },
-  categoryCheck:            { fontSize: 16, color: COLORS.bloomNavy, fontWeight: '700' },
-
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  // Sheets
+  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: COLORS.bloomCard,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: NICO.surface,
+    borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl,
     paddingBottom: 32,
   },
   sheetHdr: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 16,
-    borderBottomWidth: 1, borderBottomColor: COLORS.bloomBorder,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
   },
-  sheetTitle:  { fontSize: 16, fontWeight: '800', color: COLORS.bloomText },
-  sheetCancel: { fontSize: 15, color: COLORS.bloomMuted },
-  sheetDone:   { fontSize: 15, fontWeight: '700', color: COLORS.bloomNavy },
+  sheetTitle:  { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  sheetDone:   { fontSize: FONT_SIZE.md, color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold, width: 60, textAlign: 'right' },
   picker:      { height: 220 },
+
+  sheetOption: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base,
+    borderBottomWidth: 1, borderBottomColor: NICO.border,
+  },
+  sheetOptionActive:     { backgroundColor: NICO.primaryLight },
+  sheetOptionText:       { fontSize: FONT_SIZE.md, color: NICO.text },
+  sheetOptionTextActive: { color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
+  sheetCheck:            { fontSize: FONT_SIZE.md, color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold },
 });

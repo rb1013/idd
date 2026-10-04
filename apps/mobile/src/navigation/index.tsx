@@ -282,7 +282,7 @@ function GuardianTabs() {
       <GuardianNav.Screen name="Events"              component={EventsScreen}                options={{ title: 'Events', headerRight: undefined }} />
       <GuardianNav.Screen name="EventDetail"         component={EventDetailScreen}           options={{ title: 'Event', headerRight: undefined }} />
       <GuardianNav.Screen name="CreateEvent"         component={CreateEventScreen}           options={{ title: 'Create Event', headerRight: undefined }} />
-      <GuardianNav.Screen name="EditEvent"           component={EditEventScreen}             options={{ title: 'Edit Event' }} />
+      <GuardianNav.Screen name="EditEvent"           component={EditEventScreen}             options={{ title: 'Edit Event', headerRight: undefined }} />
       <GuardianNav.Screen name="Resources"           component={ResourcesScreen}             options={{ title: 'Resources', headerRight: undefined }} />
     </GuardianNav.Navigator>
   );
