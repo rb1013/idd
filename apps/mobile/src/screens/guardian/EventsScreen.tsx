@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   View, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert,
-  Modal, ScrollView, Image, TextInput,
+  Modal, ScrollView, TextInput,
 } from 'react-native';
 import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
 import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
+import GuardianPeekSheet from '../../components/GuardianPeekSheet';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import { LinearGradient } from 'expo-linear-gradient';
 import useNicoHeader from '../../hooks/useNicoHeader';
@@ -14,7 +15,6 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { calcAge } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
 import {
@@ -25,14 +25,9 @@ import {
 type Nav  = NativeStackNavigationProp<GuardianNavParamList>;
 type Rsvp = 'going' | 'interested' | 'not_going';
 
-const AVATAR_COLORS = [NICO.teal, NICO.orange, NICO.coral, NICO.pink, NICO.purple, NICO.primary];
-
-interface LearnerInfo { name: string; date_of_birth: string | null; gender: string | null }
-
 interface GuardianProfile {
   id: string; name: string; photoUrl: string | null;
   county: string; situationTags: string[];
-  learners: LearnerInfo[];
 }
 
 const RSVP_OPTIONS: { value: Rsvp; label: string; activeColor: string; activeBg: string }[] = [
@@ -229,7 +224,7 @@ export default function EventsScreen() {
     setLoadingGuardianSheet(true);
     const { data } = await supabase
       .from('guardians')
-      .select('id, full_name, photo_url, county, situation_tags, user_profiles(name, date_of_birth, gender)')
+      .select('id, full_name, photo_url, county, situation_tags')
       .eq('id', guardianId)
       .single();
     if (data) {
@@ -238,9 +233,6 @@ export default function EventsScreen() {
         photoUrl: data.photo_url ?? null,
         county: data.county ?? '',
         situationTags: data.situation_tags ?? [],
-        learners: (data.user_profiles ?? []).map((l: any) => ({
-          name: l.name, date_of_birth: l.date_of_birth ?? null, gender: l.gender ?? null,
-        })),
       });
     }
     setLoadingGuardianSheet(false);
@@ -635,70 +627,12 @@ export default function EventsScreen() {
       </Modal>
 
       {/* Guardian profile sheet — opened from Upcoming card rows */}
-      <Modal
+      <GuardianPeekSheet
         visible={!!guardianSheet || loadingGuardianSheet}
-        transparent
-        animationType="slide"
-        onRequestClose={closeGuardianSheet}
-      >
-        <TouchableOpacity style={s.nudgeBackdrop} activeOpacity={1} onPress={closeGuardianSheet}>
-          <View style={s.nudgeSheet} onStartShouldSetResponder={() => true}>
-            <View style={s.nudgePill} />
-            {loadingGuardianSheet && !guardianSheet ? (
-              <ActivityIndicator size="large" color={NICO.primary} style={{ marginVertical: 32 }} />
-            ) : guardianSheet ? (
-              <>
-                <View style={s.guardianSheetHeader}>
-                  {guardianSheet.photoUrl ? (
-                    <Image source={{ uri: guardianSheet.photoUrl }} style={s.guardianSheetPhoto} />
-                  ) : (
-                    <View style={[s.guardianSheetAvatar, { backgroundColor: AVATAR_COLORS[guardianSheet.name.charCodeAt(0) % AVATAR_COLORS.length] }]}>
-                      <AppText style={s.guardianSheetAvatarText}>{guardianSheet.name[0]?.toUpperCase()}</AppText>
-                    </View>
-                  )}
-                  <View style={s.guardianSheetInfo}>
-                    <AppText style={s.guardianSheetName}>{guardianSheet.name}</AppText>
-                    {!!guardianSheet.county && (
-                      <AppText style={s.guardianSheetCity}>
-                        📍 {guardianSheet.county}
-                      </AppText>
-                    )}
-                  </View>
-                </View>
-                {guardianSheet.situationTags.length > 0 && (
-                  <View style={s.guardianSheetSection}>
-                    <AppText style={s.guardianSheetSectionTitle}>Regional Support Category</AppText>
-                    <View style={s.guardianSheetTags}>
-                      {guardianSheet.situationTags.map(t => (
-                        <View key={t} style={s.guardianTag}>
-                          <AppText style={s.guardianTagText}>{t}</AppText>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
-
-                {guardianSheet.learners.length > 0 && (
-                  <View style={s.guardianSheetSection}>
-                    <AppText style={s.guardianSheetSectionTitle}>Learner</AppText>
-                    {guardianSheet.learners.map((l, i) => (
-                      <View key={i} style={s.learnerRow}>
-                        <AppText style={s.learnerName}>{l.name}</AppText>
-                        <AppText style={s.learnerMeta}>
-                          {[
-                            l.date_of_birth ? `${calcAge(l.date_of_birth) ?? '—'} yrs` : null,
-                            l.gender,
-                          ].filter(Boolean).join('  ·  ')}
-                        </AppText>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </>
-            ) : null}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+        guardian={guardianSheet}
+        loading={loadingGuardianSheet}
+        onClose={closeGuardianSheet}
+      />
       <GuardianFloatingTabBar />
     </View>
   );
@@ -744,7 +678,7 @@ const s = StyleSheet.create({
   eventName:    { ...TEXT_STYLE.bodyMedium, fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold },
   eventMeta:    { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold },
   eventHost:    { fontSize: FONT_SIZE.sm, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
-  eventHostBtn: { fontSize: FONT_SIZE.sm, color: NICO.primary, fontWeight: FONT_WEIGHT.bold, textDecorationLine: 'underline' },
+  eventHostBtn: { fontSize: FONT_SIZE.lg, color: '#2563EB', fontWeight: FONT_WEIGHT.bold, textDecorationLine: 'underline' },
 
   goingBadge: { flexDirection: 'row', alignItems: 'baseline', gap: SPACING.xs },
   goingNum:   { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary },
@@ -842,23 +776,6 @@ const s = StyleSheet.create({
   nudgeHost:     { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 
   nudgeBody: { marginBottom: SPACING.base },
-
-  guardianSheetHeader:     { flexDirection: 'row', gap: SPACING.base, alignItems: 'center', marginBottom: SPACING.base },
-  guardianSheetPhoto:      { width: 64, height: 64, borderRadius: 32 },
-  guardianSheetAvatar:     { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center' },
-  guardianSheetAvatarText: { fontSize: scale(26), fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
-  guardianSheetInfo:         { flex: 1, gap: SPACING.xs },
-  guardianSheetName:         { ...TEXT_STYLE.screenTitle },
-  guardianSheetCity:         { ...TEXT_STYLE.caption },
-  guardianSheetSection:      { marginTop: SPACING.base, gap: SPACING.sm },
-  guardianSheetSectionTitle: { ...TEXT_STYLE.labelSmall, textTransform: 'uppercase', letterSpacing: 0.8 },
-  guardianSheetTags:         { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs },
-  guardianTag:               { backgroundColor: NICO.primaryLight, borderRadius: RADIUS.full, paddingHorizontal: SPACING.sm, paddingVertical: 4 },
-  guardianTagText:           { fontSize: FONT_SIZE.sm, color: NICO.primary, fontWeight: FONT_WEIGHT.semiBold },
-
-  learnerRow:  { backgroundColor: NICO.background, borderRadius: RADIUS.lg, padding: SPACING.md, gap: 3, borderWidth: 1, borderColor: NICO.border },
-  learnerName: { ...TEXT_STYLE.bodyMedium, fontWeight: FONT_WEIGHT.extraBold },
-  learnerMeta: { ...TEXT_STYLE.caption },
 
   nudgeRow:         { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginBottom: SPACING.md },
   nudgeRowIcon:     { fontSize: FONT_SIZE.xl, marginTop: 1 },

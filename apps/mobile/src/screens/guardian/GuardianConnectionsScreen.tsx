@@ -18,10 +18,11 @@ import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import CountyFilterPill from '../../components/CountyFilterPill';
+import GuardianPeekSheet from '../../components/GuardianPeekSheet';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
   BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, CARD_BTN_ALIGN,
-  GRID_COLS, GRID_CARD_W, scale,
+  scale,
 } from '../../constants/theme';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
@@ -86,6 +87,8 @@ export default function GuardianConnectionsScreen() {
   // My Connections search
   const [connectedSearchName, setConnectedSearchName] = useState('');
   const [connectedSearchCounty, setConnectedSearchCounty] = useState('');
+  const [connectedFilterTags, setConnectedFilterTags] = useState<string[]>([]);
+  const [connectedSheetOpen, setConnectedSheetOpen] = useState(false);
 
   // Find tab search + filters
   const [searchName, setSearchName] = useState('');
@@ -268,9 +271,10 @@ export default function GuardianConnectionsScreen() {
     connected.filter(r => {
       const matchName = !connectedSearchName || r.guardianName.toLowerCase().includes(connectedSearchName.toLowerCase());
       const matchCounty = !connectedSearchCounty || r.county.toLowerCase().includes(connectedSearchCounty.toLowerCase());
-      return matchName && matchCounty;
+      const matchTags = connectedFilterTags.length === 0 || connectedFilterTags.some(t => r.situationTags.includes(t));
+      return matchName && matchCounty && matchTags;
     }),
-  [connected, connectedSearchName, connectedSearchCounty]);
+  [connected, connectedSearchName, connectedSearchCounty, connectedFilterTags]);
 
   // All rows where current user sent the request (pending, accepted, rejected)
   const sentRequests = useMemo(() =>
@@ -297,7 +301,8 @@ export default function GuardianConnectionsScreen() {
 
   // ── Pagination ───────────────────────────────────────────────────────────────
 
-  const resetKeyConnected = `${connectedSearchName}|${connectedSearchCounty}|${connected.length}`;
+  const resetKeyConnected = `${connectedSearchName}|${connectedSearchCounty}|${connectedFilterTags.join(',')}|${connected.length}`;
+  const hasConnectedMore = connectedFilterTags.length > 0;
   const { visible: visibleConnected, showLoadMore: showLoadMoreConnected, loadMore: loadMoreConnected, showCapMessage: showCapConnected, pageSize } =
     useVisibleCount(filteredConnected, resetKeyConnected);
 
@@ -372,17 +377,28 @@ export default function GuardianConnectionsScreen() {
       item.status === 'rejected'     ? { label: 'Rejected',   style: s.badgeRejected,  textStyle: s.badgeRejectedTxt  } :
       /* pending_sent */               { label: 'Pending',    style: s.badgePending,   textStyle: s.badgePendingTxt   };
     return (
-      <TouchableOpacity key={item.guardianId} style={[s.gridCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
-        <View style={[s.gridAvatar, { backgroundColor: avatarColor(item.guardianName) }]}>
-          <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
-        </View>
-        <AppText style={s.gridName} numberOfLines={1}>{item.guardianName}</AppText>
-        {item.county ? <AppText style={s.gridCounty} numberOfLines={1}>{item.county}</AppText> : null}
-        <View style={s.gridAction}>
+      <TouchableOpacity key={item.guardianId} style={[s.connectionCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+        <View style={s.connectionRow}>
+          {item.photoUrl ? (
+            <Image source={{ uri: item.photoUrl }} style={s.connectionAvatar} />
+          ) : (
+            <View style={[s.connectionAvatar, s.connectionAvatarFallback, { backgroundColor: avatarColor(item.guardianName) }]}>
+              <AppText style={s.connectionAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
+            </View>
+          )}
+          <View style={s.connectionInfo}>
+            <AppText style={s.connectionName} numberOfLines={1}>{item.guardianName}</AppText>
+            {item.county ? <AppText style={s.connectionCounty} numberOfLines={1}>{item.county}</AppText> : null}
+          </View>
           <View style={badge.style}>
             <AppText style={badge.textStyle}>{badge.label}</AppText>
           </View>
         </View>
+        {item.situationTags.length > 0 && (
+          <View style={s.connectionTagsStrip}>
+            <AppText style={s.connectionTagsText}>👥 {item.situationTags.join(', ')}</AppText>
+          </View>
+        )}
       </TouchableOpacity>
     );
   }
@@ -391,27 +407,46 @@ export default function GuardianConnectionsScreen() {
     const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
     const isProcessing = processing === item.guardianId;
     return (
-      <TouchableOpacity key={item.guardianId} style={[s.gridCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
-        <View style={[s.gridAvatar, { backgroundColor: avatarColor(item.guardianName) }]}>
-          <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
-        </View>
-        <AppText style={s.gridName} numberOfLines={1}>{item.guardianName}</AppText>
-        {item.county ? <AppText style={s.gridCounty} numberOfLines={1}>{item.county}</AppText> : null}
-        <AppText style={s.gridPendingLabel}>Wants to connect</AppText>
-        <View style={s.gridAction}>
+      <TouchableOpacity key={item.guardianId} style={[s.connectionCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+        <View style={s.connectionRow}>
+          {item.photoUrl ? (
+            <Image source={{ uri: item.photoUrl }} style={s.connectionAvatar} />
+          ) : (
+            <View style={[s.connectionAvatar, s.connectionAvatarFallback, { backgroundColor: avatarColor(item.guardianName) }]}>
+              <AppText style={s.connectionAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
+            </View>
+          )}
+          <View style={s.connectionInfo}>
+            <AppText style={s.connectionName} numberOfLines={1}>{item.guardianName}</AppText>
+            {item.county ? <AppText style={s.connectionCounty} numberOfLines={1}>{item.county}</AppText> : null}
+            <AppText style={s.gridPendingLabel}>Wants to connect</AppText>
+          </View>
           {isProcessing ? (
             <ActivityIndicator color={NICO.primary} />
           ) : (
-            <View style={s.gridTwoBtn}>
-              <TouchableOpacity style={[s.gridHalfBtn, { backgroundColor: NICO.successLight, borderWidth: 1.5, borderColor: NICO.success }]} onPress={() => accept(item)}>
-                <AppText style={[s.gridHalfBtnTxt, { color: NICO.success }]}>✓</AppText>
+            <View style={s.connectionActions}>
+              <TouchableOpacity
+                style={[s.connectionMsgBtn, { backgroundColor: NICO.successLight, borderColor: NICO.success }]}
+                onPress={(e) => { e.stopPropagation(); accept(item); }}
+                activeOpacity={0.7}
+              >
+                <AppText style={[s.connectionMsgIcon, { color: NICO.success }]}>✓</AppText>
               </TouchableOpacity>
-              <TouchableOpacity style={[s.gridHalfBtn, { backgroundColor: NICO.errorLight, borderWidth: 1.5, borderColor: NICO.error }]} onPress={() => decline(item)}>
-                <AppText style={[s.gridHalfBtnTxt, { color: NICO.error }]}>✕</AppText>
+              <TouchableOpacity
+                style={s.disconnectBtn}
+                onPress={(e) => { e.stopPropagation(); decline(item); }}
+                activeOpacity={0.7}
+              >
+                <AppText style={s.disconnectIcon}>✕</AppText>
               </TouchableOpacity>
             </View>
           )}
         </View>
+        {item.situationTags.length > 0 && (
+          <View style={s.connectionTagsStrip}>
+            <AppText style={s.connectionTagsText}>👥 {item.situationTags.join(', ')}</AppText>
+          </View>
+        )}
       </TouchableOpacity>
     );
   }
@@ -421,21 +456,32 @@ export default function GuardianConnectionsScreen() {
     const isProcessing = processing === item.guardianId;
     const isSending    = sending === item.guardianId;
     return (
-      <TouchableOpacity key={item.guardianId} style={[s.gridCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
-        <View style={[s.gridAvatar, { backgroundColor: avatarColor(item.guardianName) }]}>
-          <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
-        </View>
-        <AppText style={s.gridName} numberOfLines={1}>{item.guardianName}</AppText>
-        {item.county ? <AppText style={s.gridCounty} numberOfLines={1}>{item.county}</AppText> : null}
-        <View style={s.gridAction}>
+      <TouchableOpacity key={item.guardianId} style={[s.connectionCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+        <View style={s.connectionRow}>
+          {item.photoUrl ? (
+            <Image source={{ uri: item.photoUrl }} style={s.connectionAvatar} />
+          ) : (
+            <View style={[s.connectionAvatar, s.connectionAvatarFallback, { backgroundColor: avatarColor(item.guardianName) }]}>
+              <AppText style={s.connectionAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
+            </View>
+          )}
+          <View style={s.connectionInfo}>
+            <AppText style={s.connectionName} numberOfLines={1}>{item.guardianName}</AppText>
+            {item.county ? <AppText style={s.connectionCounty} numberOfLines={1}>{item.county}</AppText> : null}
+          </View>
           {isProcessing || isSending ? (
             <ActivityIndicator color={NICO.primary} />
           ) : (
-            <TouchableOpacity style={s.gridConnectBtn} onPress={(e) => { e.stopPropagation(); sendRequest(item); }} activeOpacity={0.8}>
-              <AppText style={s.gridConnectIcon}>🤝</AppText>
+            <TouchableOpacity style={s.connectionMsgBtn} onPress={(e) => { e.stopPropagation(); sendRequest(item); }} activeOpacity={0.8}>
+              <AppText style={s.connectionMsgIcon}>🤝</AppText>
             </TouchableOpacity>
           )}
         </View>
+        {item.situationTags.length > 0 && (
+          <View style={s.connectionTagsStrip}>
+            <AppText style={s.connectionTagsText}>👥 {item.situationTags.join(', ')}</AppText>
+          </View>
+        )}
       </TouchableOpacity>
     );
   }
@@ -489,6 +535,11 @@ export default function GuardianConnectionsScreen() {
             </LinearGradient>
           </View>
 
+          <View style={s.filterBar}>
+            <AppText style={s.resultCount}>{filteredConnected.length} result{filteredConnected.length !== 1 ? 's' : ''}</AppText>
+            <MoreFiltersLink onPress={() => setConnectedSheetOpen(true)} isActive={hasConnectedMore} />
+          </View>
+
           <ScrollView contentContainerStyle={s.list}>
             {connected.length === 0 ? (
               <View style={s.empty}>
@@ -523,6 +574,21 @@ export default function GuardianConnectionsScreen() {
               </>
             )}
           </ScrollView>
+
+          <FilterSheet
+            visible={connectedSheetOpen}
+            title="More Filters"
+            sections={[
+              {
+                key: 'situation', emoji: '🎯', title: 'Regional Support Category',
+                options: situationTagOptions.map(t => ({ key: t, label: t })),
+                selected: connectedFilterTags,
+                onToggle: v => setConnectedFilterTags(prev => toggle(prev, v)),
+              },
+            ] satisfies FilterSheetSection[]}
+            onClearAll={() => setConnectedFilterTags([])}
+            onDone={() => setConnectedSheetOpen(false)}
+          />
         </View>
 
       ) : activeTab === 'requests' ? (
@@ -572,7 +638,7 @@ export default function GuardianConnectionsScreen() {
                   <AppText style={s.emptyHint}>Requests you send will appear here.</AppText>
                 </View>
               ) : (
-                <View style={s.gridWrap}>
+                <View style={s.connectionList}>
                   {sentRequests.map((item, index) => renderSentCard(item, index))}
                 </View>
               )}
@@ -585,7 +651,7 @@ export default function GuardianConnectionsScreen() {
                   <AppText style={s.emptyHint}>Connection requests from others will appear here.</AppText>
                 </View>
               ) : (
-                <View style={s.gridWrap}>
+                <View style={s.connectionList}>
                   {receivedRequests.map((item, index) => renderReceivedCard(item, index))}
                 </View>
               )}
@@ -620,10 +686,7 @@ export default function GuardianConnectionsScreen() {
           <FlatList
             data={visibleDiscovered}
             keyExtractor={r => r.guardianId}
-            numColumns={GRID_COLS}
-            key={String(GRID_COLS)}
-            columnWrapperStyle={s.gridRow}
-            contentContainerStyle={s.gridList}
+            contentContainerStyle={s.list}
             renderItem={({ item, index }) => renderDiscoverCard(item, index)}
             ListFooterComponent={
               showLoadMoreDiscovered ? (
@@ -675,84 +738,42 @@ export default function GuardianConnectionsScreen() {
       )}
 
       {/* Quick-look modal */}
-      <Modal visible={!!peekGuardian} transparent animationType="slide" onRequestClose={() => setPeekGuardian(null)}>
-        <TouchableOpacity style={s.sheetBackdrop} activeOpacity={1} onPress={() => setPeekGuardian(null)}>
-          {peekGuardian && (
-            <View style={s.peekSheet} onStartShouldSetResponder={() => true}>
-              <View style={s.peekHandle} />
-
-              <View style={s.peekHeader}>
-                {peekGuardian.photoUrl ? (
-                  <Image source={{ uri: peekGuardian.photoUrl }} style={s.peekPhoto} />
-                ) : (
-                  <View style={[s.peekPhoto, s.peekPhotoFallback, { backgroundColor: avatarColor(peekGuardian.guardianName) }]}>
-                    <AppText style={s.peekInitial}>{peekGuardian.guardianName[0]?.toUpperCase()}</AppText>
-                  </View>
-                )}
-                <View style={s.peekHeaderInfo}>
-                  <AppText style={s.peekName}>{peekGuardian.guardianName}</AppText>
-                  {peekGuardian.county ? <AppText style={s.peekCounty}>📍 {peekGuardian.county}</AppText> : null}
-                </View>
+      <GuardianPeekSheet
+        visible={!!peekGuardian}
+        onClose={() => setPeekGuardian(null)}
+        guardian={peekGuardian ? {
+          name: peekGuardian.guardianName,
+          photoUrl: peekGuardian.photoUrl || null,
+          county: peekGuardian.county,
+          situationTags: peekGuardian.situationTags,
+        } : null}
+        footer={peekGuardian && (
+          <View style={s.peekActions}>
+            {peekGuardian.status === 'accepted' ? (
+              <View style={[s.peekActionBtn, { backgroundColor: NICO.successLight }]}>
+                <AppText style={[s.peekActionTxt, { color: NICO.success }]}>✓ Connected</AppText>
               </View>
-
-              {peekGuardian.learnerName ? (
-                <View style={s.peekSection}>
-                  <AppText style={s.peekSectionLabel}>Learner</AppText>
-                  <AppText style={s.peekLearnerName}>{peekGuardian.learnerName}</AppText>
-                  <AppText style={s.peekLearnerMeta}>
-                    {[
-                      peekGuardian.learnerDob ? `${calcAge(peekGuardian.learnerDob) ?? '—'} yrs` : null,
-                      peekGuardian.learnerGender || null,
-                    ].filter(Boolean).join('  ·  ')}
-                  </AppText>
-                </View>
-              ) : null}
-
-              {peekGuardian.situationTags.length > 0 ? (
-                <View style={s.peekSection}>
-                  <AppText style={s.peekSectionLabel}>Regional Support Category</AppText>
-                  <View style={s.peekTagWrap}>
-                    {peekGuardian.situationTags.map(tag => (
-                      <View key={tag} style={s.peekTag}>
-                        <AppText style={s.peekTagTxt}>{tag}</AppText>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              ) : null}
-
-              <View style={s.peekActions}>
-                {peekGuardian.status === 'accepted' ? (
-                  <View style={[s.peekActionBtn, { backgroundColor: NICO.successLight }]}>
-                    <AppText style={[s.peekActionTxt, { color: NICO.success }]}>✓ Connected</AppText>
-                  </View>
-                ) : peekGuardian.status === 'pending_sent' ? (
-                  <View style={[s.peekActionBtn, { backgroundColor: NICO.background }]}>
-                    <AppText style={[s.peekActionTxt, { color: NICO.textMuted }]}>Request Sent</AppText>
-                  </View>
-                ) : peekGuardian.status === 'pending_received' ? (
-                  <View style={{ flexDirection: 'row', gap: SPACING.md }}>
-                    <TouchableOpacity style={[s.peekActionBtn, { flex: 1, backgroundColor: NICO.primary }]} onPress={() => { accept(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
-                      <AppText style={[s.peekActionTxt, { color: NICO.textOnAccent }]}>✓ Accept</AppText>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[s.peekActionBtn, { flex: 1, backgroundColor: NICO.errorLight }]} onPress={() => { decline(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
-                      <AppText style={[s.peekActionTxt, { color: NICO.error }]}>✕ Decline</AppText>
-                    </TouchableOpacity>
-                  </View>
-                ) : peekGuardian.status === 'rejected' ? (
-                  <TouchableOpacity style={[s.peekActionBtn, { backgroundColor: NICO.primary }]} onPress={() => { sendRequest(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
-                    <AppText style={[s.peekActionTxt, { color: NICO.textOnAccent }]}>Send Request Again</AppText>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity style={[s.peekActionBtn, { backgroundColor: NICO.primary }]} onPress={() => { sendRequest(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
-                    <AppText style={[s.peekActionTxt, { color: NICO.textOnAccent }]}>Connect</AppText>
-                  </TouchableOpacity>
-                )}
+            ) : peekGuardian.status === 'pending_sent' ? (
+              <View style={[s.peekActionBtn, { backgroundColor: NICO.background }]}>
+                <AppText style={[s.peekActionTxt, { color: NICO.text }]}>Request Sent</AppText>
               </View>
-            </View>
-          )}
-        </TouchableOpacity>
-      </Modal>
+            ) : peekGuardian.status === 'pending_received' ? (
+              <View style={{ flexDirection: 'row', gap: SPACING.md }}>
+                <TouchableOpacity style={[s.peekActionBtn, { flex: 1, backgroundColor: NICO.primary }]} onPress={() => { accept(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
+                  <AppText style={[s.peekActionTxt, { color: NICO.textOnAccent }]}>✓ Accept</AppText>
+                </TouchableOpacity>
+                <TouchableOpacity style={[s.peekActionBtn, { flex: 1, backgroundColor: NICO.errorLight }]} onPress={() => { decline(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
+                  <AppText style={[s.peekActionTxt, { color: NICO.error }]}>✕ Decline</AppText>
+                </TouchableOpacity>
+              </View>
+            ) : peekGuardian.status === 'rejected' ? (
+              <TouchableOpacity style={[s.peekActionBtn, { backgroundColor: NICO.primary }]} onPress={() => { sendRequest(peekGuardian); setPeekGuardian(null); }} activeOpacity={0.85}>
+                <AppText style={[s.peekActionTxt, { color: NICO.textOnAccent }]}>Send Request Again</AppText>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        )}
+      />
       <GuardianFloatingTabBar />
     </View>
   );
@@ -843,19 +864,8 @@ const s = StyleSheet.create({
   moreBtnTextActive: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.primary },
 
   list:     { padding: SPACING.base, gap: SPACING.sm, paddingBottom: SPACING['2xl'] },
-  gridList: { padding: SPACING.base, paddingBottom: SPACING['2xl'] },
-  gridRow:  { gap: SPACING.sm, marginBottom: SPACING.sm },
 
-  // Shared grid card
-  gridCard: {
-    width: GRID_CARD_W,
-    backgroundColor: 'white', borderRadius: RADIUS.xl, padding: SPACING.base,
-    borderWidth: 1, borderColor: NICO.border,
-    alignItems: 'center', gap: SPACING.xs,
-    ...SHADOW.md,
-  },
-
-  // My Connections — horizontal row layout (not the tile grid used elsewhere)
+  // Horizontal row layout shared by all 3 tabs (My Connections, Requests, Find)
   connectionList: { gap: SPACING.sm },
   connectionCard: {
     backgroundColor: 'white', borderRadius: RADIUS.xl, padding: SPACING.base,
@@ -886,25 +896,7 @@ const s = StyleSheet.create({
     borderBottomLeftRadius: RADIUS.xl, borderBottomRightRadius: RADIUS.xl,
   },
   connectionTagsText: { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.medium },
-gridAvatar:        { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.xs },
-  gridAvatarInitial: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: 'white' },
-  gridName:          { ...TEXT_STYLE.bodyMedium, textAlign: 'center' as const },
-  gridCounty:          { ...TEXT_STYLE.caption, textAlign: 'center' as const },
   gridPendingLabel:  { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.primary },
-  gridAction:        { width: '100%', alignItems: 'center', marginTop: SPACING.xs },
-  gridConnectBtn: {
-    width: scale(44), height: scale(44), borderRadius: RADIUS.full,
-    backgroundColor: NICO.primaryLight, borderWidth: 1.5, borderColor: NICO.primary,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  gridConnectIcon: { fontSize: scale(22) },
-  gridTwoBtn:      { flexDirection: 'row' as const, gap: SPACING.xs, width: '100%' },
-  gridHalfBtn: {
-    flex: 1, borderRadius: RADIUS.lg,
-    paddingVertical: SPACING.sm, alignItems: 'center' as const,
-  },
-  gridHalfBtnTxt: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold },
-  gridWrap:        { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: SPACING.sm },
 
   // Sent request status badges
   badgeAccepted:    { backgroundColor: NICO.successLight, borderRadius: RADIUS.lg, paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs },
@@ -936,40 +928,8 @@ gridAvatar:        { width: 56, height: 56, borderRadius: 28, justifyContent: 'c
   emptyBtn:    { ...BTN_SIZE.md, ...BTN_VARIANT.primary, marginTop: SPACING.sm },
   emptyBtnTxt: { ...TEXT_STYLE.buttonSmall },
 
-  // Quick-look sheet
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  peekSheet: {
-    backgroundColor: NICO.screenBg, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl,
-    maxHeight: '80%', paddingBottom: SPACING.xl,
-  },
-  peekHandle: {
-    width: 40, height: 4, borderRadius: 2, backgroundColor: NICO.border,
-    alignSelf: 'center', marginTop: SPACING.md, marginBottom: SPACING.xs,
-  },
-  peekHeader: {
-    flexDirection: 'row', alignItems: 'center', gap: SPACING.base,
-    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base,
-    borderBottomWidth: 1, borderBottomColor: NICO.border,
-  },
-  peekPhoto:         { width: 72, height: 72, borderRadius: 36 },
-  peekPhotoFallback: { justifyContent: 'center', alignItems: 'center' },
-  peekInitial:       { fontSize: 28, fontWeight: FONT_WEIGHT.extraBold, color: 'white' },
-  peekHeaderInfo:    { flex: 1, gap: SPACING.xs },
-  peekName:          { ...TEXT_STYLE.cardTitle },
-  peekCounty:          { ...TEXT_STYLE.caption },
-
-  peekSection:      { paddingHorizontal: SPACING.lg, paddingTop: SPACING.base, gap: SPACING.xs },
-  peekSectionLabel: { ...TEXT_STYLE.labelSmall, textTransform: 'uppercase', letterSpacing: 0.7 },
-  peekLearnerName:  { ...TEXT_STYLE.bodyMedium, fontWeight: FONT_WEIGHT.bold },
-  peekLearnerMeta:  { ...TEXT_STYLE.caption },
-  peekTagWrap:      { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs },
-  peekTag: {
-    backgroundColor: NICO.background, borderRadius: RADIUS.full,
-    paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs,
-    borderWidth: 1, borderColor: NICO.border,
-  },
-  peekTagTxt:    { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
-  peekActions:   { paddingHorizontal: SPACING.lg, paddingTop: SPACING.base },
+  // Footer actions injected into the shared GuardianPeekSheet
+  peekActions:   { marginTop: SPACING.base },
   peekActionBtn: { borderRadius: RADIUS.xl, paddingVertical: SPACING.base, alignItems: 'center' },
   peekActionTxt: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold },
 });

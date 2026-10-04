@@ -48,6 +48,7 @@ export default function CreateEventScreen() {
   const [name, setName]               = useState('');
   const [description, setDescription] = useState('');
   const [venue, setVenue]             = useState('');
+  const [duration, setDuration]       = useState('');
   const [category, setCategory]       = useState('');
   const [categories, setCategories]   = useState<string[]>([]);
   const [submitting, setSubmitting]   = useState(false);
@@ -87,6 +88,7 @@ export default function CreateEventScreen() {
         event_date: formatDate(date),
         event_time: time ? formatTime24(time) : null,
         venue: venue.trim() || null,
+        duration: duration.trim() || null,
         category: category || null,
       })
       .select('id')
@@ -133,7 +135,7 @@ export default function CreateEventScreen() {
 
           {/* Category picker */}
           {categories.length > 0 && (
-            <Field label="Category" hint="optional">
+            <Field label="Category">
               <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.selectGradient}>
                 <TouchableOpacity style={s.pickerBtn} onPress={() => setShowCategoryPicker(true)} activeOpacity={0.75}>
                   <AppText style={[s.pickerBtnTxt, !category && s.pickerPlaceholder]}>
@@ -164,7 +166,7 @@ export default function CreateEventScreen() {
           </Field>
 
           {/* Time picker */}
-          <Field label="Time" hint="optional">
+          <Field label="Time">
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.selectGradient}>
               <TouchableOpacity style={s.pickerBtn} onPress={() => { setTempTime(time ?? (() => { const t = new Date(); t.setMinutes(0,0,0); return t; })()); setShowTimePicker(true); }} activeOpacity={0.75}>
                 <AppText style={[s.pickerBtnTxt, !time && s.pickerPlaceholder]}>
@@ -181,7 +183,20 @@ export default function CreateEventScreen() {
             </LinearGradient>
           </Field>
 
-          <Field label="Venue" hint="optional">
+          <Field label="Event duration">
+            <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.inputGradient}>
+              <TextInput
+                style={s.input}
+                value={duration}
+                onChangeText={setDuration}
+                placeholder="e.g. 2 hours"
+                placeholderTextColor={NICO.textMuted}
+                maxLength={50}
+              />
+            </LinearGradient>
+          </Field>
+
+          <Field label="Venue">
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.inputGradient}>
               <TextInput
                 style={s.input}
@@ -194,7 +209,7 @@ export default function CreateEventScreen() {
             </LinearGradient>
           </Field>
 
-          <Field label="Description" hint="optional">
+          <Field label="Description">
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.inputGradient}>
               <TextInput
                 style={[s.input, s.textArea]}
@@ -295,12 +310,11 @@ export default function CreateEventScreen() {
   );
 }
 
-function Field({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: React.ReactNode }) {
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <View style={s.field}>
       <View style={s.fieldLabelRow}>
         <AppText style={s.fieldLabel}>{label}{required ? <AppText style={{ color: NICO.error }}> *</AppText> : ''}</AppText>
-        {hint && <AppText style={s.fieldHint}>{hint}</AppText>}
       </View>
       {children}
     </View>
@@ -315,7 +329,6 @@ const s = StyleSheet.create({
   field:         { gap: SPACING.sm },
   fieldLabelRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   fieldLabel:    { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
-  fieldHint:     { fontSize: FONT_SIZE.xs, color: NICO.textMuted },
 
   inputGradient: { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
   input:         { ...INPUT.base, borderWidth: 0 },
