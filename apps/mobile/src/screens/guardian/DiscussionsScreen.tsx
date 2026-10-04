@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
 import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
+import GuardianPeekSheet, { GuardianPeekInfo } from '../../components/GuardianPeekSheet';
 import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
@@ -45,6 +46,7 @@ interface Post {
   guardianId: string;
   guardianName: string;
   replyCount: number;
+  categoryId?: string;
   categoryLabel?: string;
 }
 
@@ -57,7 +59,7 @@ export default function DiscussionsScreen() {
 
   const [posts, setPosts]           = useState<Post[]>([]);
   const [loading, setLoading]       = useState(true);
-  const [tab, setTab]               = useState<'all' | 'mine'>('all');
+  const [tab, setTab]               = useState<'all' | 'mine'>('mine');
   const [showCreate, setShowCreate] = useState(false);
 
   useLayoutEffect(() => {
@@ -83,6 +85,7 @@ export default function DiscussionsScreen() {
   const [newTitle, setNewTitle]     = useState('');
   const [newBody, setNewBody]       = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory]   = useState<Category | null>(null);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
@@ -99,6 +102,33 @@ export default function DiscussionsScreen() {
   const [showFilterCatPicker, setShowFilterCatPicker] = useState(false);
   const [sheetOpen, setSheetOpen]           = useState(false);
 
+  const [guardianSheet, setGuardianSheet]               = useState<GuardianPeekInfo | null>(null);
+  const [loadingGuardianSheet, setLoadingGuardianSheet] = useState(false);
+
+  async function openGuardianSheet(guardianId: string) {
+    setGuardianSheet(null);
+    setLoadingGuardianSheet(true);
+    const { data } = await supabase
+      .from('guardians')
+      .select('id, full_name, photo_url, county, situation_tags')
+      .eq('id', guardianId)
+      .single();
+    if (data) {
+      setGuardianSheet({
+        name: data.full_name ?? '',
+        photoUrl: data.photo_url ?? null,
+        county: data.county ?? '',
+        situationTags: data.situation_tags ?? [],
+      });
+    }
+    setLoadingGuardianSheet(false);
+  }
+
+  function closeGuardianSheet() {
+    setGuardianSheet(null);
+    setLoadingGuardianSheet(false);
+  }
+
   useEffect(() => {
     supabase.from('discussion_category_options').select('id, label').order('label')
       .then(({ data }) => setCategories(data ?? []));
@@ -112,6 +142,35 @@ export default function DiscussionsScreen() {
     setNewBody('');
     setSelectedCategory(null);
     setShowCategoryPicker(false);
+    setEditingPostId(null);
+  }
+
+  function openEditSheet(post: Post) {
+    setEditingPostId(post.id);
+    setNewTitle(post.title);
+    setNewBody(post.body);
+    setSelectedCategory(post.categoryId ? (categories.find(c => c.id === post.categoryId) ?? null) : null);
+    setShowCreate(true);
+  }
+
+  function deletePost(post: Post) {
+    const replyWarning = post.replyCount > 0
+      ? ` This will also delete ${post.replyCount} ${post.replyCount === 1 ? 'reply' : 'replies'}.`
+      : '';
+    Alert.alert(
+      'Delete discussion',
+      `Are you sure you want to delete "${post.title}"? This cannot be undone.${replyWarning}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive', onPress: async () => {
+            const { error } = await supabase.from('discussion_posts').delete().eq('id', post.id);
+            if (error) Alert.alert('Error', error.message);
+            else load();
+          },
+        },
+      ]
+    );
   }
 
   async function load() {
@@ -127,6 +186,7 @@ export default function DiscussionsScreen() {
         guardianId: p.guardian_id,
         guardianName: p.guardians?.full_name ?? 'Unknown',
         replyCount: (p.discussion_replies ?? []).length,
+        categoryId: p.category_id ?? undefined,
         categoryLabel: p.discussion_category_options?.label ?? undefined,
       }))
     );
@@ -136,16 +196,22 @@ export default function DiscussionsScreen() {
   async function submitPost() {
     if (!newTitle.trim() || !newBody.trim() || !guardian) return;
     setSubmitting(true);
-    const { error } = await supabase.from('discussion_posts').insert({
-      guardian_id: guardian.id,
-      title: newTitle.trim(),
-      body: newBody.trim(),
-      category_id: selectedCategory?.id ?? null,
-    });
+    const { error } = editingPostId
+      ? await supabase.from('discussion_posts').update({
+          title: newTitle.trim(),
+          body: newBody.trim(),
+          category_id: selectedCategory?.id ?? null,
+        }).eq('id', editingPostId)
+      : await supabase.from('discussion_posts').insert({
+          guardian_id: guardian.id,
+          title: newTitle.trim(),
+          body: newBody.trim(),
+          category_id: selectedCategory?.id ?? null,
+        });
     if (error) {
       Alert.alert('Error', error.message);
     } else {
-      setNewTitle(''); setNewBody(''); setSelectedCategory(null); setShowCreate(false);
+      closeCreateSheet();
       load();
     }
     setSubmitting(false);
@@ -283,7 +349,7 @@ export default function DiscussionsScreen() {
 
       {/* Tab bar */}
       <View style={s.tabBar}>
-        {(['all', 'mine'] as const).map(t => (
+        {(['mine', 'all'] as const).map(t => (
           <TouchableOpacity key={t} style={[s.tab, tab === t && s.tabActive]} onPress={() => setTab(t)} activeOpacity={0.8}>
             <AppText style={[s.tabTxt, tab === t && s.tabTxtActive]}>
               {t === 'all' ? 'All Discussions' : 'My Discussions'}
@@ -308,15 +374,39 @@ export default function DiscussionsScreen() {
               onPress={() => navigation.navigate('DiscussionDetail', { postId: p.id })}
               activeOpacity={0.82}
             >
-              {p.categoryLabel && (
-                <View style={s.categoryBadge}>
-                  <AppText style={s.categoryBadgeText}>{p.categoryLabel}</AppText>
+              {(p.categoryLabel || tab === 'mine') && (
+                <View style={s.cardTopRow}>
+                  {p.categoryLabel ? (
+                    <View style={s.categoryBadge}>
+                      <AppText style={s.categoryBadgeText}>{p.categoryLabel}</AppText>
+                    </View>
+                  ) : <View />}
+                  {tab === 'mine' && (
+                    <View style={s.cardActions}>
+                      <TouchableOpacity
+                        style={s.cardActionBtn}
+                        onPress={(e) => { e.stopPropagation(); openEditSheet(p); }}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      >
+                        <AppText style={s.cardActionIcon}>✏️</AppText>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[s.cardActionBtn, s.cardActionBtnDanger]}
+                        onPress={(e) => { e.stopPropagation(); deletePost(p); }}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      >
+                        <AppText style={s.cardActionIcon}>🗑️</AppText>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
               )}
               <AppText style={s.postTitle}>{p.title}</AppText>
               <AppText style={s.postBody} numberOfLines={2}>{p.body}</AppText>
               <View style={s.postMeta}>
-                <AppText style={s.metaText}>{p.guardianName}</AppText>
+                <TouchableOpacity onPress={(e) => { e.stopPropagation(); openGuardianSheet(p.guardianId); }} hitSlop={{ top: 6, bottom: 6, left: 0, right: 6 }}>
+                  <AppText style={s.guardianLink}>{p.guardianName}</AppText>
+                </TouchableOpacity>
                 <AppText style={s.metaDot}>·</AppText>
                 <AppText style={s.metaText}>{timeAgo(p.createdAt)}</AppText>
                 <AppText style={s.metaDot}>·</AppText>
@@ -426,7 +516,7 @@ export default function DiscussionsScreen() {
           <View style={s.modalSheet}>
             <View style={s.modalHandle} />
             <View style={s.modalTitleRow}>
-              <AppText style={s.modalTitle}>Start a Discussion</AppText>
+              <AppText style={s.modalTitle}>{editingPostId ? 'Edit Discussion' : 'Start a Discussion'}</AppText>
               <TouchableOpacity onPress={closeCreateSheet} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <AppText style={s.modalClose}>✕</AppText>
               </TouchableOpacity>
@@ -434,7 +524,7 @@ export default function DiscussionsScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <View style={s.formGap}>
-                <AppText style={s.fieldLabel}>Topic <AppText style={{ color: NICO.error }}>*</AppText></AppText>
+                <AppText style={s.fieldLabel}>Topic <AppText style={s.required}>*</AppText></AppText>
                 <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.fieldGradient}>
                   <TextInput
                     style={s.fieldInput}
@@ -448,7 +538,7 @@ export default function DiscussionsScreen() {
 
                 {categories.length > 0 && (
                   <>
-                    <AppText style={s.fieldLabel}>Category <AppText style={{ color: NICO.error }}>*</AppText></AppText>
+                    <AppText style={s.fieldLabel}>Category <AppText style={s.required}>*</AppText></AppText>
                     <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.fieldGradient}>
                       <TouchableOpacity style={s.pickerBtn} onPress={() => setShowCategoryPicker(o => !o)} activeOpacity={0.7}>
                         <AppText style={[s.pickerBtnText, !selectedCategory && { color: NICO.textMuted }]}>
@@ -479,7 +569,7 @@ export default function DiscussionsScreen() {
                   </>
                 )}
 
-                <AppText style={s.fieldLabel}>Details <AppText style={{ color: NICO.error }}>*</AppText></AppText>
+                <AppText style={s.fieldLabel}>Details <AppText style={s.required}>*</AppText></AppText>
                 <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.fieldGradient}>
                   <TextInput
                     style={[s.fieldInput, s.fieldTextArea]}
@@ -501,7 +591,7 @@ export default function DiscussionsScreen() {
                 >
                   {submitting
                     ? <ActivityIndicator color={NICO.textOnAccent} />
-                    : <AppText style={s.submitBtnText}>Post Discussion</AppText>
+                    : <AppText style={s.submitBtnText}>{editingPostId ? 'Save Changes' : 'Post Discussion'}</AppText>
                   }
                 </TouchableOpacity>
               </View>
@@ -509,6 +599,12 @@ export default function DiscussionsScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+      <GuardianPeekSheet
+        visible={!!guardianSheet || loadingGuardianSheet}
+        guardian={guardianSheet}
+        loading={loadingGuardianSheet}
+        onClose={closeGuardianSheet}
+      />
       <GuardianFloatingTabBar />
     </View>
   );
@@ -560,16 +656,26 @@ const s = StyleSheet.create({
     ...SHADOW.md,
   },
   postTitle: { ...TEXT_STYLE.cardTitle },
-  postBody:  { fontSize: FONT_SIZE.md, color: NICO.textMuted, lineHeight: 20 },
+  postBody:  { fontSize: FONT_SIZE.lg, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 22 },
   postMeta:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: SPACING.xs },
   metaText:  { ...TEXT_STYLE.caption },
   metaDot:   { fontSize: FONT_SIZE.sm, color: NICO.border },
+  guardianLink: { fontSize: FONT_SIZE.sm, color: '#2563EB', fontWeight: FONT_WEIGHT.bold, textDecorationLine: 'underline' },
 
+  cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
   categoryBadge: {
     alignSelf: 'flex-start', backgroundColor: NICO.primaryLight,
-    borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm, paddingVertical: 2, marginBottom: 2,
+    borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm, paddingVertical: 2,
   },
   categoryBadgeText: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
+
+  cardActions: { flexDirection: 'row', gap: SPACING.xs },
+  cardActionBtn: {
+    width: scale(28), height: scale(28), borderRadius: scale(14),
+    backgroundColor: NICO.primaryLight, justifyContent: 'center', alignItems: 'center',
+  },
+  cardActionBtnDanger: { backgroundColor: NICO.errorLight },
+  cardActionIcon: { fontSize: scale(14) },
 
   // FAB
 
@@ -636,7 +742,8 @@ const s = StyleSheet.create({
 
   formGap: { gap: SPACING.sm, paddingBottom: SPACING.lg },
 
-  fieldLabel:   { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  fieldLabel:   { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  required:     { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.error },
   fieldGradient: {
     padding: BUTTERFLY_BORDER.width,
     borderRadius: RADIUS.md + BUTTERFLY_BORDER.width,
