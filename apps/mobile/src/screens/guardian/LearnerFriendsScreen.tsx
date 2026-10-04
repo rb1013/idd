@@ -56,7 +56,6 @@ interface Friend {
   learnerRegion: string;
   learnerAge: number | null;
   guardianName: string | null;
-  medicalConditions: string[];
 }
 
 interface FriendRequest {
@@ -68,7 +67,6 @@ interface FriendRequest {
   requesterCounty: string;
   requesterRegion: string;
   requesterGuardianName: string | null;
-  medicalConditions: string[];
   myLearnerId: string;
   myLearnerName: string;
   direction: 'incoming' | 'outgoing';
@@ -94,7 +92,6 @@ interface LearnerResult {
   likes:             string[];
   dislikes:          string[];
   abilities:         string[];
-  medicalConditions: string[];
   connectionStatus: 'none' | 'pending_sent' | 'pending_received' | 'accepted';
   guardianName: string | null;
 }
@@ -139,7 +136,6 @@ export default function LearnerFriendsScreen() {
   const [catLikes,      setCatLikes]      = useState<string[]>([]);
   const [catDislikes,   setCatDislikes]   = useState<string[]>([]);
   const [catAbilities,  setCatAbilities]  = useState<string[]>([]);
-  const [catMedical,    setCatMedical]    = useState<string[]>([]);
   const [blockedUsers,  setBlockedUsers]  = useState<BlockedUser[]>([]);
   const [reportedMap,   setReportedMap]   = useState<Map<string, string | null>>(new Map());
   const [reasonModal,   setReasonModal]   = useState<{ name: string; reason: string | null } | null>(null);
@@ -155,7 +151,6 @@ export default function LearnerFriendsScreen() {
   const [filterLikes,     setFilterLikes]     = useState<string[]>([]);
   const [filterDislikes,  setFilterDislikes]  = useState<string[]>([]);
   const [filterAbilities, setFilterAbilities] = useState<string[]>([]);
-  const [filterMedical,   setFilterMedical]   = useState<string[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   useFocusEffect(useCallback(() => {
@@ -283,16 +278,6 @@ export default function LearnerFriendsScreen() {
     const profileMap: Record<string, any> = {};
     (profiles ?? []).forEach((p: any) => { profileMap[p.id] = p; });
 
-    const { data: medicalData } = otherIds.length > 0
-      ? await supabase.from('user_medical_conditions').select('user_id, medical_conditions(label)').in('user_id', otherIds)
-      : { data: [] };
-
-    const medicalMap: Record<string, string[]> = {};
-    (medicalData ?? []).forEach((r: any) => {
-      if (!medicalMap[r.user_id]) medicalMap[r.user_id] = [];
-      if (r.medical_conditions?.label) medicalMap[r.user_id].push(r.medical_conditions.label);
-    });
-
     const list: Friend[] = accepted.map((f: any) => {
       const otherId = myIds.includes(f.requester_id) ? f.addressee_id : f.requester_id;
       const p = profileMap[otherId];
@@ -305,7 +290,6 @@ export default function LearnerFriendsScreen() {
         learnerRegion:p?.region ?? '',
         learnerAge:   calcAge(p?.date_of_birth ?? null),
         guardianName: p?.guardian_id ? (guardianNameMap[p.guardian_id] ?? null) : null,
-        medicalConditions: medicalMap[otherId] ?? [],
       };
     });
 
@@ -345,15 +329,6 @@ export default function LearnerFriendsScreen() {
     const profileMap: Record<string, any> = {};
     (otherProfiles ?? []).forEach((p: any) => { profileMap[p.id] = p; });
 
-    const { data: reqMedicalData } = otherIds.length > 0
-      ? await supabase.from('user_medical_conditions').select('user_id, medical_conditions(label)').in('user_id', otherIds)
-      : { data: [] };
-    const reqMedicalMap: Record<string, string[]> = {};
-    (reqMedicalData ?? []).forEach((r: any) => {
-      if (!reqMedicalMap[r.user_id]) reqMedicalMap[r.user_id] = [];
-      if (r.medical_conditions?.label) reqMedicalMap[r.user_id].push(r.medical_conditions.label);
-    });
-
     setRequests(friendships.map((f: any) => {
       const iAmRequester = myIds.includes(f.requester_id);
       const myLearnerId  = iAmRequester ? f.requester_id : f.addressee_id;
@@ -368,7 +343,6 @@ export default function LearnerFriendsScreen() {
         requesterCounty: other?.county ?? '',
         requesterRegion: other?.region ?? '',
         requesterGuardianName: other?.guardian_id ? (guardianNameMap[other.guardian_id] ?? null) : null,
-        medicalConditions: reqMedicalMap[otherId] ?? [],
         myLearnerId,
         myLearnerName: myMap[myLearnerId] ?? '',
         direction: iAmRequester ? 'outgoing' : 'incoming',
@@ -398,8 +372,6 @@ export default function LearnerFriendsScreen() {
       { data: dislikesData },
       { data: abilitiesData },
       { data: friendships },
-      { data: medicalOptions },
-      { data: medicalData },
       { data: otherGuardians },
     ] = await Promise.all([
       supabase.from('categories').select('name, type').order('name'),
@@ -408,8 +380,6 @@ export default function LearnerFriendsScreen() {
       otherIds.length > 0 ? supabase.from('user_dislikes').select('user_id, categories(name)').in('user_id', otherIds) : none,
       otherIds.length > 0 ? supabase.from('user_abilities').select('user_id, categories(name)').in('user_id', otherIds) : none,
       myIds.length > 0 ? supabase.from('friendships').select('requester_id, addressee_id, status').or(myIds.map((id: string) => `requester_id.eq.${id},addressee_id.eq.${id}`).join(',')) : none,
-      supabase.from('medical_conditions').select('label').order('label'),
-      otherIds.length > 0 ? supabase.from('user_medical_conditions').select('user_id, medical_conditions(label)').in('user_id', otherIds) : none,
       otherGuardianIds.length > 0 ? supabase.from('guardians').select('id, full_name').in('id', otherGuardianIds) : none,
     ]);
 
@@ -420,7 +390,6 @@ export default function LearnerFriendsScreen() {
     setCatLikes(cats.filter(c => c.type === 'like').map(c => c.name));
     setCatDislikes(cats.filter(c => c.type === 'dislike').map(c => c.name));
     setCatAbilities(cats.filter(c => c.type === 'ability').map(c => c.name));
-    setCatMedical((medicalOptions ?? []).map((r: any) => r.label));
 
     const levelMap: Record<string, string> = {};
     (chatPrefs ?? []).forEach((c: any) => { levelMap[c.user_id] = c.comprehension_level; });
@@ -436,12 +405,6 @@ export default function LearnerFriendsScreen() {
     const likesMap     = buildMap(likesData     ?? []);
     const dislikesMap  = buildMap(dislikesData  ?? []);
     const abilitiesMap = buildMap(abilitiesData ?? []);
-
-    const medicalMap: Record<string, string[]> = {};
-    (medicalData ?? []).forEach((r: any) => {
-      if (!medicalMap[r.user_id]) medicalMap[r.user_id] = [];
-      if (r.medical_conditions?.label) medicalMap[r.user_id].push(r.medical_conditions.label);
-    });
 
     function getStatus(otherId: string): LearnerResult['connectionStatus'] {
       const f = (friendships ?? []).find((fr: any) =>
@@ -460,7 +423,6 @@ export default function LearnerFriendsScreen() {
       likes:             (likesMap[p.id]     ?? []).slice(0, 5),
       dislikes:          (dislikesMap[p.id]  ?? []).slice(0, 5),
       abilities:         (abilitiesMap[p.id] ?? []).slice(0, 8),
-      medicalConditions: medicalMap[p.id]    ?? [],
       connectionStatus: getStatus(p.id),
       guardianName: p.guardian_id ? (guardianNameMap[p.guardian_id] ?? null) : null,
     })));
@@ -534,7 +496,7 @@ export default function LearnerFriendsScreen() {
   // ── Filter helpers ─────────────────────────────────────────────────────────
 
   const totalActive = filterAgeGroups.length + filterLevels.length + filterLikes.length +
-    filterDislikes.length + filterAbilities.length + filterMedical.length;
+    filterDislikes.length + filterAbilities.length;
 
   const activePills = [
     ...filterAgeGroups.map(g => ({ key: `age-${g}`,  label: g,         type: 'age',     raw: g })),
@@ -542,7 +504,6 @@ export default function LearnerFriendsScreen() {
     ...filterLikes.map(l     => ({ key: `lk-${l}`,   label: `❤️ ${l}`, type: 'like',    raw: l })),
     ...filterDislikes.map(l  => ({ key: `dis-${l}`,  label: `🙅 ${l}`, type: 'dislike', raw: l })),
     ...filterAbilities.map(l => ({ key: `abi-${l}`,  label: `⭐ ${l}`, type: 'ability', raw: l })),
-    ...filterMedical.map(l   => ({ key: `med-${l}`,  label: `🏥 ${l}`, type: 'medical', raw: l })),
   ];
 
   function removePill(type: string, val: string) {
@@ -551,13 +512,12 @@ export default function LearnerFriendsScreen() {
     if (type === 'like')    setFilterLikes(p => p.filter(x => x !== val));
     if (type === 'dislike') setFilterDislikes(p => p.filter(x => x !== val));
     if (type === 'ability') setFilterAbilities(p => p.filter(x => x !== val));
-    if (type === 'medical') setFilterMedical(p => p.filter(x => x !== val));
   }
 
   function clearAllFilters() {
     setFilterAgeGroups([]); setFilterLevels([]);
     setFilterLikes([]);     setFilterDislikes([]);
-    setFilterAbilities([]); setFilterMedical([]);
+    setFilterAbilities([]);
   }
 
   function applyFilters(list: LearnerResult[]) {
@@ -571,15 +531,14 @@ export default function LearnerFriendsScreen() {
       if (filterLikes.length > 0 && !l.likes.some(lk => filterLikes.includes(lk))) return false;
       if (filterDislikes.length > 0 && !l.dislikes.some(d => filterDislikes.includes(d))) return false;
       if (filterAbilities.length > 0 && !l.abilities.some(a => filterAbilities.includes(a))) return false;
-      if (filterMedical.length > 0 && !l.medicalConditions.some(m => filterMedical.includes(m))) return false;
       return true;
     });
   }
 
-  const filtered     = useMemo(() => applyFilters(learners), [learners, searchName, searchCounty, filterAgeGroups, filterLevels, filterLikes, filterDislikes, filterAbilities, filterMedical]);
+  const filtered     = useMemo(() => applyFilters(learners), [learners, searchName, searchCounty, filterAgeGroups, filterLevels, filterLikes, filterDislikes, filterAbilities]);
   const levelLabels  = COMPREHENSION_LEVELS.map((c: any) => c.label as string);
 
-  const findResetKey = `${searchName}|${searchCounty}|${filterAgeGroups.join(',')}|${filterLevels.join(',')}|${filterLikes.join(',')}|${filterDislikes.join(',')}|${filterAbilities.join(',')}|${filterMedical.join(',')}`;
+  const findResetKey = `${searchName}|${searchCounty}|${filterAgeGroups.join(',')}|${filterLevels.join(',')}|${filterLikes.join(',')}|${filterDislikes.join(',')}|${filterAbilities.join(',')}`;
   const { visible: visibleFind, showLoadMore: showLoadMoreFind, loadMore: loadMoreFind, showCapMessage: showCapFind, pageSize: pageSizeFind } = useVisibleCount(filtered, findResetKey);
 
   const incomingRequests = requests.filter(r => r.direction === 'incoming');
@@ -679,11 +638,6 @@ export default function LearnerFriendsScreen() {
                       </TouchableOpacity>
                     </View>
                   )}
-                  {f.medicalConditions.length > 0 && (
-                    <View style={s.medicalStrip}>
-                      <AppText style={s.cardMedical}>🏥 {f.medicalConditions.join(', ')}</AppText>
-                    </View>
-                  )}
                 </TouchableOpacity>
               );
             }}
@@ -766,11 +720,6 @@ export default function LearnerFriendsScreen() {
                           )}
                         </View>
                       </View>
-                      {req.medicalConditions.length > 0 && (
-                        <View style={s.medicalStrip}>
-                          <AppText style={s.cardMedical}>🏥 {req.medicalConditions.join(', ')}</AppText>
-                        </View>
-                      )}
                     </View>
                   );
                 })}
@@ -808,11 +757,6 @@ export default function LearnerFriendsScreen() {
                           )}
                         </View>
                       </View>
-                      {req.medicalConditions.length > 0 && (
-                        <View style={s.medicalStrip}>
-                          <AppText style={s.cardMedical}>🏥 {req.medicalConditions.join(', ')}</AppText>
-                        </View>
-                      )}
                     </View>
                   );
                 })}
@@ -911,11 +855,6 @@ export default function LearnerFriendsScreen() {
                       </TouchableOpacity>
                     )}
                   </View>
-                  {l.medicalConditions.length > 0 && (
-                    <View style={s.medicalStrip}>
-                      <AppText style={s.cardMedical}>🏥 {l.medicalConditions.join(', ')}</AppText>
-                    </View>
-                  )}
                 </TouchableOpacity>
               );
             }}
@@ -1033,12 +972,6 @@ export default function LearnerFriendsScreen() {
             selected: filterAbilities,
             onToggle: val => setFilterAbilities(p => toggle(p, val)),
           },
-          ...(catMedical.length > 0 ? [{
-            key: 'medical', emoji: '🏥', title: 'Medical Condition',
-            options: catMedical.map(l => ({ key: l, label: l })),
-            selected: filterMedical,
-            onToggle: (val: string) => setFilterMedical(p => toggle(p, val)),
-          }] : []),
         ] satisfies FilterSheetSection[]}
       />
 
@@ -1107,21 +1040,12 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: 'transparent',
     ...SHADOW.md,
   },
-  // Cards needing extra rows below the main one (Reported pill, medical-conditions strip) — stack instead of a single row.
+  // Cards needing an extra row below the main one (Reported pill) — stack instead of a single row.
   cardColumn:   { flexDirection: 'column', alignItems: 'stretch', gap: 0 },
   cardMainRow:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   cardInfo:    { flex: 1, minWidth: 0, gap: 2 },
-  // Bleeds past the card's own padding to span edge-to-edge and sit flush against its bottom corners.
-  medicalStrip: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: NICO.background,
-    marginTop: SPACING.sm, marginHorizontal: -SPACING.md, marginBottom: -SPACING.md,
-    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    borderBottomLeftRadius: RADIUS.xl, borderBottomRightRadius: RADIUS.xl,
-  },
   cardName:    { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
   cardMeta:    { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.medium },
-  cardMedical: { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.medium },
 
   avatarCol: { alignItems: 'center', gap: 2 },
   avatarAge: { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold },

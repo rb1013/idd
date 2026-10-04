@@ -27,7 +27,7 @@ import {
 
 type Props = { navigation: NativeStackNavigationProp<GuardianNavParamList, 'CreateUser'> };
 
-type Step = 'social' | 'interests' | 'location' | 'health';
+type Step = 'social' | 'interests' | 'location';
 
 function generatePassword(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -68,17 +68,9 @@ export default function CreateUserScreen({ navigation }: Props) {
   const [selectedAbilities, setSelectedAbilities] = useState<string[]>([]);
   const [comprehension, setComprehension] = useState('easy');
 
-  // Medical conditions
-  const [medicalConditionOptions, setMedicalConditionOptions] = useState<{ id: string; label: string }[]>([]);
-  const [selectedMedicalConditions, setSelectedMedicalConditions] = useState<string[]>([]);
-
   useEffect(() => {
-    Promise.all([
-      supabase.from('categories').select('*'),
-      supabase.from('medical_conditions').select('id, label').order('label'),
-    ]).then(([catsRes, medRes]) => {
-      setCategories(catsRes.data || []);
-      setMedicalConditionOptions(medRes.data || []);
+    supabase.from('categories').select('*').then(({ data }) => {
+      setCategories(data || []);
     });
   }, []);
 
@@ -162,10 +154,6 @@ export default function CreateUserScreen({ navigation }: Props) {
     const dislikesRows = dislikeIds.map(id => ({ user_id: userId, category_id: id }));
     const abilitiesRows = abilityIds.map(id => ({ user_id: userId, category_id: id }));
 
-    const medCondIds = selectedMedicalConditions
-      .map(label => medicalConditionOptions.find(c => c.label === label)?.id)
-      .filter(Boolean) as string[];
-
     const [, , , chatResult] = await Promise.all([
       likesRows.length && supabase.from('user_likes').insert(likesRows),
       dislikesRows.length && supabase.from('user_dislikes').insert(dislikesRows),
@@ -178,14 +166,7 @@ export default function CreateUserScreen({ navigation }: Props) {
         available_days: [],
         comprehension_level: comprehension,
       }),
-      supabase.from('health_info').insert({ user_id: userId, willing_to_share: false, description: null }),
     ]);
-
-    if (medCondIds.length) {
-      await supabase.from('user_medical_conditions').insert(
-        medCondIds.map(id => ({ user_id: userId, medical_condition_id: id }))
-      );
-    }
 
     if (chatResult && 'error' in chatResult && chatResult.error) {
       Alert.alert('Chat prefs error', chatResult.error.message);
@@ -218,7 +199,7 @@ export default function CreateUserScreen({ navigation }: Props) {
     navigation.goBack();
   }
 
-  const steps: Step[] = ['social', 'interests', 'location', 'health'];
+  const steps: Step[] = ['social', 'interests', 'location'];
   const stepIndex = steps.indexOf(step);
 
   return (
@@ -355,34 +336,6 @@ export default function CreateUserScreen({ navigation }: Props) {
             <DropdownPicker label="County *" value={county} options={CA_COUNTIES} onSelect={setCounty} placeholder="Select county..." />
           </View>
         )}
-
-        {step === 'health' && (
-          <View>
-            <AppText style={styles.sectionTitle}>Medical Condition</AppText>
-            <AppText style={styles.sectionSubtitle}>Select all that apply to this learner</AppText>
-
-            {medicalConditionOptions.length === 0 ? (
-              <AppText style={styles.emptyHint}>No medical conditions have been added by the admin yet.</AppText>
-            ) : (
-              <MultiSelectDropdown
-                label="Select conditions"
-                options={medicalConditionOptions.map(c => c.label)}
-                selected={selectedMedicalConditions}
-                onToggle={setSelectedMedicalConditions}
-                placeholder="Tap to select..."
-              />
-            )}
-
-            <View style={styles.disclaimer}>
-              <AppText style={styles.disclaimerText}>
-                ⚠️  This information will <AppText style={styles.disclaimerBold}>not</AppText> be displayed on the learner's profile. It will only be used by guardians to find compatible friends.{'\n\n'}
-                If you do not find your learner's medical condition in the list, please contact the admin at{' '}
-                <AppText style={styles.disclaimerEmail}>nicosupport@gmail.com</AppText>
-                . The admin will add it and let you know when it is available in this dropdown.
-              </AppText>
-            </View>
-          </View>
-        )}
         </ContentContainer>
       </ScrollView>
 
@@ -516,14 +469,6 @@ const styles = StyleSheet.create({
   backBtnText: { ...TEXT_STYLE.bodyMedium },
   nextBtn: { flex: 2, ...BTN_VARIANT.primary, borderRadius: RADIUS.md, padding: SPACING.base, alignItems: 'center' },
   nextBtnText: { ...TEXT_STYLE.buttonPrimary },
-
-  disclaimer: {
-    marginTop: SPACING.lg, backgroundColor: NICO.warningLight, borderRadius: RADIUS.md,
-    borderWidth: 1.5, borderColor: NICO.warning, padding: SPACING.base,
-  },
-  disclaimerText: { fontSize: FONT_SIZE.base, color: NICO.text, lineHeight: 20 },
-  disclaimerBold: { fontWeight: FONT_WEIGHT.extraBold },
-  disclaimerEmail: { fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 
   pickerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

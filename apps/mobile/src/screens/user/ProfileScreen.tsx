@@ -19,7 +19,6 @@ export default function ProfileScreen() {
   const [dislikes, setDislikes] = useState<string[]>([]);
   const [abilities, setAbilities] = useState<string[]>([]);
   const [chatPrefs, setChatPrefs] = useState<any>(null);
-  const [healthInfo, setHealthInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -42,19 +41,17 @@ export default function ProfileScreen() {
   }, [activeUser]);
 
   async function fetchDetails() {
-    const [likesRes, dislikesRes, abilitiesRes, chatRes, healthRes] = await Promise.all([
+    const [likesRes, dislikesRes, abilitiesRes, chatRes] = await Promise.all([
       supabase.from('user_likes').select('categories(name)').eq('user_id', activeUser!.id),
       supabase.from('user_dislikes').select('categories(name)').eq('user_id', activeUser!.id),
       supabase.from('user_abilities').select('categories(name)').eq('user_id', activeUser!.id),
       supabase.from('chat_preferences').select('*').eq('user_id', activeUser!.id).single(),
-      supabase.from('health_info').select('*').eq('user_id', activeUser!.id).single(),
     ]);
 
     setLikes((likesRes.data || []).map((l: any) => l.categories?.name).filter(Boolean));
     setDislikes((dislikesRes.data || []).map((l: any) => l.categories?.name).filter(Boolean));
     setAbilities((abilitiesRes.data || []).map((a: any) => a.categories?.name).filter(Boolean));
     setChatPrefs(chatRes.data);
-    setHealthInfo(healthRes.data);
     setLoading(false);
   }
 
@@ -171,16 +168,6 @@ export default function ProfileScreen() {
             )}
           </Section>
         )}
-
-        {/* Health info */}
-        {healthInfo?.willing_to_share && (
-          <Section title="Health Information">
-            {healthInfo.description
-              ? <AppText style={styles.healthDesc}>{healthInfo.description}</AppText>
-              : <AppText style={styles.healthDesc}>No details provided.</AppText>
-            }
-          </Section>
-        )}
       </ScrollView>
     </View>
   );
@@ -269,5 +256,4 @@ const styles = StyleSheet.create({
   infoValue: { fontSize: 15, color: COLORS.text, fontWeight: '500', textTransform: 'capitalize' },
   daysRow: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   daysChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
-  healthDesc: { fontSize: 15, color: COLORS.text, lineHeight: 22 },
 });

@@ -30,9 +30,9 @@ type Props = {
   route: RouteProp<GuardianNavParamList, 'EditUser'>;
 };
 
-type Step = 'social' | 'interests' | 'location' | 'health';
-const GUARDIAN_STEPS: Step[] = ['social', 'interests', 'location', 'health'];
-const USER_STEPS: Step[] = ['social', 'interests', 'location', 'health'];
+type Step = 'social' | 'interests' | 'location';
+const GUARDIAN_STEPS: Step[] = ['social', 'interests', 'location'];
+const USER_STEPS: Step[] = ['social', 'interests', 'location'];
 
 
 export default function EditUserScreen({ navigation, route }: Props) {
@@ -59,9 +59,6 @@ export default function EditUserScreen({ navigation, route }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedAbilities, setSelectedAbilities] = useState<string[]>([]);
   const [comprehension, setComprehension] = useState('easy');
-  const [willingToShare, setWillingToShare] = useState(false);
-  const [medicalConditionOptions, setMedicalConditionOptions] = useState<{ id: string; label: string }[]>([]);
-  const [selectedMedicalConditions, setSelectedMedicalConditions] = useState<string[]>([]);
 
   const likeCategories = categories.filter(c => c.type === 'like');
   const dislikeCategories = categories.filter(c => c.type === 'dislike');
@@ -77,15 +74,12 @@ export default function EditUserScreen({ navigation, route }: Props) {
 
 
   async function loadAll() {
-    const [profileRes, catsRes, likesRes, dislikesRes, abilitiesRes, healthRes, medConditionsRes, userMedCondRes, chatRes] = await Promise.all([
+    const [profileRes, catsRes, likesRes, dislikesRes, abilitiesRes, chatRes] = await Promise.all([
       supabase.from('user_profiles').select('*').eq('id', userId).single(),
       supabase.from('categories').select('*'),
       supabase.from('user_likes').select('categories(name)').eq('user_id', userId),
       supabase.from('user_dislikes').select('categories(name)').eq('user_id', userId),
       supabase.from('user_abilities').select('categories(name)').eq('user_id', userId),
-      supabase.from('health_info').select('*').eq('user_id', userId).single(),
-      supabase.from('medical_conditions').select('id, label').order('label'),
-      supabase.from('user_medical_conditions').select('medical_conditions(label)').eq('user_id', userId),
       supabase.from('chat_preferences').select('comprehension_level').eq('user_id', userId).single(),
     ]);
 
@@ -107,15 +101,6 @@ export default function EditUserScreen({ navigation, route }: Props) {
     setSelectedLikes((likesRes.data || []).map((r: any) => r.categories?.name).filter(Boolean));
     setSelectedDislikes((dislikesRes.data || []).map((r: any) => r.categories?.name).filter(Boolean));
     setSelectedAbilities((abilitiesRes.data || []).map((r: any) => r.categories?.name).filter(Boolean));
-
-    if (healthRes.data) {
-      setWillingToShare(healthRes.data.willing_to_share ?? false);
-    }
-
-    setMedicalConditionOptions(medConditionsRes.data || []);
-    setSelectedMedicalConditions(
-      (userMedCondRes.data || []).map((r: any) => r.medical_conditions?.label).filter(Boolean)
-    );
 
     setInitialLoading(false);
   }
@@ -162,23 +147,11 @@ export default function EditUserScreen({ navigation, route }: Props) {
       supabase.from('chat_preferences').upsert({ user_id: userId, comprehension_level: comprehension }, { onConflict: 'user_id' }),
     ]);
 
-    const medCondIds = selectedMedicalConditions
-      .map(label => medicalConditionOptions.find(c => c.label === label)?.id)
-      .filter(Boolean) as string[];
-
     await Promise.all([
       likeIds.length && supabase.from('user_likes').insert(likeIds.map(id => ({ user_id: userId, category_id: id }))),
       dislikeIds.length && supabase.from('user_dislikes').insert(dislikeIds.map(id => ({ user_id: userId, category_id: id }))),
       abilityIds.length && supabase.from('user_abilities').insert(abilityIds.map(id => ({ user_id: userId, category_id: id }))),
-      supabase.from('health_info').upsert({ user_id: userId, willing_to_share: willingToShare, description: null }),
-      supabase.from('user_medical_conditions').delete().eq('user_id', userId),
     ]);
-
-    if (medCondIds.length) {
-      await supabase.from('user_medical_conditions').insert(
-        medCondIds.map(id => ({ user_id: userId, medical_condition_id: id }))
-      );
-    }
 
     setLoading(false);
     navigation.goBack();
@@ -343,34 +316,6 @@ export default function EditUserScreen({ navigation, route }: Props) {
             <DropdownPicker label="County *" value={county} options={CA_COUNTIES} onSelect={setCounty} placeholder="Select county..." />
           </View>
         )}
-
-        {step === 'health' && (
-          <View>
-            <AppText style={styles.sectionTitle}>Health Information</AppText>
-            <AppText style={styles.sectionSubtitle}>Select all that apply to this learner</AppText>
-
-            {medicalConditionOptions.length === 0 ? (
-              <AppText style={styles.emptyHint}>No medical conditions have been added by the admin yet.</AppText>
-            ) : (
-              <MultiSelectDropdown
-                label="Select conditions"
-                options={medicalConditionOptions.map(c => c.label)}
-                selected={selectedMedicalConditions}
-                onToggle={setSelectedMedicalConditions}
-                placeholder="Tap to select..."
-              />
-            )}
-
-            <View style={styles.disclaimer}>
-              <AppText style={styles.disclaimerText}>
-                ⚠️  This information will <AppText style={styles.disclaimerBold}>not</AppText> be displayed on the learner's profile. It will only be used for finding compatible friends.{'\n\n'}
-                If you do not find your learner's medical condition in the list, please contact the admin at{' '}
-                <AppText style={styles.disclaimerEmail}>nicosupport@gmail.com</AppText>
-                . The admin will add it and let you know when it is available in this dropdown.
-              </AppText>
-            </View>
-          </View>
-        )}
         </ContentContainer>
       </ScrollView>
 
@@ -514,14 +459,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   readonlyText: { ...TEXT_STYLE.body, color: NICO.textMuted },
-
-  disclaimer: {
-    marginTop: SPACING.lg, backgroundColor: NICO.warningLight, borderRadius: RADIUS.md,
-    borderWidth: 1.5, borderColor: NICO.warning, padding: SPACING.base,
-  },
-  disclaimerText: { fontSize: FONT_SIZE.base, color: NICO.text, lineHeight: 20 },
-  disclaimerBold: { fontWeight: FONT_WEIGHT.extraBold },
-  disclaimerEmail: { fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 
   pickerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

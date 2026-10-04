@@ -48,12 +48,6 @@ export interface ChatPreferences {
   comprehension_level: ComprehensionLevel;
 }
 
-export interface HealthInfo {
-  user_id: string;
-  willing_to_share: boolean;
-  description?: string;
-}
-
 export interface Category {
   id: string;
   name: string;
@@ -204,5 +198,4 @@ export interface UserWithDetails extends UserProfile {
   dislikes: Category[];
   abilities: Category[];
   chat_preferences?: ChatPreferences;
-  health_info?: HealthInfo;
 }
