@@ -463,20 +463,16 @@ export default function UserScheduleScreen() {
 
       {/* Tab bar */}
       <View style={s.tabBar}>
-        {/* Weekly tab — temporarily disabled
         <TouchableOpacity style={[s.tab, tab === 'weekly' && s.tabActive]} onPress={() => setTab('weekly')} activeOpacity={0.75}>
           <AppText style={[s.tabTxt, tab === 'weekly' && s.tabTxtActive]}>📅  Weekly</AppText>
         </TouchableOpacity>
-        */}
-        {/* One-off tab — temporarily disabled
         <TouchableOpacity style={[s.tab, tab === 'oneoff' && s.tabActive]} onPress={() => setTab('oneoff')} activeOpacity={0.75}>
           <AppText style={[s.tabTxt, tab === 'oneoff' && s.tabTxtActive]}>✨  One-off</AppText>
         </TouchableOpacity>
-        */}
       </View>
 
       <View style={s.tabPane}>
-        {/* Add button for one-off tab — temporarily disabled
+        {/* Add button for one-off tab */}
         {tab === 'oneoff' && (
           <View style={s.ooTopRow}>
             <TouchableOpacity style={s.addPill} onPress={openOneoffSheet} activeOpacity={0.8}>
@@ -484,9 +480,8 @@ export default function UserScheduleScreen() {
             </TouchableOpacity>
           </View>
         )}
-        */}
 
-        {tab === 'weekly' ? renderWeekly() : null /* renderOneoff() — temporarily disabled */}
+        {tab === 'weekly' ? renderWeekly() : renderOneoff()}
       </View>
 
       {/* ── Add Weekly Class sheet ── */}
