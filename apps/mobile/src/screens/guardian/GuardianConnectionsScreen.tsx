@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View, FlatList, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, Alert, Modal, ScrollView, Image,
@@ -81,6 +81,11 @@ export default function GuardianConnectionsScreen() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [unreadMap, setUnreadMap]   = useState<Record<string, number>>({});
   const [openingChat, setOpeningChat] = useState<string | null>(null);
+  // Guardian whose chat was most recently opened — the next unread-count
+  // refetch forces this entry to 0 so a racy stale server read (see
+  // mark_guardian_conversation_read's unmount-time call) can't clobber a
+  // badge we already know is cleared.
+  const recentChatGuardianRef = useRef<string | null>(null);
 
   // My Connections search
   const [connectedSearchName, setConnectedSearchName] = useState('');
@@ -103,6 +108,10 @@ export default function GuardianConnectionsScreen() {
         supabase.rpc('get_guardian_unread_counts', { p_guardian_id: guardian.id }).then(({ data }) => {
           const map: Record<string, number> = {};
           (data ?? []).forEach((r: any) => { map[r.other_guardian_id] = Number(r.unread_count); });
+          if (recentChatGuardianRef.current) {
+            map[recentChatGuardianRef.current] = 0;
+            recentChatGuardianRef.current = null;
+          }
           setUnreadMap(map);
         });
       }
@@ -121,6 +130,7 @@ export default function GuardianConnectionsScreen() {
     setOpeningChat(null);
     if (error || !conversationId) { Alert.alert('Chat error', error?.message ?? 'Failed to open chat'); return; }
     setUnreadMap(prev => ({ ...prev, [item.guardianId]: 0 }));
+    recentChatGuardianRef.current = item.guardianId;
     navigation.navigate('GuardianChat', {
       conversationId, participantName: item.guardianName, participantPhoto: item.photoUrl || null,
     });

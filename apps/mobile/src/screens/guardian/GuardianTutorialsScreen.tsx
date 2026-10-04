@@ -653,9 +653,15 @@ export default function GuardianTutorialsScreen() {
             const hasPendingMore = pendingFilterSkills.length + pendingFilterLevels.length + pendingStatusFilter.length > 0;
             return (
               <>
-                <View style={styles.filterBar}>
+                <View style={[styles.filterBar, { justifyContent: 'space-between' }]}>
+                  <TouchableOpacity onPress={() => guardian && loadMy(guardian.id)} activeOpacity={0.65} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <AppText style={styles.refreshLink}>🔄 Refresh</AppText>
+                  </TouchableOpacity>
                   <MoreFiltersLink onPress={() => setShowPendingMoreFilters(true)} isActive={hasPendingMore} />
                 </View>
+                <AppText style={styles.pendingNote}>
+                  <AppText style={styles.pendingNoteAsterisk}>***</AppText> AI generated tutorials may take 1-2 mins
+                </AppText>
                 {hasPendingMore && (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={styles.chipsContent}>
                     {pendingFilterSkills.map(s => (
@@ -1065,6 +1071,14 @@ const styles = StyleSheet.create({
   statusPillText: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
 
   // Filter bar (inline chip + More Filters button)
+  refreshLink: {
+    fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.medium, color: NICO.primary,
+  },
+  pendingNote: {
+    fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text,
+    paddingHorizontal: SPACING.base, paddingBottom: SPACING.sm,
+  },
+  pendingNoteAsterisk: { fontWeight: FONT_WEIGHT.extraBold, color: NICO.error },
   filterBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end',
     paddingHorizontal: SPACING.base, paddingVertical: SPACING.sm,
