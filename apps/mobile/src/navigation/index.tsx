@@ -36,7 +36,6 @@ import TutorialPreviewScreen from '../screens/tutorials/TutorialPreviewScreen';
 import TutorialLibraryScreen from '../screens/tutorials/TutorialLibraryScreen';
 import GuardianActivitiesScreen from '../screens/guardian/GuardianActivitiesScreen';
 import UserScheduleScreen from '../screens/guardian/UserScheduleScreen';
-import LearnerDiscoveryScreen from '../screens/guardian/LearnerDiscoveryScreen';
 import LearnerPublicProfileScreen from '../screens/guardian/LearnerPublicProfileScreen';
 import LearnerFriendRequestsScreen from '../screens/guardian/LearnerFriendRequestsScreen';
 import LearnerFriendsScreen from '../screens/guardian/LearnerFriendsScreen';
@@ -48,7 +47,6 @@ import EventDetailScreen from '../screens/guardian/EventDetailScreen';
 import CreateEventScreen from '../screens/guardian/CreateEventScreen';
 import EditEventScreen from '../screens/guardian/EditEventScreen';
 import LearnerSelectScreen from '../screens/guardian/LearnerSelectScreen';
-import FavouriteFriendsScreen from '../screens/guardian/FavouriteFriendsScreen';
 import ResourcesScreen from '../screens/guardian/ResourcesScreen';
 
 // User screens
@@ -94,7 +92,6 @@ export type GuardianNavParamList = {
   LinkYoutube: undefined;
   TutorialPreview: { tutorialId: string };
   TutorialLibrary: { userId?: string; linkedOnly?: boolean };
-  LearnerDiscovery: undefined;
   LearnerPublicProfile: { learnerId: string };
   LearnerFriendRequests: undefined;
   LearnerFriends: undefined;
@@ -105,7 +102,6 @@ export type GuardianNavParamList = {
   EventDetail: { eventId: string };
   CreateEvent: undefined;
   EditEvent: { eventId: string };
-  FavouriteFriends: undefined;
   Resources: undefined;
 };
 
@@ -275,7 +271,6 @@ function GuardianTabs() {
       <GuardianNav.Screen name="TutorialPreview"    component={TutorialPreviewScreen}       options={{ title: 'Preview Tutorial', headerRight: undefined }} />
       <GuardianNav.Screen name="TutorialLibrary"    component={TutorialLibraryScreen}       options={{ title: 'Search Tutorials', headerRight: undefined }} />
       <GuardianNav.Screen name="LearnerFriends"      component={LearnerFriendsScreen}        options={{ title: 'Friends', headerRight: undefined }} />
-      <GuardianNav.Screen name="LearnerDiscovery"   component={LearnerDiscoveryScreen}      options={{ title: 'Find Friends', headerRight: undefined }} />
       <GuardianNav.Screen name="LearnerPublicProfile" component={LearnerPublicProfileScreen} options={{ title: 'Learner Profile', headerRight: undefined }} />
       <GuardianNav.Screen name="LearnerFriendRequests" component={LearnerFriendRequestsScreen} options={{ title: 'Friend Requests', headerRight: undefined }} />
       <GuardianNav.Screen name="GuardianConnections"  component={GuardianConnectionsScreen}   options={{ title: 'My Connections', headerRight: undefined }} />
@@ -285,7 +280,6 @@ function GuardianTabs() {
       <GuardianNav.Screen name="EventDetail"         component={EventDetailScreen}           options={{ title: 'Event' }} />
       <GuardianNav.Screen name="CreateEvent"         component={CreateEventScreen}           options={{ title: 'Create Event' }} />
       <GuardianNav.Screen name="EditEvent"           component={EditEventScreen}             options={{ title: 'Edit Event' }} />
-      <GuardianNav.Screen name="FavouriteFriends"   component={FavouriteFriendsScreen}      options={{ title: 'Manage Friends', headerRight: undefined }} />
       <GuardianNav.Screen name="Resources"           component={ResourcesScreen}             options={{ title: 'Resources', headerRight: undefined }} />
     </GuardianNav.Navigator>
   );
