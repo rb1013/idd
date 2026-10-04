@@ -65,6 +65,7 @@ export default function CreateTutorialScreen() {
   async function handleSubmit() {
     if (!targetSkill) { Alert.alert('Required', 'Please select a target skill'); return; }
     if (!coreAction.trim()) { Alert.alert('Required', 'Please describe the core action'); return; }
+    if (!displayName.trim()) { Alert.alert('Required', 'Please enter a tutorial name'); return; }
     if (!guardian) return;
     if (quota && quota.used >= quota.limit) {
       Alert.alert('Quota Reached', `You have used all ${quota.limit} tutorials for this month.`); return;
@@ -168,7 +169,7 @@ export default function CreateTutorialScreen() {
 
         <Divider />
 
-        <FieldBlock label="Tutorial Name" hint="Short friendly name shown to your user (e.g. 'Soccer Fun'). Optional — auto-generated if left blank.">
+        <FieldBlock label="Tutorial Name *" hint="Short friendly name shown to your user (e.g. 'Soccer Fun').">
           <LinearGradient
             colors={[...BUTTERFLY_BORDER.colors]}
             start={BUTTERFLY_BORDER.start}
@@ -201,9 +202,9 @@ export default function CreateTutorialScreen() {
 
       {/* Submit */}
       <TouchableOpacity
-        style={[s.submitBtn, submitting && s.submitBtnDisabled]}
+        style={[s.submitBtn, (!targetSkill || !coreAction.trim() || !displayName.trim() || submitting) && s.submitBtnDisabled]}
         onPress={handleSubmit}
-        disabled={submitting}
+        disabled={!targetSkill || !coreAction.trim() || !displayName.trim() || submitting}
       >
         {submitting
           ? <ActivityIndicator color={NICO.textOnAccent} />
@@ -245,9 +246,13 @@ export default function CreateTutorialScreen() {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function FieldBlock({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  const isRequired = label.endsWith(' *');
+  const baseLabel = isRequired ? label.slice(0, -2) : label;
   return (
     <View style={s.fieldBlock}>
-      <AppText style={s.fieldLabel}>{label}</AppText>
+      <AppText style={s.fieldLabel}>
+        {baseLabel}{isRequired && <AppText style={s.required}> *</AppText>}
+      </AppText>
       {hint ? <AppText style={s.fieldHint}>{hint}</AppText> : null}
       {children}
     </View>
@@ -287,6 +292,7 @@ const s = StyleSheet.create({
   // Field
   fieldBlock: { gap: SPACING.sm, paddingVertical: 14 },
   fieldLabel: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  required:   { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.error },
   fieldHint:  { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.medium },
   divider:    { height: 1, backgroundColor: NICO.border },
 

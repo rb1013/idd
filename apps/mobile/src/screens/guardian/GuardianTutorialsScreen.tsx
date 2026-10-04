@@ -995,7 +995,7 @@ const styles = StyleSheet.create({
   createEmoji:       { fontSize: 34 },
   createCardContent: { flex: 1, gap: SPACING.xs },
   createHeading:     { ...TEXT_STYLE.bodyMedium, fontSize: FONT_SIZE.xl },
-  createBody:        { ...TEXT_STYLE.hint, lineHeight: 18 },
+  createBody:        { ...TEXT_STYLE.hint, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 18 },
   createBodyWarning: { color: NICO.error, fontWeight: FONT_WEIGHT.extraBold },
   createChevron:     { fontSize: FONT_SIZE['4xl'], color: NICO.textMuted, lineHeight: 28 },
   createBtnText:     { ...TEXT_STYLE.buttonPrimary },

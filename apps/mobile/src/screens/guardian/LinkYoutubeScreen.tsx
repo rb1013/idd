@@ -48,6 +48,7 @@ export default function LinkYoutubeScreen() {
 
   async function handlePreview() {
     setFetchError('');
+    if (!url.trim()) { Alert.alert('Required', 'Please enter a YouTube URL.'); return; }
     const id = extractVideoId(url.trim());
     if (!id) {
       setFetchError('Could not find a valid YouTube video ID. Please check the URL.');
@@ -121,7 +122,7 @@ export default function LinkYoutubeScreen() {
         </View>
 
         {/* URL input */}
-        <AppText style={s.label}>YouTube URL</AppText>
+        <AppText style={s.label}>YouTube URL<AppText style={s.required}> *</AppText></AppText>
         <View style={s.inputRow}>
           <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.urlInputGradient}>
             <TextInput
@@ -217,6 +218,7 @@ const s = StyleSheet.create({
   disclaimerText: { fontSize: FONT_SIZE.sm, color: NICO.text, lineHeight: 20, fontWeight: FONT_WEIGHT.bold },
 
   label: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.text, marginBottom: -6 },
+  required: { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.error },
 
   inputRow: { flexDirection: 'row', gap: SPACING.sm, alignItems: 'center' },
   urlInputGradient: { flex: 1, padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
