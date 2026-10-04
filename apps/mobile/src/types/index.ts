@@ -13,6 +13,7 @@ export interface Guardian {
   state?: string;
   country?: string;
   situation_tags?: string[];
+  is_verified_guardian?: boolean;
   created_at: string;
 }
 

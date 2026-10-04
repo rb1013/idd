@@ -129,6 +129,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           state: p.state,
           country: 'USA',
           situation_tags: p.selectedTags,
+          // Reaching this point requires having passed GuardianVerificationScreen's
+          // 18+ age check and consent checkbox — DOB itself is never stored.
+          is_verified_guardian: true,
         });
         await supabase.rpc('set_guardian_pin', { pin_input: p.pin });
         if (p.photoUri) {

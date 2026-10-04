@@ -116,7 +116,7 @@ export default function LoginScreen({ navigation }: Props) {
 
           <TouchableOpacity
             style={s.registerBox}
-            onPress={() => navigation.navigate('GuardianRegister')}
+            onPress={() => navigation.navigate('GuardianVerification')}
             activeOpacity={0.85}
           >
             <AppText style={s.registerHint}>Create your account to get started</AppText>

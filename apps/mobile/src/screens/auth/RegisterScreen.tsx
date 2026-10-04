@@ -117,7 +117,6 @@ export default function RegisterScreen() {
       <ScrollView contentContainerStyle={[styles.inner, { paddingBottom: Math.max(insets.bottom + 24, 48) }]} keyboardShouldPersistTaps="handled">
         <ContentContainer>
         <AppText style={styles.title}>Create Account</AppText>
-        <AppText style={styles.subtitle}>Set up your NICO account</AppText>
 
         {/* Profile photo */}
         <TouchableOpacity style={styles.photoPicker} onPress={pickPhoto} activeOpacity={0.8}>
@@ -215,16 +214,15 @@ export default function RegisterScreen() {
         />
 
         {/* Learner situation */}
-        <AppText style={styles.label}>Learner Situation (optional)</AppText>
+        <AppText style={styles.label}>Regional Support Category (optional)</AppText>
         <View style={styles.helperBox}>
-          <AppText style={styles.helperTitle}>ℹ️  What is Learner Situation?</AppText>
           <AppText style={styles.helperText}>
-            Learner Situation describes your learner's specific needs or medical conditions. It helps you connect with parents in similar situations.
+            ℹ️  Select the category that matches your learner's school support plan or California Regional Center services. This helps you find local families with similar needs while keeping your private medical details secure.
           </AppText>
         </View>
         <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>
           <AppText style={[styles.pickerBtnText, selectedTags.length === 0 && styles.placeholder]}>
-            {selectedTags.length === 0 ? 'Select Situation' : `${selectedTags.length} selected`}
+            {selectedTags.length === 0 ? 'Select Category' : `${selectedTags.length} selected`}
           </AppText>
           <AppText style={styles.chevron}>▾</AppText>
         </TouchableOpacity>
@@ -283,7 +281,7 @@ export default function RegisterScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <AppText style={styles.modalTitle}>Learner Situation</AppText>
+              <AppText style={styles.modalTitle}>Regional Support Category</AppText>
               <TouchableOpacity onPress={() => setShowTagPicker(false)}>
                 <AppText style={styles.modalClose}>Done</AppText>
               </TouchableOpacity>
@@ -400,7 +398,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: NICO.primary,
   },
   pinSectionTitle: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: SPACING.xs },
-  pinSectionHint:  { fontSize: FONT_SIZE.base, color: NICO.textMuted, lineHeight: 18, marginBottom: SPACING.md },
+  pinSectionHint:  { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 20, marginBottom: SPACING.md },
 
   button: {
     ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.sm,
@@ -438,5 +436,5 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3, borderLeftColor: NICO.primary,
   },
   helperTitle: { fontSize: FONT_SIZE.base, fontWeight: FONT_WEIGHT.bold, color: NICO.text, marginBottom: 5 },
-  helperText:  { fontSize: FONT_SIZE.sm, color: NICO.text, lineHeight: 18 },
+  helperText:  { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 20 },
 });

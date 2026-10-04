@@ -14,6 +14,7 @@ import { NICO } from '../constants/theme';
 
 // Auth screens
 import LoginScreen from '../screens/auth/LoginScreen';
+import GuardianVerificationScreen from '../screens/auth/GuardianVerificationScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import EmailVerificationPendingScreen from '../screens/auth/EmailVerificationPendingScreen';
 import OTPVerificationScreen from '../screens/auth/OTPVerificationScreen';
@@ -66,6 +67,7 @@ import ActivitiesScreen from '../screens/user/ActivitiesScreen';
 
 export type RootStackParamList = {
   Login: undefined;
+  GuardianVerification: undefined;
   GuardianRegister: undefined;
   GuardianTabs: undefined;
   UserHome: undefined;
@@ -339,6 +341,8 @@ export default function Navigation() {
         ) : !session ? (
           <>
             <Stack.Screen name="Login"           component={LoginScreen} />
+            <Stack.Screen name="GuardianVerification" component={GuardianVerificationScreen}
+              options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Guardian Verification' }} />
             <Stack.Screen name="GuardianRegister" component={RegisterScreen}
               options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Guardian Registration' }} />
             <Stack.Screen name="EmailVerificationPending" component={EmailVerificationPendingScreen}
