@@ -40,6 +40,7 @@ import LearnerPublicProfileScreen from '../screens/guardian/LearnerPublicProfile
 import LearnerFriendRequestsScreen from '../screens/guardian/LearnerFriendRequestsScreen';
 import LearnerFriendsScreen from '../screens/guardian/LearnerFriendsScreen';
 import GuardianConnectionsScreen from '../screens/guardian/GuardianConnectionsScreen';
+import GuardianChatScreen from '../screens/guardian/GuardianChatScreen';
 import DiscussionsScreen from '../screens/guardian/DiscussionsScreen';
 import DiscussionDetailScreen from '../screens/guardian/DiscussionDetailScreen';
 import EventsScreen from '../screens/guardian/EventsScreen';
@@ -96,6 +97,7 @@ export type GuardianNavParamList = {
   LearnerFriendRequests: undefined;
   LearnerFriends: undefined;
   GuardianConnections: undefined;
+  GuardianChat: { conversationId: string; participantName: string; participantPhoto?: string | null };
   Discussions: undefined;
   DiscussionDetail: { postId: string };
   Events: { tab?: 'mine' | 'upcoming' } | undefined;
@@ -274,6 +276,7 @@ function GuardianTabs() {
       <GuardianNav.Screen name="LearnerPublicProfile" component={LearnerPublicProfileScreen} options={{ title: 'Learner Profile', headerRight: undefined }} />
       <GuardianNav.Screen name="LearnerFriendRequests" component={LearnerFriendRequestsScreen} options={{ title: 'Friend Requests', headerRight: undefined }} />
       <GuardianNav.Screen name="GuardianConnections"  component={GuardianConnectionsScreen}   options={{ title: 'My Connections', headerRight: undefined }} />
+      <GuardianNav.Screen name="GuardianChat"         component={GuardianChatScreen}          options={({ route }) => ({ title: route.params.participantName, headerRight: undefined })} />
       <GuardianNav.Screen name="Discussions"         component={DiscussionsScreen}           options={{ title: 'Discussions', headerRight: undefined }} />
       <GuardianNav.Screen name="DiscussionDetail"    component={DiscussionDetailScreen}      options={{ title: 'Discussion', headerRight: undefined }} />
       <GuardianNav.Screen name="Events"              component={EventsScreen}                options={{ title: 'Events', headerRight: undefined }} />

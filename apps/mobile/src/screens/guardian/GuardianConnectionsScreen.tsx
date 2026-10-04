@@ -6,9 +6,11 @@ import {
 import AppText from '../../components/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { calcAge } from '../../constants';
+import { GuardianNavParamList } from '../../navigation';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
 import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
 import RainbowDivider from '../../components/RainbowDivider';
@@ -21,6 +23,8 @@ import {
   BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, CARD_BTN_ALIGN,
   GRID_COLS, GRID_CARD_W, scale,
 } from '../../constants/theme';
+
+type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
 const AVATAR_COLORS = [NICO.teal, NICO.orange, NICO.coral, NICO.pink, NICO.purple, NICO.primary];
 
@@ -64,7 +68,7 @@ interface GuardianResult {
 
 export default function GuardianConnectionsScreen() {
   const { guardian } = useAuth();
-  const navigation = useNavigation();
+  const navigation = useNavigation<Nav>();
   useNicoHeader(navigation);
 
   const [activeTab, setActiveTab]               = useState<Tab>('connected');
@@ -76,6 +80,8 @@ export default function GuardianConnectionsScreen() {
   const [loading, setLoading]       = useState(true);
   const [sending, setSending]       = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [unreadMap, setUnreadMap]   = useState<Record<string, number>>({});
+  const [openingChat, setOpeningChat] = useState<string | null>(null);
 
   // My Connections search
   const [connectedSearchName, setConnectedSearchName] = useState('');
@@ -91,12 +97,33 @@ export default function GuardianConnectionsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (guardian) load(guardian.id);
+      if (guardian) {
+        load(guardian.id);
+        supabase.rpc('get_guardian_unread_counts', { p_guardian_id: guardian.id }).then(({ data }) => {
+          const map: Record<string, number> = {};
+          (data ?? []).forEach((r: any) => { map[r.other_guardian_id] = Number(r.unread_count); });
+          setUnreadMap(map);
+        });
+      }
       supabase.from('medical_conditions').select('label').order('label').then(({ data }) => {
         if (data) setSituationTagOptions(data.map((r: any) => r.label));
       });
     }, [guardian]),
   );
+
+  async function openChat(item: GuardianResult) {
+    if (!guardian) return;
+    setOpeningChat(item.guardianId);
+    const { data: conversationId, error } = await supabase.rpc('find_or_create_guardian_conversation', {
+      p_guardian_a: guardian.id, p_guardian_b: item.guardianId,
+    });
+    setOpeningChat(null);
+    if (error || !conversationId) { Alert.alert('Chat error', error?.message ?? 'Failed to open chat'); return; }
+    setUnreadMap(prev => ({ ...prev, [item.guardianId]: 0 }));
+    navigation.navigate('GuardianChat', {
+      conversationId, participantName: item.guardianName, participantPhoto: item.photoUrl || null,
+    });
+  }
 
   async function load(myId: string) {
     setLoading(true);
@@ -295,13 +322,32 @@ export default function GuardianConnectionsScreen() {
           {processing === item.guardianId ? (
             <ActivityIndicator color={NICO.primary} />
           ) : (
-            <TouchableOpacity
-              style={s.disconnectBtn}
-              onPress={(e) => { e.stopPropagation(); disconnect(item); }}
-              activeOpacity={0.7}
-            >
-              <AppText style={s.disconnectIcon}>✕</AppText>
-            </TouchableOpacity>
+            <View style={s.gridTwoBtn}>
+              <TouchableOpacity
+                style={[s.gridHalfBtn, { backgroundColor: NICO.primaryLight, borderWidth: 1.5, borderColor: NICO.primary }]}
+                onPress={(e) => { e.stopPropagation(); openChat(item); }}
+                disabled={openingChat === item.guardianId}
+                activeOpacity={0.7}
+              >
+                {openingChat === item.guardianId ? (
+                  <ActivityIndicator size="small" color={NICO.primary} />
+                ) : (
+                  <AppText style={[s.gridHalfBtnTxt, { color: NICO.primary }]}>💬</AppText>
+                )}
+                {!!unreadMap[item.guardianId] && (
+                  <View style={s.messageBadge}>
+                    <AppText style={s.messageBadgeTxt}>{unreadMap[item.guardianId] > 9 ? '9+' : unreadMap[item.guardianId]}</AppText>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={s.disconnectBtn}
+                onPress={(e) => { e.stopPropagation(); disconnect(item); }}
+                activeOpacity={0.7}
+              >
+                <AppText style={s.disconnectIcon}>✕</AppText>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       </TouchableOpacity>
@@ -827,6 +873,13 @@ gridAvatar:        { width: 56, height: 56, borderRadius: 28, justifyContent: 'c
 
   disconnectBtn:  { width: scale(32), height: scale(32), borderRadius: RADIUS.full, backgroundColor: NICO.errorLight, borderWidth: 1.5, borderColor: NICO.error, justifyContent: 'center', alignItems: 'center' },
   disconnectIcon: { fontSize: scale(FONT_SIZE.sm), color: NICO.error, fontWeight: FONT_WEIGHT.bold },
+  messageBadge: {
+    position: 'absolute', top: -4, right: -4,
+    backgroundColor: NICO.error, borderRadius: RADIUS.full,
+    minWidth: scale(16), height: scale(16), paddingHorizontal: 3,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  messageBadgeTxt: { fontSize: scale(9), fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
 
   loadMoreBtn:    { ...BTN_SIZE.sm, ...BTN_VARIANT.outline, alignSelf: 'center', marginTop: SPACING.base },
   loadMoreText:   { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary },
