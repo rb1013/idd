@@ -29,7 +29,7 @@ interface LearnerProfile {
   name: string;
   date_of_birth: string | null;
   photo_url: string | null;
-  city: string;
+  county: string;
   region: string;
   country: string;
   guardianName: string | null;
@@ -68,7 +68,7 @@ export default function LearnerPublicProfileScreen() {
       { data: chat },
       { data: medicalData },
     ] = await Promise.all([
-      supabase.from('user_profiles').select('id, name, date_of_birth, photo_url, city, region, country, languages, guardian_id').eq('id', learnerId).single(),
+      supabase.from('user_profiles').select('id, name, date_of_birth, photo_url, county, region, country, languages, guardian_id').eq('id', learnerId).single(),
       supabase.from('user_profiles').select('id').eq('guardian_id', guardianId),
       supabase.from('user_likes').select('categories(name)').eq('user_id', learnerId),
       supabase.from('user_dislikes').select('categories(name)').eq('user_id', learnerId),
@@ -111,7 +111,7 @@ export default function LearnerPublicProfileScreen() {
       name: p.name,
       date_of_birth: p.date_of_birth ?? null,
       photo_url: p.photo_url,
-      city: p.city,
+      county: p.county,
       region: p.region,
       country: p.country,
       guardianName,
@@ -172,7 +172,7 @@ export default function LearnerPublicProfileScreen() {
           )}
           <AppText style={s.name}>{profile.name}</AppText>
           <AppText style={s.subMeta}>
-            {calcAge(profile.date_of_birth) ?? '—'} years old · {profile.city}, {profile.region}
+            {calcAge(profile.date_of_birth) ?? '—'} years old · {profile.county}
           </AppText>
           {profile.guardianName && (
             <AppText style={s.guardianMeta}>Guardian: {profile.guardianName}</AppText>

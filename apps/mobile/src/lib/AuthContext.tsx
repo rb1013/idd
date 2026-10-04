@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: p.email,
           full_name: p.fullName,
           phone: p.phone,
-          city: p.city,
+          county: p.county,
           state: p.state,
           country: 'USA',
           situation_tags: p.selectedTags,

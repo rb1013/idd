@@ -5,9 +5,11 @@ import {
 } from 'react-native';
 import AppText from '../../components/AppText';
 import ContentContainer from '../../components/ContentContainer';
+import DropdownPicker from '../../components/DropdownPicker';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { FIXED_STATE } from '../../constants/usStates';
+import { CA_COUNTIES } from '../../constants/caCounties';
 import { validatePhone, buildE164 } from '../../constants/countryCodes';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -23,7 +25,7 @@ export default function GuardianEditAccountScreen() {
     const raw = guardian?.phone ?? '';
     return raw.startsWith('+1') ? raw.slice(2) : raw.replace(/\D/g, '');
   });
-  const [city, setCity]                 = useState(guardian?.city ?? '');
+  const [county, setCounty]             = useState(guardian?.county ?? '');
   const [selectedTags, setSelectedTags] = useState<string[]>(guardian?.situation_tags ?? []);
 
   const [tagOptions, setTagOptions]           = useState<string[]>([]);
@@ -61,7 +63,7 @@ export default function GuardianEditAccountScreen() {
       full_name:      name.trim(),
       phone:          buildE164('+1', phone),
       state:          FIXED_STATE,
-      city:           city.trim() || null,
+      county,
       country:        'USA',
       situation_tags: selectedTags,
     }).eq('id', guardian.id);
@@ -133,15 +135,7 @@ export default function GuardianEditAccountScreen() {
           </View>
 
           <View style={s.field}>
-            <AppText style={s.label}>City</AppText>
-            <TextInput
-              style={s.input}
-              value={city}
-              onChangeText={setCity}
-              placeholder="e.g. Austin"
-              placeholderTextColor={NICO.textMuted}
-              maxLength={20}
-            />
+            <DropdownPicker label="County" value={county} options={CA_COUNTIES} onSelect={setCounty} placeholder="Select county..." />
           </View>
 
           <View style={s.field}>

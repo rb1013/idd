@@ -50,7 +50,7 @@ interface GuardianResult {
   guardianName: string;
   guardianEmail: string;
   photoUrl: string;
-  city: string;
+  county: string;
   situationTags: string[];
   learnerName: string;
   learnerRegion: string;
@@ -78,11 +78,11 @@ export default function GuardianConnectionsScreen() {
 
   // My Connections search
   const [connectedSearchName, setConnectedSearchName] = useState('');
-  const [connectedSearchCity, setConnectedSearchCity] = useState('');
+  const [connectedSearchCounty, setConnectedSearchCounty] = useState('');
 
   // Find tab search + filters
   const [searchName, setSearchName] = useState('');
-  const [searchCity, setSearchCity] = useState('');
+  const [searchCounty, setSearchCounty] = useState('');
   const [filterAgeGroups, setFilterAgeGroups] = useState<string[]>([]);
   const [filterTags,      setFilterTags]      = useState<string[]>([]);
   const [filterGenders,   setFilterGenders]   = useState<string[]>([]);
@@ -102,7 +102,7 @@ export default function GuardianConnectionsScreen() {
 
     const { data: guardians } = await supabase
       .from('guardians')
-      .select('id, full_name, email, photo_url, city, state, situation_tags')
+      .select('id, full_name, email, photo_url, county, situation_tags')
       .neq('id', myId);
 
     if (!guardians || guardians.length === 0) { setLoading(false); return; }
@@ -147,7 +147,7 @@ export default function GuardianConnectionsScreen() {
         guardianName:  g.full_name ?? 'Unknown',
         guardianEmail: g.email ?? '',
         photoUrl:      g.photo_url ?? '',
-        city:          [g.city, g.state].filter(Boolean).join(', '),
+        county:        g.county ?? '',
         situationTags: g.situation_tags ?? [],
         learnerName:   l?.name ?? '',
         learnerRegion: l?.region ?? '',
@@ -239,10 +239,10 @@ export default function GuardianConnectionsScreen() {
   const filteredConnected = useMemo(() =>
     connected.filter(r => {
       const matchName = !connectedSearchName || r.guardianName.toLowerCase().includes(connectedSearchName.toLowerCase());
-      const matchCity = !connectedSearchCity || r.city.toLowerCase().includes(connectedSearchCity.toLowerCase());
-      return matchName && matchCity;
+      const matchCounty = !connectedSearchCounty || r.county.toLowerCase().includes(connectedSearchCounty.toLowerCase());
+      return matchName && matchCounty;
     }),
-  [connected, connectedSearchName, connectedSearchCity]);
+  [connected, connectedSearchName, connectedSearchCounty]);
 
   // All rows where current user sent the request (pending, accepted, rejected)
   const sentRequests = useMemo(() =>
@@ -259,21 +259,21 @@ export default function GuardianConnectionsScreen() {
       if (r.status === 'accepted' || r.status === 'pending_sent' || r.status === 'pending_received') return false;
       // 'none' and 'rejected' are both discoverable (re-request allowed)
       const matchName   = !searchName || r.guardianName.toLowerCase().includes(searchName.toLowerCase());
-      const matchCity   = !searchCity || r.city.toLowerCase().includes(searchCity.toLowerCase());
+      const matchCounty   = !searchCounty || r.county.toLowerCase().includes(searchCounty.toLowerCase());
       const matchAge    = filterAgeGroups.length === 0 || filterAgeGroups.includes(getAgeGroup(r.learnerDob) ?? '');
       const matchTags   = filterTags.length === 0 || filterTags.some(t => r.situationTags.includes(t));
       const matchGender = filterGenders.length === 0 || filterGenders.includes(r.learnerGender);
-      return matchName && matchCity && matchAge && matchTags && matchGender;
+      return matchName && matchCounty && matchAge && matchTags && matchGender;
     }),
-  [results, searchName, searchCity, filterAgeGroups, filterTags, filterGenders]);
+  [results, searchName, searchCounty, filterAgeGroups, filterTags, filterGenders]);
 
   // ── Pagination ───────────────────────────────────────────────────────────────
 
-  const resetKeyConnected = `${connectedSearchName}|${connectedSearchCity}|${connected.length}`;
+  const resetKeyConnected = `${connectedSearchName}|${connectedSearchCounty}|${connected.length}`;
   const { visible: visibleConnected, showLoadMore: showLoadMoreConnected, loadMore: loadMoreConnected, showCapMessage: showCapConnected, pageSize } =
     useVisibleCount(filteredConnected, resetKeyConnected);
 
-  const resetKeyDiscover = `${searchName}|${searchCity}|${filterAgeGroups.join(',')}|${filterTags.join(',')}|${filterGenders.join(',')}`;
+  const resetKeyDiscover = `${searchName}|${searchCounty}|${filterAgeGroups.join(',')}|${filterTags.join(',')}|${filterGenders.join(',')}`;
   const { visible: visibleDiscovered, showLoadMore: showLoadMoreDiscovered, loadMore: loadMoreDiscovered, showCapMessage: showCapDiscovered, pageSize: pageSizeDiscover } =
     useVisibleCount(discovered, resetKeyDiscover);
 
@@ -289,7 +289,7 @@ export default function GuardianConnectionsScreen() {
           <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
         </View>
         <AppText style={s.gridName} numberOfLines={1}>{item.guardianName}</AppText>
-        {item.city ? <AppText style={s.gridCity} numberOfLines={1}>{item.city}</AppText> : null}
+        {item.county ? <AppText style={s.gridCounty} numberOfLines={1}>{item.county}</AppText> : null}
         <View style={s.gridAction}>
           {processing === item.guardianId ? (
             <ActivityIndicator color={NICO.primary} />
@@ -319,7 +319,7 @@ export default function GuardianConnectionsScreen() {
           <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
         </View>
         <AppText style={s.gridName} numberOfLines={1}>{item.guardianName}</AppText>
-        {item.city ? <AppText style={s.gridCity} numberOfLines={1}>{item.city}</AppText> : null}
+        {item.county ? <AppText style={s.gridCounty} numberOfLines={1}>{item.county}</AppText> : null}
         <View style={s.gridAction}>
           <View style={badge.style}>
             <AppText style={badge.textStyle}>{badge.label}</AppText>
@@ -338,7 +338,7 @@ export default function GuardianConnectionsScreen() {
           <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
         </View>
         <AppText style={s.gridName} numberOfLines={1}>{item.guardianName}</AppText>
-        {item.city ? <AppText style={s.gridCity} numberOfLines={1}>{item.city}</AppText> : null}
+        {item.county ? <AppText style={s.gridCounty} numberOfLines={1}>{item.county}</AppText> : null}
         <AppText style={s.gridPendingLabel}>Wants to connect</AppText>
         <View style={s.gridAction}>
           {isProcessing ? (
@@ -368,7 +368,7 @@ export default function GuardianConnectionsScreen() {
           <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
         </View>
         <AppText style={s.gridName} numberOfLines={1}>{item.guardianName}</AppText>
-        {item.city ? <AppText style={s.gridCity} numberOfLines={1}>{item.city}</AppText> : null}
+        {item.county ? <AppText style={s.gridCounty} numberOfLines={1}>{item.county}</AppText> : null}
         <View style={s.gridAction}>
           {isProcessing || isSending ? (
             <ActivityIndicator color={NICO.primary} />
@@ -429,9 +429,9 @@ export default function GuardianConnectionsScreen() {
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
               <TextInput
                 style={s.searchInput}
-                value={connectedSearchCity}
-                onChangeText={setConnectedSearchCity}
-                placeholder="Search by city or state…"
+                value={connectedSearchCounty}
+                onChangeText={setConnectedSearchCounty}
+                placeholder="Search by county…"
                 placeholderTextColor={NICO.textMuted}
                 clearButtonMode="while-editing"
               />
@@ -452,7 +452,7 @@ export default function GuardianConnectionsScreen() {
               <View style={s.empty}>
                 <AppText style={s.emptyEmoji}>🔍</AppText>
                 <AppText style={s.emptyText}>No matches</AppText>
-                <AppText style={s.emptyHint}>Try a different name or city</AppText>
+                <AppText style={s.emptyHint}>Try a different name or county</AppText>
               </View>
             ) : (
               <>
@@ -559,9 +559,9 @@ export default function GuardianConnectionsScreen() {
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
               <TextInput
                 style={s.searchInput}
-                value={searchCity}
-                onChangeText={setSearchCity}
-                placeholder="Search by city or state…"
+                value={searchCounty}
+                onChangeText={setSearchCounty}
+                placeholder="Search by county…"
                 placeholderTextColor={NICO.textMuted}
                 clearButtonMode="while-editing"
               />
@@ -647,7 +647,7 @@ export default function GuardianConnectionsScreen() {
                 )}
                 <View style={s.peekHeaderInfo}>
                   <AppText style={s.peekName}>{peekGuardian.guardianName}</AppText>
-                  {peekGuardian.city ? <AppText style={s.peekCity}>📍 {peekGuardian.city}</AppText> : null}
+                  {peekGuardian.county ? <AppText style={s.peekCounty}>📍 {peekGuardian.county}</AppText> : null}
                 </View>
               </View>
 
@@ -813,7 +813,7 @@ const s = StyleSheet.create({
 gridAvatar:        { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.xs },
   gridAvatarInitial: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: 'white' },
   gridName:          { ...TEXT_STYLE.bodyMedium, textAlign: 'center' as const },
-  gridCity:          { ...TEXT_STYLE.caption, textAlign: 'center' as const },
+  gridCounty:          { ...TEXT_STYLE.caption, textAlign: 'center' as const },
   gridPendingLabel:  { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.primary },
   gridAction:        { width: '100%', alignItems: 'center', marginTop: SPACING.xs },
   gridConnectBtn: {
@@ -873,7 +873,7 @@ gridAvatar:        { width: 56, height: 56, borderRadius: 28, justifyContent: 'c
   peekInitial:       { fontSize: 28, fontWeight: FONT_WEIGHT.extraBold, color: 'white' },
   peekHeaderInfo:    { flex: 1, gap: SPACING.xs },
   peekName:          { ...TEXT_STYLE.cardTitle },
-  peekCity:          { ...TEXT_STYLE.caption },
+  peekCounty:          { ...TEXT_STYLE.caption },
 
   peekSection:      { paddingHorizontal: SPACING.lg, paddingTop: SPACING.base, gap: SPACING.xs },
   peekSectionLabel: { ...TEXT_STYLE.labelSmall, textTransform: 'uppercase', letterSpacing: 0.7 },

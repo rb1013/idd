@@ -12,7 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COMPREHENSION_LEVELS, GENDERS, LANGUAGES, FIXED_STATE } from '../../constants';
+import { COMPREHENSION_LEVELS, GENDERS, LANGUAGES, FIXED_STATE, CA_COUNTIES } from '../../constants';
 import DropdownPicker from '../../components/DropdownPicker';
 import type { Category } from '../../types';
 import MultiSelectChips from '../../components/MultiSelectChips';
@@ -51,7 +51,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
   const [languages, setLanguages] = useState<string[]>([]);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
-  const [city, setCity] = useState('');
+  const [county, setCounty] = useState('');
   const region = FIXED_STATE;
   const [country, setCountry] = useState('USA');
   const [selectedLikes, setSelectedLikes] = useState<string[]>([]);
@@ -96,7 +96,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
       setGender(p.gender || '');
       setUsername(p.username || '');
       setLanguages(p.languages || []);
-      setCity(p.city || '');
+      setCounty(p.county || '');
       setCountry(p.country || 'USA');
       setExistingPhotoUrl(p.photo_url || null);
       setComprehension(chatRes.data?.comprehension_level || 'easy');
@@ -126,7 +126,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
   }
 
   async function handleSave() {
-    if (!name || !dob || !gender || !city) { Alert.alert('Please fill in all required fields'); return; }
+    if (!name || !dob || !gender || !county) { Alert.alert('Please fill in all required fields'); return; }
     setLoading(true);
 
     let photo_url = existingPhotoUrl;
@@ -146,7 +146,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
     }
 
     const { error } = await supabase.from('user_profiles').update({
-      name, date_of_birth: dob ? formatDobForDb(dob) : null, gender, languages, photo_url, city, region, country,
+      name, date_of_birth: dob ? formatDobForDb(dob) : null, gender, languages, photo_url, county, region, country,
     }).eq('id', userId);
 
     if (error) { Alert.alert('Error saving profile', error.message); setLoading(false); return; }
@@ -340,7 +340,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
             <AppText style={styles.sectionTitle}>Location</AppText>
             <DropdownPicker label="Country" value={country} options={['USA']} onSelect={setCountry} disabled />
             <DropdownPicker label="State" value={region} options={[region]} onSelect={() => {}} disabled />
-            <Field label="City *" value={city} onChangeText={setCity} placeholder="e.g. Austin" />
+            <DropdownPicker label="County *" value={county} options={CA_COUNTIES} onSelect={setCounty} placeholder="Select county..." />
           </View>
         )}
 

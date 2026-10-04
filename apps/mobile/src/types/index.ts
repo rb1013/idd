@@ -9,7 +9,7 @@ export interface Guardian {
   full_name: string;
   phone?: string;
   photo_url?: string;
-  city?: string;
+  county?: string;
   state?: string;
   country?: string;
   situation_tags?: string[];
@@ -26,7 +26,7 @@ export interface UserProfile {
   gender: string;
   languages: string[];
   photo_url?: string;
-  city: string;
+  county: string;
   region: string;
   country: string;
   email?: string;

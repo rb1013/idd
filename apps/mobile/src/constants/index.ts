@@ -166,6 +166,8 @@ export const TUTORIAL_COMPREHENSION = ['easy', 'medium', 'complex', 'fluent'];
 // to this value rather than offering a dropdown of all US states.
 export const FIXED_STATE = 'California';
 
+export { CA_COUNTIES } from './caCounties';
+
 export const US_STATES = [
   'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California',
   'Colorado', 'Connecticut', 'Delaware', 'Florida', 'Georgia',

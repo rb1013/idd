@@ -142,7 +142,7 @@ export default function GuardianAccountScreen() {
           <View style={s.divider} />
           <InfoRow label="State"   value={guardian?.state || '—'} />
           <View style={s.divider} />
-          <InfoRow label="City"    value={guardian?.city || '—'} />
+          <InfoRow label="County"  value={guardian?.county || '—'} />
         </View>
 
         {/* Learner Situation */}

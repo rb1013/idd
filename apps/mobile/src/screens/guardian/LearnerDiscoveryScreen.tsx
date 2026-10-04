@@ -39,7 +39,7 @@ interface LearnerResult {
   name: string;
   date_of_birth: string | null;
   photo_url: string | null;
-  city: string;
+  county: string;
   region: string;
   comprehension_level: string | null;
   likes:             string[];
@@ -120,7 +120,7 @@ export default function LearnerDiscoveryScreen() {
 
   // Search
   const [searchName, setSearchName] = useState('');
-  const [searchCity, setSearchCity] = useState('');
+  const [searchCounty, setSearchCounty] = useState('');
 
   // Applied filters (used for actual filtering)
   const [filterAgeGroups, setFilterAgeGroups] = useState<string[]>([]);
@@ -155,7 +155,7 @@ export default function LearnerDiscoveryScreen() {
 
     const { data: profiles } = await supabase
       .from('user_profiles')
-      .select('id, name, date_of_birth, photo_url, city, region')
+      .select('id, name, date_of_birth, photo_url, county, region')
       .neq('guardian_id', guardianId)
       .order('name');
     if (!profiles) { setLoading(false); return; }
@@ -237,7 +237,7 @@ export default function LearnerDiscoveryScreen() {
 
     const results: LearnerResult[] = profiles.map((p: any) => ({
       id: p.id, name: p.name, date_of_birth: p.date_of_birth ?? null, photo_url: p.photo_url,
-      city: p.city, region: p.region,
+      county: p.county, region: p.region,
       comprehension_level: levelMap[p.id] ?? null,
       likes:             (likesMap[p.id]     ?? []).slice(0, 5),
       dislikes:          (dislikesMap[p.id]  ?? []).slice(0, 5),
@@ -328,7 +328,7 @@ export default function LearnerDiscoveryScreen() {
   ) {
     return list.filter(l => {
       if (searchName && !l.name.toLowerCase().includes(searchName.toLowerCase())) return false;
-      if (searchCity && !l.city.toLowerCase().includes(searchCity.toLowerCase()))  return false;
+      if (searchCounty && !l.county.toLowerCase().includes(searchCounty.toLowerCase()))  return false;
       if (ages.length > 0 && !ages.includes(getAgeGroup(l.date_of_birth) ?? '')) return false;
       if (levels.length > 0 && !levels.some(fl => fl.toLowerCase() === l.comprehension_level)) return false;
       if (likes.length > 0 && !l.likes.some(lk => likes.includes(lk))) return false;
@@ -341,12 +341,12 @@ export default function LearnerDiscoveryScreen() {
 
   const filtered = useMemo(
     () => applyFilters(learners, filterAgeGroups, filterLevels, filterLikes, filterDislikes, filterAbilities, filterMedical),
-    [learners, searchName, searchCity, filterAgeGroups, filterLevels, filterLikes, filterDislikes, filterAbilities, filterMedical],
+    [learners, searchName, searchCounty, filterAgeGroups, filterLevels, filterLikes, filterDislikes, filterAbilities, filterMedical],
   );
 
   const draftPreview = useMemo(
     () => applyFilters(learners, draftAgeGroups, draftLevels, draftLikes, draftDislikes, draftAbilities, draftMedical),
-    [learners, searchName, searchCity, draftAgeGroups, draftLevels, draftLikes, draftDislikes, draftAbilities, draftMedical],
+    [learners, searchName, searchCounty, draftAgeGroups, draftLevels, draftLikes, draftDislikes, draftAbilities, draftMedical],
   );
 
   const levelLabels    = COMPREHENSION_LEVELS.map((c: any) => c.label as string);
@@ -371,9 +371,9 @@ export default function LearnerDiscoveryScreen() {
           <AppText style={s.searchIcon}>📍</AppText>
           <TextInput
             style={s.searchText}
-            value={searchCity}
-            onChangeText={setSearchCity}
-            placeholder="City…"
+            value={searchCounty}
+            onChangeText={setSearchCounty}
+            placeholder="County…"
             placeholderTextColor={COLORS.bloomMuted}
             clearButtonMode="while-editing"
           />
@@ -435,7 +435,7 @@ export default function LearnerDiscoveryScreen() {
                 <View style={s.rowInfo}>
                   <AppText style={s.rowName} numberOfLines={1}>{l.name}</AppText>
                   <AppText style={s.rowMeta} numberOfLines={1}>
-                    {calcAge(l.date_of_birth) ?? '—'} yrs · {l.city}{l.region ? `, ${l.region}` : ''}
+                    {calcAge(l.date_of_birth) ?? '—'} yrs · {l.county}
                   </AppText>
                 </View>
 

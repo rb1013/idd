@@ -38,7 +38,7 @@ interface LinkedUser {
 
 interface GuardianProfile {
   id: string; name: string; photoUrl: string | null;
-  city: string; state: string; situationTags: string[];
+  county: string; situationTags: string[];
   learners: { name: string; date_of_birth: string | null; gender: string | null }[];
 }
 
@@ -78,14 +78,14 @@ export default function TutorialLibraryScreen() {
     setLoadingGuardianSheet(true);
     const { data } = await supabase
       .from('guardians')
-      .select('id, full_name, photo_url, city, state, situation_tags, user_profiles(name, date_of_birth, gender)')
+      .select('id, full_name, photo_url, county, situation_tags, user_profiles(name, date_of_birth, gender)')
       .eq('id', guardianId)
       .single();
     if (data) {
       setGuardianSheet({
         id: data.id, name: data.full_name ?? '',
         photoUrl: data.photo_url ?? null,
-        city: data.city ?? '', state: data.state ?? '',
+        county: data.county ?? '',
         situationTags: data.situation_tags ?? [],
         learners: (data.user_profiles ?? []).map((l: any) => ({
           name: l.name, date_of_birth: l.date_of_birth ?? null, gender: l.gender ?? null,
@@ -408,9 +408,9 @@ export default function TutorialLibraryScreen() {
                   )}
                   <View style={s.sheetInfo}>
                     <AppText style={s.sheetName}>{guardianSheet.name}</AppText>
-                    {!!(guardianSheet.city || guardianSheet.state) && (
+                    {!!guardianSheet.county && (
                       <AppText style={s.sheetCity}>
-                        📍 {[guardianSheet.city, guardianSheet.state].filter(Boolean).join(', ')}
+                        📍 {guardianSheet.county}
                       </AppText>
                     )}
                   </View>

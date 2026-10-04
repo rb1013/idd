@@ -19,7 +19,7 @@ interface FriendForPin {
   friendName: string;
   friendPhotoUrl: string | null;
   friendDob: string | null;
-  friendCity: string;
+  friendCounty: string;
   friendRegion: string;
   isPinned: boolean;
   isRequester: boolean;
@@ -53,8 +53,8 @@ export default function FavouriteFriendsScreen() {
       .from('friendships')
       .select(`
         id, requester_id, addressee_id, requester_pinned, addressee_pinned,
-        requester:user_profiles!friendships_requester_id_fkey(id, name, photo_url, date_of_birth, city, region),
-        addressee:user_profiles!friendships_addressee_id_fkey(id, name, photo_url, date_of_birth, city, region)
+        requester:user_profiles!friendships_requester_id_fkey(id, name, photo_url, date_of_birth, county, region),
+        addressee:user_profiles!friendships_addressee_id_fkey(id, name, photo_url, date_of_birth, county, region)
       `)
       .eq('status', 'accepted')
       .or(`requester_id.eq.${learner.id},addressee_id.eq.${learner.id}`);
@@ -69,7 +69,7 @@ export default function FavouriteFriendsScreen() {
           friendName: friend.name,
           friendPhotoUrl: friend.photo_url,
           friendDob: friend.date_of_birth ?? null,
-          friendCity: friend.city ?? '',
+          friendCounty: friend.county ?? '',
           friendRegion: friend.region ?? '',
           isPinned: isRequester ? f.requester_pinned : f.addressee_pinned,
           isRequester,
@@ -165,7 +165,7 @@ export default function FavouriteFriendsScreen() {
               <View style={s.rowInfo}>
                 <AppText style={s.name} numberOfLines={1}>{item.friendName}</AppText>
                 <AppText style={s.meta} numberOfLines={1}>
-                  {calcAge(item.friendDob) ?? '—'} yrs · {item.friendCity}{item.friendRegion ? `, ${item.friendRegion}` : ''}
+                  {calcAge(item.friendDob) ?? '—'} yrs · {item.friendCounty}
                 </AppText>
               </View>
 

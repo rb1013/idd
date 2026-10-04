@@ -17,7 +17,7 @@ interface FriendRequest {
   requesterName: string;
   requesterPhoto: string | null;
   requesterAge: number;
-  requesterCity: string;
+  requesterCounty: string;
   requesterRegion: string;
   requesterGuardianName: string | null;
   myLearnerId: string;
@@ -70,7 +70,7 @@ export default function LearnerFriendRequestsScreen() {
 
     const { data: otherProfiles } = await supabase
       .from('user_profiles')
-      .select('id, name, age, photo_url, city, region, guardian_id')
+      .select('id, name, age, photo_url, county, region, guardian_id')
       .in('id', otherIds);
 
     // Fetch other guardians' names
@@ -97,7 +97,7 @@ export default function LearnerFriendRequestsScreen() {
         requesterName: other?.name ?? 'Unknown',
         requesterPhoto: other?.photo_url ?? null,
         requesterAge: other?.age ?? 0,
-        requesterCity: other?.city ?? '',
+        requesterCounty: other?.county ?? '',
         requesterRegion: other?.region ?? '',
         requesterGuardianName: other?.guardian_id ? (guardianNameMap[other.guardian_id] ?? null) : null,
         myLearnerId,
@@ -198,7 +198,7 @@ export default function LearnerFriendRequestsScreen() {
         <View style={s.info}>
           <AppText style={s.name}>{req.requesterName}</AppText>
           <AppText style={s.meta}>
-            {req.requesterAge} yrs · {req.requesterCity}, {req.requesterRegion}
+            {req.requesterAge} yrs · {req.requesterCounty}
           </AppText>
           {req.requesterGuardianName && (
             <AppText style={s.guardianNote}>Guardian: {req.requesterGuardianName}</AppText>

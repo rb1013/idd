@@ -52,7 +52,7 @@ interface Friend {
   learnerId: string;
   learnerName: string;
   learnerPhoto: string | null;
-  learnerCity: string;
+  learnerCounty: string;
   learnerRegion: string;
   learnerAge: number | null;
   guardianName: string | null;
@@ -65,7 +65,7 @@ interface FriendRequest {
   requesterName: string;
   requesterPhoto: string | null;
   requesterAge: number;
-  requesterCity: string;
+  requesterCounty: string;
   requesterRegion: string;
   requesterGuardianName: string | null;
   medicalConditions: string[];
@@ -88,7 +88,7 @@ interface LearnerResult {
   name: string;
   date_of_birth: string | null;
   photo_url: string | null;
-  city: string;
+  county: string;
   region: string;
   comprehension_level: string | null;
   likes:             string[];
@@ -149,7 +149,7 @@ export default function LearnerFriendsScreen() {
   const [sending,       setSending]       = useState<string | null>(null);
   const [removing,      setRemoving]      = useState<string | null>(null);
   const [searchName,    setSearchName]    = useState('');
-  const [searchCity,    setSearchCity]    = useState('');
+  const [searchCounty,    setSearchCounty]    = useState('');
   const [filterAgeGroups, setFilterAgeGroups] = useState<string[]>([]);
   const [filterLevels,    setFilterLevels]    = useState<string[]>([]);
   const [filterLikes,     setFilterLikes]     = useState<string[]>([]);
@@ -269,7 +269,7 @@ export default function LearnerFriendsScreen() {
 
     const { data: profiles } = await supabase
       .from('user_profiles')
-      .select('id, name, photo_url, city, region, date_of_birth, guardian_id')
+      .select('id, name, photo_url, county, region, date_of_birth, guardian_id')
       .in('id', otherIds);
 
     const guardianIds = [...new Set((profiles ?? []).map((p: any) => p.guardian_id).filter(Boolean))];
@@ -301,7 +301,7 @@ export default function LearnerFriendsScreen() {
         learnerId:    otherId,
         learnerName:  p?.name ?? 'Unknown',
         learnerPhoto: p?.photo_url ?? null,
-        learnerCity:  p?.city ?? '',
+        learnerCounty:  p?.county ?? '',
         learnerRegion:p?.region ?? '',
         learnerAge:   calcAge(p?.date_of_birth ?? null),
         guardianName: p?.guardian_id ? (guardianNameMap[p.guardian_id] ?? null) : null,
@@ -331,7 +331,7 @@ export default function LearnerFriendsScreen() {
 
     const { data: otherProfiles } = await supabase
       .from('user_profiles')
-      .select('id, name, date_of_birth, photo_url, city, region, guardian_id')
+      .select('id, name, date_of_birth, photo_url, county, region, guardian_id')
       .in('id', otherIds);
 
     const otherGuardianIds = [...new Set((otherProfiles ?? []).map((p: any) => p.guardian_id).filter(Boolean))];
@@ -365,7 +365,7 @@ export default function LearnerFriendsScreen() {
         requesterName: other?.name ?? 'Unknown',
         requesterPhoto: other?.photo_url ?? null,
         requesterAge: calcAge(other?.date_of_birth) ?? 0,
-        requesterCity: other?.city ?? '',
+        requesterCounty: other?.county ?? '',
         requesterRegion: other?.region ?? '',
         requesterGuardianName: other?.guardian_id ? (guardianNameMap[other.guardian_id] ?? null) : null,
         medicalConditions: reqMedicalMap[otherId] ?? [],
@@ -381,7 +381,7 @@ export default function LearnerFriendsScreen() {
   async function loadDiscovery(myIds: string[], guardianId: string) {
     const { data: profiles } = await supabase
       .from('user_profiles')
-      .select('id, name, date_of_birth, photo_url, city, region, guardian_id')
+      .select('id, name, date_of_birth, photo_url, county, region, guardian_id')
       .neq('guardian_id', guardianId)
       .order('name');
     if (!profiles) return;
@@ -455,7 +455,7 @@ export default function LearnerFriendsScreen() {
 
     setLearners(profiles.map((p: any) => ({
       id: p.id, name: p.name, date_of_birth: p.date_of_birth ?? null,
-      photo_url: p.photo_url, city: p.city, region: p.region,
+      photo_url: p.photo_url, county: p.county, region: p.region,
       comprehension_level: levelMap[p.id] ?? null,
       likes:             (likesMap[p.id]     ?? []).slice(0, 5),
       dislikes:          (dislikesMap[p.id]  ?? []).slice(0, 5),
@@ -565,7 +565,7 @@ export default function LearnerFriendsScreen() {
       if (hiddenIds.has(l.id)) return false;
       if (l.connectionStatus === 'accepted' || l.connectionStatus === 'pending_received') return false;
       if (searchName && !l.name.toLowerCase().includes(searchName.toLowerCase())) return false;
-      if (searchCity && !l.city.toLowerCase().includes(searchCity.toLowerCase()))  return false;
+      if (searchCounty && !l.county.toLowerCase().includes(searchCounty.toLowerCase()))  return false;
       if (filterAgeGroups.length > 0 && !filterAgeGroups.includes(getAgeGroup(l.date_of_birth) ?? '')) return false;
       if (filterLevels.length > 0 && !filterLevels.some(fl => fl.toLowerCase() === l.comprehension_level)) return false;
       if (filterLikes.length > 0 && !l.likes.some(lk => filterLikes.includes(lk))) return false;
@@ -576,10 +576,10 @@ export default function LearnerFriendsScreen() {
     });
   }
 
-  const filtered     = useMemo(() => applyFilters(learners), [learners, searchName, searchCity, filterAgeGroups, filterLevels, filterLikes, filterDislikes, filterAbilities, filterMedical]);
+  const filtered     = useMemo(() => applyFilters(learners), [learners, searchName, searchCounty, filterAgeGroups, filterLevels, filterLikes, filterDislikes, filterAbilities, filterMedical]);
   const levelLabels  = COMPREHENSION_LEVELS.map((c: any) => c.label as string);
 
-  const findResetKey = `${searchName}|${searchCity}|${filterAgeGroups.join(',')}|${filterLevels.join(',')}|${filterLikes.join(',')}|${filterDislikes.join(',')}|${filterAbilities.join(',')}|${filterMedical.join(',')}`;
+  const findResetKey = `${searchName}|${searchCounty}|${filterAgeGroups.join(',')}|${filterLevels.join(',')}|${filterLikes.join(',')}|${filterDislikes.join(',')}|${filterAbilities.join(',')}|${filterMedical.join(',')}`;
   const { visible: visibleFind, showLoadMore: showLoadMoreFind, loadMore: loadMoreFind, showCapMessage: showCapFind, pageSize: pageSizeFind } = useVisibleCount(filtered, findResetKey);
 
   const incomingRequests = requests.filter(r => r.direction === 'incoming');
@@ -646,7 +646,7 @@ export default function LearnerFriendsScreen() {
                     <View style={s.cardInfo}>
                       <AppText style={s.cardName}>{f.learnerName}</AppText>
                       <AppText style={s.cardMeta}>
-                        {f.learnerCity}{f.learnerRegion ? `, ${f.learnerRegion}` : ''}
+                        {f.learnerCounty}
                       </AppText>
                       {f.guardianName && (
                         <AppText style={s.cardMeta}>Guardian: {f.guardianName}</AppText>
@@ -750,7 +750,7 @@ export default function LearnerFriendsScreen() {
                         </View>
                         <View style={s.cardInfo}>
                           <AppText style={s.cardName}>{req.requesterName}</AppText>
-                          <AppText style={s.cardMeta}>{req.requesterCity}, {req.requesterRegion}</AppText>
+                          <AppText style={s.cardMeta}>{req.requesterCounty}</AppText>
                           {req.requesterGuardianName && <AppText style={s.cardMeta}>Guardian: {req.requesterGuardianName}</AppText>}
                         </View>
                         <View style={s.reqActions}>
@@ -797,7 +797,7 @@ export default function LearnerFriendsScreen() {
                         </View>
                         <View style={s.cardInfo}>
                           <AppText style={s.cardName}>{req.requesterName}</AppText>
-                          <AppText style={s.cardMeta}>{req.requesterCity}, {req.requesterRegion}</AppText>
+                          <AppText style={s.cardMeta}>{req.requesterCounty}</AppText>
                           {req.requesterGuardianName && <AppText style={s.cardMeta}>Guardian: {req.requesterGuardianName}</AppText>}
                         </View>
                         <View style={s.reqActions}>
@@ -837,8 +837,8 @@ export default function LearnerFriendsScreen() {
             <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
               <View style={s.searchInputRow}>
                 <AppText style={s.searchIcon}>📍</AppText>
-                <TextInput style={s.searchInputText} value={searchCity} onChangeText={setSearchCity}
-                  placeholder="City…" placeholderTextColor={NICO.textMuted} clearButtonMode="while-editing" />
+                <TextInput style={s.searchInputText} value={searchCounty} onChangeText={setSearchCounty}
+                  placeholder="County…" placeholderTextColor={NICO.textMuted} clearButtonMode="while-editing" />
               </View>
             </LinearGradient>
           </View>
@@ -884,7 +884,7 @@ export default function LearnerFriendsScreen() {
                     <View style={s.cardInfo}>
                       <AppText style={s.cardName} numberOfLines={1}>{l.name}</AppText>
                       <AppText style={s.cardMeta} numberOfLines={1}>
-                        {l.city}{l.region ? `, ${l.region}` : ''}
+                        {l.county}
                       </AppText>
                       {l.guardianName && (
                         <AppText style={s.cardMeta}>Guardian: {l.guardianName}</AppText>

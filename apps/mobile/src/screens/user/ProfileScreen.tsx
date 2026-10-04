@@ -79,7 +79,7 @@ export default function ProfileScreen() {
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
-  const locationParts = [activeUser!.city, activeUser!.region, activeUser!.country].filter(Boolean).join(', ');
+  const locationParts = activeUser!.county ?? '';
 
   return (
     <View style={styles.wrapper}>

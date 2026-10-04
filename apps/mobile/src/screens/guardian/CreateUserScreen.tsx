@@ -12,7 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { saveBiometricUser, saveCredentialSnapshot } from '../../lib/biometricStore';
-import { COMPREHENSION_LEVELS, GENDERS, LANGUAGES, FIXED_STATE } from '../../constants';
+import { COMPREHENSION_LEVELS, GENDERS, LANGUAGES, FIXED_STATE, CA_COUNTIES } from '../../constants';
 import DropdownPicker from '../../components/DropdownPicker';
 import { Category } from '../../types';
 import MultiSelectChips from '../../components/MultiSelectChips';
@@ -57,7 +57,7 @@ export default function CreateUserScreen({ navigation }: Props) {
   const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [languages, setLanguages] = useState<string[]>([]);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [city, setCity] = useState('');
+  const [county, setCounty] = useState('');
   const region = FIXED_STATE;
   const [country, setCountry] = useState('USA');
   const [selectedLikes, setSelectedLikes] = useState<string[]>([]);
@@ -115,7 +115,7 @@ export default function CreateUserScreen({ navigation }: Props) {
   }
 
   async function handleSubmit() {
-    if (!name || !dob || !gender || !city) { Alert.alert('Please fill in all required fields'); return; }
+    if (!name || !dob || !gender || !county) { Alert.alert('Please fill in all required fields'); return; }
     if (!username.trim()) { Alert.alert('Please enter a username'); return; }
 
     // Always do a fresh check at submit time in case the debounce hasn't fired yet
@@ -146,7 +146,7 @@ export default function CreateUserScreen({ navigation }: Props) {
 
     const { data: userProfile, error } = await supabase.from('user_profiles').insert({
       guardian_id: guardian!.id,
-      name, date_of_birth: formatDobForDb(dob!), gender, languages, photo_url, city, region, country,
+      name, date_of_birth: formatDobForDb(dob!), gender, languages, photo_url, county, region, country,
       username: trimmedUsername,
     }).select().single();
 
@@ -352,7 +352,7 @@ export default function CreateUserScreen({ navigation }: Props) {
               disabled
             />
 
-            <Field label="City *" value={city} onChangeText={setCity} placeholder="e.g. Austin" />
+            <DropdownPicker label="County *" value={county} options={CA_COUNTIES} onSelect={setCounty} placeholder="Select county..." />
           </View>
         )}
 

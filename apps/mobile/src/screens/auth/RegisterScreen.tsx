@@ -9,9 +9,11 @@ import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
 import AppText from '../../components/AppText';
 import ContentContainer from '../../components/ContentContainer';
+import DropdownPicker from '../../components/DropdownPicker';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { FIXED_STATE } from '../../constants/usStates';
+import { CA_COUNTIES } from '../../constants/caCounties';
 import { validatePhone, buildE164 } from '../../constants/countryCodes';
 import { emailError, passwordError, passwordMatchError } from '../../lib/validators';
 import {
@@ -27,7 +29,7 @@ export default function RegisterScreen() {
   const [phone, setPhone] = useState('');
   const [password, setPassword]   = useState('');
   const [confirm, setConfirm]     = useState('');
-  const [city, setCity]           = useState('');
+  const [county, setCounty]       = useState('');
 
   const [tagOptions, setTagOptions]           = useState<string[]>([]);
   const [selectedTags, setSelectedTags]       = useState<string[]>([]);
@@ -61,7 +63,7 @@ export default function RegisterScreen() {
   }
 
   async function handleRegister() {
-    if (!fullName || !email || !password || !city.trim()) { Alert.alert('Please fill in all required fields'); return; }
+    if (!fullName || !email || !password || !county) { Alert.alert('Please fill in all required fields'); return; }
     const emailErr = emailError(email);
     if (emailErr) { Alert.alert('Invalid email', emailErr); return; }
     const pwdErr = passwordError(password);
@@ -100,7 +102,7 @@ export default function RegisterScreen() {
       email: email.toLowerCase().trim(),
       fullName,
       phone: buildE164('+1', phone),
-      city: city.trim() || null,
+      county,
       state: FIXED_STATE,
       selectedTags,
       pin,
@@ -203,15 +205,9 @@ export default function RegisterScreen() {
           <AppText style={styles.readOnlyText}>{FIXED_STATE}</AppText>
         </View>
 
-        <AppText style={styles.label}>City</AppText>
-        <TextInput
-          style={styles.input}
-          value={city}
-          onChangeText={setCity}
-          placeholder="e.g. Austin"
-          placeholderTextColor={NICO.textMuted}
-          maxLength={20}
-        />
+        <View style={{ marginBottom: SPACING.lg }}>
+          <DropdownPicker label="County *" value={county} options={CA_COUNTIES} onSelect={setCounty} placeholder="Select county..." />
+        </View>
 
         {/* Learner situation */}
         <AppText style={styles.label}>Regional Support Category (optional)</AppText>

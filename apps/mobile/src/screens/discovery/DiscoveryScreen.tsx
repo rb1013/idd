@@ -63,7 +63,7 @@ export default function DiscoveryScreen() {
       .from('user_profiles')
       .select('*, user_likes(category_id)')
       .not('id', 'in', `(${excluded.join(',')})`)
-      .eq('city', activeUser!.city)
+      .eq('county', activeUser!.county)
       .limit(20);
 
     const { data, error } = await query;
@@ -147,7 +147,7 @@ export default function DiscoveryScreen() {
               }
               <View style={styles.info}>
                 <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.meta}>{calcAge(item.date_of_birth) ?? item.age ?? '—'} yrs • {item.city}</Text>
+                <Text style={styles.meta}>{calcAge(item.date_of_birth) ?? item.age ?? '—'} yrs • {item.county}</Text>
                 {item.languages?.length > 0 && (
                   <Text style={styles.lang}>{item.languages.join(', ')}</Text>
                 )}
