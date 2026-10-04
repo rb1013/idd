@@ -54,6 +54,7 @@ export default function GuardianEditAccountScreen() {
   async function handleSave() {
     if (!guardian) return;
     if (!name.trim()) { Alert.alert('Name cannot be empty'); return; }
+    if (!county) { Alert.alert('Please select a county'); return; }
 
     const phoneError = validatePhone('+1', phone);
     if (phoneError) { Alert.alert('Invalid phone number', phoneError); return; }
@@ -81,10 +82,10 @@ export default function GuardianEditAccountScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <ContentContainer>
+        <ContentContainer style={s.fields}>
 
           <View style={s.field}>
-            <AppText style={s.label}>Name</AppText>
+            <AppText style={s.label}>Name<AppText style={s.required}> *</AppText></AppText>
             <TextInput
               style={s.input}
               value={name}
@@ -96,7 +97,7 @@ export default function GuardianEditAccountScreen() {
           </View>
 
           <View style={s.field}>
-            <AppText style={s.label}>Phone</AppText>
+            <AppText style={s.label}>Phone<AppText style={s.required}> *</AppText></AppText>
             <View style={s.phoneRow}>
               <View style={s.countryCodeBtn}>
                 <AppText style={s.countryFlag}>🇺🇸</AppText>
@@ -135,11 +136,11 @@ export default function GuardianEditAccountScreen() {
           </View>
 
           <View style={s.field}>
-            <DropdownPicker label="County" value={county} options={CA_COUNTIES} onSelect={setCounty} placeholder="Select county..." />
+            <DropdownPicker label="County" required value={county} options={CA_COUNTIES} onSelect={setCounty} placeholder="Select county..." />
           </View>
 
           <View style={s.field}>
-            <AppText style={s.label}>Regional Support Category</AppText>
+            <AppText style={s.label}>Regional Support Category (optional)</AppText>
             <TouchableOpacity style={s.pickerBtn} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>
               <AppText style={[s.pickerBtnText, selectedTags.length === 0 && { color: NICO.textMuted }]}>
                 {selectedTags.length === 0 ? 'Select Situation' : `${selectedTags.length} selected`}
@@ -219,10 +220,12 @@ export default function GuardianEditAccountScreen() {
 
 const s = StyleSheet.create({
   root:  { flex: 1, backgroundColor: NICO.screenBg },
-  inner: { padding: SPACING.base, paddingBottom: SPACING['3xl'], gap: SPACING.base },
+  inner: { padding: SPACING.base, paddingBottom: SPACING['3xl'] },
+  fields: { gap: SPACING.xl },
 
   field: { gap: SPACING.xs },
   label: { ...TEXT_STYLE.fieldLabel },
+  required: { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.error },
 
   input: { ...INPUT.base },
   readonlyInput: {

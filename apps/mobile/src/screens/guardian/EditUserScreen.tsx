@@ -111,7 +111,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
   }
 
   async function handleSave() {
-    if (!name || !dob || !gender || !county) { Alert.alert('Please fill in all required fields'); return; }
+    if (!name.trim() || !dob || !gender || !county) { Alert.alert('Please fill in all required fields'); return; }
     setLoading(true);
 
     let photo_url = existingPhotoUrl;
@@ -240,7 +240,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
               }
             </TouchableOpacity>
             <Field label="Name *" value={name} onChangeText={setName} placeholder="First name" maxLength={20} />
-            <AppText style={styles.label}>Date of Birth *</AppText>
+            <AppText style={styles.label}>Date of Birth<AppText style={styles.required}> *</AppText></AppText>
             <TouchableOpacity
               style={styles.pickerBtn}
               onPress={() => { setTempDob(dob ?? new Date(2005, 0, 1)); setShowDobPicker(true); }}
@@ -251,7 +251,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
               </AppText>
               <AppText style={{ fontSize: 18 }}>📅</AppText>
             </TouchableOpacity>
-            <AppText style={styles.label}>Gender *</AppText>
+            <AppText style={styles.label}>Gender<AppText style={styles.required}> *</AppText></AppText>
             <MultiSelectChips options={GENDERS.filter(g => g !== 'Prefer not to say')} selected={gender ? [gender] : []} onToggle={(v) => setGender(v[0] || '')} single />
             <AppText style={styles.label}>Username</AppText>
             <View style={styles.readonlyField}>
@@ -313,7 +313,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
             <AppText style={styles.sectionTitle}>Location</AppText>
             <DropdownPicker label="Country" value={country} options={['USA']} onSelect={setCountry} disabled />
             <DropdownPicker label="State" value={region} options={[region]} onSelect={() => {}} disabled />
-            <DropdownPicker label="County *" value={county} options={CA_COUNTIES} onSelect={setCounty} placeholder="Select county..." />
+            <DropdownPicker label="County" required value={county} options={CA_COUNTIES} onSelect={setCounty} placeholder="Select county..." />
           </View>
         )}
         </ContentContainer>
@@ -378,9 +378,13 @@ function formatDobForDb(d: Date): string {
 }
 
 function Field({ label, ...props }: { label: string } & React.ComponentProps<typeof TextInput>) {
+  const isRequired = label.endsWith(' *');
+  const baseLabel = isRequired ? label.slice(0, -2) : label;
   return (
     <>
-      <AppText style={styles.label}>{label}</AppText>
+      <AppText style={styles.label}>
+        {baseLabel}{isRequired && <AppText style={styles.required}> *</AppText>}
+      </AppText>
       <TextInput style={styles.input} placeholderTextColor={NICO.textMuted} {...props} />
     </>
   );
@@ -425,6 +429,7 @@ const styles = StyleSheet.create({
   photo: { width: scale(100), height: scale(100), borderRadius: scale(50) },
   photoText: { color: NICO.primary, fontSize: FONT_SIZE.base, textAlign: 'center' },
   label: { ...TEXT_STYLE.fieldLabel, marginBottom: SPACING.sm, marginTop: SPACING.base },
+  required: { color: NICO.error, fontWeight: FONT_WEIGHT.black },
   input: {
     backgroundColor: NICO.surface, borderWidth: 1.5, borderColor: NICO.border,
     borderRadius: RADIUS.md, padding: SPACING.md, fontSize: FONT_SIZE.lg, color: NICO.text, marginBottom: 4,

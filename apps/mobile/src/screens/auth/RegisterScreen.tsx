@@ -63,7 +63,7 @@ export default function RegisterScreen() {
   }
 
   async function handleRegister() {
-    if (!fullName || !email || !password || !county) { Alert.alert('Please fill in all required fields'); return; }
+    if (!fullName.trim() || !email || !password || !county) { Alert.alert('Please fill in all required fields'); return; }
     const emailErr = emailError(email);
     if (emailErr) { Alert.alert('Invalid email', emailErr); return; }
     const pwdErr = passwordError(password);
@@ -137,7 +137,7 @@ export default function RegisterScreen() {
           )}
         </TouchableOpacity>
 
-        <AppText style={styles.label}>Full Name *</AppText>
+        <AppText style={styles.label}>Full Name<AppText style={styles.required}> *</AppText></AppText>
         <TextInput
           style={styles.input}
           value={fullName}
@@ -147,7 +147,7 @@ export default function RegisterScreen() {
           maxLength={20}
         />
 
-        <AppText style={styles.label}>Email *</AppText>
+        <AppText style={styles.label}>Email<AppText style={styles.required}> *</AppText></AppText>
         <TextInput
           style={styles.input}
           value={email}
@@ -158,7 +158,7 @@ export default function RegisterScreen() {
           placeholderTextColor={NICO.textMuted}
         />
 
-        <AppText style={styles.label}>Phone *</AppText>
+        <AppText style={styles.label}>Phone<AppText style={styles.required}> *</AppText></AppText>
         <View style={styles.phoneRow}>
           <View style={styles.countryCodeBtn}>
             <AppText style={styles.countryFlag}>🇺🇸</AppText>
@@ -174,7 +174,7 @@ export default function RegisterScreen() {
           />
         </View>
 
-        <AppText style={styles.label}>Password *</AppText>
+        <AppText style={styles.label}>Password<AppText style={styles.required}> *</AppText></AppText>
         <TextInput
           style={styles.input}
           value={password}
@@ -184,7 +184,7 @@ export default function RegisterScreen() {
           placeholderTextColor={NICO.textMuted}
         />
 
-        <AppText style={styles.label}>Confirm Password *</AppText>
+        <AppText style={styles.label}>Confirm Password<AppText style={styles.required}> *</AppText></AppText>
         <TextInput
           style={styles.input}
           value={confirm}
@@ -206,7 +206,7 @@ export default function RegisterScreen() {
         </View>
 
         <View style={{ marginBottom: SPACING.lg }}>
-          <DropdownPicker label="County *" value={county} options={CA_COUNTIES} onSelect={setCounty} placeholder="Select county..." />
+          <DropdownPicker label="County" required value={county} options={CA_COUNTIES} onSelect={setCounty} placeholder="Select county..." />
         </View>
 
         {/* Learner situation */}
@@ -239,7 +239,7 @@ export default function RegisterScreen() {
           <AppText style={styles.pinSectionHint}>
             You'll use this 6-digit PIN to access Guardian mode from the NICO home screen.
           </AppText>
-          <AppText style={styles.label}>PIN *</AppText>
+          <AppText style={styles.label}>PIN<AppText style={styles.required}> *</AppText></AppText>
           <TextInput
             style={styles.input}
             value={pin}
@@ -250,7 +250,7 @@ export default function RegisterScreen() {
             secureTextEntry
             placeholderTextColor={NICO.textMuted}
           />
-          <AppText style={styles.label}>Confirm PIN *</AppText>
+          <AppText style={styles.label}>Confirm PIN<AppText style={styles.required}> *</AppText></AppText>
           <TextInput
             style={styles.input}
             value={confirmPin}
@@ -320,6 +320,7 @@ const styles = StyleSheet.create({
   title:     { ...TEXT_STYLE.sectionTitle, marginBottom: SPACING.xs, marginTop: SPACING.base },
   subtitle:  { ...TEXT_STYLE.hint, marginBottom: SPACING.xl },
   label:     { ...TEXT_STYLE.fieldLabel, marginBottom: SPACING.sm },
+  required:  { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.error },
   sublabel:  { fontSize: FONT_SIZE.sm, color: NICO.textMuted, marginBottom: SPACING.sm, marginTop: -2 },
 
   photoPicker: {

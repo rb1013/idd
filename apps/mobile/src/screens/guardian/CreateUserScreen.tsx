@@ -107,7 +107,7 @@ export default function CreateUserScreen({ navigation }: Props) {
   }
 
   async function handleSubmit() {
-    if (!name || !dob || !gender || !county) { Alert.alert('Please fill in all required fields'); return; }
+    if (!name.trim() || !dob || !gender || !county) { Alert.alert('Please fill in all required fields'); return; }
     if (!username.trim()) { Alert.alert('Please enter a username'); return; }
 
     // Always do a fresh check at submit time in case the debounce hasn't fired yet
@@ -333,7 +333,7 @@ export default function CreateUserScreen({ navigation }: Props) {
               disabled
             />
 
-            <DropdownPicker label="County *" value={county} options={CA_COUNTIES} onSelect={setCounty} placeholder="Select county..." />
+            <DropdownPicker label="County" required value={county} options={CA_COUNTIES} onSelect={setCounty} placeholder="Select county..." />
           </View>
         )}
         </ContentContainer>
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
   photo: { width: scale(100), height: scale(100), borderRadius: scale(50) },
   photoText: { color: NICO.primary, fontSize: FONT_SIZE.base, textAlign: 'center' },
   label: { ...TEXT_STYLE.fieldLabel, marginBottom: SPACING.sm, marginTop: SPACING.base },
-  required: { color: NICO.error, fontWeight: FONT_WEIGHT.bold },
+  required: { color: NICO.error, fontWeight: FONT_WEIGHT.black },
   usernameHint: { fontSize: FONT_SIZE.base, color: NICO.textMuted, lineHeight: 18, marginBottom: SPACING.sm },
   input: {
     backgroundColor: NICO.surface,

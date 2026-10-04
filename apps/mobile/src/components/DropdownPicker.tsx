@@ -14,14 +14,15 @@ interface Props {
   onSelect: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  required?: boolean;
 }
 
-export default function DropdownPicker({ label, value, options, onSelect, placeholder = 'Select...', disabled }: Props) {
+export default function DropdownPicker({ label, value, options, onSelect, placeholder = 'Select...', disabled, required }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <AppText style={styles.label}>{label}</AppText>
+      <AppText style={styles.label}>{label}{required && <AppText style={styles.required}> *</AppText>}</AppText>
       <TouchableOpacity
         style={[styles.picker, disabled && styles.pickerDisabled]}
         onPress={() => !disabled && setOpen(true)}
@@ -62,6 +63,7 @@ export default function DropdownPicker({ label, value, options, onSelect, placeh
 
 const styles = StyleSheet.create({
   label: { ...TEXT_STYLE.fieldLabel, marginBottom: SPACING.sm, marginTop: SPACING.base },
+  required: { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.error },
   picker: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: NICO.surface, borderWidth: 1.5, borderColor: NICO.border,
