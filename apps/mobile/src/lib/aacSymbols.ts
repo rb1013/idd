@@ -45,6 +45,16 @@ const SYMBOL_DEFINITIONS = [
   { keyword: 'hungry',    name: 'Hungry'    },
   { keyword: 'play',      name: 'Play'      },
   { keyword: 'wait',      name: 'Wait'      },
+  { keyword: 'bathroom',  name: 'Bathroom'  },
+  { keyword: 'water',     name: 'Water'     },
+  { keyword: 'eat',       name: 'Eat'       },
+  { keyword: 'drink',     name: 'Drink'     },
+  { keyword: 'sleep',     name: 'Sleep'     },
+  { keyword: 'more',      name: 'More'      },
+  { keyword: 'stop',      name: 'Stop'      },
+  { keyword: 'please',    name: 'Please'    },
+  { keyword: 'sorry',     name: 'Sorry'     },
+  { keyword: 'friend',    name: 'Friend'    },
 ];
 
 async function fetchRemoteSymbol(keyword: string): Promise<{ imageUrl: string; name: string } | null> {

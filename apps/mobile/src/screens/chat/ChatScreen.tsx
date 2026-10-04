@@ -43,6 +43,8 @@ export default function ChatScreen() {
   useNicoHeader(navigation);
 
   const [messages, setMessages] = useState<Message[]>([]);
+  // Free-form text input UI is disabled below, but `sendMessage`'s fromInput branch
+  // still references this state, so it stays declared (unused by the UI, harmless).
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [friendLastSeen, setFriendLastSeen] = useState<string | null>(null);
@@ -385,6 +387,7 @@ export default function ChatScreen() {
       {/* Bottom controls */}
       <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom + 8, 16) }]}>
         <View style={styles.inputRow}>
+          {/* Free-form text input — temporarily disabled, learners communicate via the emoji/Communication Board only
           <TouchableOpacity
             style={styles.boardBtn}
             onPress={() => setBoardVisible(true)}
@@ -410,6 +413,15 @@ export default function ChatScreen() {
             disabled={!text.trim()}
           >
             <Text style={styles.sendBtnIcon}>➤</Text>
+          </TouchableOpacity>
+          */}
+
+          <TouchableOpacity
+            style={styles.emojiOnlyBtn}
+            onPress={() => setBoardVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.emojiOnlyBtnIcon}>😀</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -723,9 +735,18 @@ const styles = StyleSheet.create({
   },
   boardBtnIcon: { fontSize: FONT_SIZE['2xl'] },
 
+  // Emoji-only send control — replaces the free-form text input for learners
+  emojiOnlyBtn: {
+    width: scale(64), height: scale(64), borderRadius: scale(32),
+    backgroundColor: NICO.purpleLight,
+    justifyContent: 'center', alignItems: 'center',
+    ...SHADOW.btnPrimary,
+  },
+  emojiOnlyBtnIcon: { fontSize: FONT_SIZE['3xl'] },
+
   // Input
   inputRow: {
-    flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.sm,
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', gap: SPACING.sm,
   },
   input: {
     flex: 1, backgroundColor: NICO.primaryLight,
