@@ -24,6 +24,13 @@ const AVATAR_COLORS = [NICO.teal, NICO.orange, NICO.coral, NICO.pink, NICO.purpl
 
 type ConnectionStatus = 'none' | 'pending_sent' | 'pending_received' | 'accepted';
 
+interface GuardianProfile {
+  name: string;
+  county: string | null;
+  email: string | null;
+  phone: string | null;
+}
+
 interface LearnerProfile {
   id: string;
   name: string;
@@ -32,7 +39,7 @@ interface LearnerProfile {
   county: string;
   region: string;
   country: string;
-  guardianName: string | null;
+  guardian: GuardianProfile | null;
   likes: string[];
   dislikes: string[];
   abilities: string[];
@@ -79,10 +86,17 @@ export default function LearnerPublicProfileScreen() {
     const myIds = (mine ?? []).map((r: any) => r.id);
     setMyLearnerIds(myIds);
 
-    let guardianName: string | null = null;
+    let guardianProfile: GuardianProfile | null = null;
     if (p.guardian_id) {
-      const { data: g } = await supabase.from('guardians').select('full_name').eq('id', p.guardian_id).single();
-      guardianName = g?.full_name ?? null;
+      const { data: g } = await supabase.from('guardians').select('full_name, county, email, phone').eq('id', p.guardian_id).single();
+      if (g) {
+        guardianProfile = {
+          name: g.full_name,
+          county: g.county ?? null,
+          email: g.email ?? null,
+          phone: g.phone ?? null,
+        };
+      }
     }
 
     let connectionStatus: ConnectionStatus = 'none';
@@ -111,7 +125,7 @@ export default function LearnerPublicProfileScreen() {
       county: p.county,
       region: p.region,
       country: p.country,
-      guardianName,
+      guardian: guardianProfile,
       likes: (likes ?? []).map((r: any) => r.categories?.name).filter(Boolean),
       dislikes: (dislikes ?? []).map((r: any) => r.categories?.name).filter(Boolean),
       abilities: (abilities ?? []).map((r: any) => r.categories?.name).filter(Boolean),
@@ -170,9 +184,6 @@ export default function LearnerPublicProfileScreen() {
           <AppText style={s.subMeta}>
             {calcAge(profile.date_of_birth) ?? '—'} years old · {profile.county}
           </AppText>
-          {profile.guardianName && (
-            <AppText style={s.guardianMeta}>Guardian: {profile.guardianName}</AppText>
-          )}
         </View>
 
         {/* About */}
@@ -183,6 +194,17 @@ export default function LearnerPublicProfileScreen() {
           <InfoRow label="Languages"           value={profile.languages.join(', ')}    fallback="Not set" />
           <InfoRow label="Comprehension Level" value={profile.comprehension_level}     fallback="Not set" />
         </View>
+
+        {/* Guardian profile */}
+        {profile.guardian && (
+          <View style={s.guardianCard}>
+            <AppText style={s.guardianCardTitle}>Guardian Profile</AppText>
+            <InfoRow label="Name"   value={profile.guardian.name}   fallback="Not set" />
+            <InfoRow label="County" value={profile.guardian.county} fallback="Not set" />
+            <InfoRow label="Email"  value={profile.guardian.email}  fallback="Not set" noCapitalize />
+            <InfoRow label="Phone"  value={profile.guardian.phone}  fallback="Not set" noCapitalize />
+          </View>
+        )}
 
         {/* Connect action — pinned to bottom */}
         <View style={s.actionCard}>
@@ -229,11 +251,11 @@ export default function LearnerPublicProfileScreen() {
   );
 }
 
-function InfoRow({ label, value, fallback }: { label: string; value: string | null | undefined; fallback: string }) {
+function InfoRow({ label, value, fallback, noCapitalize }: { label: string; value: string | null | undefined; fallback: string; noCapitalize?: boolean }) {
   return (
     <View style={s.infoRow}>
       <AppText style={s.infoLabel}>{label}</AppText>
-      <AppText style={[s.infoValue, !value && s.infoEmpty]} numberOfLines={2}>
+      <AppText style={[s.infoValue, noCapitalize && s.infoValueNoCap, !value && s.infoEmpty]} numberOfLines={2}>
         {value || fallback}
       </AppText>
     </View>
@@ -256,7 +278,6 @@ const s = StyleSheet.create({
   avatarInitial: { fontSize: IS_TABLET ? FONT_SIZE['5xl'] : FONT_SIZE['4xl'], fontWeight: FONT_WEIGHT.black, color: '#fff' },
   name: { fontSize: IS_TABLET ? FONT_SIZE['4xl'] : FONT_SIZE['3xl'], fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
   subMeta: { fontSize: IS_TABLET ? FONT_SIZE.lg : FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold },
-  guardianMeta: { fontSize: IS_TABLET ? FONT_SIZE.lg : FONT_SIZE.md, color: NICO.textMuted, fontWeight: FONT_WEIGHT.semiBold },
 
   section: {
     backgroundColor: NICO.surface, borderRadius: RADIUS.xl, paddingHorizontal: SPACING.base, paddingVertical: SPACING.xs,
@@ -268,7 +289,14 @@ const s = StyleSheet.create({
   },
   infoLabel: { fontSize: IS_TABLET ? FONT_SIZE.lg : FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted, width: scale(140), marginRight: SPACING.md },
   infoValue: { fontSize: IS_TABLET ? FONT_SIZE.lg : FONT_SIZE.md, color: NICO.text, flex: 1, fontWeight: FONT_WEIGHT.medium, textTransform: 'capitalize' },
+  infoValueNoCap: { textTransform: 'none' },
   infoEmpty: { color: NICO.textMuted, fontStyle: 'italic', textTransform: 'none' },
+
+  guardianCard: {
+    backgroundColor: NICO.surface, borderRadius: RADIUS.xl, padding: SPACING.base,
+    borderWidth: 1, borderColor: NICO.border,
+  },
+  guardianCardTitle: { fontSize: IS_TABLET ? FONT_SIZE.xl : FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: SPACING.sm },
 
   actionCard: {
     backgroundColor: NICO.surface, borderRadius: RADIUS.xl, padding: SPACING.base, gap: SPACING.md,
