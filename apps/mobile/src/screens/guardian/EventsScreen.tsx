@@ -667,7 +667,7 @@ export default function EventsScreen() {
                 </View>
                 {guardianSheet.situationTags.length > 0 && (
                   <View style={s.guardianSheetSection}>
-                    <AppText style={s.guardianSheetSectionTitle}>Learner Situation</AppText>
+                    <AppText style={s.guardianSheetSectionTitle}>Regional Support Category</AppText>
                     <View style={s.guardianSheetTags}>
                       {guardianSheet.situationTags.map(t => (
                         <View key={t} style={s.guardianTag}>
@@ -741,14 +741,14 @@ const s = StyleSheet.create({
   dateTagMonth: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.primary, letterSpacing: 0.5 },
 
   info:         { flex: 1, gap: 3 },
-  eventName:    { ...TEXT_STYLE.bodyMedium, fontSize: FONT_SIZE.lg },
-  eventMeta:    { ...TEXT_STYLE.caption },
-  eventHost:    { fontSize: FONT_SIZE.xs, color: NICO.primary, fontWeight: FONT_WEIGHT.semiBold },
-  eventHostBtn: { fontSize: FONT_SIZE.xs, color: NICO.primary, fontWeight: FONT_WEIGHT.bold, textDecorationLine: 'underline' },
+  eventName:    { ...TEXT_STYLE.bodyMedium, fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold },
+  eventMeta:    { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold },
+  eventHost:    { fontSize: FONT_SIZE.sm, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
+  eventHostBtn: { fontSize: FONT_SIZE.sm, color: NICO.primary, fontWeight: FONT_WEIGHT.bold, textDecorationLine: 'underline' },
 
   goingBadge: { flexDirection: 'row', alignItems: 'baseline', gap: SPACING.xs },
   goingNum:   { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary },
-  goingLabel: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, fontWeight: FONT_WEIGHT.semiBold },
+  goingLabel: { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold },
 
   cardActions: {
     flexDirection: 'row',
@@ -837,9 +837,9 @@ const s = StyleSheet.create({
   nudgeDateMonth: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.primary, letterSpacing: 0.5 },
   nudgeTitleBlock:   { flex: 1, gap: SPACING.xs },
   nudgeCategoryChip: { alignSelf: 'flex-start', backgroundColor: NICO.primaryLight, borderRadius: RADIUS.full, paddingHorizontal: SPACING.sm, paddingVertical: 3 },
-  nudgeCategoryText: { fontSize: FONT_SIZE.xs, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
+  nudgeCategoryText: { fontSize: FONT_SIZE.sm, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
   nudgeTitle:    { ...TEXT_STYLE.screenTitle },
-  nudgeHost:     { ...TEXT_STYLE.caption, color: NICO.primary },
+  nudgeHost:     { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 
   nudgeBody: { marginBottom: SPACING.base },
 
@@ -861,10 +861,10 @@ const s = StyleSheet.create({
   learnerMeta: { ...TEXT_STYLE.caption },
 
   nudgeRow:         { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginBottom: SPACING.md },
-  nudgeRowIcon:     { fontSize: FONT_SIZE.lg, marginTop: 1 },
-  nudgeRowText:     { flex: 1, fontSize: FONT_SIZE.md, color: NICO.text, lineHeight: 20 },
+  nudgeRowIcon:     { fontSize: FONT_SIZE.xl, marginTop: 1 },
+  nudgeRowText:     { flex: 1, fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, lineHeight: 23 },
   nudgeDescription: {
-    fontSize: FONT_SIZE.md, color: NICO.text, lineHeight: 21,
+    fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, lineHeight: 24,
     marginTop: SPACING.sm, paddingTop: SPACING.base,
     borderTopWidth: 1, borderTopColor: NICO.border,
   },

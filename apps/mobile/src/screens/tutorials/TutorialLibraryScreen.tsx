@@ -417,7 +417,7 @@ export default function TutorialLibraryScreen() {
                 </View>
                 {guardianSheet.situationTags.length > 0 && (
                   <View style={s.sheetSection}>
-                    <AppText style={s.sheetSectionTitle}>Learner Situation</AppText>
+                    <AppText style={s.sheetSectionTitle}>Regional Support Category</AppText>
                     <View style={s.sheetTags}>
                       {guardianSheet.situationTags.map(t => (
                         <View key={t} style={s.sheetTag}>

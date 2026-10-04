@@ -300,7 +300,7 @@ export default function EventDetailScreen() {
                 </View>
                 {guardianSheet.situationTags.length > 0 && (
                   <View style={s.sheetSection}>
-                    <AppText style={s.sheetSectionTitle}>Learner Situation</AppText>
+                    <AppText style={s.sheetSectionTitle}>Regional Support Category</AppText>
                     <View style={s.sheetTags}>
                       {guardianSheet.situationTags.map(t => (
                         <View key={t} style={s.sheetTag}>
@@ -376,7 +376,7 @@ const s = StyleSheet.create({
   dateBoxMonth:   { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.primary, letterSpacing: 0.5 },
   headerInfo:     { flex: 1, gap: SPACING.xs },
   eventName:      { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.text },
-  eventOrganiser: { fontSize: FONT_SIZE.sm, color: NICO.primary, fontWeight: FONT_WEIGHT.semiBold },
+  eventOrganiser: { fontSize: FONT_SIZE.md, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
   deleteBtn:      { padding: SPACING.sm },
   deleteBtnText:  { fontSize: FONT_SIZE.xl },
 
@@ -387,10 +387,10 @@ const s = StyleSheet.create({
   },
 
   detailRow:   { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md },
-  detailIcon:  { fontSize: FONT_SIZE.lg, marginTop: 1 },
-  detailText:  { flex: 1, fontSize: FONT_SIZE.md, color: NICO.text, lineHeight: 20 },
+  detailIcon:  { fontSize: FONT_SIZE.xl, marginTop: 1 },
+  detailText:  { flex: 1, fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, lineHeight: 23 },
   divider:     { height: 1, backgroundColor: NICO.border },
-  description: { fontSize: FONT_SIZE.md, color: NICO.text, lineHeight: 21 },
+  description: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, lineHeight: 24 },
 
   sectionTitle: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.black, color: NICO.text, marginBottom: SPACING.xs },
 

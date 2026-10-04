@@ -145,10 +145,10 @@ export default function GuardianAccountScreen() {
           <InfoRow label="County"  value={guardian?.county || '—'} />
         </View>
 
-        {/* Learner Situation */}
+        {/* Regional Support Category */}
         <View style={[s.card, { marginTop: SPACING.md }]}>
           <View style={s.infoRow}>
-            <AppText style={s.infoLabel}>Learner Situation</AppText>
+            <AppText style={s.infoLabel}>Regional Support Category</AppText>
           </View>
           {tags.length === 0 ? (
             <View style={s.tagsEmpty}>

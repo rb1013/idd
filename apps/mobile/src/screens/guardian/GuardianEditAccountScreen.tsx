@@ -139,7 +139,7 @@ export default function GuardianEditAccountScreen() {
           </View>
 
           <View style={s.field}>
-            <AppText style={s.label}>Learner Situation</AppText>
+            <AppText style={s.label}>Regional Support Category</AppText>
             <TouchableOpacity style={s.pickerBtn} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>
               <AppText style={[s.pickerBtnText, selectedTags.length === 0 && { color: NICO.textMuted }]}>
                 {selectedTags.length === 0 ? 'Select Situation' : `${selectedTags.length} selected`}
@@ -182,7 +182,7 @@ export default function GuardianEditAccountScreen() {
         <View style={s.modalOverlay}>
           <View style={s.modalCard}>
             <View style={s.modalHeader}>
-              <AppText style={s.modalTitle}>Learner Situation</AppText>
+              <AppText style={s.modalTitle}>Regional Support Category</AppText>
               <TouchableOpacity onPress={() => setShowTagPicker(false)}>
                 <AppText style={s.modalClose}>Done</AppText>
               </TouchableOpacity>

@@ -312,19 +312,25 @@ export default function GuardianConnectionsScreen() {
   function renderConnectedCard(item: GuardianResult, index: number) {
     const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
     return (
-      <TouchableOpacity key={item.guardianId} style={[s.gridCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
-        <View style={[s.gridAvatar, { backgroundColor: avatarColor(item.guardianName) }]}>
-          <AppText style={s.gridAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
-        </View>
-        <AppText style={s.gridName} numberOfLines={1}>{item.guardianName}</AppText>
-        {item.county ? <AppText style={s.gridCounty} numberOfLines={1}>{item.county}</AppText> : null}
-        <View style={s.gridAction}>
+      <TouchableOpacity key={item.guardianId} style={[s.connectionCard, { backgroundColor: tileBg, borderColor: 'transparent' }]} activeOpacity={0.75} onPress={() => setPeekGuardian(item)}>
+        <View style={s.connectionRow}>
+          {item.photoUrl ? (
+            <Image source={{ uri: item.photoUrl }} style={s.connectionAvatar} />
+          ) : (
+            <View style={[s.connectionAvatar, s.connectionAvatarFallback, { backgroundColor: avatarColor(item.guardianName) }]}>
+              <AppText style={s.connectionAvatarInitial}>{item.guardianName[0]?.toUpperCase()}</AppText>
+            </View>
+          )}
+          <View style={s.connectionInfo}>
+            <AppText style={s.connectionName} numberOfLines={1}>{item.guardianName}</AppText>
+            {item.county ? <AppText style={s.connectionCounty} numberOfLines={1}>{item.county}</AppText> : null}
+          </View>
           {processing === item.guardianId ? (
             <ActivityIndicator color={NICO.primary} />
           ) : (
-            <View style={s.gridTwoBtn}>
+            <View style={s.connectionActions}>
               <TouchableOpacity
-                style={[s.gridHalfBtn, { backgroundColor: NICO.primaryLight, borderWidth: 1.5, borderColor: NICO.primary }]}
+                style={s.connectionMsgBtn}
                 onPress={(e) => { e.stopPropagation(); openChat(item); }}
                 disabled={openingChat === item.guardianId}
                 activeOpacity={0.7}
@@ -332,7 +338,7 @@ export default function GuardianConnectionsScreen() {
                 {openingChat === item.guardianId ? (
                   <ActivityIndicator size="small" color={NICO.primary} />
                 ) : (
-                  <AppText style={[s.gridHalfBtnTxt, { color: NICO.primary }]}>💬</AppText>
+                  <AppText style={s.connectionMsgIcon}>💬</AppText>
                 )}
                 {!!unreadMap[item.guardianId] && (
                   <View style={s.messageBadge}>
@@ -350,6 +356,11 @@ export default function GuardianConnectionsScreen() {
             </View>
           )}
         </View>
+        {item.situationTags.length > 0 && (
+          <View style={s.connectionTagsStrip}>
+            <AppText style={s.connectionTagsText}>👥 {item.situationTags.join(', ')}</AppText>
+          </View>
+        )}
       </TouchableOpacity>
     );
   }
@@ -496,7 +507,7 @@ export default function GuardianConnectionsScreen() {
               </View>
             ) : (
               <>
-                <View style={s.gridWrap}>
+                <View style={s.connectionList}>
                   {visibleConnected.map((item, index) => renderConnectedCard(item, index))}
                 </View>
                 {showLoadMoreConnected && (
@@ -639,7 +650,7 @@ export default function GuardianConnectionsScreen() {
             title="More Filters"
             sections={[
               {
-                key: 'situation', emoji: '🎯', title: 'Learner Situation',
+                key: 'situation', emoji: '🎯', title: 'Regional Support Category',
                 options: situationTagOptions.map(t => ({ key: t, label: t })),
                 selected: filterTags,
                 onToggle: v => setFilterTags(prev => toggle(prev, v)),
@@ -699,7 +710,7 @@ export default function GuardianConnectionsScreen() {
 
               {peekGuardian.situationTags.length > 0 ? (
                 <View style={s.peekSection}>
-                  <AppText style={s.peekSectionLabel}>Learner Situation</AppText>
+                  <AppText style={s.peekSectionLabel}>Regional Support Category</AppText>
                   <View style={s.peekTagWrap}>
                     {peekGuardian.situationTags.map(tag => (
                       <View key={tag} style={s.peekTag}>
@@ -843,6 +854,38 @@ const s = StyleSheet.create({
     alignItems: 'center', gap: SPACING.xs,
     ...SHADOW.md,
   },
+
+  // My Connections — horizontal row layout (not the tile grid used elsewhere)
+  connectionList: { gap: SPACING.sm },
+  connectionCard: {
+    backgroundColor: 'white', borderRadius: RADIUS.xl, padding: SPACING.base,
+    borderWidth: 1, borderColor: NICO.border,
+    ...SHADOW.md,
+  },
+  connectionRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  connectionAvatar: { width: scale(52), height: scale(52), borderRadius: scale(26) },
+  connectionAvatarFallback: { justifyContent: 'center', alignItems: 'center' },
+  connectionAvatarInitial: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: 'white' },
+  connectionInfo: { flex: 1, minWidth: 0, gap: 2 },
+  connectionName: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  connectionCounty: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.medium, color: NICO.text },
+  connectionActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  connectionMsgBtn: {
+    width: scale(40), height: scale(40), borderRadius: RADIUS.full,
+    backgroundColor: NICO.primaryLight, borderWidth: 1.5, borderColor: NICO.primary,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  connectionMsgIcon: { fontSize: FONT_SIZE.lg },
+  // Regional Support Category — bleeds past the card's own padding to span
+  // edge-to-edge and sit flush ("sticky") against the card's bottom corners.
+  connectionTagsStrip: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: NICO.background,
+    marginTop: SPACING.sm, marginHorizontal: -SPACING.base, marginBottom: -SPACING.base,
+    paddingHorizontal: SPACING.base, paddingVertical: SPACING.sm,
+    borderBottomLeftRadius: RADIUS.xl, borderBottomRightRadius: RADIUS.xl,
+  },
+  connectionTagsText: { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.medium },
 gridAvatar:        { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.xs },
   gridAvatarInitial: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: 'white' },
   gridName:          { ...TEXT_STYLE.bodyMedium, textAlign: 'center' as const },
