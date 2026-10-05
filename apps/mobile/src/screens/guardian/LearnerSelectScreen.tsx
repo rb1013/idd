@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
-import AppLogo from '../../components/AppLogo';
+import AppLogo, { BRAND_LOGO, BRAND_TAGLINE, BRAND_TAGLINE_STYLE } from '../../components/AppLogo';
 import ContentContainer from '../../components/ContentContainer';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -150,7 +150,11 @@ export default function LearnerSelectScreen() {
           style={s.headerBorder}
         >
           <View style={s.header}>
-            <AppLogo />
+            <AppLogo
+              source={BRAND_LOGO}
+              tagline={BRAND_TAGLINE}
+              taglineStyle={BRAND_TAGLINE_STYLE}
+            />
           </View>
         </LinearGradient>
 

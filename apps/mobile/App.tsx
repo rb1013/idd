@@ -6,6 +6,7 @@ import {
   Raleway_500Medium,
   Raleway_600SemiBold,
   Raleway_700Bold,
+  Raleway_700Bold_Italic,
   Raleway_800ExtraBold,
   Raleway_900Black,
 } from '@expo-google-fonts/raleway';
@@ -18,6 +19,7 @@ export default function App() {
     Raleway_500Medium,
     Raleway_600SemiBold,
     Raleway_700Bold,
+    Raleway_700Bold_Italic,
     Raleway_800ExtraBold,
     Raleway_900Black,
   });

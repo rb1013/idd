@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
-import AppLogo from '../../components/AppLogo';
+import AppLogo, { BRAND_LOGO, BRAND_TAGLINE, BRAND_TAGLINE_STYLE } from '../../components/AppLogo';
 import ContentContainer from '../../components/ContentContainer';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -46,7 +46,13 @@ export default function LoginScreen({ navigation }: Props) {
           style={s.logoBorder}
         >
           <View style={s.logoSection}>
-            <AppLogo />
+            <AppLogo
+              source={BRAND_LOGO}
+              logoStyle={{ width: 138, height: 154 }}
+              tagline={BRAND_TAGLINE}
+              taglineStyle={{ ...BRAND_TAGLINE_STYLE, marginTop: SPACING.sm * 0.81 }}
+              taglineSingleLine
+            />
           </View>
         </LinearGradient>
 
@@ -139,6 +145,7 @@ const s = StyleSheet.create({
     borderBottomLeftRadius:  RADIUS['2xl'] + BUTTERFLY_BORDER.width,
     borderBottomRightRadius: RADIUS['2xl'] + BUTTERFLY_BORDER.width,
   },
+
   logoSection: {
     alignItems:              'center',
     paddingTop:              SPACING['3xl'] + SPACING.base,
