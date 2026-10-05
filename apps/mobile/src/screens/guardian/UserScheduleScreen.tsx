@@ -268,6 +268,7 @@ export default function UserScheduleScreen() {
   async function saveWeeklyClass() {
     if (!guardian) return;
     if (!wTitle.trim()) { Alert.alert('', 'Please enter a class name'); return; }
+    if (parseTimeToDb(wEnd) <= parseTimeToDb(wStart)) { Alert.alert('', 'End time must be after start time'); return; }
     setWSaving(true);
     const { error } = await supabase.rpc('upsert_schedule_template', {
       p_guardian_id: guardian.id,
@@ -304,6 +305,7 @@ export default function UserScheduleScreen() {
     if (!guardian) return;
     const isCancellation = ooMode === 'cancel';
     if (!isCancellation && !ooTitle.trim()) { Alert.alert('', 'Please enter a class name'); return; }
+    if (!isCancellation && parseTimeToDb(ooEnd) <= parseTimeToDb(ooStart)) { Alert.alert('', 'End time must be after start time'); return; }
     if (isCancellation && !cancelTemplateId) { Alert.alert('', 'Please select a class to cancel'); return; }
 
     // For cancellation, populate title/time from the template

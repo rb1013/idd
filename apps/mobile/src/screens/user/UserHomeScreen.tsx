@@ -89,16 +89,28 @@ function startMinsOfDay(t: string): number {
   return h * 60 + m;
 }
 
-function findNextClass(items: ScheduleItem[]): { item: ScheduleItem; state: 'upcoming' | 'now' } | null {
+type ScheduleState = 'now' | 'upcoming' | 'past';
+
+// All of today's classes, grouped and ordered: happening now first, then
+// upcoming (soonest first — already true since the RPC sorts by start_time),
+// then already-finished classes (most recently ended first).
+function classifySchedule(items: ScheduleItem[]): { item: ScheduleItem; state: ScheduleState }[] {
   const now = nowMinsOfDay();
-  const happeningNow = items.find(i => {
+  const nowItems: ScheduleItem[] = [];
+  const upcoming: ScheduleItem[] = [];
+  const past: ScheduleItem[] = [];
+  for (const i of items) {
     const diff = startMinsOfDay(i.start_time) - now;
-    return diff >= -15 && diff <= 0;
-  });
-  if (happeningNow) return { item: happeningNow, state: 'now' };
-  const upcoming = items.find(i => startMinsOfDay(i.start_time) > now);
-  if (upcoming) return { item: upcoming, state: 'upcoming' };
-  return null;
+    if (diff >= -15 && diff <= 0) nowItems.push(i);
+    else if (diff > 0) upcoming.push(i);
+    else past.push(i);
+  }
+  past.reverse();
+  return [
+    ...nowItems.map(item => ({ item, state: 'now' as const })),
+    ...upcoming.map(item => ({ item, state: 'upcoming' as const })),
+    ...past.map(item => ({ item, state: 'past' as const })),
+  ];
 }
 
 function timeUntil(startTime: string): string {
@@ -147,10 +159,11 @@ export default function UserHomeScreen() {
     });
   }, [activeUser]));
 
-  const nextClass = findNextClass(scheduleItems);
+  const scheduleRows = classifySchedule(scheduleItems);
+  const hasNowClass = scheduleRows.some(r => r.state === 'now');
 
   useEffect(() => {
-    if (nextClass?.state === 'now') {
+    if (hasNowClass) {
       pulseLoop.current = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, { toValue: 0.3, duration: 700, useNativeDriver: true }),
@@ -163,7 +176,7 @@ export default function UserHomeScreen() {
       pulseAnim.setValue(1);
     }
     return () => { pulseLoop.current?.stop(); };
-  }, [nextClass?.state]);
+  }, [hasNowClass]);
 
   const firstName = activeUser?.name?.split(' ')[0] ?? 'there';
 
@@ -226,45 +239,57 @@ export default function UserHomeScreen() {
         showsVerticalScrollIndicator={false}
       >
 
-        {/* Schedule tile — hidden when no upcoming class today */}
-        {nextClass && (
-          <TouchableOpacity
-            style={[
-              s.scheduleTile,
-              nextClass.state === 'now' ? s.scheduleTileNow : s.scheduleTileUpcoming,
-            ]}
-            activeOpacity={0.88}
-          >
-            <View style={s.scheduleLeft}>
-              <AppText style={s.scheduleEmoji}>{nextClass.item.emoji}</AppText>
-              <View>
-                <AppText style={s.scheduleTitle}>{nextClass.item.title}</AppText>
-                <AppText style={s.scheduleTime}>
-                  {formatTime(nextClass.item.start_time)} – {formatTime(nextClass.item.end_time)}
-                </AppText>
-              </View>
-            </View>
-            <View style={s.scheduleRight}>
-              {nextClass.state === 'now' ? (
-                <View style={s.nowBadge}>
-                  <Animated.View style={[s.nowDot, { opacity: pulseAnim }]} />
-                  <AppText style={s.nowBadgeTxt}>Now</AppText>
-                </View>
-              ) : (
-                <AppText style={s.untilTxt}>{timeUntil(nextClass.item.start_time)}</AppText>
-              )}
-              <Pressable
-                style={s.scheduleSpeakBtn}
-                hitSlop={10}
-                onPress={() => {
-                  const when = nextClass.state === 'now' ? 'right now' : `today at ${formatTime(nextClass.item.start_time)}`;
-                  Speech.speak(`${nextClass.item.title}, ${when}`, { rate: 0.65, pitch: 1.0 });
-                }}
+        {/* Today's schedule — hidden when there are no classes today */}
+        {scheduleRows.length > 0 && (
+          <View style={s.scheduleList}>
+            {scheduleRows.map(({ item, state }, index) => {
+              const tile = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length];
+              return (
+              <TouchableOpacity
+                key={item.id}
+                style={[
+                  s.scheduleTile,
+                  state === 'now' ? s.scheduleTileNow
+                    : state === 'past' ? s.scheduleTilePast
+                    : { backgroundColor: tile.bg, borderLeftColor: tile.accent },
+                ]}
+                activeOpacity={0.88}
               >
-                <AppText style={s.scheduleSpeakIcon}>🔊</AppText>
-              </Pressable>
-            </View>
-          </TouchableOpacity>
+                <View style={s.scheduleLeft}>
+                  <AppText style={s.scheduleEmoji}>{item.emoji}</AppText>
+                  <View>
+                    <AppText style={[s.scheduleTitle, state === 'past' && s.scheduleTitlePast]}>{item.title}</AppText>
+                    <AppText style={s.scheduleTime}>
+                      {formatTime(item.start_time)} – {formatTime(item.end_time)}
+                    </AppText>
+                  </View>
+                </View>
+                <View style={s.scheduleRight}>
+                  {state === 'now' ? (
+                    <View style={s.nowBadge}>
+                      <Animated.View style={[s.nowDot, { opacity: pulseAnim }]} />
+                      <AppText style={s.nowBadgeTxt}>Now</AppText>
+                    </View>
+                  ) : state === 'upcoming' ? (
+                    <AppText style={s.untilTxt}>{timeUntil(item.start_time)}</AppText>
+                  ) : (
+                    <AppText style={s.finishedTxt}>Finished</AppText>
+                  )}
+                  <Pressable
+                    style={s.scheduleSpeakBtn}
+                    hitSlop={10}
+                    onPress={() => {
+                      const when = state === 'now' ? 'right now' : state === 'past' ? 'earlier today' : `today at ${formatTime(item.start_time)}`;
+                      Speech.speak(`${item.title}, ${when}`, { rate: 0.65, pitch: 1.0 });
+                    }}
+                  >
+                    <AppText style={s.scheduleSpeakIcon}>🔊</AppText>
+                  </Pressable>
+                </View>
+              </TouchableOpacity>
+              );
+            })}
+          </View>
         )}
 
         {/* Explore section */}
@@ -423,7 +448,8 @@ const s = StyleSheet.create({
     paddingHorizontal: SPACING.base, paddingTop: SPACING.md, paddingBottom: SPACING.base, gap: SPACING.md,
   },
 
-  // Schedule tile
+  // Schedule list
+  scheduleList: { gap: SPACING.sm },
   scheduleTile: {
     borderRadius: RADIUS.lg,
     paddingHorizontal: SPACING.md,
@@ -434,16 +460,18 @@ const s = StyleSheet.create({
     borderLeftWidth: 4,
     ...SHADOW.sm,
   },
-  scheduleTileUpcoming: { backgroundColor: BUTTERFLY_TILES[2].bg, borderLeftColor: BUTTERFLY_TILES[2].accent },
   scheduleTileNow:      { backgroundColor: NICO.successLight, borderLeftColor: NICO.success },
+  scheduleTilePast:     { backgroundColor: NICO.background, borderLeftColor: NICO.border, opacity: 0.6, ...SHADOW.none },
   scheduleLeft: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, flex: 1 },
   scheduleEmoji: { fontSize: scale(36) },
   scheduleTitle: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: 2 },
+  scheduleTitlePast: { color: NICO.textMuted },
   scheduleTime:  { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
   scheduleRight: { alignItems: 'flex-end', paddingLeft: SPACING.sm, gap: SPACING.sm },
   scheduleSpeakBtn: { padding: 4, backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: RADIUS.md, width: scale(28), height: scale(28), justifyContent: 'center', alignItems: 'center' },
   scheduleSpeakIcon: { fontSize: FONT_SIZE.sm },
   untilTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.textMuted },
+  finishedTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.medium, color: NICO.textMuted },
   nowBadge: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, backgroundColor: NICO.success, borderRadius: RADIUS.full, paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs },
   nowDot: { width: scale(8), height: scale(8), borderRadius: scale(4), backgroundColor: '#fff' },
   nowBadgeTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
