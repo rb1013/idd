@@ -44,7 +44,7 @@ export default function ResetPasswordScreen() {
         <View style={s.content}>
           <AppText style={s.emoji}>🔐</AppText>
           <AppText style={s.title}>Set new password</AppText>
-          <AppText style={s.subtitle}>Choose a strong password for your NICO account.</AppText>
+          <AppText style={s.subtitle}>Choose a strong password for your Co-Heart account.</AppText>
 
           <LinearGradient
             colors={[...BUTTERFLY_BORDER.colors]}

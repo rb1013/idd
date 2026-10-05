@@ -117,7 +117,7 @@ export default function LinkYoutubeScreen() {
         {/* Ads disclaimer */}
         <View style={s.disclaimerBanner}>
           <AppText style={s.disclaimerText}>
-            ⚠️  YouTube videos may show ads. NICO is not responsible for any ads. Please supervise the ads.
+            ⚠️  YouTube videos may show ads. Co-Heart is not responsible for any ads. Please supervise the ads.
           </AppText>
         </View>
 
@@ -196,7 +196,7 @@ export default function LinkYoutubeScreen() {
         <View style={s.infoCard}>
           <AppText style={s.infoTitle}>How this works</AppText>
           <AppText style={s.infoText}>• The video is not downloaded or stored — only the YouTube link is saved.</AppText>
-          <AppText style={s.infoText}>• The video plays inside the NICO app using YouTube's embedded player.</AppText>
+          <AppText style={s.infoText}>• The video plays inside the Co-Heart app using YouTube's embedded player.</AppText>
           <AppText style={s.infoText}>• Saved as private — visible only to you.</AppText>
           <AppText style={s.infoText}>• No admin review needed for YouTube links.</AppText>
           <AppText style={s.infoText}>• Only <AppText style={s.infoTextBold}>public</AppText> YouTube videos can be linked. Private, unlisted, or age-restricted videos will not work.</AppText>

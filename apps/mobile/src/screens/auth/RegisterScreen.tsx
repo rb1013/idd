@@ -237,7 +237,7 @@ export default function RegisterScreen() {
         <View style={styles.pinSection}>
           <AppText style={styles.pinSectionTitle}>🔐  Guardian PIN</AppText>
           <AppText style={styles.pinSectionHint}>
-            You'll use this 6-digit PIN to access Guardian mode from the NICO home screen.
+            You'll use this 6-digit PIN to access Guardian mode from the Co-Heart home screen.
           </AppText>
           <AppText style={styles.label}>PIN<AppText style={styles.required}> *</AppText></AppText>
           <TextInput

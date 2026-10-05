@@ -12,6 +12,7 @@ import { supabase } from '../../lib/supabase';
 import { saveGuardianCredentials } from '../../lib/biometricStore';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, INPUT, BTN_SIZE, BTN_VARIANT, BUTTERFLY_BORDER,
+  FONT_SIZE, FONT_WEIGHT,
 } from '../../constants/theme';
 import { RootStackParamList } from '../../navigation';
 
@@ -60,7 +61,7 @@ export default function LoginScreen({ navigation }: Props) {
         <ContentContainer>
         <View style={s.form}>
           <AppText style={s.title}>Welcome</AppText>
-          <AppText style={s.subtitle}>Sign in to your NICO account</AppText>
+          <AppText style={s.subtitle}>Sign in to your Co-Heart account</AppText>
 
           <LinearGradient
             colors={[...BUTTERFLY_BORDER.colors]}
@@ -116,7 +117,7 @@ export default function LoginScreen({ navigation }: Props) {
 
           <View style={s.dividerRow}>
             <View style={s.dividerLine} />
-            <AppText style={s.dividerText}>NEW TO NICO?</AppText>
+            <AppText style={s.dividerText}>NEW TO CO-HEART?</AppText>
             <View style={s.dividerLine} />
           </View>
 
@@ -162,7 +163,10 @@ const s = StyleSheet.create({
   },
 
   title:    { ...TEXT_STYLE.screenTitle, marginBottom: SPACING.xs, textAlign: 'center' },
-  subtitle: { ...TEXT_STYLE.hint, marginBottom: SPACING.xl, textAlign: 'center' },
+  subtitle: {
+    fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text,
+    marginBottom: SPACING.xl, textAlign: 'center',
+  },
 
   input:      { ...INPUT.base, marginBottom: SPACING.md },
 
@@ -185,7 +189,7 @@ const s = StyleSheet.create({
 
   dividerRow:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.lg },
   dividerLine: { flex: 1, height: 1, backgroundColor: NICO.border },
-  dividerText: { ...TEXT_STYLE.caption },
+  dividerText: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
 
   registerBox: {
     backgroundColor: NICO.background,
@@ -196,6 +200,6 @@ const s = StyleSheet.create({
     alignItems:      'center',
     gap:             SPACING.sm,
   },
-  registerHint: { ...TEXT_STYLE.hint, textAlign: 'center' },
+  registerHint: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, textAlign: 'center' },
   registerLink: { ...TEXT_STYLE.link },
 });

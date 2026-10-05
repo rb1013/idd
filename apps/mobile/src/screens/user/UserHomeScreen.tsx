@@ -227,6 +227,7 @@ export default function UserHomeScreen() {
                 photo={activeUser?.photo_url}
                 size={56}
                 mood={activeUser?.current_mood}
+                moodLayout="beside"
               />
             </TouchableOpacity>
           </View>
@@ -438,7 +439,7 @@ const s = StyleSheet.create({
     flexShrink: 0,
   },
   homeIcon: { fontSize: FONT_SIZE.xl },
-  headerCenter: { flex: 1, alignItems: 'center' },
+  headerCenter: { flex: 1, alignItems: 'flex-start' },
   greeting: { ...TEXT_STYLE.cardTitle, fontSize: FONT_SIZE.xl },
 
   avatarBtn: { position: 'relative' },
