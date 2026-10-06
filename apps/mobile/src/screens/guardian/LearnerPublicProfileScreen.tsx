@@ -255,7 +255,7 @@ function InfoRow({ label, value, fallback, noCapitalize }: { label: string; valu
   return (
     <View style={s.infoRow}>
       <AppText style={s.infoLabel}>{label}</AppText>
-      <AppText style={[s.infoValue, noCapitalize && s.infoValueNoCap, !value && s.infoEmpty]} numberOfLines={2}>
+      <AppText style={[s.infoValue, noCapitalize && s.infoValueNoCap, !value && s.infoEmpty]}>
         {value || fallback}
       </AppText>
     </View>

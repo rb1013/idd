@@ -1069,7 +1069,7 @@ const s = StyleSheet.create({
   searchGradient: { flex: 1, padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
   searchInputRow: {
     ...INPUT.base, borderWidth: 0,
-    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, paddingVertical: SPACING.sm,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
   },
   searchIcon:     { fontSize: FONT_SIZE.sm },
   searchInputText:{ flex: 1, fontSize: FONT_SIZE.md, color: NICO.text, padding: 0 },

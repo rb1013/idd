@@ -60,7 +60,7 @@ function buildReport(rows: ReportRow[], presetKeys: string[]): UserDaySummary[] 
 }
 
 function shortDate(iso: string) {
-  const d = new Date(iso);
+  const d = new Date(iso + 'T12:00:00');
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
@@ -203,11 +203,11 @@ export default function GuardianActivitiesScreen() {
       return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
     }
 
-    const todayIso = new Date().toISOString().slice(0, 10);
+    const todayIso = toLocalDateStr(new Date());
     const last7Dates = Array.from({ length: 7 }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      return d.toISOString().slice(0, 10);
+      return toLocalDateStr(d);
     });
 
     const summaries = buildReport(reportRows, selectedKeys);

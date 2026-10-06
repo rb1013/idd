@@ -182,7 +182,7 @@ export default function LearnerSelectScreen() {
                   <View style={s.cardTextCol}>
                     <AppText style={s.cardEyebrow}>Mentor &amp; Connect</AppText>
                     <AppText style={s.cardTitle}>{guardian?.full_name ?? 'Guardian'}</AppText>
-                    <AppText style={s.cardSubtitle}>Manage your network and support each learner.</AppText>
+                    <AppText style={s.cardSubtitle}>Manage your network and support your learner</AppText>
                   </View>
                   <AppText style={s.cardChevron}>›</AppText>
                 </View>
