@@ -7,3 +7,7 @@ build/
 *.log
 .DS_Store
 *.code-workspace
+
+# Supabase CLI local cache — ephemeral, never meant to be committed
+.temp/
+**/supabase/.temp/
