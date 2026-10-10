@@ -5,6 +5,14 @@ Co-Heart is a mobile platform for guardians supporting learners with intellectua
 - **Guardians** get a full-featured dashboard: they create and manage their learner's profile, set up the daily schedule and activities checklist, create or link learning tutorials, connect with other guardians, browse community events and discussions, manage their learner's friends, and oversee learner chat safety (block/delete/report, PIN-gated).
 - **Learners** get a simplified, safety-first experience: today's schedule and activities to check off, tutorials assigned to them, and a friends/chat experience built around pre-set phrases and picture symbols instead of open-ended typing.
 
+## Try it out
+
+Want to experience the app for real? The app is already set up in TestFlight and is being actively tested — we can invite you to join our group of internal testers.
+
+**⚠️ Currently iOS only.**
+
+Send an email to **reyaansh.bansal@gmail.com** with the subject **"Co-Heart TestFlight"**, and we'll send you a TestFlight invitation. Please use the email address that's linked to your Apple account on your iOS device — that's the one the invitation needs to go to.
+
 ## Repo layout
 
 This is an npm-workspaces monorepo:
