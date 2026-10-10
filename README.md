@@ -7,11 +7,13 @@ Co-Heart is a mobile platform for guardians supporting learners with intellectua
 
 ## Try it out
 
-Want to experience the app for real? The app is already set up in TestFlight and is being actively tested — we can invite you to join our group of internal testers.
+> [!TIP]
+> Want to experience the app for real? It's already set up in TestFlight and being actively tested — we can invite you to join our group of internal testers.
+>
+> Send an email to **reyaansh.bansal@gmail.com** with the subject **"Co-Heart TestFlight"**, and we'll send you a TestFlight invitation. Please use the email address that's linked to your Apple account on your iOS device — that's the one the invitation needs to go to.
 
-**⚠️ Currently iOS only.**
-
-Send an email to **reyaansh.bansal@gmail.com** with the subject **"Co-Heart TestFlight"**, and we'll send you a TestFlight invitation. Please use the email address that's linked to your Apple account on your iOS device — that's the one the invitation needs to go to.
+> [!WARNING]
+> Currently **iOS only**.
 
 ## Repo layout
 
