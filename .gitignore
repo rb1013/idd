@@ -11,3 +11,6 @@ build/
 # Supabase CLI local cache — ephemeral, never meant to be committed
 .temp/
 **/supabase/.temp/
+
+# Claude Code local settings — machine-specific, not meant to be shared
+.claude/settings.local.json
