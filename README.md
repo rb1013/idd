@@ -15,6 +15,9 @@ Co-Heart is a mobile platform for guardians supporting learners with intellectua
 > [!WARNING]
 > Currently **iOS only**.
 
+> [!CAUTION]
+> Co-Heart is a work in progress, under active development. As an app still being refined, you may encounter bugs, rough edges, or features that behave unexpectedly. We genuinely appreciate your patience as a tester, and we welcome any feedback or bug reports you're willing to share — they directly help us improve the experience for guardians and learners alike. Please send bug reports to **reyaansh.bansal@gmail.com**.
+
 ## Repo layout
 
 This is an npm-workspaces monorepo:
