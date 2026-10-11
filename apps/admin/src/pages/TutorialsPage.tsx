@@ -110,10 +110,21 @@ export default function TutorialsPage() {
     })));
   }
 
+  async function describeFunctionError(error: any): Promise<string> {
+    const ctx = error?.context;
+    if (ctx && typeof ctx.json === 'function') {
+      try {
+        const body = await ctx.json();
+        if (body?.error) return body.error;
+      } catch { /* fall through to generic message below */ }
+    }
+    return error?.message ?? String(error);
+  }
+
   async function approveTutorial(id: string) {
     setActionInProgress(true);
     const { error } = await supabase.functions.invoke('approve-tutorial', { body: { tutorial_id: id } });
-    if (error) { alert('Error: ' + error.message); } else {
+    if (error) { alert('Error: ' + await describeFunctionError(error)); } else {
       setPending(prev => prev.filter(t => t.id !== id));
       setReviewing(null);
       fetchTutorials();
@@ -125,7 +136,7 @@ export default function TutorialsPage() {
     if (!rejectNotes.trim()) { alert('Please add notes explaining why you are rejecting this tutorial.'); return; }
     setActionInProgress(true);
     const { error } = await supabase.functions.invoke('reject-tutorial', { body: { tutorial_id: id, admin_notes: rejectNotes } });
-    if (error) { alert('Error: ' + error.message); } else {
+    if (error) { alert('Error: ' + await describeFunctionError(error)); } else {
       setPending(prev => prev.filter(t => t.id !== id));
       setReviewing(null);
     }
