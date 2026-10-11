@@ -46,6 +46,10 @@ Previously the loop was sequential, meaning 3 frames × 60s = up to 180s — whi
 
 ---
 
+## Serverless execution model
+
+The generation pipeline runs on Supabase Edge Functions — a **serverless** runtime. Each function is deployed once but has no persistent, always-running server process; the platform spins up an isolated instance on demand per invocation (an API call or, here, a DB webhook trigger), runs it, and tears it down afterward. Because there's no long-lived process to manage, the platform instead enforces hard per-invocation limits — most importantly a wall-clock execution ceiling (see below) — which is why generation time had to be actively engineered down (parallelization, tuned timeouts) rather than simply left to run as long as needed.
+
 ## Supabase Edge Function limits
 
 | Plan | Wall-clock (worker active) | CPU time per request | Idle timeout |
