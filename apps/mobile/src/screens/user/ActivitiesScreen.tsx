@@ -7,6 +7,7 @@ import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import * as Speech from 'expo-speech';
+import { speakLearner } from '../../lib/speech';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
@@ -49,7 +50,7 @@ function NoActivitiesState() {
         <AppText style={noActStyles.hint}>Ask your guardian to add some fun activities for you!</AppText>
         <TouchableOpacity
           style={noActStyles.speakBtn}
-          onPress={() => Speech.speak(NO_ACTIVITIES_MSG, { rate: 0.65, pitch: 1.0 })}
+          onPress={() => speakLearner(NO_ACTIVITIES_MSG)}
           activeOpacity={0.75}
         >
           <AppText style={noActStyles.speakIcon}>🔊</AppText>
@@ -181,7 +182,7 @@ export default function ActivitiesScreen() {
 
               <TouchableOpacity
                 style={s.speakBtn}
-                onPress={() => Speech.speak(preset.name, { rate: 0.65, pitch: 1.0 })}
+                onPress={() => speakLearner(preset.name)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <AppText style={s.speakIcon}>🔊</AppText>

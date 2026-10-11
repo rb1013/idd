@@ -3,6 +3,7 @@ import { View, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 're
 import AppText from '../../components/AppText';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import * as Speech from 'expo-speech';
+import { speakLearner } from '../../lib/speech';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -95,8 +96,7 @@ function AutoPlayback({ tutorial, onViewSlides }: { tutorial: TutorialWithFrames
       player.play();
     } else if (currentFrame?.tts_text) {
       setSpeaking(true);
-      Speech.speak(currentFrame.tts_text, {
-        rate: 0.65, pitch: 1.0,
+      speakLearner(currentFrame.tts_text, {
         onDone: () => { setSpeaking(false); if (playingRef.current) advance(); },
         onStopped: () => setSpeaking(false),
       });
@@ -182,8 +182,7 @@ function ManualSlideshow({ tutorial, onBack }: { tutorial: TutorialWithFrames; o
       player.play();
     } else if (currentFrame?.tts_text) {
       setSpeaking(true);
-      Speech.speak(currentFrame.tts_text, {
-        rate: 0.65, pitch: 1.0,
+      speakLearner(currentFrame.tts_text, {
         onDone: () => setSpeaking(false),
         onStopped: () => setSpeaking(false),
       });

@@ -8,7 +8,7 @@ import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
 import ContentContainer from '../../components/ContentContainer';
 import useNicoHeader from '../../hooks/useNicoHeader';
-import * as Speech from 'expo-speech';
+import { speakLearner } from '../../lib/speech';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -56,7 +56,7 @@ function NoTutorialsState() {
       <AppText style={s.emptyHint}>Ask your Guardian to add learning videos for you</AppText>
       <TouchableOpacity
         style={s.emptySpeakBtn}
-        onPress={() => Speech.speak(NO_TUTORIALS_MSG, { rate: 0.65, pitch: 1.0 })}
+        onPress={() => speakLearner(NO_TUTORIALS_MSG)}
         activeOpacity={0.75}
       >
         <AppText style={s.emptySpeakBtnText}>🔊</AppText>

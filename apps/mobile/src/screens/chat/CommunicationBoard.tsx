@@ -3,7 +3,7 @@ import {
   Modal, View, Text, StyleSheet, TouchableOpacity,
   Image, ActivityIndicator, FlatList, ScrollView,
 } from 'react-native';
-import * as Speech from 'expo-speech';
+import { speakLearner } from '../../lib/speech';
 import { loadAACSymbols, AACSymbol, PHRASE_SYMBOLS, PhraseSymbol } from '../../lib/aacSymbols';
 import { COLORS } from '../../constants';
 
@@ -42,7 +42,7 @@ export default function CommunicationBoard({ visible, onClose, onSend }: Props) 
                 <TouchableOpacity
                   key={p.phrase}
                   style={styles.phraseCell}
-                  onPressIn={() => Speech.speak(p.label, { rate: 0.65, pitch: 1.0 })}
+                  onPressIn={() => speakLearner(p.label)}
                   onPress={() => { onSend(p.phrase); onClose(); }}
                   activeOpacity={0.7}
                 >
@@ -69,7 +69,7 @@ export default function CommunicationBoard({ visible, onClose, onSend }: Props) 
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={styles.cell}
-                    onPressIn={() => Speech.speak(item.name, { rate: 0.65, pitch: 1.0 })}
+                    onPressIn={() => speakLearner(item.name)}
                     onPress={() => { onSend(item.imageUrl); onClose(); }}
                     activeOpacity={0.7}
                   >

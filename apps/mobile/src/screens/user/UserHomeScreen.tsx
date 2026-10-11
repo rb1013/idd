@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
-import * as Speech from 'expo-speech';
+import { speakLearner } from '../../lib/speech';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -190,7 +190,7 @@ export default function UserHomeScreen() {
   }
 
   function openUserCard() {
-    Speech.speak(`Hi ${activeUser?.name ?? firstName}`, { rate: 0.65, pitch: 1.0 });
+    speakLearner(`Hi ${activeUser?.name ?? firstName}`);
   }
 
   async function selectMood(m: { emoji: string; label: string }) {
@@ -201,7 +201,7 @@ export default function UserHomeScreen() {
   }
 
   function speakMood(label: string) {
-    Speech.speak(label, { rate: 0.65, pitch: 1.0, volume: 0.7 });
+    speakLearner(label, { volume: 0.7 });
   }
 
   return (
@@ -281,7 +281,7 @@ export default function UserHomeScreen() {
                     hitSlop={10}
                     onPress={() => {
                       const when = state === 'now' ? 'right now' : state === 'past' ? 'earlier today' : `today at ${formatTime(item.start_time)}`;
-                      Speech.speak(`${item.title}, ${when}`, { rate: 0.65, pitch: 1.0 });
+                      speakLearner(`${item.title}, ${when}`);
                     }}
                   >
                     <AppText style={s.scheduleSpeakIcon}>🔊</AppText>
@@ -301,7 +301,7 @@ export default function UserHomeScreen() {
             <AppText style={s.tileEmoji}>🤝</AppText>
             <AppText style={s.tileTitle}>Friends</AppText>
             <AppText style={s.tileSub}>Meet new people{'\n'}and connect</AppText>
-            <Pressable style={s.tileSpeakBtn} onPress={() => Speech.speak('Friends. Meet new people and connect.', { rate: 0.65, pitch: 1.0 })}>
+            <Pressable style={s.tileSpeakBtn} onPress={() => speakLearner('Friends. Meet new people and connect.')}>
               <AppText style={s.tileSpeakIcon}>🔊</AppText>
             </Pressable>
           </TouchableOpacity>
@@ -317,11 +317,10 @@ export default function UserHomeScreen() {
             ) : (
               <AppText style={s.tileSub}>Your daily{'\n'}activities</AppText>
             )}
-            <Pressable style={s.tileSpeakBtn} onPress={() => Speech.speak(
+            <Pressable style={s.tileSpeakBtn} onPress={() => speakLearner(
               activityProgress.total > 0
                 ? `Activities. ${activityProgress.done} of ${activityProgress.total} done.`
-                : 'Activities. Your daily activities.',
-              { rate: 0.65, pitch: 1.0 }
+                : 'Activities. Your daily activities.'
             )}>
               <AppText style={s.tileSpeakIcon}>🔊</AppText>
             </Pressable>
@@ -331,7 +330,7 @@ export default function UserHomeScreen() {
             <AppText style={s.tileEmoji}>{activeUser?.current_mood ?? '😊'}</AppText>
             <AppText style={s.tileTitle}>My Mood</AppText>
             <AppText style={s.tileSub}>How are you{'\n'}feeling today?</AppText>
-            <Pressable style={s.tileSpeakBtn} onPress={() => Speech.speak('My Mood. How are you feeling today?', { rate: 0.65, pitch: 1.0 })}>
+            <Pressable style={s.tileSpeakBtn} onPress={() => speakLearner('My Mood. How are you feeling today?')}>
               <AppText style={s.tileSpeakIcon}>🔊</AppText>
             </Pressable>
           </TouchableOpacity>
@@ -340,7 +339,7 @@ export default function UserHomeScreen() {
             <AppText style={s.tileEmoji}>📚</AppText>
             <AppText style={s.tileTitle}>Learn</AppText>
             <AppText style={s.tileSub}>Watch videos and{'\n'}discover new things</AppText>
-            <Pressable style={s.tileSpeakBtn} onPress={() => Speech.speak('Learn. Watch videos and discover new things.', { rate: 0.65, pitch: 1.0 })}>
+            <Pressable style={s.tileSpeakBtn} onPress={() => speakLearner('Learn. Watch videos and discover new things.')}>
               <AppText style={s.tileSpeakIcon}>🔊</AppText>
             </Pressable>
           </TouchableOpacity>
@@ -371,7 +370,7 @@ export default function UserHomeScreen() {
             <TouchableOpacity
               style={s.logoutBtn}
               onPress={signOut}
-              onLongPress={() => Speech.speak('Log out', { rate: 0.65, pitch: 1.0 })}
+              onLongPress={() => speakLearner('Log out')}
               delayLongPress={400}
               activeOpacity={0.8}
             >

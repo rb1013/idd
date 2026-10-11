@@ -7,7 +7,7 @@ import {
 import { Filter } from 'bad-words';
 import wordConfig from '../../lib/badWordsList.json';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Speech from 'expo-speech';
+import { speakLearner } from '../../lib/speech';
 // import { Audio } from 'expo-av'; // requires native rebuild — enable when running npx expo run:ios
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -83,10 +83,10 @@ export default function ChatScreen() {
     // sound.setOnPlaybackStatusUpdate(status => {
     //   if ('didJustFinish' in status && status.didJustFinish) {
     //     sound.unloadAsync();
-    //     Speech.speak("Let's use kind words!", { rate: 0.65, pitch: 1.0 });
+    //     speakLearner("Let's use kind words!");
     //   }
     // });
-    Speech.speak("Let's use kind words!", { rate: 0.65, pitch: 1.0 });
+    speakLearner("Let's use kind words!");
   }
 
   const wordFilter = useRef<Filter | null>(null);
@@ -307,7 +307,7 @@ export default function ChatScreen() {
           native-stack's fixed header height. */}
       <TouchableOpacity
         style={styles.subHeader}
-        onPress={() => Speech.speak(participantName, { rate: 0.65, pitch: 1.0 })}
+        onPress={() => speakLearner(participantName)}
         activeOpacity={0.75}
       >
         {participantPhoto
@@ -365,7 +365,7 @@ export default function ChatScreen() {
                 </View>
                 <TouchableOpacity
                   style={styles.speakMsgBtn}
-                  onPress={() => Speech.speak(isSymbol ? item.content.split('/').pop()?.split('.')[0]?.replace(/_/g, ' ') ?? '' : item.content, { rate: 0.65, pitch: 1.0 })}
+                  onPress={() => speakLearner(isSymbol ? item.content.split('/').pop()?.split('.')[0]?.replace(/_/g, ' ') ?? '' : item.content)}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.speakMsgIcon}>📢</Text>

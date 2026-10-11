@@ -8,6 +8,7 @@ import RainbowDivider from '../../components/RainbowDivider';
 import ContentContainer from '../../components/ContentContainer';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import * as Speech from 'expo-speech';
+import { speakLearner } from '../../lib/speech';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -35,7 +36,7 @@ function NoFriendsEmptyState() {
         <AppText style={s.emptyHint}>Ask your guardian to add friends for you!</AppText>
         <TouchableOpacity
           style={s.emptySpeakBtn}
-          onPress={() => Speech.speak(EMPTY_MESSAGE, { rate: 0.65, pitch: 1.0 })}
+          onPress={() => speakLearner(EMPTY_MESSAGE)}
           activeOpacity={0.75}
         >
           <AppText style={s.emptySpeakIcon}>🔊</AppText>
@@ -168,7 +169,7 @@ export default function FriendsHubScreen() {
     const parts: string[] = [friend.name];
     if (friend.likes.length) parts.push(`Likes: ${friend.likes.map(l => l.name).join(', ')}`);
     if (friend.dislikes.length) parts.push(`Dislikes: ${friend.dislikes.map(d => d.name).join(', ')}`);
-    Speech.speak(parts.join('. '), { rate: 0.65, pitch: 1.0 });
+    speakLearner(parts.join('. '));
   }
 
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
