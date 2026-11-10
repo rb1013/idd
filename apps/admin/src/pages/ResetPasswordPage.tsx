@@ -32,7 +32,7 @@ export default function ResetPasswordPage() {
       <div style={styles.card}>
         <h1 style={styles.title}>Reset Password</h1>
         {done ? (
-          <p style={styles.success}>Password updated! Redirecting to login…</p>
+          <p style={styles.success}>Password updated! Taking you to the dashboard…</p>
         ) : (
           <>
             <p style={styles.subtitle}>Choose a new password for your account.</p>

@@ -24,12 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      // If this is a password recovery redirect, wait for the PASSWORD_RECOVERY
-      // event from onAuthStateChange instead of treating it as a normal login.
-      if (window.location.hash.includes('type=recovery')) {
-        setNeedsPasswordReset(true);
-        setLoading(false);
-      } else if (session) {
+      if (session) {
         checkAdmin(session.user.id);
       } else {
         setLoading(false);
@@ -38,11 +33,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      // Fired by verifyOtp({ type: 'recovery' }) on ForgotPasswordPage
       if (event === 'PASSWORD_RECOVERY') {
         setNeedsPasswordReset(true);
         setLoading(false);
       } else if (session) {
-        setNeedsPasswordReset(false);
+        // Don't clear needsPasswordReset here — SIGNED_IN / TOKEN_REFRESHED can fire
+        // mid-reset (e.g. on tab refocus). ResetPasswordPage clears it once done.
         checkAdmin(session.user.id);
       } else {
         setIsAdmin(false);
