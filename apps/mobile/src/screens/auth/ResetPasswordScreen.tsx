@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
 import { supabase } from '../../lib/supabase';
 import ContentContainer from '../../components/ContentContainer';
+import { passwordError, passwordMatchError, PASSWORD_HINT } from '../../lib/validators';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, INPUT, BTN_SIZE, BTN_VARIANT, BUTTERFLY_BORDER,
 } from '../../constants/theme';
@@ -17,8 +18,10 @@ export default function ResetPasswordScreen() {
   const [loading, setLoading]     = useState(false);
 
   async function handleReset() {
-    if (password.length < 6) { Alert.alert('Password must be at least 6 characters'); return; }
-    if (password !== confirm)  { Alert.alert('Passwords do not match'); return; }
+    const pwdErr = passwordError(password);
+    if (pwdErr) { Alert.alert('Invalid password', pwdErr); return; }
+    const matchErr = passwordMatchError(password, confirm);
+    if (matchErr) { Alert.alert('Password mismatch', matchErr); return; }
 
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
@@ -56,7 +59,7 @@ export default function ResetPasswordScreen() {
               style={s.input}
               value={password}
               onChangeText={setPassword}
-              placeholder="New password"
+              placeholder={PASSWORD_HINT}
               placeholderTextColor={NICO.textMuted}
               secureTextEntry
               autoFocus

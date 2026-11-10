@@ -10,7 +10,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { FIXED_STATE } from '../../constants/usStates';
 import { CA_COUNTIES } from '../../constants/caCounties';
-import { validatePhone, buildE164 } from '../../constants/countryCodes';
+import { validatePhone, buildE164, sanitizePhoneInput, PHONE_MAX_LENGTH } from '../../constants/countryCodes';
 import { useNavigation } from '@react-navigation/native';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, INPUT, BTN_SIZE, BTN_VARIANT, FONT_SIZE, FONT_WEIGHT,
@@ -23,7 +23,7 @@ export default function GuardianEditAccountScreen() {
   const [name, setName]   = useState(guardian?.full_name ?? '');
   const [phone, setPhone] = useState(() => {
     const raw = guardian?.phone ?? '';
-    return raw.startsWith('+1') ? raw.slice(2) : raw.replace(/\D/g, '');
+    return (raw.startsWith('+1') ? raw.slice(2) : raw).replace(/\D/g, '');
   });
   const [county, setCounty]             = useState(guardian?.county ?? '');
   const [selectedTags, setSelectedTags] = useState<string[]>(guardian?.situation_tags ?? []);
@@ -56,7 +56,7 @@ export default function GuardianEditAccountScreen() {
     if (!name.trim()) { Alert.alert('Name cannot be empty'); return; }
     if (!county) { Alert.alert('Please select a county'); return; }
 
-    const phoneError = validatePhone('+1', phone);
+    const phoneError = validatePhone(phone);
     if (phoneError) { Alert.alert('Invalid phone number', phoneError); return; }
 
     setSaving(true);
@@ -106,9 +106,10 @@ export default function GuardianEditAccountScreen() {
               <TextInput
                 style={s.phoneInput}
                 value={phone}
-                onChangeText={v => setPhone(v.replace(/[^\d\s\-]/g, ''))}
-                placeholder="555 000 0000"
+                onChangeText={v => setPhone(sanitizePhoneInput(v))}
+                placeholder="5550000000"
                 keyboardType="phone-pad"
+                maxLength={PHONE_MAX_LENGTH}
                 placeholderTextColor={NICO.textMuted}
               />
             </View>

@@ -14,8 +14,8 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { FIXED_STATE } from '../../constants/usStates';
 import { CA_COUNTIES } from '../../constants/caCounties';
-import { validatePhone, buildE164 } from '../../constants/countryCodes';
-import { emailError, passwordError, passwordMatchError } from '../../lib/validators';
+import { validatePhone, buildE164, sanitizePhoneInput, PHONE_MAX_LENGTH } from '../../constants/countryCodes';
+import { emailError, passwordError, passwordMatchError, PASSWORD_HINT } from '../../lib/validators';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
   BTN_SIZE, BTN_VARIANT, scale,
@@ -73,7 +73,7 @@ export default function RegisterScreen() {
     if (pin.length !== 6)                { Alert.alert('Please create a 6-digit PIN'); return; }
     if (pin !== confirmPin)              { Alert.alert('PINs do not match'); return; }
 
-    const phoneError = validatePhone('+1', phone);
+    const phoneError = validatePhone(phone);
     if (phoneError) { Alert.alert('Invalid phone number', phoneError); return; }
 
     setLoading(true);
@@ -167,9 +167,10 @@ export default function RegisterScreen() {
           <TextInput
             style={styles.phoneInput}
             value={phone}
-            onChangeText={v => setPhone(v.replace(/[^\d\s\-]/g, ''))}
-            placeholder="555 000 0000"
+            onChangeText={v => setPhone(sanitizePhoneInput(v))}
+            placeholder="5550000000"
             keyboardType="phone-pad"
+            maxLength={PHONE_MAX_LENGTH}
             placeholderTextColor={NICO.textMuted}
           />
         </View>
@@ -179,7 +180,7 @@ export default function RegisterScreen() {
           style={styles.input}
           value={password}
           onChangeText={setPassword}
-          placeholder="Min. 6 characters"
+          placeholder={PASSWORD_HINT}
           secureTextEntry
           placeholderTextColor={NICO.textMuted}
         />

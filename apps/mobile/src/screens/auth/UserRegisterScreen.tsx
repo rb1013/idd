@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { COLORS } from '../../constants';
+import { passwordError, passwordMatchError, PASSWORD_HINT } from '../../lib/validators';
 
 export default function UserRegisterScreen() {
   const [email, setEmail] = useState('');
@@ -14,8 +15,10 @@ export default function UserRegisterScreen() {
 
   async function handleRegister() {
     if (!email || !password) { Alert.alert('Please fill in all fields'); return; }
-    if (password !== confirm) { Alert.alert('Passwords do not match'); return; }
-    if (password.length < 6) { Alert.alert('Password must be at least 6 characters'); return; }
+    const pwdErr = passwordError(password);
+    if (pwdErr) { Alert.alert('Invalid password', pwdErr); return; }
+    const matchErr = passwordMatchError(password, confirm);
+    if (matchErr) { Alert.alert('Password mismatch', matchErr); return; }
 
     setLoading(true);
 
@@ -79,7 +82,7 @@ export default function UserRegisterScreen() {
           style={styles.input}
           value={password}
           onChangeText={setPassword}
-          placeholder="Min. 6 characters"
+          placeholder={PASSWORD_HINT}
           secureTextEntry
           placeholderTextColor={COLORS.textLight}
         />

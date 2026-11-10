@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
+import { passwordError, passwordMatchError, PASSWORD_HINT } from '../lib/validators';
 
 export default function ResetPasswordPage() {
   const { clearPasswordReset } = useAuth();
@@ -13,8 +14,8 @@ export default function ResetPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    if (password !== confirm) { setError('Passwords do not match.'); return; }
+    const pwdErr = passwordError(password) ?? passwordMatchError(password, confirm);
+    if (pwdErr) { setError(pwdErr); return; }
 
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
@@ -45,7 +46,7 @@ export default function ResetPasswordPage() {
                   onChange={e => setPassword(e.target.value)}
                   required
                   autoFocus
-                  placeholder="Min. 6 characters"
+                  placeholder={PASSWORD_HINT}
                 />
               </div>
               <div style={styles.field}>

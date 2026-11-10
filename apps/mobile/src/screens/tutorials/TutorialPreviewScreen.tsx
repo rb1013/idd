@@ -373,7 +373,7 @@ export default function TutorialPreviewScreen() {
         {isCreator && isTechnicalError && (
           <View style={s.adminNotesCard}>
             <AppText style={s.adminNotesText}>
-              ⚠️  Something went wrong generating this tutorial. Please contact <AppText style={s.adminNotesEmail}>nicosupport@gmail.com</AppText> for help.
+              ⚠️  Something went wrong generating this tutorial. Please contact <AppText style={s.adminNotesEmail}>coheartsupport@gmail.com</AppText> for help.
             </AppText>
           </View>
         )}

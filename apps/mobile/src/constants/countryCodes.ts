@@ -65,11 +65,18 @@ export function parseStoredPhone(raw: string | null | undefined): { code: string
   return { code: '+1', local: raw.replace(/\D/g, '') };
 }
 
-export function validatePhone(code: string, local: string): string | null {
+// US numbers only (+1 is fixed in the UI): exactly 10 digits, e.g. 2025550123
+export const PHONE_MAX_LENGTH = 10;
+
+// Use in onChangeText: keeps digits only, capped at PHONE_MAX_LENGTH
+export function sanitizePhoneInput(value: string): string {
+  return value.replace(/\D/g, '').slice(0, PHONE_MAX_LENGTH);
+}
+
+export function validatePhone(local: string): string | null {
   const digits = local.replace(/\D/g, '');
   if (!digits) return 'Phone number is required';
-  if (digits.length < 7)  return 'Phone number is too short';
-  if (digits.length > 15) return 'Phone number is too long (max 15 digits, e.g. 2025550123 for a US number)';
+  if (digits.length !== PHONE_MAX_LENGTH) return `Phone number must be exactly ${PHONE_MAX_LENGTH} digits, e.g. 2025550123`;
   return null;
 }
 
