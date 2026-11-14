@@ -1,0 +1,164 @@
+# Co-Heart — Frequently Asked Questions
+
+Co-Heart is an app for guardians supporting learners with intellectual and developmental disabilities (IDD). Guardians manage everything; learners get a simple, safe space for their day, their tutorials, and their friends.
+
+---
+
+## Getting started
+
+### Who is Co-Heart for?
+Two people share the app:
+- **Guardians** — parents, family members, or caregivers who set up and manage a learner's account.
+- **Learners** — the person with IDD, who uses a simplified version with large buttons and no open typing.
+
+### Where can I get the app?
+Co-Heart is currently in testing on **iOS only** (iPhone/iPad), through TestFlight. To request an invite, email **reyaansh.bansal@gmail.com** with the subject **"Co-Heart TestFlight"**. Use the email address linked to your Apple ID — that's where the invitation is sent.
+
+### Is there an Android version?
+Not yet. Co-Heart is iOS only for now.
+
+### Who can use Co-Heart right now?
+Co-Heart is built for families in **California**.
+
+---
+
+## Accounts & signing in
+
+### How do I create an account?
+Guardians sign up in the app. You'll:
+1. Confirm you're an adult and agree to the consent step.
+2. Enter your name, email, phone number, county, and a password.
+3. Choose a **6-digit Guardian PIN**.
+4. Enter the 6-digit code we email you to verify your address.
+
+### What are the password rules?
+At least **6 characters**, including at least **one uppercase letter**, **one lowercase letter**, and **one number**.
+
+### What phone number format should I use?
+A 10-digit US number, digits only (for example, `2025550123`). The `+1` is added for you.
+
+### I didn't get the verification or reset email.
+- Check your spam or junk folder.
+- Wait a minute or two and use **Resend code**.
+- Make sure the email address is spelled correctly.
+- Codes expire after a short time, so use the newest one you received.
+
+### I forgot my password.
+On the sign-in screen, tap **Forgot password?**, enter your email, and type in the 6-digit code we send you. You can then choose a new password.
+
+### Does my learner need their own account?
+The guardian creates the learner's profile. From then on, the guardian switches the app into **learner mode** and hands the device over — the learner doesn't need to remember a password.
+
+---
+
+## Guardian mode, learner mode & the PIN
+
+### How do I switch between guardian and learner mode?
+After signing in, you'll see two options:
+- **Mentor & Connect** — guardian mode, where you manage everything. This needs your **Guardian PIN**.
+- **Grow & Connect** — learner mode, the simplified experience for your learner.
+
+### What is the Guardian PIN for?
+The PIN keeps guardian controls away from your learner. You need it to:
+- Enter guardian mode.
+- Block, report, or delete a chat from inside your learner's chat screen.
+
+### I forgot my Guardian PIN.
+On the PIN screen, tap **Forgot PIN?**, enter your account password, and choose a new 6-digit PIN.
+
+---
+
+## Your learner
+
+### What can I set up for my learner?
+Their profile (name, birthday, photo, county, likes, dislikes, abilities, languages, and comprehension level), their weekly **schedule**, their daily **activities**, their **tutorials**, and their **friends**.
+
+### Can my learner see or change their own profile?
+No. Learner profiles are fully managed by the guardian.
+
+---
+
+## Schedule & daily activities
+
+### How does the schedule work?
+Add **recurring weekly classes** (day, time, and date range) or **one-time events**. You can cancel a single class without removing the whole series. Your learner sees today's schedule on their home screen, color-coded as happening now, coming up, or finished.
+
+### What are daily activities?
+A checklist your learner ticks off each day — things like brushing teeth or packing a bag. Pick up to **10** activities from the preset list.
+
+### Can I see whether my learner completed their activities?
+Yes. The activities report shows the last **7 days**. Older activity history is deleted automatically.
+
+---
+
+## Tutorials
+
+### What are tutorials?
+Short lessons that teach a skill step by step. Learners watch them as a narrated, auto-advancing slideshow or as a video.
+
+### What kinds of tutorials can I add?
+- **AI-generated tutorials** — describe the skill and the main action, and Co-Heart creates an illustrated slideshow for you.
+- **YouTube videos** — link any public YouTube video.
+- **Library tutorials** — browse tutorials other guardians have made that our team has approved, and add them for your learner.
+
+### Do AI-generated tutorials need to be approved?
+Only if you share them. When you create a tutorial, you choose whether to **Share with other guardians**:
+- **Not shared (private):** ready to use as soon as it's generated, with no review needed. Only you and your learner can see it.
+- **Shared (public):** after it's generated, preview it and tap **Submit for Review**. The Co-Heart team checks it before it appears in the shared library for all guardians. You'll get a notification when it's approved or if it needs changes, and you can withdraw it from review at any time.
+
+### Is there a limit on AI-generated tutorials?
+Yes, each guardian can create a limited number per month (currently **10**). The count resets at the start of each month.
+
+### Can other families see the YouTube videos I link?
+No. Linked YouTube videos are **private** — only you and your learner can see them.
+
+### Something went wrong generating my tutorial. What should I do?
+Email **coheartsupport@gmail.com** and let us know which tutorial it was.
+
+---
+
+## Friends & chat
+
+### How does my learner make friends?
+You manage your learner's friends: review and accept friend requests, and search for other learners to connect with. Before connecting, you can see a short public profile, including the other learner's guardian.
+
+### Can my learner type messages freely?
+No. To keep chat safe, learners communicate using **pre-written phrases** and **picture-symbol cards** (a communication board), not open typing. A profanity filter also checks every message as an extra safeguard.
+
+### What can I do if someone bothers my learner?
+From inside your learner's chat, enter your **Guardian PIN** to **block** the other user, **report** them, or **delete** the chat.
+
+---
+
+## Connecting with other guardians
+
+### Can I connect with other guardians?
+Yes. Use the **Find** tab to search by name, county, or Regional Support Category, send a connection request, and message guardians once you're connected. Before connecting, you'll only see a short preview (photo, name, county, and category tags).
+
+### What else is in the community section?
+- **Events** — browse or create community events and RSVP (going, interested, or not going).
+- **Discussions** — post topics and reply to other guardians. You can edit or delete your own posts.
+- **Resources** — helpful information and support links.
+
+---
+
+## Privacy, safety & your data
+
+### Who can see my learner's information?
+Your learner's full profile is visible to you. Other families see only a short public summary when your learners are friends or are considering connecting.
+
+### How long is data kept?
+Activity check-off history is kept for **7 days**, then deleted automatically. Other information stays until you change or delete it.
+
+### How do I delete my account?
+In guardian mode, go to **Account → Delete account**. This **permanently** deletes your account and your learner's profile, and can't be undone.
+
+---
+
+## Help & feedback
+
+### How do I contact support?
+Email **coheartsupport@gmail.com**.
+
+### I found a bug. Where do I report it?
+ Email **reyaansh.bansal@gmail.com** with what you were doing, what you expected, and what happened — a screenshot helps too.
