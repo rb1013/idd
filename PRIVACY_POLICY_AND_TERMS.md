@@ -67,7 +67,7 @@ We do **not** use learner information for advertising, and we do **not** sell or
 
 - **Other guardians** see a limited preview (photo, name, county, and Regional Support Category tags) before connecting, and more once you're connected.
 - **Learner friends** and their guardians can see a short public summary of your learner's profile.
-- **Private tutorials** (including YouTube videos you link) are visible only to you and your learner.
+- **Private tutorials** (including YouTube videos you link) are not shown to other families in the app.
 - **Shared tutorials** you choose to publish are reviewed by Co-Heart admins, then visible to all guardians.
 - **Co-Heart admins** can access information when needed to review tutorials, handle reports, and provide support.
 

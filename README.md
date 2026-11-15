@@ -52,7 +52,7 @@ A guardian account has exactly one learner attached to it. The app has two modes
 
 **Tutorials**
 - **AI-generated**: describe a target skill and core action; the system generates a slideshow tutorial (subject to a guardian-configurable monthly quota) and queues it for admin approval before it's visible to other guardians.
-- **Link a YouTube video**: embed a public YouTube video as a tutorial directly (no admin approval needed, since no new content is generated). **These linked videos are always private** — visible only to the guardian who linked them and their own learner, never to any other guardian or learner.
+- **Link a YouTube video**: embed a public YouTube video as a tutorial directly (no admin approval needed, since no new content is generated). **These linked videos are always private**: they never appear in the shared library and the app doesn't show them to any other guardian or learner. (This is enforced in the app screens; database-level enforcement is pending, see `RLS.md`.)
 - Browse a shared library of admin-approved tutorials from all guardians and link any of them to a learner.
 
 **Guardian network**
@@ -96,7 +96,7 @@ A guardian account has exactly one learner attached to it. The app has two modes
 - Guardian signup requires explicit age/consent verification before an account exists.
 - Learner chat has no free-text typing — only pre-set phrases and AAC picture symbols — with profanity filtering as an additional defense-in-depth layer.
 - Guardian moderation actions on learner chats (block/delete/report) are gated behind the guardian's own PIN, verified server-side.
-- YouTube-linked tutorials are private to the guardian/learner pair that created them — never shared with or visible to anyone else.
+- YouTube-linked tutorials are private: they never appear in the shared library and aren't shown to other families in the app. Database-level read restrictions for private tutorials are pending (see `RLS.md`).
 - Activity completion logs are automatically deleted after 7 days.
 - All data access is governed by Postgres Row Level Security policies in `packages/supabase/migrations/`.
 

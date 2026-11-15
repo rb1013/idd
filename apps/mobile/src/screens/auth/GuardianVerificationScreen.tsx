@@ -16,7 +16,7 @@ import {
 const MIN_AGE = 18;
 
 const PRIVACY_COMMITMENTS = [
-  'We NEVER ask for or store any medical or clinical data.',
+  "We don't ask for diagnoses or medical records. The optional support category only helps you find similar families.",
   'Profiles are only visible to other verified guardians.',
   'We do not track behavior or use data for advertising.',
 ];

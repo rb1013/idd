@@ -103,14 +103,14 @@ Short lessons that teach a skill step by step. Learners watch them as a narrated
 
 ### Do AI-generated tutorials need to be approved?
 Only if you share them. When you create a tutorial, you choose whether to **Share with other guardians**:
-- **Not shared (private):** ready to use as soon as it's generated, with no review needed. Only you and your learner can see it.
+- **Not shared (private):** ready to use as soon as it's generated, with no review needed. Private tutorials don't appear in the shared library and aren't shown to other families.
 - **Shared (public):** after it's generated, preview it and tap **Submit for Review**. The Co-Heart team checks it before it appears in the shared library for all guardians. You'll get a notification when it's approved or if it needs changes, and you can withdraw it from review at any time.
 
 ### Is there a limit on AI-generated tutorials?
 Yes, each guardian can create a limited number per month (currently **10**). The count resets at the start of each month.
 
 ### Can other families see the YouTube videos I link?
-No. Linked YouTube videos are **private** — only you and your learner can see them.
+No. Linked YouTube videos are **private**. They don't appear in the shared library and aren't shown to other families.
 
 ### Something went wrong generating my tutorial. What should I do?
 Email **coheartsupport@gmail.com** and let us know which tutorial it was.

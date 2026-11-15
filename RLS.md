@@ -35,6 +35,40 @@ The app UI doesn't do any of this. It requires direct API calls using the public
 
 ---
 
+## Documentation mismatches caused by these gaps
+
+Until this fix is applied, some user-facing documents promise more than the database enforces. In the app's screens all of these claims hold; they break only for someone making direct API calls.
+
+### Mismatch 1: "Private tutorials are only visible to you and your learner" (from Problems 1 and 2)
+
+**Reality:** the app never shows private tutorials to other families, but any logged-in user can read every tutorial row (and the frames of private AI tutorials) through the API.
+
+**Status (2026-11-15): reworded** to describe app behavior only. Restore the stronger wording after Steps 1–3 are applied and tested.
+
+| File | Current wording (as of 2026-11-15) | Can restore after fix to |
+|---|---|---|
+| `FAQ.md:106` | "Private tutorials don't appear in the shared library and aren't shown to other families." | "Only you and your learner can see it." |
+| `FAQ.md:113` | "They don't appear in the shared library and aren't shown to other families." | "Only you and your learner can see them." |
+| `PRIVACY_POLICY_AND_TERMS.md:70` | "are not shown to other families in the app." | "are visible only to you and your learner." |
+| `docs/desc.md` (Safety section) | Bullet **removed** | Re-add: "• Private tutorials and linked videos stay between you and your learner." (then recount the length) |
+| `README.md:55`, `README.md:99` | Says it's enforced in the app, with database enforcement pending (points here) | Remove the "pending, see `RLS.md`" notes |
+
+### Mismatch 2: "Shared tutorials are reviewed before they appear in the library" (from Problem 3)
+
+**Reality:** in the app, every public tutorial goes through Submit → admin approval. Through the API, a guardian can set their own tutorial to `approved`, switch a private (auto-approved) tutorial to public, or insert an already-approved public row. Anyone can also call `approve-tutorial`, which has no caller check (see `TODO.md`). So review is the normal flow, but the system doesn't enforce it.
+
+**Status (2026-11-15): left as is**, because the claim matches what users experience in the app. Before calling review **guaranteed** anywhere (marketing, partner agreements, the final privacy policy), apply Step 4 **and** the `approve-tutorial` / `reject-tutorial` caller checks from `TODO.md`.
+
+| File | Claim |
+|---|---|
+| `FAQ.md:107` | "The Co-Heart team checks it before it appears in the shared library for all guardians." |
+| `PRIVACY_POLICY_AND_TERMS.md:61` | "admin review of shared tutorials" |
+| `PRIVACY_POLICY_AND_TERMS.md:71` | "Shared tutorials you choose to publish are reviewed by Co-Heart admins, then visible to all guardians." |
+| `PRIVACY_POLICY_AND_TERMS.md:154` | "Shared tutorials are reviewed by our team before appearing in the shared library." |
+| `docs/desc.md:35` | "Browse tutorials created by other guardians and reviewed by our team" |
+
+---
+
 ## What the app legitimately does today (must keep working)
 
 | Action | Where | Who / how |
