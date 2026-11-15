@@ -214,7 +214,7 @@ export default function RegisterScreen() {
         <AppText style={styles.label}>Regional Support Category (optional)</AppText>
         <View style={styles.helperBox}>
           <AppText style={styles.helperText}>
-            ℹ️  Select the category that matches your learner's school support plan or California Regional Center services. This helps you find local families with similar needs while keeping your private medical details secure.
+            ℹ️  Select the category that matches your learner's school support plan or California Regional Center services. This helps you find local families with similar needs.
           </AppText>
         </View>
         <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>

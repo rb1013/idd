@@ -230,7 +230,7 @@ export default function GuardianNotificationsScreen() {
             activeTab === 'tutorials' ? (
               <AppText style={s.tutorialsHint}>
                 <AppText style={s.tutorialsHintAsterisk}>*** </AppText>
-                Tutorial approvals and rejections from the last 48 hours will appear here..
+                Tutorial approvals and rejections from the last 48 hours will appear here.
               </AppText>
             ) : null
           }
@@ -238,14 +238,15 @@ export default function GuardianNotificationsScreen() {
             <View style={s.empty}>
               <AppText style={s.emptyEmoji}>🔔</AppText>
               <AppText style={s.emptyText}>No notifications</AppText>
-              <AppText style={s.emptyHint}>
-                {activeTab === 'discussions'
-                  ? 'Replies to your discussion posts will appear here'
-                  : activeTab === 'tutorials'
-                  ? 'Tutorial approvals and rejections from the last 48 hours will appear here'
-                  : 'RSVP activity on your hosted events will appear here'
-                }
-              </AppText>
+              {/* Tutorials tab: the 48-hour hint is already shown in the list header */}
+              {activeTab !== 'tutorials' && (
+                <AppText style={s.emptyHint}>
+                  {activeTab === 'discussions'
+                    ? 'Replies to your discussion posts will appear here'
+                    : 'RSVP activity on your hosted events will appear here'
+                  }
+                </AppText>
+              )}
             </View>
           }
         />
