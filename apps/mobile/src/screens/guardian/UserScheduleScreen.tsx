@@ -84,7 +84,11 @@ function formatDateLong(iso: string): string {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-function todayIso(): string { return new Date().toISOString().slice(0, 10); }
+// Local date, not UTC: toISOString() would give tomorrow's date in the California evening
+function todayIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 function addMonths(iso: string, n: number): string {
   const d = new Date(iso + 'T00:00:00');

@@ -171,7 +171,8 @@ export default function EventsScreen() {
 
   async function load() {
     setLoading(true);
-    const today = new Date().toISOString().slice(0, 10);
+    // Local date, not UTC: toISOString() would roll over to tomorrow in the California evening
+    const today = toLocalDateStr(new Date());
     const SELECT = 'id, name, description, category, event_date, event_time, venue, guardian_id, created_at, guardians!events_guardian_id_fkey(full_name), event_participants(guardian_id, rsvp)';
 
     const { data } = await supabase
@@ -310,7 +311,7 @@ export default function EventsScreen() {
             activeOpacity={0.8}
           >
             <AppText style={[s.tabTxt, tab === t && s.tabTxtActive]}>
-              {t === 'upcoming' ? 'Find' : t === 'mine' ? 'Hosting' : 'Attending'}
+              {t === 'upcoming' ? 'Upcoming' : t === 'mine' ? 'Hosting' : 'Attending'}
             </AppText>
           </TouchableOpacity>
         ))}
@@ -396,6 +397,7 @@ export default function EventsScreen() {
                   <AppText style={s.dateTagMonth}>
                     {d.toLocaleDateString(undefined, { month: 'short' }).toUpperCase()}
                   </AppText>
+                  <AppText style={s.dateTagYear}>{d.getFullYear()}</AppText>
                 </View>
 
                 <View style={s.info}>
@@ -688,11 +690,12 @@ const s = StyleSheet.create({
     borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderBottomWidth: 0,
   },
   dateTag: {
-    width: scale(46), height: scale(54), borderRadius: RADIUS.lg,
+    width: scale(46), height: scale(66), borderRadius: RADIUS.lg,
     backgroundColor: NICO.primaryLight, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   dateTagDay:   { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary, lineHeight: 24 },
   dateTagMonth: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.primary, letterSpacing: 0.5 },
+  dateTagYear:  { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.medium, color: NICO.primary, opacity: 0.8 },
 
   info:         { flex: 1, gap: 3 },
   eventName:    { ...TEXT_STYLE.bodyMedium, fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold },
