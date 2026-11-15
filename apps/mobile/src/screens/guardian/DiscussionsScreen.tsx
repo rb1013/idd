@@ -13,6 +13,7 @@ import GuardianPeekSheet, { GuardianPeekInfo } from '../../components/GuardianPe
 import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
+import ActiveFilterChips from '../../components/ActiveFilterChips';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -52,6 +53,22 @@ interface Post {
 
 interface Category { id: string; label: string; }
 
+type DiscussionTab = 'all' | 'mine';
+
+interface DiscussionFilters {
+  title: string;
+  guardian: string;
+  dateFrom: Date | null;
+  dateTo: Date | null;
+  category: Category | null;
+}
+
+const EMPTY_FILTERS: DiscussionFilters = { title: '', guardian: '', dateFrom: null, dateTo: null, category: null };
+
+function filtersKey(f: DiscussionFilters): string {
+  return `${f.title}|${f.category?.id ?? ''}|${f.guardian}|${f.dateFrom?.toISOString() ?? ''}|${f.dateTo?.toISOString() ?? ''}`;
+}
+
 export default function DiscussionsScreen() {
   const navigation = useNavigation<Nav>();
   const { guardian } = useAuth();
@@ -59,7 +76,7 @@ export default function DiscussionsScreen() {
 
   const [posts, setPosts]           = useState<Post[]>([]);
   const [loading, setLoading]       = useState(true);
-  const [tab, setTab]               = useState<'all' | 'mine'>('mine');
+  const [tab, setTab]               = useState<DiscussionTab>('mine');
   const [showCreate, setShowCreate] = useState(false);
 
   useLayoutEffect(() => {
@@ -90,15 +107,22 @@ export default function DiscussionsScreen() {
   const [selectedCategory, setSelectedCategory]   = useState<Category | null>(null);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
-  const [filterTitle, setFilterTitle]       = useState('');
-  const [filterGuardian, setFilterGuardian] = useState('');
-  const [filterDateFrom, setFilterDateFrom] = useState<Date | null>(null);
-  const [filterDateTo, setFilterDateTo]     = useState<Date | null>(null);
+  // Each tab keeps its own filters, so a filter set on one tab never applies (hidden) on the other
+  const [filtersByTab, setFiltersByTab] = useState<Record<DiscussionTab, DiscussionFilters>>({ all: EMPTY_FILTERS, mine: EMPTY_FILTERS });
+  const {
+    title: filterTitle, guardian: filterGuardian, dateFrom: filterDateFrom, dateTo: filterDateTo, category: filterCategory,
+  } = filtersByTab[tab];
+  const updateFilters     = (patch: Partial<DiscussionFilters>) => setFiltersByTab(prev => ({ ...prev, [tab]: { ...prev[tab], ...patch } }));
+  const setFilterTitle    = (title: string) => updateFilters({ title });
+  const setFilterGuardian = (guardian: string) => updateFilters({ guardian });
+  const setFilterDateFrom = (dateFrom: Date | null) => updateFilters({ dateFrom });
+  const setFilterDateTo   = (dateTo: Date | null) => updateFilters({ dateTo });
+  const setFilterCategory = (category: Category | null) => updateFilters({ category });
+
   const [tempDateFrom, setTempDateFrom]     = useState(new Date());
   const [tempDateTo, setTempDateTo]         = useState(new Date());
   const [showDateFromPicker, setShowDateFromPicker] = useState(false);
   const [showDateToPicker, setShowDateToPicker]     = useState(false);
-  const [filterCategory, setFilterCategory] = useState<Category | null>(null);
   const [showFilterCatPicker, setShowFilterCatPicker] = useState(false);
   const [sheetOpen, setSheetOpen]           = useState(false);
 
@@ -217,30 +241,30 @@ export default function DiscussionsScreen() {
     setSubmitting(false);
   }
 
-  const applyFilters = (list: Post[]) => {
-    if (filterTitle.trim())    list = list.filter(p => p.title.toLowerCase().includes(filterTitle.trim().toLowerCase()));
-    if (filterGuardian.trim()) list = list.filter(p => p.guardianName.toLowerCase().includes(filterGuardian.trim().toLowerCase()));
-    if (filterCategory)        list = list.filter(p => p.categoryLabel === filterCategory.label);
-    if (filterDateFrom) {
-      const from = new Date(filterDateFrom); from.setHours(0, 0, 0, 0);
+  const applyFilters = (list: Post[], f: DiscussionFilters) => {
+    if (f.title.trim())    list = list.filter(p => p.title.toLowerCase().includes(f.title.trim().toLowerCase()));
+    if (f.guardian.trim()) list = list.filter(p => p.guardianName.toLowerCase().includes(f.guardian.trim().toLowerCase()));
+    if (f.category)        list = list.filter(p => p.categoryLabel === f.category!.label);
+    if (f.dateFrom) {
+      const from = new Date(f.dateFrom); from.setHours(0, 0, 0, 0);
       list = list.filter(p => new Date(p.createdAt) >= from);
     }
-    if (filterDateTo) {
-      const to = new Date(filterDateTo); to.setHours(23, 59, 59, 999);
+    if (f.dateTo) {
+      const to = new Date(f.dateTo); to.setHours(23, 59, 59, 999);
       list = list.filter(p => new Date(p.createdAt) <= to);
     }
     return list;
   };
 
-  const allFiltered  = applyFilters([...posts]);
-  const mineFiltered = applyFilters(posts.filter(p => p.guardianId === guardian?.id));
+  const allFiltered  = applyFilters([...posts], filtersByTab.all);
+  const mineFiltered = applyFilters(posts.filter(p => p.guardianId === guardian?.id), filtersByTab.mine);
 
   const fmtDate = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-  const hasMoreFilters = tab === 'mine' ? !!filterGuardian : !!(filterGuardian || filterCategory);
+  // More Filters (category + guardian name) only exists on the All tab
+  const hasMoreFilters = tab === 'all' && !!(filterGuardian || filterCategory);
 
-  const filterResetKey = `${filterTitle}|${filterCategory?.id ?? ''}|${filterGuardian}|${filterDateFrom?.toISOString() ?? ''}|${filterDateTo?.toISOString() ?? ''}`;
-  const { visible: visibleAll,  showLoadMore: showLoadMoreAll,  loadMore: loadMoreAll,  showCapMessage: showCapAll,  pageSize: pageSizeAll  } = useVisibleCount(allFiltered,  filterResetKey);
-  const { visible: visibleMine, showLoadMore: showLoadMoreMine, loadMore: loadMoreMine, showCapMessage: showCapMine, pageSize: pageSizeMine } = useVisibleCount(mineFiltered, filterResetKey);
+  const { visible: visibleAll,  showLoadMore: showLoadMoreAll,  loadMore: loadMoreAll,  showCapMessage: showCapAll,  pageSize: pageSizeAll  } = useVisibleCount(allFiltered,  filtersKey(filtersByTab.all));
+  const { visible: visibleMine, showLoadMore: showLoadMoreMine, loadMore: loadMoreMine, showCapMessage: showCapMine, pageSize: pageSizeMine } = useVisibleCount(mineFiltered, filtersKey(filtersByTab.mine));
 
   const displayedPosts = tab === 'mine' ? visibleMine : visibleAll;
   const showMore       = tab === 'mine' ? showLoadMoreMine : showLoadMoreAll;
@@ -340,6 +364,18 @@ export default function DiscussionsScreen() {
           <MoreFiltersLink onPress={() => setSheetOpen(true)} isActive={hasMoreFilters} />
         )}
       </View>
+
+      {/* Chips for filters hidden in the More Filters sheet (All tab only; My tab shows category inline) */}
+      {tab === 'all' && (
+        <ActiveFilterChips
+          chips={[
+            ...(filterCategory ? [{ key: 'category', label: `🏷️ ${filterCategory.label}`, onRemove: () => setFilterCategory(null) }] : []),
+            ...(filterGuardian.trim() ? [{ key: 'guardian', label: `👤 ${filterGuardian.trim()}`, onRemove: () => setFilterGuardian('') }] : []),
+          ]}
+          onClearAll={() => updateFilters({ category: null, guardian: '' })}
+          contentStyle={{ paddingHorizontal: 0, paddingBottom: 0 }}
+        />
+      )}
     </View>
   );
 
@@ -450,10 +486,10 @@ export default function DiscussionsScreen() {
         title="More Filters"
         sections={[
           ...(categories.length > 0 && tab === 'all' ? [{
-            key: 'category', emoji: '🏷️', title: 'Category',
+            key: 'category', emoji: '🏷️', title: 'Category', type: 'single' as const,
             options: categories.map(c => ({ key: c.id, label: c.label })),
             selected: filterCategory ? [filterCategory.id] : [],
-            onToggle: (v: string) => setFilterCategory(prev => prev?.id === v ? null : (categories.find(c => c.id === v) ?? null)),
+            onToggle: (v: string) => setFilterCategory(filterCategory?.id === v ? null : (categories.find(c => c.id === v) ?? null)),
           }] : []),
         ] satisfies FilterSheetSection[]}
         extraContent={tab === 'all' ? (
@@ -470,7 +506,7 @@ export default function DiscussionsScreen() {
           </View>
         ) : undefined}
         hasExtraActive={!!filterGuardian}
-        onClearAll={() => { setFilterCategory(null); setFilterGuardian(''); }}
+        onClearAll={() => updateFilters({ category: null, guardian: '' })}
         onDone={() => setSheetOpen(false)}
       />
 

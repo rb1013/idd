@@ -9,6 +9,7 @@ import RainbowDivider from '../../components/RainbowDivider';
 import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
+import ActiveFilterChips from '../../components/ActiveFilterChips';
 import CountyFilterPill from '../../components/CountyFilterPill';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -790,19 +791,10 @@ export default function LearnerFriendsScreen() {
             <MoreFiltersLink onPress={() => setSheetOpen(true)} isActive={totalActive > 0} />
           </View>
 
-          {activePills.length > 0 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipsRow} contentContainerStyle={s.chipsContent}>
-              {activePills.map(p => (
-                <TouchableOpacity key={p.key} style={s.chip} onPress={() => removePill(p.type, p.raw)} activeOpacity={0.75}>
-                  <AppText style={s.chipText}>{p.label}</AppText>
-                  <AppText style={s.chipX}>×</AppText>
-                </TouchableOpacity>
-              ))}
-              <TouchableOpacity style={s.clearAllChip} onPress={clearAllFilters} activeOpacity={0.75}>
-                <AppText style={s.clearAllChipText}>Clear all</AppText>
-              </TouchableOpacity>
-            </ScrollView>
-          )}
+          <ActiveFilterChips
+            chips={activePills.map(p => ({ key: p.key, label: p.label, onRemove: () => removePill(p.type, p.raw) }))}
+            onClearAll={clearAllFilters}
+          />
 
           <FlatList
             data={visibleFind}
@@ -1076,21 +1068,6 @@ const s = StyleSheet.create({
 
   filterBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.base, paddingBottom: SPACING.sm },
   resultCount:  { ...TEXT_STYLE.caption, color: NICO.textMuted },
-
-  chipsRow:     { maxHeight: 40 },
-  chipsContent: { paddingHorizontal: SPACING.base, paddingBottom: SPACING.sm, gap: SPACING.xs, alignItems: 'center' },
-  chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: NICO.primaryLight, borderRadius: RADIUS.full,
-    paddingHorizontal: SPACING.sm, paddingVertical: 4,
-  },
-  chipText: { ...TEXT_STYLE.caption, color: NICO.primary },
-  chipX:    { fontSize: FONT_SIZE.xs, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
-  clearAllChip: {
-    paddingHorizontal: SPACING.sm, paddingVertical: 4,
-    borderRadius: RADIUS.full, borderWidth: 1, borderColor: NICO.border,
-  },
-  clearAllChipText: { ...TEXT_STYLE.caption, color: NICO.textMuted },
 
   pendingBadge:    { backgroundColor: NICO.background, borderRadius: RADIUS.md, paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs },
   pendingBadgeTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },

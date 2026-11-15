@@ -74,6 +74,21 @@ function formatFullDate(dateStr: string, timeStr?: string | null): string {
 
 type EventsRoute = RouteProp<GuardianNavParamList, 'Events'>;
 
+type EventsTab = 'upcoming' | 'mine' | 'attending';
+
+interface EventFilters {
+  name: string;
+  category: string;
+  dateFrom: Date | null;
+  dateTo: Date | null;
+}
+
+const EMPTY_FILTERS: EventFilters = { name: '', category: '', dateFrom: null, dateTo: null };
+
+function filtersKey(f: EventFilters): string {
+  return `${f.name}|${f.category}|${f.dateFrom?.toISOString() ?? ''}|${f.dateTo?.toISOString() ?? ''}`;
+}
+
 export default function EventsScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<EventsRoute>();
@@ -104,17 +119,24 @@ export default function EventsScreen() {
 
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'upcoming' | 'mine' | 'attending'>(route.params?.tab ?? 'upcoming');
+  const [tab, setTab] = useState<EventsTab>(route.params?.tab ?? 'upcoming');
   const [attendingEvents, setAttendingEvents] = useState<EventItem[]>([]);
   const [selectedEvent, setSelectedEvent]       = useState<EventItem | null>(null);
   const [nudgeRsvp, setNudgeRsvp]               = useState<Rsvp | null>(null);
 
-  // Shared filters (both tabs)
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
-  const [filterName, setFilterName]             = useState('');
-  const [filterCategory, setFilterCategory]     = useState('');
-  const [filterDateFrom, setFilterDateFrom]     = useState<Date | null>(null);
-  const [filterDateTo, setFilterDateTo]         = useState<Date | null>(null);
+
+  // Each tab keeps its own filters (same controls on every tab, but values don't carry across)
+  const [filtersByTab, setFiltersByTab] = useState<Record<EventsTab, EventFilters>>({
+    upcoming: EMPTY_FILTERS, mine: EMPTY_FILTERS, attending: EMPTY_FILTERS,
+  });
+  const { name: filterName, category: filterCategory, dateFrom: filterDateFrom, dateTo: filterDateTo } = filtersByTab[tab];
+  const updateFilters     = (patch: Partial<EventFilters>) => setFiltersByTab(prev => ({ ...prev, [tab]: { ...prev[tab], ...patch } }));
+  const setFilterName     = (name: string) => updateFilters({ name });
+  const setFilterCategory = (category: string) => updateFilters({ category });
+  const setFilterDateFrom = (dateFrom: Date | null) => updateFilters({ dateFrom });
+  const setFilterDateTo   = (dateTo: Date | null) => updateFilters({ dateTo });
+
   const [showDateFromPicker, setShowDateFromPicker] = useState(false);
   const [showDateToPicker, setShowDateToPicker] = useState(false);
   const [tempDateFrom, setTempDateFrom]         = useState(new Date());
@@ -187,24 +209,22 @@ export default function EventsScreen() {
     setLoading(false);
   }
 
-  const filterResetKey = `${filterName}|${filterCategory}|${filterDateFrom?.toISOString() ?? ''}|${filterDateTo?.toISOString() ?? ''}`;
-
-  const applyFilters = (list: EventItem[]) => {
-    if (filterName.trim()) list = list.filter(e => e.name.toLowerCase().includes(filterName.trim().toLowerCase()));
-    if (filterCategory) list = list.filter(e => e.category === filterCategory);
-    if (filterDateFrom) list = list.filter(e => e.eventDate >= toLocalDateStr(filterDateFrom));
-    if (filterDateTo)   list = list.filter(e => e.eventDate <= toLocalDateStr(filterDateTo));
+  const applyFilters = (list: EventItem[], f: EventFilters) => {
+    if (f.name.trim()) list = list.filter(e => e.name.toLowerCase().includes(f.name.trim().toLowerCase()));
+    if (f.category)    list = list.filter(e => e.category === f.category);
+    if (f.dateFrom)    list = list.filter(e => e.eventDate >= toLocalDateStr(f.dateFrom!));
+    if (f.dateTo)      list = list.filter(e => e.eventDate <= toLocalDateStr(f.dateTo!));
     return list;
   };
 
-  const upcomingFiltered  = applyFilters([...events]);
-  const mineFiltered      = applyFilters(events.filter(e => e.guardianId === guardian?.id))
+  const upcomingFiltered  = applyFilters([...events], filtersByTab.upcoming);
+  const mineFiltered      = applyFilters(events.filter(e => e.guardianId === guardian?.id), filtersByTab.mine)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const attendingFiltered = applyFilters([...attendingEvents]);
+  const attendingFiltered = applyFilters([...attendingEvents], filtersByTab.attending);
 
-  const { visible: visibleUpcoming,  showLoadMore: showLoadMoreUpcoming,  loadMore: loadMoreUpcoming,  showCapMessage: showCapUpcoming,  pageSize: pageSizeUpcoming  } = useVisibleCount(upcomingFiltered,  filterResetKey);
-  const { visible: visibleMine,      showLoadMore: showLoadMoreMine,      loadMore: loadMoreMine,      showCapMessage: showCapMine,      pageSize: pageSizeMine      } = useVisibleCount(mineFiltered,      filterResetKey);
-  const { visible: visibleAttending, showLoadMore: showLoadMoreAttending, loadMore: loadMoreAttending, showCapMessage: showCapAttending, pageSize: pageSizeAttending } = useVisibleCount(attendingFiltered, filterResetKey);
+  const { visible: visibleUpcoming,  showLoadMore: showLoadMoreUpcoming,  loadMore: loadMoreUpcoming,  showCapMessage: showCapUpcoming,  pageSize: pageSizeUpcoming  } = useVisibleCount(upcomingFiltered,  filtersKey(filtersByTab.upcoming));
+  const { visible: visibleMine,      showLoadMore: showLoadMoreMine,      loadMore: loadMoreMine,      showCapMessage: showCapMine,      pageSize: pageSizeMine      } = useVisibleCount(mineFiltered,      filtersKey(filtersByTab.mine));
+  const { visible: visibleAttending, showLoadMore: showLoadMoreAttending, loadMore: loadMoreAttending, showCapMessage: showCapAttending, pageSize: pageSizeAttending } = useVisibleCount(attendingFiltered, filtersKey(filtersByTab.attending));
 
   const filtered = tab === 'mine' ? visibleMine : tab === 'attending' ? visibleAttending : visibleUpcoming;
 
@@ -296,7 +316,7 @@ export default function EventsScreen() {
         ))}
       </View>
 
-      {/* Shared filters */}
+      {/* Filters (values are per tab) */}
       <View style={s.filterOuter}>
         <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
           <TextInput

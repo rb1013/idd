@@ -17,6 +17,7 @@ import RainbowDivider from '../../components/RainbowDivider';
 import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
+import ActiveFilterChips from '../../components/ActiveFilterChips';
 import CountyFilterPill from '../../components/CountyFilterPill';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
@@ -548,6 +549,14 @@ export default function GuardianConnectionsScreen() {
             <MoreFiltersLink onPress={() => setConnectedSheetOpen(true)} isActive={hasConnectedMore} />
           </View>
 
+          <ActiveFilterChips
+            chips={connectedFilterTags.map(t => ({
+              key: `tag-${t}`, label: `🎯 ${t}`,
+              onRemove: () => setConnectedFilterTags(prev => prev.filter(x => x !== t)),
+            }))}
+            onClearAll={() => setConnectedFilterTags([])}
+          />
+
           <ScrollView contentContainerStyle={s.list}>
             {connected.length === 0 ? (
               <View style={s.empty}>
@@ -690,6 +699,24 @@ export default function GuardianConnectionsScreen() {
             <AppText style={s.resultCount}>{discovered.length} result{discovered.length !== 1 ? 's' : ''}</AppText>
             <MoreFiltersLink onPress={() => setSheetOpen(true)} isActive={hasFindMore} />
           </View>
+
+          <ActiveFilterChips
+            chips={[
+              ...filterTags.map(t => ({
+                key: `tag-${t}`, label: `🎯 ${t}`,
+                onRemove: () => setFilterTags(prev => prev.filter(x => x !== t)),
+              })),
+              ...filterAgeGroups.map(g => ({
+                key: `age-${g}`, label: `👤 ${g}`,
+                onRemove: () => setFilterAgeGroups(prev => prev.filter(x => x !== g)),
+              })),
+              ...filterGenders.map(g => ({
+                key: `gender-${g}`, label: `⚧ ${g}`,
+                onRemove: () => setFilterGenders(prev => prev.filter(x => x !== g)),
+              })),
+            ]}
+            onClearAll={() => { setFilterAgeGroups([]); setFilterTags([]); setFilterGenders([]); }}
+          />
 
           <FlatList
             data={visibleDiscovered}

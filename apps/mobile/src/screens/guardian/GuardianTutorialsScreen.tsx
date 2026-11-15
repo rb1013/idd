@@ -18,6 +18,7 @@ import useNicoHeader from '../../hooks/useNicoHeader';
 import RainbowDivider from '../../components/RainbowDivider';
 import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
+import ActiveFilterChips from '../../components/ActiveFilterChips';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
   BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, CARD_BTN_ALIGN, scale, GRID_COLS, GRID_CARD_W,
@@ -317,25 +318,14 @@ export default function GuardianTutorialsScreen() {
                 <View style={styles.filterBar}>
                   <MoreFiltersLink onPress={() => setShowSearchMoreFilters(true)} isActive={hasSearchMore} />
                 </View>
-                {hasSearchMore && (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={styles.chipsContent}>
-                    {filterSkills.map(s => (
-                      <TouchableOpacity key={`skill-${s}`} style={styles.chip} onPress={() => setFilterSkills(p => p.filter(x => x !== s))} activeOpacity={0.75}>
-                        <AppText style={styles.chipText}>{s}</AppText>
-                        <AppText style={styles.chipX}>×</AppText>
-                      </TouchableOpacity>
-                    ))}
-                    {filterLevels.map(l => (
-                      <TouchableOpacity key={`level-${l}`} style={styles.chip} onPress={() => setFilterLevels(p => p.filter(x => x !== l))} activeOpacity={0.75}>
-                        <AppText style={styles.chipText}>{l}</AppText>
-                        <AppText style={styles.chipX}>×</AppText>
-                      </TouchableOpacity>
-                    ))}
-                    <TouchableOpacity style={styles.clearAllChip} onPress={() => { setFilterSkills([]); setFilterLevels([]); }} activeOpacity={0.75}>
-                      <AppText style={styles.clearAllChipText}>Clear all</AppText>
-                    </TouchableOpacity>
-                  </ScrollView>
-                )}
+                <ActiveFilterChips
+                  capitalize
+                  chips={[
+                    ...filterSkills.map(s => ({ key: `skill-${s}`, label: `🎯 ${s}`, onRemove: () => setFilterSkills(p => p.filter(x => x !== s)) })),
+                    ...filterLevels.map(l => ({ key: `level-${l}`, label: `📊 ${l}`, onRemove: () => setFilterLevels(p => p.filter(x => x !== l)) })),
+                  ]}
+                  onClearAll={() => { setFilterSkills([]); setFilterLevels([]); }}
+                />
               </>
             );
           })()}
@@ -479,37 +469,19 @@ export default function GuardianTutorialsScreen() {
                 <View style={styles.filterBar}>
                   <MoreFiltersLink onPress={() => setShowMyMoreFilters(true)} isActive={hasMyMore} />
                 </View>
-                {hasMyMore && (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={styles.chipsContent}>
-                    {myFilterSkills.map(s => (
-                      <TouchableOpacity key={`skill-${s}`} style={styles.chip} onPress={() => setMyFilterSkills(p => p.filter(x => x !== s))} activeOpacity={0.75}>
-                        <AppText style={styles.chipText}>{s}</AppText>
-                        <AppText style={styles.chipX}>×</AppText>
-                      </TouchableOpacity>
-                    ))}
-                    {myFilterLevels.map(l => (
-                      <TouchableOpacity key={`level-${l}`} style={styles.chip} onPress={() => setMyFilterLevels(p => p.filter(x => x !== l))} activeOpacity={0.75}>
-                        <AppText style={styles.chipText}>{l}</AppText>
-                        <AppText style={styles.chipX}>×</AppText>
-                      </TouchableOpacity>
-                    ))}
-                    {myTypes.map(t => (
-                      <TouchableOpacity key={`type-${t}`} style={styles.chip} onPress={() => setMyTypes(p => p.filter(x => x !== t))} activeOpacity={0.75}>
-                        <AppText style={styles.chipText}>{MY_TYPE_OPTIONS.find(o => o.key === t)?.label ?? t}</AppText>
-                        <AppText style={styles.chipX}>×</AppText>
-                      </TouchableOpacity>
-                    ))}
-                    {myVisibility !== 'all' && (
-                      <TouchableOpacity style={styles.chip} onPress={() => setMyVisibility('all')} activeOpacity={0.75}>
-                        <AppText style={styles.chipText}>{myVisibility === 'public' ? '🌐 Public' : '🔒 Private'}</AppText>
-                        <AppText style={styles.chipX}>×</AppText>
-                      </TouchableOpacity>
-                    )}
-                    <TouchableOpacity style={styles.clearAllChip} onPress={() => { setMyFilterSkills([]); setMyFilterLevels([]); setMyTypes([]); setMyVisibility('all'); }} activeOpacity={0.75}>
-                      <AppText style={styles.clearAllChipText}>Clear all</AppText>
-                    </TouchableOpacity>
-                  </ScrollView>
-                )}
+                <ActiveFilterChips
+                  capitalize
+                  chips={[
+                    ...myFilterSkills.map(s => ({ key: `skill-${s}`, label: `🎯 ${s}`, onRemove: () => setMyFilterSkills(p => p.filter(x => x !== s)) })),
+                    ...myFilterLevels.map(l => ({ key: `level-${l}`, label: `📊 ${l}`, onRemove: () => setMyFilterLevels(p => p.filter(x => x !== l)) })),
+                    // Type and visibility labels already include their own icons
+                    ...myTypes.map(t => ({ key: `type-${t}`, label: MY_TYPE_OPTIONS.find(o => o.key === t)?.label ?? t, onRemove: () => setMyTypes(p => p.filter(x => x !== t)) })),
+                    ...(myVisibility !== 'all'
+                      ? [{ key: 'visibility', label: myVisibility === 'public' ? '🌐 Public' : '🔒 Private', onRemove: () => setMyVisibility('all') }]
+                      : []),
+                  ]}
+                  onClearAll={() => { setMyFilterSkills([]); setMyFilterLevels([]); setMyTypes([]); setMyVisibility('all'); }}
+                />
               </>
             );
           })()}
@@ -662,31 +634,18 @@ export default function GuardianTutorialsScreen() {
                 <AppText style={styles.pendingNote}>
                   <AppText style={styles.pendingNoteAsterisk}>***</AppText> AI generated tutorials may take 1-2 mins
                 </AppText>
-                {hasPendingMore && (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={styles.chipsContent}>
-                    {pendingFilterSkills.map(s => (
-                      <TouchableOpacity key={`skill-${s}`} style={styles.chip} onPress={() => setPendingFilterSkills(p => p.filter(x => x !== s))} activeOpacity={0.75}>
-                        <AppText style={styles.chipText}>{s}</AppText>
-                        <AppText style={styles.chipX}>×</AppText>
-                      </TouchableOpacity>
-                    ))}
-                    {pendingFilterLevels.map(l => (
-                      <TouchableOpacity key={`level-${l}`} style={styles.chip} onPress={() => setPendingFilterLevels(p => p.filter(x => x !== l))} activeOpacity={0.75}>
-                        <AppText style={styles.chipText}>{l}</AppText>
-                        <AppText style={styles.chipX}>×</AppText>
-                      </TouchableOpacity>
-                    ))}
-                    {pendingStatusFilter.map(s => (
-                      <TouchableOpacity key={`status-${s}`} style={styles.chip} onPress={() => setPendingStatusFilter(p => p.filter(x => x !== s))} activeOpacity={0.75}>
-                        <AppText style={styles.chipText}>{PENDING_STATUS_OPTIONS.find(o => o.key === s)?.label ?? s}</AppText>
-                        <AppText style={styles.chipX}>×</AppText>
-                      </TouchableOpacity>
-                    ))}
-                    <TouchableOpacity style={styles.clearAllChip} onPress={() => { setPendingFilterSkills([]); setPendingFilterLevels([]); setPendingStatusFilter([]); }} activeOpacity={0.75}>
-                      <AppText style={styles.clearAllChipText}>Clear all</AppText>
-                    </TouchableOpacity>
-                  </ScrollView>
-                )}
+                <ActiveFilterChips
+                  capitalize
+                  chips={[
+                    ...pendingFilterSkills.map(s => ({ key: `skill-${s}`, label: `🎯 ${s}`, onRemove: () => setPendingFilterSkills(p => p.filter(x => x !== s)) })),
+                    ...pendingFilterLevels.map(l => ({ key: `level-${l}`, label: `📊 ${l}`, onRemove: () => setPendingFilterLevels(p => p.filter(x => x !== l)) })),
+                    ...pendingStatusFilter.map(s => ({
+                      key: `status-${s}`, label: `📋 ${PENDING_STATUS_OPTIONS.find(o => o.key === s)?.label ?? s}`,
+                      onRemove: () => setPendingStatusFilter(p => p.filter(x => x !== s)),
+                    })),
+                  ]}
+                  onClearAll={() => { setPendingFilterSkills([]); setPendingFilterLevels([]); setPendingStatusFilter([]); }}
+                />
               </>
             );
           })()}
@@ -1097,21 +1056,6 @@ const styles = StyleSheet.create({
   moreBtnText: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.medium, color: NICO.textMuted },
   moreBtnTextActive: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.primary },
 
-  // Active-filter chips strip
-  chipsRow: { maxHeight: 40 },
-  chipsContent: { paddingHorizontal: SPACING.base, gap: SPACING.xs, alignItems: 'center' },
-  chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: NICO.primaryLight, borderRadius: RADIUS.full,
-    paddingHorizontal: SPACING.sm, paddingVertical: 4,
-  },
-  chipText: { ...TEXT_STYLE.caption, color: NICO.primary, textTransform: 'capitalize' },
-  chipX:    { fontSize: FONT_SIZE.xs, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
-  clearAllChip: {
-    paddingHorizontal: SPACING.sm, paddingVertical: 4,
-    borderRadius: RADIUS.full, borderWidth: 1, borderColor: NICO.border,
-  },
-  clearAllChipText: { ...TEXT_STYLE.caption, color: NICO.textMuted },
 
   // Sheet section header
   sheetSectionHdr: {

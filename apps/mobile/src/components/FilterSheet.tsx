@@ -84,18 +84,12 @@ export default function FilterSheet({ visible, title = 'More Filters', sections,
                   {/* Options (shown when open) */}
                   {isOpen && section.options.map(opt => {
                     const selected = section.selected.includes(opt.key);
-                    const handlePress = () => {
-                      if (section.type === 'single') {
-                        section.onToggle(opt.key);
-                      } else {
-                        section.onToggle(opt.key);
-                      }
-                    };
+                    const isSingle = section.type === 'single';
                     return (
                       <TouchableOpacity
                         key={opt.key}
                         style={[styles.option, selected && styles.optionActive]}
-                        onPress={handlePress}
+                        onPress={() => section.onToggle(opt.key)}
                         activeOpacity={0.7}
                       >
                         <AppText style={[
@@ -105,9 +99,16 @@ export default function FilterSheet({ visible, title = 'More Filters', sections,
                         ]}>
                           {opt.label}
                         </AppText>
-                        <View style={[styles.check, selected && styles.checkActive]}>
-                          {selected && <AppText style={styles.checkMark}>✓</AppText>}
-                        </View>
+                        {/* Single-select sections use a radio button, multi-select a checkbox */}
+                        {isSingle ? (
+                          <View style={[styles.radio, selected && styles.radioActive]}>
+                            {selected && <View style={styles.radioDot} />}
+                          </View>
+                        ) : (
+                          <View style={[styles.check, selected && styles.checkActive]}>
+                            {selected && <AppText style={styles.checkMark}>✓</AppText>}
+                          </View>
+                        )}
                       </TouchableOpacity>
                     );
                   })}
@@ -246,6 +247,25 @@ const styles = StyleSheet.create({
     color: NICO.textOnAccent,
     fontSize: FONT_SIZE.xs,
     fontWeight: FONT_WEIGHT.extraBold,
+  },
+
+  // Radio (single-select sections)
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: NICO.border,
+    backgroundColor: NICO.screenBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioActive: { borderColor: NICO.primary },
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: NICO.primary,
   },
 
   // Done button
