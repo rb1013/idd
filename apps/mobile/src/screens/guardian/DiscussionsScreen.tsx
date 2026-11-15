@@ -4,7 +4,6 @@ import {
   TextInput, Modal, KeyboardAvoidingView, Platform,
   ActivityIndicator, Alert, ScrollView,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
@@ -36,7 +35,7 @@ function timeAgo(dateStr: string): string {
   if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
   if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 interface Post {
@@ -58,15 +57,34 @@ type DiscussionTab = 'all' | 'mine';
 interface DiscussionFilters {
   title: string;
   guardian: string;
-  dateFrom: Date | null;
-  dateTo: Date | null;
+  range: DateRange;
   category: Category | null;
 }
 
-const EMPTY_FILTERS: DiscussionFilters = { title: '', guardian: '', dateFrom: null, dateTo: null, category: null };
+// Fixed recent-date ranges (no custom dates). Older posts are found via title / category / guardian filters.
+type DateRange = 'any' | '7d' | '14d' | '30d';
+
+const DATE_RANGE_OPTIONS: { key: DateRange; label: string; days: number | null }[] = [
+  { key: 'any', label: 'Any time',     days: null },
+  { key: '7d',  label: 'Last 7 days',  days: 7 },
+  { key: '14d', label: 'Last 14 days', days: 14 },
+  { key: '30d', label: 'Last 30 days', days: 30 },
+];
+
+/** Local midnight at the start of the range: "Last 7 days" = today + the previous 6 days. */
+function rangeStart(range: DateRange): Date | null {
+  const days = DATE_RANGE_OPTIONS.find(o => o.key === range)?.days;
+  if (!days) return null;
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - (days - 1));
+  return d;
+}
+
+const EMPTY_FILTERS: DiscussionFilters = { title: '', guardian: '', range: 'any', category: null };
 
 function filtersKey(f: DiscussionFilters): string {
-  return `${f.title}|${f.category?.id ?? ''}|${f.guardian}|${f.dateFrom?.toISOString() ?? ''}|${f.dateTo?.toISOString() ?? ''}`;
+  return `${f.title}|${f.category?.id ?? ''}|${f.guardian}|${f.range}`;
 }
 
 export default function DiscussionsScreen() {
@@ -110,19 +128,15 @@ export default function DiscussionsScreen() {
   // Each tab keeps its own filters, so a filter set on one tab never applies (hidden) on the other
   const [filtersByTab, setFiltersByTab] = useState<Record<DiscussionTab, DiscussionFilters>>({ all: EMPTY_FILTERS, mine: EMPTY_FILTERS });
   const {
-    title: filterTitle, guardian: filterGuardian, dateFrom: filterDateFrom, dateTo: filterDateTo, category: filterCategory,
+    title: filterTitle, guardian: filterGuardian, range: filterRange, category: filterCategory,
   } = filtersByTab[tab];
   const updateFilters     = (patch: Partial<DiscussionFilters>) => setFiltersByTab(prev => ({ ...prev, [tab]: { ...prev[tab], ...patch } }));
   const setFilterTitle    = (title: string) => updateFilters({ title });
   const setFilterGuardian = (guardian: string) => updateFilters({ guardian });
-  const setFilterDateFrom = (dateFrom: Date | null) => updateFilters({ dateFrom });
-  const setFilterDateTo   = (dateTo: Date | null) => updateFilters({ dateTo });
+  const setFilterRange    = (range: DateRange) => updateFilters({ range });
   const setFilterCategory = (category: Category | null) => updateFilters({ category });
 
-  const [tempDateFrom, setTempDateFrom]     = useState(new Date());
-  const [tempDateTo, setTempDateTo]         = useState(new Date());
-  const [showDateFromPicker, setShowDateFromPicker] = useState(false);
-  const [showDateToPicker, setShowDateToPicker]     = useState(false);
+  const [showRangePicker, setShowRangePicker] = useState(false);
   const [showFilterCatPicker, setShowFilterCatPicker] = useState(false);
   const [sheetOpen, setSheetOpen]           = useState(false);
 
@@ -245,21 +259,14 @@ export default function DiscussionsScreen() {
     if (f.title.trim())    list = list.filter(p => p.title.toLowerCase().includes(f.title.trim().toLowerCase()));
     if (f.guardian.trim()) list = list.filter(p => p.guardianName.toLowerCase().includes(f.guardian.trim().toLowerCase()));
     if (f.category)        list = list.filter(p => p.categoryLabel === f.category!.label);
-    if (f.dateFrom) {
-      const from = new Date(f.dateFrom); from.setHours(0, 0, 0, 0);
-      list = list.filter(p => new Date(p.createdAt) >= from);
-    }
-    if (f.dateTo) {
-      const to = new Date(f.dateTo); to.setHours(23, 59, 59, 999);
-      list = list.filter(p => new Date(p.createdAt) <= to);
-    }
+    const from = rangeStart(f.range);
+    if (from) list = list.filter(p => new Date(p.createdAt) >= from);
     return list;
   };
 
   const allFiltered  = applyFilters([...posts], filtersByTab.all);
   const mineFiltered = applyFilters(posts.filter(p => p.guardianId === guardian?.id), filtersByTab.mine);
 
-  const fmtDate = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   // More Filters (category + guardian name) only exists on the All tab
   const hasMoreFilters = tab === 'all' && !!(filterGuardian || filterCategory);
 
@@ -286,48 +293,46 @@ export default function DiscussionsScreen() {
         />
       </LinearGradient>
 
-      {/* Date range inline — rainbow bordered */}
-      <View style={s.dateRow}>
-        <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.dateBtnGradient}>
+      {/* Date range dropdown — fixed recent ranges, same style as the category dropdown */}
+      <View>
+        <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.fieldGradient}>
           <TouchableOpacity
-            style={[s.dateBtn, filterDateFrom && s.dateBtnActive]}
-            onPress={() => { setTempDateFrom(filterDateFrom ?? new Date()); setShowDateFromPicker(true); }}
-            activeOpacity={0.75}
+            style={s.catPickerBtn}
+            onPress={() => { setShowRangePicker(o => !o); setShowFilterCatPicker(false); }}
+            activeOpacity={0.7}
           >
-            <AppText style={[s.dateBtnTxt, filterDateFrom && s.dateBtnTxtActive]}>
-              {filterDateFrom ? fmtDate(filterDateFrom) : 'From'}
+            <AppText style={[s.catPickerTxt, filterRange === 'any' && { color: NICO.textMuted }]}>
+              {DATE_RANGE_OPTIONS.find(o => o.key === filterRange)?.label}
             </AppText>
-            {filterDateFrom && (
-              <TouchableOpacity onPress={() => setFilterDateFrom(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <AppText style={s.dateClear}>✕</AppText>
-              </TouchableOpacity>
-            )}
+            {filterRange !== 'any'
+              ? <TouchableOpacity onPress={() => { setFilterRange('any'); setShowRangePicker(false); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <AppText style={s.dateClear}>✕</AppText>
+                </TouchableOpacity>
+              : <AppText style={s.pickerChevron}>{showRangePicker ? '▴' : '▾'}</AppText>
+            }
           </TouchableOpacity>
         </LinearGradient>
-        <AppText style={s.dateSep}>–</AppText>
-        <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.dateBtnGradient}>
-          <TouchableOpacity
-            style={[s.dateBtn, filterDateTo && s.dateBtnActive]}
-            onPress={() => { setTempDateTo(filterDateTo ?? new Date()); setShowDateToPicker(true); }}
-            activeOpacity={0.75}
-          >
-            <AppText style={[s.dateBtnTxt, filterDateTo && s.dateBtnTxtActive]}>
-              {filterDateTo ? fmtDate(filterDateTo) : 'To'}
-            </AppText>
-            {filterDateTo && (
-              <TouchableOpacity onPress={() => setFilterDateTo(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <AppText style={s.dateClear}>✕</AppText>
+        {showRangePicker && (
+          <View style={s.dropdownList}>
+            {DATE_RANGE_OPTIONS.map((opt, i) => (
+              <TouchableOpacity
+                key={opt.key}
+                style={[s.dropdownItem, i < DATE_RANGE_OPTIONS.length - 1 && s.dropdownItemBorder, filterRange === opt.key && s.dropdownItemSelected]}
+                onPress={() => { setFilterRange(opt.key); setShowRangePicker(false); }}
+              >
+                <AppText style={[s.dropdownItemText, filterRange === opt.key && s.dropdownItemTextSelected]}>{opt.label}</AppText>
+                {filterRange === opt.key && <AppText style={s.dropdownCheck}>✓</AppText>}
               </TouchableOpacity>
-            )}
-          </TouchableOpacity>
-        </LinearGradient>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* Category dropdown — My Discussions tab only */}
       {tab === 'mine' && categories.length > 0 && (
         <View>
           <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.fieldGradient}>
-            <TouchableOpacity style={s.catPickerBtn} onPress={() => setShowFilterCatPicker(o => !o)} activeOpacity={0.7}>
+            <TouchableOpacity style={s.catPickerBtn} onPress={() => { setShowFilterCatPicker(o => !o); setShowRangePicker(false); }} activeOpacity={0.7}>
               <AppText style={[s.catPickerTxt, !filterCategory && { color: NICO.textMuted }]}>
                 {filterCategory?.label ?? 'All categories'}
               </AppText>
@@ -509,41 +514,6 @@ export default function DiscussionsScreen() {
         onClearAll={() => updateFilters({ category: null, guardian: '' })}
         onDone={() => setSheetOpen(false)}
       />
-
-      {/* Date pickers */}
-      <Modal visible={showDateFromPicker} transparent animationType="slide" onRequestClose={() => setShowDateFromPicker(false)}>
-        <TouchableOpacity style={s.pickerBackdrop} activeOpacity={1} onPress={() => setShowDateFromPicker(false)}>
-          <View style={s.pickerSheet} onStartShouldSetResponder={() => true}>
-            <View style={s.pickerHdr}>
-              <TouchableOpacity onPress={() => setShowDateFromPicker(false)}>
-                <AppText style={s.pickerCancel}>Cancel</AppText>
-              </TouchableOpacity>
-              <AppText style={s.pickerTitle}>From Date</AppText>
-              <TouchableOpacity onPress={() => { setFilterDateFrom(tempDateFrom); setShowDateFromPicker(false); }}>
-                <AppText style={s.pickerDone}>Done</AppText>
-              </TouchableOpacity>
-            </View>
-            <DateTimePicker value={tempDateFrom} mode="date" display="spinner" onChange={(_, d) => { if (d) setTempDateFrom(d); }} style={{ height: 220 }} />
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal visible={showDateToPicker} transparent animationType="slide" onRequestClose={() => setShowDateToPicker(false)}>
-        <TouchableOpacity style={s.pickerBackdrop} activeOpacity={1} onPress={() => setShowDateToPicker(false)}>
-          <View style={s.pickerSheet} onStartShouldSetResponder={() => true}>
-            <View style={s.pickerHdr}>
-              <TouchableOpacity onPress={() => setShowDateToPicker(false)}>
-                <AppText style={s.pickerCancel}>Cancel</AppText>
-              </TouchableOpacity>
-              <AppText style={s.pickerTitle}>To Date</AppText>
-              <TouchableOpacity onPress={() => { setFilterDateTo(tempDateTo); setShowDateToPicker(false); }}>
-                <AppText style={s.pickerDone}>Done</AppText>
-              </TouchableOpacity>
-            </View>
-            <DateTimePicker value={tempDateTo} mode="date" display="spinner" onChange={(_, d) => { if (d) setTempDateTo(d); }} style={{ height: 220 }} />
-          </View>
-        </TouchableOpacity>
-      </Modal>
 
       {/* Create discussion modal */}
       <Modal visible={showCreate} animationType="slide" transparent onRequestClose={closeCreateSheet}>
@@ -731,34 +701,7 @@ const s = StyleSheet.create({
   // FilterSheet extra content
   extraFilters: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.sm, paddingBottom: SPACING.base, gap: SPACING.xs },
   extraLabel:   { ...TEXT_STYLE.labelSmall, textTransform: 'uppercase', letterSpacing: 0.7 },
-  dateRow:        { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  dateBtnGradient:{ flex: 1, padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.lg + BUTTERFLY_BORDER.width },
-  dateBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    borderRadius: RADIUS.lg, borderWidth: 0,
-    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    backgroundColor: NICO.surface,
-  },
-  dateBtnActive:    { backgroundColor: NICO.primaryLight },
-  dateBtnTxt:       { fontSize: FONT_SIZE.md, color: NICO.textMuted },
-  dateBtnTxtActive: { fontSize: FONT_SIZE.md, color: NICO.primary, fontWeight: FONT_WEIGHT.semiBold },
-  dateSep:          { fontSize: FONT_SIZE.md, color: NICO.textMuted },
   dateClear:        { fontSize: FONT_SIZE.sm, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
-
-  // Date picker sheet
-  pickerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  pickerSheet: {
-    backgroundColor: NICO.surface, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl,
-    paddingBottom: 36,
-  },
-  pickerHdr: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.base,
-    borderBottomWidth: 1, borderBottomColor: NICO.border,
-  },
-  pickerTitle:  { ...TEXT_STYLE.cardTitle },
-  pickerCancel: { fontSize: FONT_SIZE.lg, color: NICO.textMuted, width: 60 },
-  pickerDone:   { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.primary, width: 60, textAlign: 'right' },
 
   // Create discussion modal
   modalOverlay:  { flex: 1, justifyContent: 'flex-end' },
