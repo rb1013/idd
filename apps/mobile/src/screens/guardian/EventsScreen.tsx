@@ -76,17 +76,23 @@ type EventsRoute = RouteProp<GuardianNavParamList, 'Events'>;
 
 type EventsTab = 'upcoming' | 'mine' | 'attending';
 
+// No "from" date: every tab only lists events from today onward, so only an end date ("Until") is useful
 interface EventFilters {
   name: string;
   category: string;
-  dateFrom: Date | null;
   dateTo: Date | null;
 }
 
-const EMPTY_FILTERS: EventFilters = { name: '', category: '', dateFrom: null, dateTo: null };
+const EMPTY_FILTERS: EventFilters = { name: '', category: '', dateTo: null };
 
 function filtersKey(f: EventFilters): string {
-  return `${f.name}|${f.category}|${f.dateFrom?.toISOString() ?? ''}|${f.dateTo?.toISOString() ?? ''}`;
+  return `${f.name}|${f.category}|${f.dateTo?.toISOString() ?? ''}`;
+}
+
+function startOfToday(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
 export default function EventsScreen() {
@@ -130,16 +136,13 @@ export default function EventsScreen() {
   const [filtersByTab, setFiltersByTab] = useState<Record<EventsTab, EventFilters>>({
     upcoming: EMPTY_FILTERS, mine: EMPTY_FILTERS, attending: EMPTY_FILTERS,
   });
-  const { name: filterName, category: filterCategory, dateFrom: filterDateFrom, dateTo: filterDateTo } = filtersByTab[tab];
+  const { name: filterName, category: filterCategory, dateTo: filterDateTo } = filtersByTab[tab];
   const updateFilters     = (patch: Partial<EventFilters>) => setFiltersByTab(prev => ({ ...prev, [tab]: { ...prev[tab], ...patch } }));
   const setFilterName     = (name: string) => updateFilters({ name });
   const setFilterCategory = (category: string) => updateFilters({ category });
-  const setFilterDateFrom = (dateFrom: Date | null) => updateFilters({ dateFrom });
   const setFilterDateTo   = (dateTo: Date | null) => updateFilters({ dateTo });
 
-  const [showDateFromPicker, setShowDateFromPicker] = useState(false);
   const [showDateToPicker, setShowDateToPicker] = useState(false);
-  const [tempDateFrom, setTempDateFrom]         = useState(new Date());
   const [tempDateTo, setTempDateTo]             = useState(new Date());
   const [showCategorySheet, setShowCategorySheet] = useState(false);
   const [nudgeRsvping, setNudgeRsvping]         = useState(false);
@@ -213,7 +216,6 @@ export default function EventsScreen() {
   const applyFilters = (list: EventItem[], f: EventFilters) => {
     if (f.name.trim()) list = list.filter(e => e.name.toLowerCase().includes(f.name.trim().toLowerCase()));
     if (f.category)    list = list.filter(e => e.category === f.category);
-    if (f.dateFrom)    list = list.filter(e => e.eventDate >= toLocalDateStr(f.dateFrom!));
     if (f.dateTo)      list = list.filter(e => e.eventDate <= toLocalDateStr(f.dateTo!));
     return list;
   };
@@ -333,29 +335,12 @@ export default function EventsScreen() {
         <View style={s.dateRow}>
           <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.dateBtnGradient}>
             <TouchableOpacity
-              style={[s.dateBtn, filterDateFrom && s.dateBtnActive]}
-              onPress={() => { setTempDateFrom(filterDateFrom ?? new Date()); setShowDateFromPicker(true); }}
-              activeOpacity={0.75}
-            >
-              <AppText style={[s.dateBtnTxt, filterDateFrom && s.dateBtnTxtActive]}>
-                {filterDateFrom ? filterDateFrom.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'From'}
-              </AppText>
-              {filterDateFrom && (
-                <TouchableOpacity onPress={() => setFilterDateFrom(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <AppText style={s.dateClear}>✕</AppText>
-                </TouchableOpacity>
-              )}
-            </TouchableOpacity>
-          </LinearGradient>
-          <AppText style={s.dateSepTxt}>–</AppText>
-          <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.dateBtnGradient}>
-            <TouchableOpacity
               style={[s.dateBtn, filterDateTo && s.dateBtnActive]}
-              onPress={() => { setTempDateTo(filterDateTo ?? new Date()); setShowDateToPicker(true); }}
+              onPress={() => { setTempDateTo(filterDateTo ?? startOfToday()); setShowDateToPicker(true); }}
               activeOpacity={0.75}
             >
               <AppText style={[s.dateBtnTxt, filterDateTo && s.dateBtnTxtActive]}>
-                {filterDateTo ? filterDateTo.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'To'}
+                {filterDateTo ? `Until ${filterDateTo.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}` : 'Until'}
               </AppText>
               {filterDateTo && (
                 <TouchableOpacity onPress={() => setFilterDateTo(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -485,30 +470,16 @@ export default function EventsScreen() {
       />
 
 
-      {/* Filter: Date From picker */}
-      <Modal visible={showDateFromPicker} transparent animationType="slide" onRequestClose={() => setShowDateFromPicker(false)}>
-        <TouchableOpacity style={s.nudgeBackdrop} activeOpacity={1} onPress={() => setShowDateFromPicker(false)}>
-          <View style={s.nudgeSheet} onStartShouldSetResponder={() => true}>
-            <View style={s.filterPickerHdr}>
-              <TouchableOpacity onPress={() => setShowDateFromPicker(false)}><AppText style={s.filterPickerCancel}>Cancel</AppText></TouchableOpacity>
-              <AppText style={s.filterPickerTitle}>From Date</AppText>
-              <TouchableOpacity onPress={() => { setFilterDateFrom(tempDateFrom); setShowDateFromPicker(false); }}><AppText style={s.filterPickerDone}>Done</AppText></TouchableOpacity>
-            </View>
-            <DateTimePicker value={tempDateFrom} mode="date" display="spinner" onChange={(_, d) => { if (d) setTempDateFrom(d); }} style={{ height: 220 }} />
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Filter: Date To picker */}
+      {/* Filter: "Until" date picker (today onward) */}
       <Modal visible={showDateToPicker} transparent animationType="slide" onRequestClose={() => setShowDateToPicker(false)}>
         <TouchableOpacity style={s.nudgeBackdrop} activeOpacity={1} onPress={() => setShowDateToPicker(false)}>
           <View style={s.nudgeSheet} onStartShouldSetResponder={() => true}>
             <View style={s.filterPickerHdr}>
               <TouchableOpacity onPress={() => setShowDateToPicker(false)}><AppText style={s.filterPickerCancel}>Cancel</AppText></TouchableOpacity>
-              <AppText style={s.filterPickerTitle}>To Date</AppText>
+              <AppText style={s.filterPickerTitle}>Until</AppText>
               <TouchableOpacity onPress={() => { setFilterDateTo(tempDateTo); setShowDateToPicker(false); }}><AppText style={s.filterPickerDone}>Done</AppText></TouchableOpacity>
             </View>
-            <DateTimePicker value={tempDateTo} mode="date" display="spinner" onChange={(_, d) => { if (d) setTempDateTo(d); }} style={{ height: 220 }} />
+            <DateTimePicker value={tempDateTo} minimumDate={startOfToday()} mode="date" display="spinner" onChange={(_, d) => { if (d) setTempDateTo(d); }} style={{ height: 220 }} />
           </View>
         </TouchableOpacity>
       </Modal>
@@ -741,7 +712,6 @@ const s = StyleSheet.create({
   dateBtnActive:   { backgroundColor: NICO.primaryLight },
   dateBtnTxt:      { fontSize: FONT_SIZE.md, color: NICO.textMuted, flex: 1 },
   dateBtnTxtActive:{ fontSize: FONT_SIZE.md, color: NICO.primary, fontWeight: FONT_WEIGHT.semiBold, flex: 1 },
-  dateSepTxt:      { fontSize: FONT_SIZE.md, color: NICO.textMuted },
   dateClear:       { fontSize: FONT_SIZE.sm, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
 
   // My Events: right column — icons row on top, going count below
