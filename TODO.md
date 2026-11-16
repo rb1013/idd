@@ -86,31 +86,44 @@ A logged-in guardian with the anon key (see below) could:
 
 ---
 
-## 🗑️ Storage: tutorial files are never deleted
+## 🗑️ Storage: tutorial files when a tutorial is deleted
 
-**Found:** 2026-11-15
+**Found:** 2026-11-15 · **Updated:** 2026-11-15 (unique file names + cleanup on edit/re-generate are live)
 
 ### Background
 
-- AI tutorials store each slide's files in public storage buckets:
-  - `tutorial-images/<tutorialId>/frame-<n>.png`
-  - `tutorial-audio/<tutorialId>/frame-<n>.mp3`
-- Deleting a tutorial only deletes the **database row**. Nothing removes its files. Deletes happen in three places, all row-only:
-  - `apps/mobile/src/screens/tutorials/TutorialPreviewScreen.tsx:274` (Delete Tutorial)
+- AI tutorials store each slide's files in public storage buckets, all under the tutorial's own folder:
+  - `tutorial-images/<tutorialId>/…png`
+  - `tutorial-audio/<tutorialId>/…mp3`
+- **File naming (live since 2026-11-15)**: every file gets a unique name and is never overwritten with different content, so URLs change whenever media changes and no phone/CDN cache can serve a stale copy. Helpers are shared in `packages/supabase/supabase/functions/_shared/tutorialStorage.ts`.
+
+  | Created by | File name | Old files |
+  |---|---|---|
+  | `process-tutorial-job` (new tutorial / re-generate tutorial) | `frame-<n>-<jobId>.*` (a retry of the same job reuses the names) | — |
+  | `regenerate-frame` (Regenerate image / Save & regenerate audio) | `frame-<n>-<timestamp>.*` | ✅ Previous file deleted once the slide row is updated; tutorial `thumbnail_url` moved to the new image when slide 1 changes |
+  | `regenerate-tutorial` | — | ✅ Reads the old slides' `image_url` / `audio_url`, deletes the rows, then deletes those files; clears `thumbnail_url` until the new job sets it |
+  | Tutorials created before 2026-11-15 | `frame-<n>.*` | Switch to the new naming (and the old file is deleted) the first time a slide is edited or the tutorial is re-generated |
+
+- ✅ **Done:** edits and re-generations no longer leave old files behind (including a re-generation that produces fewer slides).
+- ❌ **Still open:** deleting a **whole tutorial** only deletes the **database row**. Nothing removes its files. Deletes happen in three places, all row-only:
+  - `apps/mobile/src/screens/tutorials/TutorialPreviewScreen.tsx:287` (Delete Tutorial)
   - `apps/mobile/src/screens/guardian/GuardianTutorialsScreen.tsx:198` (delete from the list)
   - `apps/admin/src/pages/TutorialsPage.tsx:180` (admin delete)
-- Account deletion (`delete-guardian`) doesn't remove tutorial files either.
-- Result: storage keeps every image and audio file of every deleted tutorial. That's wasted space (it counts against the Supabase storage quota), and since the buckets are **public**, deleted content stays reachable by anyone who has the URL. That matters for privacy once a family has deleted something.
+- ❌ Account deletion (`delete-guardian`) doesn't remove tutorial files either.
+- ❌ If a generation job **fails partway**, images/audio it already uploaded stay in storage (no slide row ever points to them).
+- Result: storage keeps every file of every deleted tutorial (and of failed jobs). That's wasted space (it counts against the Supabase storage quota), and since the buckets are **public**, deleted content stays reachable by anyone who has the URL. That matters for privacy once a family has deleted something.
 
 ### Tasks
 
-- [ ] When a tutorial is deleted, remove everything under `<tutorialId>/` in both `tutorial-images` and `tutorial-audio` (list the prefix, then `remove()` the files).
+- [ ] When a tutorial is deleted, remove **everything under `<tutorialId>/`** in both `tutorial-images` and `tutorial-audio` (list the prefix, then `remove()` the files). Deleting the whole folder (not just the files the slide rows point to) also clears leftovers from failed jobs and old naming styles. Reuse `removeFiles()` from `_shared/tutorialStorage.ts`.
 - [ ] Do it **server-side** (the service role is needed for storage deletes):
   - **Option A:** a `delete-tutorial` edge function (checks the caller owns the tutorial or is an admin, deletes files, then the row), and switch all three delete call sites to it.
   - **Option B:** a database trigger on `tutorials` delete that calls a function to clean up storage. Covers every delete path automatically, including cascades from account deletion.
 - [ ] Include tutorial files in **account deletion** (`delete-guardian`), or rely on Option B's trigger.
-- [ ] **If regenerated files get unique names** (the TTS/image cache-busting fix, still to be decided), `regenerate-frame` must also delete the **previous** file on each regeneration, or old versions pile up.
+- [x] ~~Unique file names for regenerated files, with `regenerate-frame` deleting the previous file~~ (done 2026-11-15, see table above).
+- [ ] Optional: when `process-tutorial-job` fails, delete the files it uploaded for that job (`frame-*-<jobId>.*`).
 - [ ] One-time cleanup: list folders in both buckets whose `<tutorialId>` no longer exists in `tutorials`, and delete them.
+- [ ] Optional: the admin portal adds `?t=Date.now()` to every slide image on each preview (`apps/admin/src/pages/TutorialsPage.tsx:94`, `:109`). Files never change now, so this only forces re-downloads; it can be removed for faster previews.
 - [ ] Test: delete a tutorial, and confirm its folder is gone from both buckets and its old image/audio URLs return 404.
 
 ---

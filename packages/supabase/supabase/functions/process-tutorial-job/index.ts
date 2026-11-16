@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { IMAGE_BUCKET, AUDIO_BUCKET, IMMUTABLE_CACHE_SECONDS } from '../_shared/tutorialStorage.ts';
 
 const CLAUDE_API_KEY        = Deno.env.get('CLAUDE_API_KEY')!;
 const OPENAI_API_KEY        = Deno.env.get('OPENAI_API_KEY')!;
@@ -14,8 +15,6 @@ const imageModel = () => Deno.env.get('IMAGE_MODEL') || DEFAULT_IMAGE_MODEL;
 const IMAGE_SIZE   = '1024x1024';
 const TTS_VOICE    = 'nova';      // friendly, clear voice
 const TTS_MODEL    = 'tts-1';
-const IMAGE_BUCKET = 'tutorial-images';
-const AUDIO_BUCKET = 'tutorial-audio';
 
 // Triggered by DB Webhook on tutorial_jobs INSERT
 serve(async (req) => {
@@ -94,7 +93,9 @@ async function processJob(
     console.log(`[job:${jobId}] generating image + audio for ${frames.length} frames in parallel`);
 
     const frameRows = await Promise.all(frames.map(async (frame) => {
-      const storagePath = `${tutorialId}/frame-${frame.order}`;
+      // Unique per job: a re-generated tutorial gets new URLs, so no phone/CDN cache can show the
+      // previous version's files. A retry of the same job reuses (overwrites) the same names.
+      const storagePath = `${tutorialId}/frame-${frame.order}-${jobId}`;
 
       const [imageUrl, audioUrl] = await Promise.all([
         withTimeout(
@@ -258,7 +259,7 @@ async function generateAndStoreImage(
     // Upload to Supabase Storage
     const { error: uploadErr } = await supabase.storage
       .from(IMAGE_BUCKET)
-      .upload(storagePath, imageData, { contentType: 'image/png', upsert: true });
+      .upload(storagePath, imageData, { contentType: 'image/png', upsert: true, cacheControl: IMMUTABLE_CACHE_SECONDS });
 
     if (uploadErr) throw new Error(`Storage upload error: ${uploadErr.message}`);
 
@@ -305,7 +306,7 @@ async function generateAndStoreAudio(
 
     const { error: uploadErr } = await supabase.storage
       .from(AUDIO_BUCKET)
-      .upload(storagePath, audioData, { contentType: 'audio/mpeg', upsert: true });
+      .upload(storagePath, audioData, { contentType: 'audio/mpeg', upsert: true, cacheControl: IMMUTABLE_CACHE_SECONDS });
 
     if (uploadErr) throw new Error(`Audio upload error: ${uploadErr.message}`);
 

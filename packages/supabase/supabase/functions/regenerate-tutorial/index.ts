@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { buildTutorialPrompt } from '../_shared/tutorialPrompt.ts';
+import { IMAGE_BUCKET, AUDIO_BUCKET, StoredFile, storagePathFromUrl, removeFiles } from '../_shared/tutorialStorage.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -122,9 +123,25 @@ Deno.serve(async (req) => {
       frameCount: maxFrames,
     });
 
-    // Reset the tutorial and queue a fresh generation job (DB Webhook fires process-tutorial-job)
+    // Collect the old slides' files before their rows go — once the rows are deleted nothing
+    // references these files, so they're removed now instead of being left behind in storage.
+    const { data: oldFrames } = await supabase
+      .from('tutorial_frames')
+      .select('image_url, audio_url')
+      .eq('tutorial_id', tutorial_id);
+    const oldFiles: StoredFile[] = [];
+    for (const f of oldFrames ?? []) {
+      const img = storagePathFromUrl(f.image_url, IMAGE_BUCKET);
+      const aud = storagePathFromUrl(f.audio_url, AUDIO_BUCKET);
+      if (img) oldFiles.push({ bucket: IMAGE_BUCKET, path: img });
+      if (aud) oldFiles.push({ bucket: AUDIO_BUCKET, path: aud });
+    }
+
+    // Reset the tutorial and queue a fresh generation job (DB Webhook fires process-tutorial-job).
+    // The thumbnail was slide 1's image, which is deleted below; process-tutorial-job sets a new one.
     await supabase.from('tutorial_frames').delete().eq('tutorial_id', tutorial_id);
-    await supabase.from('tutorials').update({ ai_prompt, status: 'generating', updated_at: new Date().toISOString() }).eq('id', tutorial_id);
+    await supabase.from('tutorials').update({ ai_prompt, status: 'generating', thumbnail_url: null, updated_at: new Date().toISOString() }).eq('id', tutorial_id);
+    await removeFiles(supabase, oldFiles, 'regenerate-tutorial');
     const { error: jobError } = await supabase.from('tutorial_jobs').insert({ tutorial_id });
     if (jobError) throw new Error(`Failed to queue job: ${jobError.message}`);
 
