@@ -21,6 +21,20 @@ import {
 
 const { width } = Dimensions.get('window');
 
+// Slide editor text limits (shown to the guardian as "used/limit" under each box)
+const CAPTION_MAX      = 50;
+const NARRATION_MAX    = 150;
+const IMAGE_PROMPT_MAX = 150;
+
+/** Live "12/50" counter under a text box; turns highlighted when the limit is reached. */
+function CharCount({ value, max, style }: { value: string; max: number; style?: object }) {
+  return (
+    <AppText style={[s.charCount, value.length >= max && s.charCountFull, style]}>
+      {value.length}/{max}
+    </AppText>
+  );
+}
+
 type NavProp = NativeStackNavigationProp<GuardianNavParamList, 'TutorialPreview'>;
 type RouteType = RouteProp<GuardianNavParamList, 'TutorialPreview'>;
 
@@ -110,6 +124,9 @@ export default function TutorialPreviewScreen() {
   // Image regen falls back to caption + narration text, so block it while either is open (even if unchanged)
   // or saving — otherwise the image could be built from text that never gets saved.
   const imageRegenBlocked = editingCaption || editingNarration || savingCaption || savingNarration;
+  // Keep the slide editor open while an image or audio is being generated
+  const editorBusy = regeneratingImage || savingNarration;
+  const closeEditor = () => { if (!editorBusy) setEditingFrame(null); };
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useFocusEffect(
@@ -184,9 +201,8 @@ export default function TutorialPreviewScreen() {
         } catch {}
         throw new Error(detail);
       }
+      // regenerate-frame writes a new file name each time, so the returned audio_url is new and the player reloads
       const updatedFrame = data.frame as TutorialFrame;
-      // Preserve potentially cache-busted image_url — narration save never changes the image
-      if (editingFrame.image_url) updatedFrame.image_url = editingFrame.image_url;
       setEditingFrame(updatedFrame);
       setTutorial(prev => prev ? { ...prev, frames: prev.frames.map(f => f.id === updatedFrame.id ? updatedFrame : f) } : prev);
       setEditingNarration(false);
@@ -230,11 +246,8 @@ export default function TutorialPreviewScreen() {
         } catch {}
         throw new Error(detail);
       }
+      // regenerate-frame writes a new file name each time, so image_url is new — no cache-busting needed
       const updatedFrame = data.frame as TutorialFrame;
-      // Bust the image cache — storage path is unchanged so React Native would serve the old image
-      if (updatedFrame.image_url) {
-        updatedFrame.image_url = `${updatedFrame.image_url.split('?')[0]}?t=${Date.now()}`;
-      }
       setTutorial(prev => {
         if (!prev) return prev;
         return { ...prev, frames: prev.frames.map(f => f.id === updatedFrame.id ? updatedFrame : f) };
@@ -454,7 +467,10 @@ export default function TutorialPreviewScreen() {
                 <AppText style={s.frameCounter}>Frame {frameIndex + 1} of {frames.length}</AppText>
               )}
               <View style={{ flex: 1 }} />
-              {isCreator && tutorial.source === 'ai_generated' && ['preview', 'rejected'].includes(tutorial.status) && !isTechnicalError && (
+              {/* "Re-generate tutorial" (whole tutorial, regenerate-tutorial) is shown on the Video tab only.
+                  Video and Slides are two views of the same frames; the Slides tab used to show the same
+                  button labelled "Re-generate Slides", which looked like a different action. */}
+              {viewTab === 'video' && isCreator && tutorial.source === 'ai_generated' && ['preview', 'rejected'].includes(tutorial.status) && !isTechnicalError && (
                 <TouchableOpacity
                   style={[s.regenSmallBtn, regeneratingTutorial && s.regenSmallBtnDisabled]}
                   onPress={regenerateTutorial}
@@ -463,7 +479,7 @@ export default function TutorialPreviewScreen() {
                 >
                   {regeneratingTutorial
                     ? <ActivityIndicator size="small" color={NICO.text} />
-                    : <AppText style={s.regenSmallBtnText}>🔄  Re-generate {viewTab === 'video' ? 'Video' : 'Slides'}</AppText>
+                    : <AppText style={s.regenSmallBtnText}>🔄  Re-generate tutorial</AppText>
                   }
                 </TouchableOpacity>
               )}
@@ -595,11 +611,11 @@ export default function TutorialPreviewScreen() {
       </ScrollView>
 
       {/* Frame editor modal */}
-      <Modal visible={!!editingFrame} animationType="slide" onRequestClose={() => setEditingFrame(null)}>
+      <Modal visible={!!editingFrame} animationType="slide" onRequestClose={closeEditor}>
         <View style={s.editorContainer}>
           <View style={s.editorHeader}>
             <AppText style={s.editorTitle}>Edit Frame {(editingFrame ? frames.indexOf(editingFrame) : 0) + 1}</AppText>
-            <TouchableOpacity onPress={() => setEditingFrame(null)} style={s.editorClose}>
+            <TouchableOpacity onPress={closeEditor} style={[s.editorClose, editorBusy && s.editorInputDisabled]} disabled={editorBusy}>
               <AppText style={s.editorCloseText}>✕</AppText>
             </TouchableOpacity>
           </View>
@@ -613,23 +629,24 @@ export default function TutorialPreviewScreen() {
                 {!editingCaption && (
                   <TouchableOpacity
                     onPress={() => setEditingCaption(true)}
-                    style={[s.editorPencilBtn, regeneratingImage && s.editorPencilDisabled]}
-                    disabled={regeneratingImage}
+                    style={[s.editorPencilBtn, editorBusy && s.editorPencilDisabled]}
+                    disabled={editorBusy}
                   >
                     <AppText style={s.editorPencilText}>✏️</AppText>
                   </TouchableOpacity>
                 )}
               </View>
               {editingCaption ? (
+                <>
                 <View style={s.editorInlineRow}>
                   <TextInput
                     style={[s.editorInput, { flex: 1 }, savingCaption && s.editorInputDisabled]}
                     value={editCaption}
-                    onChangeText={t => setEditCaption(t.slice(0, 50))}
+                    onChangeText={t => setEditCaption(t.slice(0, CAPTION_MAX))}
                     editable={!savingCaption}
                     placeholder="e.g. Tap the ball"
                     placeholderTextColor={NICO.textMuted}
-                    maxLength={50}
+                    maxLength={CAPTION_MAX}
                     autoFocus
                   />
                   <TouchableOpacity
@@ -650,6 +667,8 @@ export default function TutorialPreviewScreen() {
                     <AppText style={s.editorInlineDismissText}>✕</AppText>
                   </TouchableOpacity>
                 </View>
+                <CharCount value={editCaption} max={CAPTION_MAX} />
+                </>
               ) : (
                 <AppText style={s.editorFieldValue}>{editCaption || '—'}</AppText>
               )}
@@ -664,8 +683,8 @@ export default function TutorialPreviewScreen() {
                 {!editingNarration && (
                   <TouchableOpacity
                     onPress={() => setEditingNarration(true)}
-                    style={[s.editorPencilBtn, regeneratingImage && s.editorPencilDisabled]}
-                    disabled={regeneratingImage}
+                    style={[s.editorPencilBtn, editorBusy && s.editorPencilDisabled]}
+                    disabled={editorBusy}
                   >
                     <AppText style={s.editorPencilText}>✏️</AppText>
                   </TouchableOpacity>
@@ -676,15 +695,16 @@ export default function TutorialPreviewScreen() {
                   <TextInput
                     style={[s.editorInput, { height: 90 }, savingNarration && s.editorInputDisabled]}
                     value={editTts}
-                    onChangeText={t => setEditTts(t.slice(0, 150))}
+                    onChangeText={t => setEditTts(t.slice(0, NARRATION_MAX))}
                     editable={!savingNarration}
                     placeholder="e.g. Use the inside of your foot to tap the ball forward."
                     placeholderTextColor={NICO.textMuted}
                     multiline
                     textAlignVertical="top"
-                    maxLength={150}
+                    maxLength={NARRATION_MAX}
                     autoFocus
                   />
+                  <CharCount value={editTts} max={NARRATION_MAX} />
                   <View style={s.editorInlineRowEnd}>
                     <TouchableOpacity
                       style={[s.editorInlineDismiss, savingNarration && s.editorInputDisabled]}
@@ -719,16 +739,17 @@ export default function TutorialPreviewScreen() {
               )}
               <AppText style={s.editorFieldLabel}>What should the image show?</AppText>
               <TextInput
-                style={[s.editorInput, { height: 80, marginBottom: 10 }, regeneratingImage && s.editorInputDisabled]}
+                style={[s.editorInput, { height: 80 }, editorBusy && s.editorInputDisabled]}
                 value={editImagePrompt}
-                onChangeText={t => setEditImagePrompt(t.slice(0, 150))}
-                editable={!regeneratingImage}
+                onChangeText={t => setEditImagePrompt(t.slice(0, IMAGE_PROMPT_MAX))}
+                editable={!editorBusy}
                 placeholder="e.g. A child kicking a soccer ball on a green field"
                 placeholderTextColor={NICO.textMuted}
                 multiline
                 textAlignVertical="top"
-                maxLength={150}
+                maxLength={IMAGE_PROMPT_MAX}
               />
+              <CharCount value={editImagePrompt} max={IMAGE_PROMPT_MAX} style={{ marginBottom: 10 }} />
               <TouchableOpacity
                 style={[s.regenBtn, (regeneratingImage || imageRegenBlocked) && s.regenBtnDisabled]}
                 onPress={regenerateFrameImage}
@@ -749,7 +770,18 @@ export default function TutorialPreviewScreen() {
           </ScrollView>
 
           <View style={s.editorActions}>
-            <TouchableOpacity style={s.editorDoneBtn} onPress={() => setEditingFrame(null)}>
+            {/* Explains the wait and why Done / ✕ are disabled; image takes far longer than audio */}
+            {editorBusy && (
+              <View style={s.editorBusyRow}>
+                <ActivityIndicator size="small" color={NICO.primary} />
+                <AppText style={s.editorBusyText}>
+                  {regeneratingImage
+                    ? 'Creating a new image… This can take 1–2 minutes. Please keep this screen open.'
+                    : 'Creating new narration audio… This takes a few seconds.'}
+                </AppText>
+              </View>
+            )}
+            <TouchableOpacity style={[s.editorDoneBtn, editorBusy && s.editorInputDisabled]} onPress={closeEditor} disabled={editorBusy}>
               <AppText style={s.editorDoneBtnText}>Done</AppText>
             </TouchableOpacity>
           </View>
@@ -870,6 +902,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 12, fontSize: FONT_SIZE.md, color: NICO.text,
   },
   editorInputDisabled: { opacity: 0.5 },
+  charCount:     { ...TEXT_STYLE.caption, fontSize: FONT_SIZE.sm, textAlign: 'right', marginTop: SPACING.xs },
+  charCountFull: { color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
   regenBtn:        { flexDirection: 'row', justifyContent: 'center', backgroundColor: NICO.primaryLight, borderRadius: RADIUS.sm, paddingVertical: 12 },
   regenBtnDisabled: { opacity: 0.5 },
   regenBtnText:     { color: NICO.primary, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.md },
@@ -878,6 +912,8 @@ const s = StyleSheet.create({
     padding: SPACING.lg, paddingBottom: 36,
     backgroundColor: NICO.surface, borderTopWidth: 1, borderTopColor: NICO.border,
   },
+  editorBusyRow:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.md },
+  editorBusyText: { ...TEXT_STYLE.caption, fontSize: FONT_SIZE.sm, color: NICO.error, fontWeight: FONT_WEIGHT.bold, flex: 1 },
   // Centered, not full width
   editorDoneBtn:     { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, alignSelf: 'center', minWidth: scale(160), alignItems: 'center' },
   editorDoneBtnText: { fontWeight: FONT_WEIGHT.bold, color: NICO.textOnAccent, fontSize: FONT_SIZE.md },

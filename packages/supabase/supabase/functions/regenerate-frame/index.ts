@@ -45,28 +45,51 @@ serve(async (req) => {
 
     const tutorialId = (frame as any).tutorials?.id ?? frame.tutorial_id;
     const orderIndex: number = frame.order_index;
-    const storagePath = `${tutorialId}/frame-${orderIndex}`;
+    // Every regeneration writes a NEW file name, so the URL changes and no phone/CDN cache can
+    // serve the old image or audio. The previous file is deleted once the frame row is updated.
+    const storagePath = `${tutorialId}/frame-${orderIndex}-${Date.now()}`;
     const updates: Record<string, string | null> = {};
+    const uploaded: { bucket: string; path: string }[] = [];   // new files (removed again if the update fails)
+    const replaced: { bucket: string; path: string }[] = [];   // old files (removed after the update succeeds)
 
     // Text updates (no AI call, no quota)
     if (tts_text !== undefined) updates.tts_text = tts_text;
 
-    // Image regeneration
-    if (image_prompt) {
-      const imageUrl = await regenerateImage(supabase, image_prompt, `${storagePath}.png`);
-      if (imageUrl) updates.image_url = imageUrl;
-      updates.image_prompt = image_prompt;
-    }
+    try {
+      // Image regeneration
+      if (image_prompt) {
+        const imageUrl = await regenerateImage(supabase, image_prompt, `${storagePath}.png`);
+        uploaded.push({ bucket: IMAGE_BUCKET, path: `${storagePath}.png` });
+        if (imageUrl) updates.image_url = imageUrl;
+        updates.image_prompt = image_prompt;
+        const oldPath = storagePathFromUrl(frame.image_url, IMAGE_BUCKET);
+        if (oldPath) replaced.push({ bucket: IMAGE_BUCKET, path: oldPath });
+      }
 
-    // Audio regeneration (OpenAI TTS-1) — when tts_text changed OR regenerate_audio flag set
-    const audioText = tts_text ?? frame.tts_text;
-    if ((regenerate_audio || tts_text !== undefined) && audioText) {
-      const audioUrl = await regenerateAudio(supabase, audioText, `${storagePath}.mp3`);
-      if (audioUrl) updates.audio_url = audioUrl;
+      // Audio regeneration (OpenAI TTS-1) — when tts_text changed OR regenerate_audio flag set
+      const audioText = tts_text ?? frame.tts_text;
+      if ((regenerate_audio || tts_text !== undefined) && audioText) {
+        const audioUrl = await regenerateAudio(supabase, audioText, `${storagePath}.mp3`);
+        uploaded.push({ bucket: AUDIO_BUCKET, path: `${storagePath}.mp3` });
+        if (audioUrl) updates.audio_url = audioUrl;
+        const oldPath = storagePathFromUrl(frame.audio_url, AUDIO_BUCKET);
+        if (oldPath) replaced.push({ bucket: AUDIO_BUCKET, path: oldPath });
+      }
+    } catch (genErr) {
+      // e.g. image succeeded but audio failed: nothing was saved to the frame, so drop the new files
+      await removeFiles(supabase, uploaded);
+      throw genErr;
     }
 
     if (Object.keys(updates).length > 0) {
-      await supabase.from('tutorial_frames').update(updates).eq('id', frame_id);
+      const { error: updateErr } = await supabase.from('tutorial_frames').update(updates).eq('id', frame_id);
+      if (updateErr) {
+        // Frame still points at the old files — drop the new uploads so they don't become orphans
+        await removeFiles(supabase, uploaded);
+        throw new Error(`Frame update error: ${updateErr.message}`);
+      }
+      // Frame now points at the new files — the old ones are no longer referenced
+      await removeFiles(supabase, replaced);
     }
 
     const { data: updated } = await supabase
@@ -87,6 +110,30 @@ serve(async (req) => {
     );
   }
 });
+
+// Each regenerated file has a unique name and never changes, so it can be cached for a long time.
+const IMMUTABLE_CACHE_SECONDS = '31536000'; // 1 year
+
+/** Storage path inside `bucket` for one of our public URLs, or null if the URL isn't from that bucket. */
+function storagePathFromUrl(url: string | null | undefined, bucket: string): string | null {
+  if (!url) return null;
+  const marker = `/storage/v1/object/public/${bucket}/`;
+  const i = url.indexOf(marker);
+  if (i === -1) return null;
+  return decodeURIComponent(url.slice(i + marker.length).split('?')[0]) || null;
+}
+
+/** Best-effort delete; a failed cleanup must not fail the regeneration itself. */
+async function removeFiles(
+  supabase: ReturnType<typeof createClient>,
+  files: { bucket: string; path: string }[],
+) {
+  for (const bucket of new Set(files.map(f => f.bucket))) {
+    const paths = files.filter(f => f.bucket === bucket).map(f => f.path);
+    const { error } = await supabase.storage.from(bucket).remove(paths);
+    if (error) console.error(`[regenerate-frame] could not remove ${paths.join(', ')} from ${bucket}:`, error.message);
+  }
+}
 
 async function regenerateImage(
   supabase: ReturnType<typeof createClient>,
@@ -123,7 +170,7 @@ async function regenerateImage(
 
   const { error: uploadErr } = await supabase.storage
     .from(IMAGE_BUCKET)
-    .upload(storagePath, imageData, { contentType: 'image/png', upsert: true });
+    .upload(storagePath, imageData, { contentType: 'image/png', cacheControl: IMMUTABLE_CACHE_SECONDS });
 
   if (uploadErr) throw new Error(`Image upload error: ${uploadErr.message}`);
 
@@ -162,7 +209,7 @@ async function regenerateAudio(
 
   const { error: uploadErr } = await supabase.storage
     .from(AUDIO_BUCKET)
-    .upload(storagePath, audioData, { contentType: 'audio/mpeg', upsert: true });
+    .upload(storagePath, audioData, { contentType: 'audio/mpeg', cacheControl: IMMUTABLE_CACHE_SECONDS });
 
   if (uploadErr) throw new Error(`Audio upload error: ${uploadErr.message}`);
 
