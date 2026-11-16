@@ -86,6 +86,35 @@ A logged-in guardian with the anon key (see below) could:
 
 ---
 
+## 🗑️ Storage: tutorial files are never deleted
+
+**Found:** 2026-11-15
+
+### Background
+
+- AI tutorials store each slide's files in public storage buckets:
+  - `tutorial-images/<tutorialId>/frame-<n>.png`
+  - `tutorial-audio/<tutorialId>/frame-<n>.mp3`
+- Deleting a tutorial only deletes the **database row**. Nothing removes its files. Deletes happen in three places, all row-only:
+  - `apps/mobile/src/screens/tutorials/TutorialPreviewScreen.tsx:274` (Delete Tutorial)
+  - `apps/mobile/src/screens/guardian/GuardianTutorialsScreen.tsx:198` (delete from the list)
+  - `apps/admin/src/pages/TutorialsPage.tsx:180` (admin delete)
+- Account deletion (`delete-guardian`) doesn't remove tutorial files either.
+- Result: storage keeps every image and audio file of every deleted tutorial. That's wasted space (it counts against the Supabase storage quota), and since the buckets are **public**, deleted content stays reachable by anyone who has the URL. That matters for privacy once a family has deleted something.
+
+### Tasks
+
+- [ ] When a tutorial is deleted, remove everything under `<tutorialId>/` in both `tutorial-images` and `tutorial-audio` (list the prefix, then `remove()` the files).
+- [ ] Do it **server-side** (the service role is needed for storage deletes):
+  - **Option A:** a `delete-tutorial` edge function (checks the caller owns the tutorial or is an admin, deletes files, then the row), and switch all three delete call sites to it.
+  - **Option B:** a database trigger on `tutorials` delete that calls a function to clean up storage. Covers every delete path automatically, including cascades from account deletion.
+- [ ] Include tutorial files in **account deletion** (`delete-guardian`), or rely on Option B's trigger.
+- [ ] **If regenerated files get unique names** (the TTS/image cache-busting fix, still to be decided), `regenerate-frame` must also delete the **previous** file on each regeneration, or old versions pile up.
+- [ ] One-time cleanup: list folders in both buckets whose `<tutorialId>` no longer exists in `tutorials`, and delete them.
+- [ ] Test: delete a tutorial, and confirm its folder is gone from both buckets and its old image/audio URLs return 404.
+
+---
+
 ## ℹ️ Why "the anon key is public" matters
 
 The Supabase **anon key is not a secret**, and that's by design. Anyone can get it:

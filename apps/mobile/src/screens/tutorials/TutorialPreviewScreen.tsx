@@ -107,6 +107,9 @@ export default function TutorialPreviewScreen() {
   const [savingNarration, setSavingNarration] = useState(false);
   const [editingCaption, setEditingCaption] = useState(false);
   const [editingNarration, setEditingNarration] = useState(false);
+  // Image regen falls back to caption + narration text, so block it while either is open (even if unchanged)
+  // or saving — otherwise the image could be built from text that never gets saved.
+  const imageRegenBlocked = editingCaption || editingNarration || savingCaption || savingNarration;
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useFocusEffect(
@@ -608,7 +611,11 @@ export default function TutorialPreviewScreen() {
               <View style={s.editorFieldRow}>
                 <AppText style={s.editorFieldLabel}>Caption</AppText>
                 {!editingCaption && (
-                  <TouchableOpacity onPress={() => setEditingCaption(true)} style={s.editorPencilBtn}>
+                  <TouchableOpacity
+                    onPress={() => setEditingCaption(true)}
+                    style={[s.editorPencilBtn, regeneratingImage && s.editorPencilDisabled]}
+                    disabled={regeneratingImage}
+                  >
                     <AppText style={s.editorPencilText}>✏️</AppText>
                   </TouchableOpacity>
                 )}
@@ -616,9 +623,10 @@ export default function TutorialPreviewScreen() {
               {editingCaption ? (
                 <View style={s.editorInlineRow}>
                   <TextInput
-                    style={[s.editorInput, { flex: 1 }]}
+                    style={[s.editorInput, { flex: 1 }, savingCaption && s.editorInputDisabled]}
                     value={editCaption}
                     onChangeText={t => setEditCaption(t.slice(0, 50))}
+                    editable={!savingCaption}
                     placeholder="e.g. Tap the ball"
                     placeholderTextColor={NICO.textMuted}
                     maxLength={50}
@@ -635,8 +643,9 @@ export default function TutorialPreviewScreen() {
                     }
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={s.editorInlineDismiss}
+                    style={[s.editorInlineDismiss, savingCaption && s.editorInputDisabled]}
                     onPress={() => { setEditCaption(editingFrame?.caption ?? ''); setEditingCaption(false); }}
+                    disabled={savingCaption}
                   >
                     <AppText style={s.editorInlineDismissText}>✕</AppText>
                   </TouchableOpacity>
@@ -653,7 +662,11 @@ export default function TutorialPreviewScreen() {
               <View style={s.editorFieldRow}>
                 <AppText style={s.editorFieldLabel}>Narration text</AppText>
                 {!editingNarration && (
-                  <TouchableOpacity onPress={() => setEditingNarration(true)} style={s.editorPencilBtn}>
+                  <TouchableOpacity
+                    onPress={() => setEditingNarration(true)}
+                    style={[s.editorPencilBtn, regeneratingImage && s.editorPencilDisabled]}
+                    disabled={regeneratingImage}
+                  >
                     <AppText style={s.editorPencilText}>✏️</AppText>
                   </TouchableOpacity>
                 )}
@@ -661,9 +674,10 @@ export default function TutorialPreviewScreen() {
               {editingNarration ? (
                 <>
                   <TextInput
-                    style={[s.editorInput, { height: 90 }]}
+                    style={[s.editorInput, { height: 90 }, savingNarration && s.editorInputDisabled]}
                     value={editTts}
                     onChangeText={t => setEditTts(t.slice(0, 150))}
+                    editable={!savingNarration}
                     placeholder="e.g. Use the inside of your foot to tap the ball forward."
                     placeholderTextColor={NICO.textMuted}
                     multiline
@@ -673,8 +687,9 @@ export default function TutorialPreviewScreen() {
                   />
                   <View style={s.editorInlineRowEnd}>
                     <TouchableOpacity
-                      style={s.editorInlineDismiss}
+                      style={[s.editorInlineDismiss, savingNarration && s.editorInputDisabled]}
                       onPress={() => { setEditTts(editingFrame?.tts_text ?? ''); setEditingNarration(false); }}
+                      disabled={savingNarration}
                     >
                       <AppText style={s.editorInlineDismissText}>Cancel</AppText>
                     </TouchableOpacity>
@@ -704,9 +719,10 @@ export default function TutorialPreviewScreen() {
               )}
               <AppText style={s.editorFieldLabel}>What should the image show?</AppText>
               <TextInput
-                style={[s.editorInput, { height: 80, marginBottom: 10 }]}
+                style={[s.editorInput, { height: 80, marginBottom: 10 }, regeneratingImage && s.editorInputDisabled]}
                 value={editImagePrompt}
                 onChangeText={t => setEditImagePrompt(t.slice(0, 150))}
+                editable={!regeneratingImage}
                 placeholder="e.g. A child kicking a soccer ball on a green field"
                 placeholderTextColor={NICO.textMuted}
                 multiline
@@ -714,15 +730,20 @@ export default function TutorialPreviewScreen() {
                 maxLength={150}
               />
               <TouchableOpacity
-                style={[s.regenBtn, regeneratingImage && s.regenBtnDisabled]}
+                style={[s.regenBtn, (regeneratingImage || imageRegenBlocked) && s.regenBtnDisabled]}
                 onPress={regenerateFrameImage}
-                disabled={regeneratingImage}
+                disabled={regeneratingImage || imageRegenBlocked}
               >
                 {regeneratingImage
                   ? <ActivityIndicator color={NICO.primary} size="small" />
                   : <AppText style={s.regenBtnText}>🔄  Regenerate image</AppText>
                 }
               </TouchableOpacity>
+              {imageRegenBlocked && (
+                <AppText style={s.regenBlockedHint}>
+                  Save or cancel your {editingCaption && editingNarration ? 'caption and narration edits' : editingCaption ? 'caption edit' : 'narration edit'} to regenerate the image.
+                </AppText>
+              )}
             </View>
 
           </ScrollView>
@@ -829,6 +850,7 @@ const s = StyleSheet.create({
   editorFieldValue:  { ...TEXT_STYLE.fieldValue, lineHeight: 22 },
   editorPencilBtn:   { padding: 4 },
   editorPencilText:  { fontSize: FONT_SIZE.lg },
+  editorPencilDisabled: { opacity: 0.35 },
   editorInlineRow:   { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   editorInlineRowEnd:{ flexDirection: 'row', justifyContent: 'flex-end', gap: SPACING.sm, marginTop: SPACING.sm },
   editorInlineConfirm: {
@@ -847,13 +869,16 @@ const s = StyleSheet.create({
     backgroundColor: NICO.surface, borderRadius: RADIUS.md, borderWidth: 1, borderColor: NICO.border,
     paddingHorizontal: 14, paddingVertical: 12, fontSize: FONT_SIZE.md, color: NICO.text,
   },
-  regenBtn:         { flexDirection: 'row', justifyContent: 'center', backgroundColor: NICO.primaryLight, borderRadius: RADIUS.sm, paddingVertical: 12 },
+  editorInputDisabled: { opacity: 0.5 },
+  regenBtn:        { flexDirection: 'row', justifyContent: 'center', backgroundColor: NICO.primaryLight, borderRadius: RADIUS.sm, paddingVertical: 12 },
   regenBtnDisabled: { opacity: 0.5 },
   regenBtnText:     { color: NICO.primary, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.md },
+  regenBlockedHint: { ...TEXT_STYLE.caption, fontSize: FONT_SIZE.sm, textAlign: 'center', marginTop: SPACING.sm },
   editorActions: {
     padding: SPACING.lg, paddingBottom: 36,
     backgroundColor: NICO.surface, borderTopWidth: 1, borderTopColor: NICO.border,
   },
-  editorDoneBtn:     { paddingVertical: 14, borderRadius: RADIUS.md, alignItems: 'center', backgroundColor: NICO.primary },
+  // Centered, not full width
+  editorDoneBtn:     { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, alignSelf: 'center', minWidth: scale(160), alignItems: 'center' },
   editorDoneBtnText: { fontWeight: FONT_WEIGHT.bold, color: NICO.textOnAccent, fontSize: FONT_SIZE.md },
 });
