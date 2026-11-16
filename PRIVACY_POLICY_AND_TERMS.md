@@ -82,7 +82,7 @@ We share information with service providers only as needed to run Co-Heart:
 | **OpenAI** | Generating tutorial images and narration audio | Tutorial text and image descriptions |
 | **Expo** and **Apple** | Delivering push notifications | Device push token and notification content |
 | **Google** (Gmail) | Sending account emails such as verification and password reset codes | Your email address and the email content |
-| **YouTube** (Google) | Playing YouTube videos you link | YouTube may collect data under its own privacy policy when a video plays |
+| **YouTube** (Google) | Playing YouTube videos you link | YouTube may collect data and **may show ads** under its own policies when a video plays. We use YouTube's privacy-enhanced (no-cookie) mode |
 
 We do **not** send your learner's name, photo, or profile to AI providers when generating tutorials. Do not include personal details in the tutorial description.
 

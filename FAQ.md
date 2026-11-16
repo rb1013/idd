@@ -112,6 +112,9 @@ Yes, each guardian can create a limited number per month (currently **10**). The
 ### Can other families see the YouTube videos I link?
 No. Linked YouTube videos are **private**. They don't appear in the shared library and aren't shown to other families.
 
+### Will my learner see ads in YouTube videos?
+Co-Heart never shows ads. But YouTube videos are played by YouTube, and YouTube may show ads before or during some videos. We play them in YouTube's privacy-enhanced mode to limit tracking. To avoid ads, choose videos from channels that don't run ads, or use AI-generated tutorials, which never have ads.
+
 ### Something went wrong generating my tutorial. What should I do?
 Email **coheartsupport@gmail.com** and let us know which tutorial it was.
 

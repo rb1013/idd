@@ -1,6 +1,6 @@
 # Co-Heart — App Store Description
 
-**Length:** 3,337 characters (Apple limit: 4,000)
+**Length:** 3,409 characters (Apple limit: 4,000)
 **Last updated:** 2026-11-15
 
 Paste the text inside the block below into App Store Connect → App Information → Description. The App Store shows plain text only, so headings are in CAPS and lists use • bullets.
@@ -50,7 +50,7 @@ SAFETY AND PRIVACY BUILT IN
 
 • Activity history is deleted automatically after 7 days.
 
-• No ads and no advertising trackers.
+• Co-Heart never shows ads or uses advertising trackers. Linked YouTube videos may include YouTube's own ads.
 
 • Guardians must be 18 or older, and learner profiles are created and managed only by their guardian.
 

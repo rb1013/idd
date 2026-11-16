@@ -33,6 +33,51 @@ This contradicts the README, `FAQ.md` and `PRIVACY_POLICY_AND_TERMS.md`, which a
 
 The app UI doesn't do any of this. It requires direct API calls using the public anon key and the guardian's own login token, both of which can be obtained from the app (network proxy or app bundle). See `TODO.md` → "Why 'the anon key is public' matters".
 
+### 4. Anyone can edit any tutorial's slides through `regenerate-frame` (🚨 found 2026-11-15)
+
+The slide editor's **Regenerate image** and **Save & regenerate audio** call the `regenerate-frame` edge function, which uses the service-role key (bypasses RLS). It:
+- **Has no caller check at all:** no `auth.getUser()`, no ownership check. Anyone with the public anon key can call it with any `frame_id`.
+- **Allows `approved` tutorials:** `['preview', 'rejected', 'approved']` (`regenerate-frame/index.ts:42`).
+
+So through a direct API call, anyone could:
+- Change the **narration text, audio or image** of an **approved tutorial in the shared library**, content other families' learners watch, with **no re-review**.
+- Do this to **other families' tutorials**, not just their own.
+- **Run up OpenAI costs** (each call generates an image or audio).
+
+Only the **caption** is protected: it's saved by a direct table update, and the frames RLS policy (`011_tutorial_platform_rls.sql:27`) only allows `preview` / `rejected`.
+
+**What the app itself allows** (`TutorialPreviewScreen.tsx:498`: the **✏️ Edit slide** button shows only for the creator, and only in `preview` / `rejected`):
+
+| Tutorial state | Editable in the app? |
+|---|---|
+| Public, `preview` | ✅ |
+| Public, `pending` | ❌ (Withdraw → back to `preview` → edit) |
+| Public, `rejected` | ✅ then resubmit |
+| Public, `approved` | ❌ and no way back to `preview` |
+| **Private** | ❌ **never**: private tutorials skip `preview` and are auto-`approved` when generation finishes (`process-tutorial-job/index.ts:124`), so a guardian **can't fix a bad slide in their own private tutorial** (only delete and regenerate, using quota) |
+
+**Decisions needed**
+- [ ] **Private tutorials:** should the creator be able to edit them? (Suggested: **yes**, since no review is involved. Either allow editing private `approved` tutorials, or land private tutorials in `preview` first like public ones.)
+- [ ] **Approved public tutorials:** keep **not editable**, or allow edits that **send them back to `pending`** for re-review?
+
+**Fix (whatever the decisions)**
+- [ ] `regenerate-frame`: require a logged-in caller (`auth.getUser()` → 401) who **owns** the tutorial (`created_by_guardian_id`, else 403), following the `delete-learner` pattern in `TODO.md`.
+- [ ] `regenerate-frame`: allow `approved` only under the chosen rule (e.g. private only), not for public library tutorials.
+- [ ] If edits of public `approved` tutorials are allowed, set `status = 'pending'` in the same request.
+- [ ] If private tutorials become editable in the app, update the **Edit slide** condition in `TutorialPreviewScreen.tsx:498` and the frames update RLS policy to match.
+- [ ] Redeploy: `cd packages/supabase && npx supabase functions deploy regenerate-frame`.
+- [ ] Test with direct API calls: no session → 401; another guardian's frame → 403; public approved frame → blocked (or moved back to `pending`).
+
+### ⚠️ Correction: edge-function caller audit
+
+`TODO.md` → "Edge functions that don't verify the caller" listed `regenerate-frame` and `process-tutorial-job` among functions that **check the logged-in user**. **That was wrong.** The original search counted the `Authorization` header those functions send **to OpenAI**, not a check of the caller. Re-checked (counting `auth.getUser` and reading the caller's `Authorization` header):
+
+| Checks the caller | **No caller check** |
+|---|---|
+| `create-user-account`, `delete-guardian`, `delete-learner`, `guardian-action`, `regenerate-tutorial`, `send-message`, `send-guardian-message` | `approve-tutorial`, `reject-tutorial`, `create-tutorial`, `check-tutorial-quota`, `check-email`, **`regenerate-frame`**, **`process-tutorial-job`** |
+
+`process-tutorial-job` is normally triggered by a database webhook (`tutorial_jobs` insert), but it can also be called directly, which would re-run a generation and spend AI credits. It should only accept calls carrying the webhook's secret (or the service-role key).
+
 ---
 
 ## Documentation mismatches caused by these gaps
@@ -242,6 +287,6 @@ Use two test guardians, **A** and **B**, each with a learner.
 ## Out of scope / follow-ups
 
 - **Storage:** tutorial images and audio are in a **public** bucket (`014_tutorial_push_storage.sql`), so a private tutorial's files can be opened by anyone with the exact URL. After Step 2, URLs are no longer readable from other people's frames, so guessing them is impractical. Acceptable for now. A private bucket with signed URLs would close it fully.
-- **Edge functions:** `approve-tutorial`, `reject-tutorial` and `create-tutorial` don't check the caller. Even with this RLS fix, anyone can approve a tutorial by calling `approve-tutorial` directly. See `TODO.md` → "Edge functions that don't verify the caller". **Fix both together.**
+- **Edge functions:** `approve-tutorial`, `reject-tutorial`, `create-tutorial`, `regenerate-frame` and `process-tutorial-job` don't check the caller (see Problem 4 and the corrected audit above). Even with this RLS fix, anyone can approve a tutorial by calling `approve-tutorial`, or change an approved tutorial's slides through `regenerate-frame`. See `TODO.md` → "Edge functions that don't verify the caller". **Fix both together.**
 - **Cleaner long-term design:** move Submit / Withdraw into an edge function, and remove guardians' direct `UPDATE` on `tutorials` entirely.
 - **Other tables:** confirm every table has RLS enabled (`select relname from pg_class where relkind = 'r' and relnamespace = 'public'::regnamespace and not relrowsecurity;` should return no rows).

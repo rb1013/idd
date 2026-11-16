@@ -6,6 +6,11 @@ const OPENAI_API_KEY        = Deno.env.get('OPENAI_API_KEY')!;
 const SUPABASE_URL          = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// Image model comes from the IMAGE_MODEL secret (Edge Functions → Secrets), so a retired
+// OpenAI model can be swapped without a code change. Read per call so updates apply right away.
+const DEFAULT_IMAGE_MODEL = 'gpt-image-2.6-flare';
+const imageModel = () => Deno.env.get('IMAGE_MODEL') || DEFAULT_IMAGE_MODEL;
+
 const IMAGE_SIZE   = '1024x1024';
 const TTS_VOICE    = 'nova';      // friendly, clear voice
 const TTS_MODEL    = 'tts-1';
@@ -212,7 +217,7 @@ async function generateScript(prompt: string): Promise<{ frames: FrameScript[] }
   return JSON.parse(jsonMatch[0]);
 }
 
-// ── DALL·E 3 image generation ─────────────────────────────────────────────────
+// ── OpenAI image generation (model from IMAGE_MODEL secret) ───────────────────
 
 async function generateAndStoreImage(
   supabase: ReturnType<typeof createClient>,
@@ -220,7 +225,7 @@ async function generateAndStoreImage(
   storagePath: string,
 ): Promise<string | null> {
   try {
-    // Request image from DALL·E 3
+    // Request image from OpenAI
     const res = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
@@ -228,7 +233,7 @@ async function generateAndStoreImage(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-image-1',
+        model: imageModel(),
         prompt,
         n: 1,
         size: IMAGE_SIZE,
@@ -237,12 +242,12 @@ async function generateAndStoreImage(
 
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(`DALL·E error: ${JSON.stringify(err)}`);
+      throw new Error(`Image generation error (${imageModel()}): ${JSON.stringify(err)}`);
     }
 
     const json = await res.json();
     const b64 = json.data?.[0]?.b64_json;
-    if (!b64) throw new Error('No image data returned from gpt-image-1');
+    if (!b64) throw new Error(`No image data returned from ${imageModel()}`);
 
     // Decode base64 → ArrayBuffer
     const binary = atob(b64);

@@ -5,6 +5,11 @@ const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!;
 const SUPABASE_URL   = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// Image model comes from the IMAGE_MODEL secret (Edge Functions → Secrets), so a retired
+// OpenAI model can be swapped without a code change. Read per call so updates apply right away.
+const DEFAULT_IMAGE_MODEL = 'gpt-image-2.6-flare';
+const imageModel = () => Deno.env.get('IMAGE_MODEL') || DEFAULT_IMAGE_MODEL;
+
 const IMAGE_BUCKET = 'tutorial-images';
 const AUDIO_BUCKET = 'tutorial-audio';
 
@@ -95,7 +100,7 @@ async function regenerateImage(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-image-1',
+      model: imageModel(),
       prompt,
       n: 1,
       size: '1024x1024',
@@ -105,11 +110,11 @@ async function regenerateImage(
   if (!res.ok) {
     let detail = '';
     try { detail = JSON.stringify(await res.json()); } catch { detail = await res.text().catch(() => ''); }
-    throw new Error(`Image error: ${res.status} — ${detail}`);
+    throw new Error(`Image error (${imageModel()}): ${res.status} — ${detail}`);
   }
   const json = await res.json();
   const b64 = json.data?.[0]?.b64_json;
-  if (!b64) throw new Error('No image data from gpt-image-1');
+  if (!b64) throw new Error(`No image data from ${imageModel()}`);
 
   const binary = atob(b64);
   const bytes = new Uint8Array(binary.length);
