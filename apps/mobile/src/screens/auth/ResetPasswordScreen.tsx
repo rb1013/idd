@@ -8,6 +8,7 @@ import AppText from '../../components/AppText';
 import { supabase } from '../../lib/supabase';
 import ContentContainer from '../../components/ContentContainer';
 import { passwordError, passwordMatchError, PASSWORD_HINT } from '../../lib/validators';
+import { loadGuardianCredentials, saveGuardianCredentials } from '../../lib/biometricStore';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, INPUT, BTN_SIZE, BTN_VARIANT, BUTTERFLY_BORDER,
 } from '../../constants/theme';
@@ -24,11 +25,22 @@ export default function ResetPasswordScreen() {
     if (matchErr) { Alert.alert('Password mismatch', matchErr); return; }
 
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    const { data, error } = await supabase.auth.updateUser({ password });
     if (error) {
       setLoading(false);
       Alert.alert('Error', error.message);
       return;
+    }
+    // If this device has saved guardian credentials for this same account (used by the learner
+    // dashboard's 🏠 to switch back), keep them in sync with the new password.
+    try {
+      const saved = await loadGuardianCredentials();
+      const email = data.user?.email;
+      if (saved && email && saved.email.toLowerCase() === email.toLowerCase()) {
+        await saveGuardianCredentials({ email: saved.email, password });
+      }
+    } catch {
+      // Not critical: the next guardian login re-saves the credentials anyway
     }
     // Sign out so the user logs in fresh with the new password
     await supabase.auth.signOut();

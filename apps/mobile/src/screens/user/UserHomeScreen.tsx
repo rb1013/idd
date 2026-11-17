@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, TouchableOpacity, Pressable, StyleSheet,
-  Modal, Dimensions, ScrollView, Animated, StatusBar,
+  Modal, Dimensions, ScrollView, Animated, StatusBar, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -134,6 +134,7 @@ export default function UserHomeScreen() {
   const { activeUser, setActiveUser, signOut } = useAuth();
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [showUserCard, setShowUserCard] = useState(false);
+  const [returningHome, setReturningHome] = useState(false);
   const [activityProgress, setActivityProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
 
@@ -180,12 +181,25 @@ export default function UserHomeScreen() {
 
   const firstName = activeUser?.name?.split(' ')[0] ?? 'there';
 
+  // 🏠 switches back to the guardian using the credentials saved at the guardian's last login.
+  // Sign-in errors used to be ignored, so a stale saved password (e.g. changed on another device)
+  // made the button look frozen. If switching fails for ANY reason (password rejected, network,
+  // unexpected error), sign out straight to the Login screen — no alert, since the learner may be
+  // the one holding the phone and can't read or dismiss it. The guardian then signs in again.
   async function handleReturnHome() {
-    const creds = await loadGuardianCredentials();
-    if (creds) {
-      await supabase.auth.signInWithPassword({ email: creds.email, password: creds.password });
-    } else {
+    if (returningHome) return;
+    setReturningHome(true);
+    try {
+      const creds = await loadGuardianCredentials();
+      if (creds) {
+        const { error } = await supabase.auth.signInWithPassword({ email: creds.email, password: creds.password });
+        if (!error) return;   // success: AuthContext switches to the guardian / learner select screen
+      }
       signOut();
+    } catch {
+      signOut();
+    } finally {
+      setReturningHome(false);
     }
   }
 
@@ -215,8 +229,10 @@ export default function UserHomeScreen() {
           style={s.headerBorder}
         >
           <View style={s.headerInner}>
-            <TouchableOpacity style={s.homeBtn} onPress={handleReturnHome} activeOpacity={0.75}>
-              <AppText style={s.homeIcon}>🏠</AppText>
+            <TouchableOpacity style={s.homeBtn} onPress={handleReturnHome} disabled={returningHome} activeOpacity={0.75}>
+              {returningHome
+                ? <ActivityIndicator size="small" color={NICO.primary} />
+                : <AppText style={s.homeIcon}>🏠</AppText>}
             </TouchableOpacity>
             <View style={s.headerCenter}>
               <AppText style={s.greeting}>Hi, {firstName}</AppText>
