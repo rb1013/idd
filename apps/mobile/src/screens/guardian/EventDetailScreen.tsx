@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Alert,
 } from 'react-native';
 import AppText from '../../components/AppText';
+import ReportFlag from '../../components/ReportFlag';
 import RainbowDivider from '../../components/RainbowDivider';
 import GuardianPeekSheet from '../../components/GuardianPeekSheet';
 import useNicoHeader from '../../hooks/useNicoHeader';
@@ -198,10 +199,13 @@ export default function EventDetailScreen() {
             <AppText style={s.eventName}>{event.name}</AppText>
             <AppText style={s.eventOrganiser}>By {event.guardianName}</AppText>
           </View>
-          {isOrganiser && (
+          {isOrganiser ? (
             <TouchableOpacity onPress={deleteEvent} style={s.deleteBtn} activeOpacity={0.7}>
               <AppText style={s.deleteBtnText}>🗑</AppText>
             </TouchableOpacity>
+          ) : (
+            // 🚩 for everyone except the host (who sees 🗑)
+            <ReportFlag target={{ area: 'event', eventId: event.id }} />
           )}
         </View>
 

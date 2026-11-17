@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useVisibleCount } from '../hooks/useVisibleCount';
+import GuardianReportsTab, { type GuardianReportArea } from '../components/GuardianReportsTab';
 
 interface SnapshotMessage {
   id: string;
@@ -26,7 +27,18 @@ interface StatRow {
   count: number;
 }
 
-type Tab = 'reports' | 'statistics';
+// 'reports' = learner-chat reports (existing `reports` table, unchanged); the guardian_* tabs are the
+// guardian-filed reports from migration 087 (GuardianReportsTab); 'statistics' = learner stats.
+type Tab = 'reports' | GuardianReportArea | 'statistics';
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'reports',          label: 'Learner chat' },
+  { key: 'guardian_chat',    label: 'Guardian chat' },
+  { key: 'discussion',       label: 'Discussions' },
+  { key: 'event',            label: 'Events' },
+  { key: 'guardian_profile', label: 'Guardian profiles' },
+  { key: 'statistics',       label: 'Statistics' },
+];
 
 const TABLE_COLS = ['Reported User', 'Reported By', 'Guardian', 'Reason', 'Date', 'Evidence'];
 
@@ -133,18 +145,23 @@ export default function ReportsPage() {
 
       {/* Tabs */}
       <div style={styles.tabBar}>
-        {(['reports', 'statistics'] as Tab[]).map(t => (
+        {TABS.map(t => (
           <button
-            key={t}
-            style={{ ...styles.tabBtn, ...(tab === t ? styles.tabBtnActive : {}) }}
-            onClick={() => setTab(t)}
+            key={t.key}
+            style={{ ...styles.tabBtn, ...(tab === t.key ? styles.tabBtnActive : {}) }}
+            onClick={() => setTab(t.key)}
           >
-            {t === 'reports' ? 'Reported Users' : 'Statistics'}
+            {t.label}
           </button>
         ))}
       </div>
 
-      {/* ── Reported Users tab ── */}
+      {/* ── Guardian-filed report tabs (guardian chat, discussions, events, guardian profiles) ── */}
+      {(tab === 'guardian_chat' || tab === 'discussion' || tab === 'event' || tab === 'guardian_profile') && (
+        <GuardianReportsTab key={tab} area={tab} />
+      )}
+
+      {/* ── Learner chat tab (reports table) ── */}
       {tab === 'reports' && (
         <>
           <div style={styles.filterBar}>

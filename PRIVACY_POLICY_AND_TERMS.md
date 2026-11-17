@@ -41,6 +41,9 @@ By creating a learner profile, you confirm that you are the learner's parent or 
 - Mood selections
 - Friend connections, and messages sent using pre-written phrases and picture-symbol cards (**learners cannot type free text**)
 
+### Reports
+- When you report a discussion post or reply, an event, a guardian chat, or a guardian's profile, we record who reported it, who it's about, the reason you chose, and **a copy of the reported content** as it was at that moment (for a chat, the recent messages; for a profile, the name and photo).
+
 ### Information collected automatically
 - A **push notification token** for your device, so we can send notifications
 - Basic technical information needed to run the service (for example, sign-in sessions and error information)
@@ -70,6 +73,7 @@ We do **not** use learner information for advertising, and we do **not** sell or
 - **Private tutorials** (including YouTube videos you link) are not shown to other families in the app.
 - **Shared tutorials** you choose to publish are reviewed by Co-Heart admins, then visible to all guardians.
 - **Co-Heart admins** can access information when needed to review tutorials, handle reports, and provide support.
+- **Reports** are seen only by Co-Heart admins. The person who is reported is not told who reported them.
 
 ## 5. Service providers we use
 
@@ -93,6 +97,7 @@ We may also disclose information if required by law, to protect someone's safety
 - **Activity check-off history:** 7 days, then deleted automatically
 - **Account, learner, and content data:** kept while your account is active
 - **After you delete your account:** we delete your account, your learner's profile, and associated data. Removal from all systems may take up to [30] days.
+- **Reports:** content you report, and content reported about you, is kept for moderation even if it is later edited or deleted, and even if either account is deleted. Reports are kept for as long as needed to review them and keep the community safe.
 
 ## 7. Your choices and rights
 

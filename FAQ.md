@@ -129,7 +129,13 @@ You manage your learner's friends: review and accept friend requests, and search
 No. To keep chat safe, learners communicate using **pre-written phrases** and **picture-symbol cards** (a communication board), not open typing. A profanity filter also checks every message as an extra safeguard.
 
 ### What can I do if someone bothers my learner?
-From inside your learner's chat, enter your **Guardian PIN** to **block** the other user, **report** them, or **delete** the chat.
+Open your learner's chat with that person and tap the **🛡️ red shield** at the top of the screen. Enter your **6-digit Guardian PIN** (it continues automatically once all 6 digits are entered), then choose an action:
+- **🗑️ Delete Chat** — removes the conversation.
+- **🚫 Block User** — removes them from your learner's friends list. You can unblock them later from the **Learner's Friends** page.
+- **📢 Report User** — sends a report to our team, who will review it **within 24 hours**. They stay your learner's friend unless you also block them.
+- **🔒 Block & Delete Chat** — blocks them and removes the conversation.
+
+The PIN keeps these controls away from your learner. If you need help, email **coheartsupport@gmail.com**.
 
 ---
 
@@ -142,6 +148,17 @@ Yes. Use the **Find** tab to search by name, county, or Regional Support Categor
 - **Events** — browse or create community events and RSVP (going, interested, or not going).
 - **Discussions** — post topics and reply to other guardians. You can edit or delete your own posts.
 - **Resources** — helpful information and support links.
+
+### How do I report something?
+Tap the **🚩** on the item, choose a reason (**Offensive**, **Spam**, **Harassment**, or **Sensitive**), and tap **Report**. You can report:
+- a discussion **post** or **reply**
+- an **event** (open it from the Events list)
+- a **guardian chat** (🚩 at the top of the chat)
+- a **guardian's profile** (on their profile card or in **Connections**)
+
+Our team reviews every report **within 24 hours**. The person you report is not told who reported them. You can't report your own content, and each item can be reported once — after that the 🚩 is dimmed and shows **Already Reported**. For anything urgent, email **coheartsupport@gmail.com**.
+
+To report someone in your **learner's** chat, use the guardian controls inside that chat (see *What can I do if someone bothers my learner?*).
 
 ---
 

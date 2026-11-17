@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
+import ReportFlag from '../../components/ReportFlag';
 import RainbowDivider from '../../components/RainbowDivider';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,7 +36,7 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-interface Post  { id: string; title: string; body: string; guardianName: string; createdAt: string }
+interface Post  { id: string; title: string; body: string; guardianName: string; guardianId: string; createdAt: string }
 interface Reply { id: string; content: string; guardianName: string; guardianId: string; createdAt: string }
 
 export default function DiscussionDetailScreen() {
@@ -69,7 +70,7 @@ export default function DiscussionDetailScreen() {
     const [{ data: p }, { data: r }] = await Promise.all([
       supabase
         .from('discussion_posts')
-        .select('id, title, body, created_at, guardians(full_name)')
+        .select('id, title, body, created_at, guardian_id, guardians(full_name)')
         .eq('id', postId)
         .single(),
       supabase
@@ -79,7 +80,7 @@ export default function DiscussionDetailScreen() {
         .order('created_at', { ascending: true }),
     ]);
 
-    if (p) setPost({ id: p.id, title: p.title, body: p.body, guardianName: (p.guardians as any)?.full_name ?? 'Unknown', createdAt: p.created_at });
+    if (p) setPost({ id: p.id, title: p.title, body: p.body, guardianName: (p.guardians as any)?.full_name ?? 'Unknown', guardianId: p.guardian_id, createdAt: p.created_at });
     setReplies((r ?? []).map((x: any) => ({ id: x.id, content: x.content, guardianName: x.guardians?.full_name ?? 'Unknown', guardianId: x.guardian_id, createdAt: x.created_at })));
     setLoading(false);
   }
@@ -126,7 +127,13 @@ export default function DiscussionDetailScreen() {
         ListHeaderComponent={
           post ? (
             <View style={s.postCard}>
-              <AppText style={s.postTitle}>{post.title}</AppText>
+              <View style={s.postTitleRow}>
+                <AppText style={[s.postTitle, s.postTitleFlex]}>{post.title}</AppText>
+                {/* 🚩 on other guardians' posts only */}
+                {post.guardianId !== guardian?.id && (
+                  <ReportFlag target={{ area: 'discussion_post', postId: post.id }} />
+                )}
+              </View>
               <AppText style={s.postBody}>{post.body}</AppText>
               <AppText style={s.postMeta}>{post.guardianName} · {timeAgo(post.createdAt)}</AppText>
               {replies.length > 0 && (
@@ -157,6 +164,10 @@ export default function DiscussionDetailScreen() {
                 <AppText style={[s.bubbleContent, isMe && s.bubbleContentMe]}>{r.content}</AppText>
                 <AppText style={[s.bubbleTime, isMe && s.bubbleTimeMe]}>{timeAgo(r.createdAt)}</AppText>
               </View>
+              {/* 🚩 on other guardians' replies only */}
+              {!isMe && (
+                <ReportFlag target={{ area: 'discussion_reply', replyId: r.id }} style={s.replyFlag} />
+              )}
             </View>
           );
         }}
@@ -211,6 +222,9 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: NICO.border,
     ...SHADOW.md,
   },
+  postTitleRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm },
+  postTitleFlex: { flex: 1 },
+  replyFlag:     { alignSelf: 'center' },
   postTitle:     { fontSize: scale(FONT_SIZE.xl), fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
   postBody:      { fontSize: FONT_SIZE.md, color: NICO.text, lineHeight: 22 },
   postMeta:      { ...TEXT_STYLE.hint, marginTop: SPACING.xs },

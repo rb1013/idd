@@ -3,6 +3,8 @@ import {
   View, Image, Modal, TouchableOpacity, ActivityIndicator, StyleSheet,
 } from 'react-native';
 import AppText from './AppText';
+import ReportFlag from './ReportFlag';
+import { useAuth } from '../lib/AuthContext';
 import {
   NICO, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT, scale,
 } from '../constants/theme';
@@ -13,6 +15,8 @@ function avatarColor(name: string) {
 }
 
 export interface GuardianPeekInfo {
+  /** Guardian id — used to report this profile and to hide 🚩 on your own profile */
+  id: string;
   name: string;
   photoUrl: string | null;
   county: string;
@@ -32,6 +36,7 @@ interface Props {
 // used from GuardianConnectionsScreen, EventsScreen, EventDetailScreen, and
 // TutorialLibraryScreen, which previously each had their own copy.
 export default function GuardianPeekSheet({ visible, guardian, loading, onClose, footer }: Props) {
+  const { guardian: me } = useAuth();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}>
@@ -53,6 +58,10 @@ export default function GuardianPeekSheet({ visible, guardian, loading, onClose,
                   <AppText style={styles.name} numberOfLines={1}>{guardian.name}</AppText>
                   {!!guardian.county && <AppText style={styles.county} numberOfLines={1}>📍 {guardian.county}</AppText>}
                 </View>
+                {/* 🚩 report this profile — hidden on your own profile */}
+                {guardian.id !== me?.id && (
+                  <ReportFlag target={{ area: 'guardian_profile', guardianId: guardian.id }} />
+                )}
               </View>
 
               {guardian.situationTags.length > 0 && (

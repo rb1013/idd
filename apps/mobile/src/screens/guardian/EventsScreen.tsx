@@ -4,6 +4,7 @@ import {
   Modal, ScrollView, TextInput,
 } from 'react-native';
 import AppText from '../../components/AppText';
+import ReportFlag from '../../components/ReportFlag';
 import RainbowDivider from '../../components/RainbowDivider';
 import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import GuardianPeekSheet from '../../components/GuardianPeekSheet';
@@ -547,6 +548,10 @@ export default function EventsScreen() {
                     <AppText style={s.nudgeTitle}>{selectedEvent.name}</AppText>
                     <AppText style={s.nudgeHost}>By {selectedEvent.guardianName}</AppText>
                   </View>
+                  {/* 🚩 for everyone except the host */}
+                  {selectedEvent.guardianId !== guardian?.id && (
+                    <ReportFlag target={{ area: 'event', eventId: selectedEvent.id }} />
+                  )}
                 </View>
 
                 <ScrollView style={s.nudgeBody} showsVerticalScrollIndicator={false}>

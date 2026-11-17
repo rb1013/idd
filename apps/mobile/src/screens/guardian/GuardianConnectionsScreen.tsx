@@ -17,6 +17,7 @@ import RainbowDivider from '../../components/RainbowDivider';
 import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
+import ReportFlag from '../../components/ReportFlag';
 import ActiveFilterChips from '../../components/ActiveFilterChips';
 import CountyFilterPill from '../../components/CountyFilterPill';
 import {
@@ -343,6 +344,10 @@ export default function GuardianConnectionsScreen() {
             <ActivityIndicator color={NICO.primary} />
           ) : (
             <View style={s.connectionActions}>
+              {/* 🚩 report this guardian's profile (never shown for yourself) */}
+              {item.guardianId !== guardian?.id && (
+                <ReportFlag target={{ area: 'guardian_profile', guardianId: item.guardianId }} />
+              )}
               <TouchableOpacity
                 style={s.connectionMsgBtn}
                 onPress={() => openChat(item)}
@@ -481,9 +486,15 @@ export default function GuardianConnectionsScreen() {
           {isProcessing || isSending ? (
             <ActivityIndicator color={NICO.primary} />
           ) : (
-            <TouchableOpacity style={s.connectionMsgBtn} onPress={() => sendRequest(item)} activeOpacity={0.8}>
-              <AppText style={s.connectionMsgIcon}>🤝</AppText>
-            </TouchableOpacity>
+            <View style={s.connectionActions}>
+              {/* 🚩 report this guardian's profile (never shown for yourself) */}
+              {item.guardianId !== guardian?.id && (
+                <ReportFlag target={{ area: 'guardian_profile', guardianId: item.guardianId }} />
+              )}
+              <TouchableOpacity style={s.connectionMsgBtn} onPress={() => sendRequest(item)} activeOpacity={0.8}>
+                <AppText style={s.connectionMsgIcon}>🤝</AppText>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
         {item.situationTags.length > 0 && (

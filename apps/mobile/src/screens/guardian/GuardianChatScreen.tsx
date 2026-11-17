@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
@@ -12,6 +12,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { GuardianNavParamList } from '../../navigation';
 import RainbowDivider from '../../components/RainbowDivider';
+import ReportFlag from '../../components/ReportFlag';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import {
   NICO, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT, scale,
@@ -37,6 +38,19 @@ export default function GuardianChatScreen() {
   const { conversationId } = route.params;
 
   useNicoHeader(navigation);
+
+  // 🚩 in the header reports the OTHER guardian in this conversation (never yourself)
+  useLayoutEffect(() => {
+    const flag = <ReportFlag target={{ area: 'guardian_chat', conversationId }} style={{ marginRight: SPACING.xs }} />;
+    navigation.setOptions({
+      headerRight: () => flag,
+      // iOS 26 wraps custom headerRight elements in a "Liquid Glass" pill by default —
+      // hidesSharedBackground turns that off so only our own element renders.
+      unstable_headerRightItems: () => [
+        { type: 'custom', element: flag, hidesSharedBackground: true },
+      ],
+    });
+  }, [navigation, conversationId]);
 
   const [messages, setMessages] = useState<GuardianMessage[]>([]);
   const [text, setText] = useState('');

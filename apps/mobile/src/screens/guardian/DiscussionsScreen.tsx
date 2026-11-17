@@ -13,6 +13,7 @@ import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import ActiveFilterChips from '../../components/ActiveFilterChips';
+import ReportFlag from '../../components/ReportFlag';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -154,6 +155,7 @@ export default function DiscussionsScreen() {
       .single();
     if (data) {
       setGuardianSheet({
+        id: data.id,
         name: data.full_name ?? '',
         photoUrl: data.photo_url ?? null,
         county: data.county ?? '',
@@ -420,13 +422,17 @@ export default function DiscussionsScreen() {
               onPress={() => navigation.navigate('DiscussionDetail', { postId: p.id })}
               activeOpacity={0.82}
             >
-              {(p.categoryLabel || tab === 'mine') && (
+              {(p.categoryLabel || tab === 'mine' || p.guardianId !== guardian?.id) && (
                 <View style={s.cardTopRow}>
                   {p.categoryLabel ? (
                     <View style={s.categoryBadge}>
                       <AppText style={s.categoryBadgeText}>{p.categoryLabel}</AppText>
                     </View>
                   ) : <View />}
+                  {/* 🚩 on other guardians' posts only (owners see ✏️ / 🗑️ on My Discussions) */}
+                  {tab !== 'mine' && p.guardianId !== guardian?.id && (
+                    <ReportFlag target={{ area: 'discussion_post', postId: p.id }} />
+                  )}
                   {tab === 'mine' && (
                     <View style={s.cardActions}>
                       <TouchableOpacity
