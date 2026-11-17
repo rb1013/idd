@@ -10,6 +10,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
+import { containsProfanity, isBlockedWordsError, showKindWordsAlert } from '../../lib/contentFilter';
 import { useAuth } from '../../lib/AuthContext';
 import { GuardianNavParamList } from '../../navigation';
 import {
@@ -82,6 +83,8 @@ export default function CreateEventScreen() {
     if (!venue.trim())        { Alert.alert('Required', 'Venue is required.'); return; }
     if (!description.trim()) { Alert.alert('Required', 'Description is required.'); return; }
     if (!guardian) return;
+    // Layer 1: in-app profanity check on all 4 text fields (server re-checks blocked_words)
+    if (containsProfanity(name, duration, venue, description)) { showKindWordsAlert('event'); return; }
 
     setSubmitting(true);
     const { data, error } = await supabase
@@ -99,7 +102,9 @@ export default function CreateEventScreen() {
       .select('id')
       .single();
 
-    if (error) {
+    if (isBlockedWordsError(error)) {
+      showKindWordsAlert('event');   // Layer 2: rejected by the database trigger (blocked_words)
+    } else if (error) {
       Alert.alert('Error', error.message);
     } else {
       await supabase.from('event_participants').insert({

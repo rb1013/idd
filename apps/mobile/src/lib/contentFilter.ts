@@ -2,13 +2,13 @@ import { Alert } from 'react-native';
 import { Filter } from 'bad-words';
 import wordConfig from './badWordsList.json';
 
-// Shared content filter for everything users write (chat, discussion posts, replies).
+// Shared content filter for everything users write (chat, discussion posts, replies, events).
 //
 // Two layers:
 //   1. In the app (this file): the bad-words library + badWordsList.json, checked before sending.
 //   2. On the server: the admin-managed blocked_words list (whole-word match), enforced by the
 //      chat edge functions (_shared/blockedWords.ts) and by database triggers for discussions
-//      (migration 085, contains_blocked_word). The app can't read that list, so it relies on
+//      and events (migrations 085/086, contains_blocked_word). The app can't read that list, so it relies on
 //      the server's rejection — see isBlockedWordsError().
 
 const filter = (() => {
@@ -32,6 +32,6 @@ export function isBlockedWordsError(error: { message?: string } | null | undefin
 }
 
 /** Standard alert shown when either layer blocks content. */
-export function showKindWordsAlert(what: 'message' | 'post' | 'reply' = 'message') {
+export function showKindWordsAlert(what: 'message' | 'post' | 'reply' | 'event' = 'message') {
   Alert.alert("Let's use kind words", `That ${what} contains language we can't ${what === 'message' ? 'send' : 'post'}.`);
 }
