@@ -3,8 +3,7 @@ import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
-import { Filter } from 'bad-words';
-import wordConfig from '../../lib/badWordsList.json';
+import { containsProfanity, showKindWordsAlert } from '../../lib/contentFilter';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -45,13 +44,6 @@ export default function GuardianChatScreen() {
   const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  const wordFilter = useRef<Filter | null>(null);
-  if (!wordFilter.current) {
-    const f = new Filter();
-    if (wordConfig.add.length) f.addWords(...wordConfig.add);
-    if (wordConfig.remove.length) f.removeWords(...wordConfig.remove);
-    wordFilter.current = f;
-  }
 
   useEffect(() => {
     fetchMessages();
@@ -98,8 +90,8 @@ export default function GuardianChatScreen() {
     if (!trimmed || !guardian) return;
 
     // Layer 1: client-side profanity check
-    if (wordFilter.current?.isProfane(trimmed)) {
-      Alert.alert("Let's use kind words", 'That message contains language we can\'t send.');
+    if (containsProfanity(trimmed)) {
+      showKindWordsAlert('message');
       return;
     }
 
@@ -116,7 +108,7 @@ export default function GuardianChatScreen() {
 
     if (error || data?.error) {
       if (data?.error === 'blocked') {
-        Alert.alert("Let's use kind words", 'That message contains language we can\'t send.');
+        showKindWordsAlert('message');
       } else {
         let detail = data?.error ?? error?.message ?? 'Failed to send';
         try {

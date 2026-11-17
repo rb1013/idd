@@ -2,7 +2,7 @@
 
 **Status:** Proposed, not applied yet
 **Written:** 2026-11-14
-**Planned migration:** `packages/supabase/migrations/085_tutorial_access_hardening.sql`
+**Planned migration:** `packages/supabase/migrations/086_tutorial_access_hardening.sql`
 **Related:** `TODO.md` → "Guardians can skip tutorial review"
 
 ---
@@ -253,7 +253,7 @@ create trigger guard_tutorial_writes
 
 ## Step 5: Apply
 
-1. Put Steps 1–4 into `packages/supabase/migrations/085_tutorial_access_hardening.sql`.
+1. Put Steps 1–4 into `packages/supabase/migrations/086_tutorial_access_hardening.sql`.
 2. Run it in the **Supabase SQL Editor**, the same way as other migrations. Ideally do it in a single transaction (`begin; … commit;`) so a failure leaves nothing half-applied.
 3. If you get *"infinite recursion detected in policy"* (`tutorials` ↔ `user_tutorials` referencing each other), move the Step 1 linked-tutorial check into a small `SECURITY DEFINER` function, e.g. `is_tutorial_linked_to_me(tutorial_id uuid) returns boolean`, and call it from the policy.
 4. Before running, confirm the policy names in the `drop policy` lines match what's live: Dashboard → Authentication → Policies, or `select policyname from pg_policies where tablename in ('tutorials','tutorial_frames','user_tutorials');`. Some may have been renamed in the dashboard.

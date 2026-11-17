@@ -16,6 +16,7 @@ import ActiveFilterChips from '../../components/ActiveFilterChips';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
+import { containsProfanity, isBlockedWordsError, showKindWordsAlert } from '../../lib/contentFilter';
 import { useAuth } from '../../lib/AuthContext';
 import { GuardianNavParamList } from '../../navigation';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
@@ -233,6 +234,8 @@ export default function DiscussionsScreen() {
 
   async function submitPost() {
     if (!newTitle.trim() || !newBody.trim() || !guardian) return;
+    // Layer 1: in-app profanity check on topic + details (server re-checks blocked_words)
+    if (containsProfanity(newTitle, newBody)) { showKindWordsAlert('post'); return; }
     setSubmitting(true);
     const { error } = editingPostId
       ? await supabase.from('discussion_posts').update({
@@ -246,7 +249,9 @@ export default function DiscussionsScreen() {
           body: newBody.trim(),
           category_id: selectedCategory?.id ?? null,
         });
-    if (error) {
+    if (isBlockedWordsError(error)) {
+      showKindWordsAlert('post');   // Layer 2: rejected by the database trigger (blocked_words)
+    } else if (error) {
       Alert.alert('Error', error.message);
     } else {
       closeCreateSheet();

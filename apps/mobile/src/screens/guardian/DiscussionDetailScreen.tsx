@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
+import { containsProfanity, isBlockedWordsError, showKindWordsAlert } from '../../lib/contentFilter';
 import { useAuth } from '../../lib/AuthContext';
 import { GuardianNavParamList } from '../../navigation';
 import {
@@ -85,13 +86,17 @@ export default function DiscussionDetailScreen() {
 
   async function submitReply() {
     if (!replyText.trim() || !guardian) return;
+    // Layer 1: in-app profanity check (server re-checks blocked_words)
+    if (containsProfanity(replyText)) { showKindWordsAlert('reply'); return; }
     setSending(true);
     const { error } = await supabase.from('discussion_replies').insert({
       post_id: postId,
       guardian_id: guardian.id,
       content: replyText.trim(),
     });
-    if (error) {
+    if (isBlockedWordsError(error)) {
+      showKindWordsAlert('reply');   // Layer 2: rejected by the database trigger (blocked_words)
+    } else if (error) {
       Alert.alert('Error', error.message);
     } else {
       setReplyText('');

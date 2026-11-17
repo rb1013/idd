@@ -4,8 +4,7 @@ import {
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
   Alert, Image, Modal,
 } from 'react-native';
-import { Filter } from 'bad-words';
-import wordConfig from '../../lib/badWordsList.json';
+import { containsProfanity } from '../../lib/contentFilter';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { speakLearner } from '../../lib/speech';
 // import { Audio } from 'expo-av'; // requires native rebuild — enable when running npx expo run:ios
@@ -89,13 +88,6 @@ export default function ChatScreen() {
     speakLearner("Let's use kind words!");
   }
 
-  const wordFilter = useRef<Filter | null>(null);
-  if (!wordFilter.current) {
-    const f = new Filter();
-    if (wordConfig.add.length) f.addWords(...wordConfig.add);
-    if (wordConfig.remove.length) f.removeWords(...wordConfig.remove);
-    wordFilter.current = f;
-  }
 
   async function handleShieldPinSubmit() {
     if (pinValue.length !== 6 || !activeUser?.guardian_id) return;
@@ -258,7 +250,7 @@ export default function ChatScreen() {
     if (!trimmed || !activeUser) return;
 
     // Layer 1: client-side profanity check
-    if (wordFilter.current?.isProfane(trimmed)) {
+    if (containsProfanity(trimmed)) {
       setBlockedVisible(true);
       playBlockedFeedback();
       return;
