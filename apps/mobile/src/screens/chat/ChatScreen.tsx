@@ -18,6 +18,8 @@ import { UserStackParamList } from '../../navigation';
 import CommunicationBoard from './CommunicationBoard';
 import { isSymbolMessage } from '../../lib/aacSymbols';
 import AppText from '../../components/AppText';
+import KeyboardAvoidingModalView from '../../components/KeyboardAvoidingModalView';
+import { useAutoSubmitCode } from '../../hooks/useAutoSubmitCode';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
@@ -108,6 +110,9 @@ export default function ChatScreen() {
     resetGuardianModal();
     setGuardianModalVisible(true);
   }
+
+  // Verify automatically once all 6 digits are typed (Verify button stays as a fallback)
+  useAutoSubmitCode(pinValue, 6, handleShieldPinSubmit, pinModalVisible && !pinLoading);
 
   function resetGuardianModal() {
     setActionStep('menu');
@@ -431,6 +436,8 @@ export default function ChatScreen() {
         animationType="fade"
         onRequestClose={() => { setPinModalVisible(false); setPinValue(''); setPinError(''); }}
       >
+        {/* Lifts the PIN sheet above the number pad so Cancel / Verify stay reachable */}
+        <KeyboardAvoidingModalView>
         <TouchableOpacity
           style={guardianStyles.overlay}
           activeOpacity={1}
@@ -472,6 +479,7 @@ export default function ChatScreen() {
             </View>
           </View>
         </TouchableOpacity>
+        </KeyboardAvoidingModalView>
       </Modal>
 
       {/* Guardian action modal */}
@@ -607,7 +615,7 @@ export default function ChatScreen() {
                   {selectedAction === 'report_user' && (
                     <View style={guardianStyles.noteBox}>
                       <Text style={guardianStyles.noteTxt}>
-                        ℹ️ {participantName} will be reported to admin to take any further action. They will still be your learner's friend.
+                        ℹ️ {participantName} will be reported to admin to take any further action within 24hrs. They will still be your learner's friend. For more details, contact coheartsupport@gmail.com.
                       </Text>
                     </View>
                   )}
