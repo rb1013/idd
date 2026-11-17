@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { containsBlockedWord } from '../_shared/blockedWords.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -77,10 +78,8 @@ Deno.serve(async (req) => {
       .select('word');
 
     if (blockedWords && blockedWords.length > 0) {
-      const lowerContent = content.toLowerCase();
-      const isBlocked = blockedWords.some(({ word }: { word: string }) =>
-        lowerContent.includes(word.toLowerCase())
-      );
+      // Whole-word match, so e.g. "ass" doesn't block "class"
+      const isBlocked = containsBlockedWord(content, blockedWords.map(({ word }: { word: string }) => word));
       if (isBlocked) {
         return new Response(JSON.stringify({ error: 'blocked' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
