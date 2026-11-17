@@ -23,6 +23,8 @@ Apple requires apps with user-generated content to have **all of**: a content fi
 - [ ] Add **Block guardian** (hides their posts, replies, events and messages)
 - [ ] Run the blocked-words filter on discussion posts, replies and events (as `send-guardian-message` does)
 - [ ] Make sure admins can see and act on reports (admin portal)
+- [] Purge reports which are resolved after 1 month
+- [] update privacy policy - Content you report, and content reported about you, is kept for moderation even if later edited or deleted." it will be deleted after 1 month
 
 ### 2. Terms (EULA) and privacy policy in the app (Guidelines 1.2, 5.1.1)
 
