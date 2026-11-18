@@ -22,23 +22,23 @@ Full text: [App Store Review Guidelines](https://developer.apple.com/app-store/r
 
 ## 🔴 High risk: likely rejection
 
-### 1. User-generated content: report and block missing (Guideline 1.2)
+### 1. User-generated content: filter, report and block (Guideline 1.2): ✅ done in app (2026-11-17); admin moderation tools still open
 
 Apple requires apps with user-generated content to have **all of**: a content filter, a way to **report** content, a way to **block** abusive users, and published contact info.
 
 | Area | Filter | Report | Block |
 |---|---|---|---|
 | Learner chat (`apps/mobile/src/screens/chat/ChatScreen.tsx`) | ✅ | ✅ | ✅ |
-| Guardian-to-guardian chat (`apps/mobile/src/screens/guardian/GuardianChatScreen.tsx`) | ✅ app + server (`send-guardian-message`, whole-word) | ❌ | ❌ |
-| **Discussions** posts and replies (`DiscussionsScreen.tsx`, `DiscussionDetailScreen.tsx`) | ✅ app (`lib/contentFilter.ts`) + server trigger (migration `085`) | ❌ | ❌ |
-| **Events** (name, duration, venue, description) | ✅ app (`lib/contentFilter.ts`) + server trigger (migration `086`) | ❌ | ❌ |
-| Guardian profiles (Connections) | — | ❌ | ❌ |
+| Guardian-to-guardian chat (`apps/mobile/src/screens/guardian/GuardianChatScreen.tsx`) | ✅ app + server (`send-guardian-message`, whole-word) | ✅ 🚩 header (`087`) | ✅ 🚫 header (`088`) |
+| **Discussions** posts and replies (`DiscussionsScreen.tsx`, `DiscussionDetailScreen.tsx`) | ✅ app (`lib/contentFilter.ts`) + server trigger (migration `085`) | ✅ 🚩 post + reply (`087`) | ✅ via peek sheet 🚫 (`088`, hidden both ways) |
+| **Events** (name, duration, venue, description) | ✅ app (`lib/contentFilter.ts`) + server trigger (migration `086`) | ✅ 🚩 event sheet / detail (`087`) | ✅ via peek sheet 🚫 (`088`, hidden both ways) |
+| Guardian profiles (Connections + peek sheet) | — | ✅ 🚩 (`087`) | ✅ 🚫 Connected / Requests / Find / peek sheet; **Blocked** tab to unblock (`088`, `089`) |
 
 #### Filter
 - [x] Shared in-app filter `apps/mobile/src/lib/contentFilter.ts` (chat, discussions, events)
 - [x] Server whole-word `blocked_words` check: chat edge functions (`_shared/blockedWords.ts`), discussions (`085`), events (`086`)
 - [ ] **Deploy / apply:** `send-message` + `send-guardian-message`, then run migrations `085` and `086` in the SQL Editor
-- [ ] Guardian chat: remove direct `INSERT` on `guardian_messages` (`077_guardian_chat.sql:72`) so the server filter can't be bypassed
+- [x] Guardian chat: remove direct `INSERT` on `guardian_messages` (`077_guardian_chat.sql:72`) so the server filter can't be bypassed (done in `088`)
 
 #### Report: agreed design (2026-11-16)
 Learner chat is **not touched**; its existing `reports` table stays for learner chat only.
@@ -57,9 +57,9 @@ Learner chat is **not touched**; its existing `reports` table stays for learner 
 - **Snapshot kept** alongside the IDs: reported content may be edited or deleted afterwards (posts/events can be edited/deleted; replies cascade with their post; account deletion cascades everything)
 
 Tasks:
-- [ ] Migration: create the 4 tables (`reason` / `status` as **text + CHECK**, not enums; `status` default `open`; plus **`resolved_at`** and **`resolved_by`**, set by Mark resolved and needed by the later purge job; FKs to reported content use `ON DELETE SET NULL` so reports survive deletion)
-- [ ] Database trigger per table: fill `reported_guardian_id` and the snapshot from the real record (not from the app); reject reporting yourself; one report per guardian per item (unique)
-- [ ] RLS: guardians can **insert** their own reports only (no read/update/delete); admins can read and update
+- [x] Migration: create the 4 tables (`reason` / `status` as **text + CHECK**, not enums; `status` default `open`; plus **`resolved_at`** and **`resolved_by`**, set by Mark resolved and needed by the later purge job; FKs to reported content use `ON DELETE SET NULL` so reports survive deletion)
+- [x] Database trigger per table: fill `reported_guardian_id` and the snapshot from the real record (not from the app); reject reporting yourself; one report per guardian per item (unique)
+- [x] RLS: guardians can **insert** their own reports only (no read/update/delete); admins can read and update
 - [x] App: shared report helper `lib/reporting.ts` + `components/ReportFlag.tsx` (🚩 opens a report sheet with a reason dropdown + Cancel / Report; save, "already reported" handling, thank-you message: *"Thanks, our team will review this within 24 hours. For more details, contact coheartsupport@gmail.com."*)
 - [x] App: **Report** button on: discussion post (detail screen), each reply, event detail sheet, guardian chat header, **guardian peek sheet** (opened from Discussions, Events, Event detail, Tutorial library) **and Connections cards** (Connected + Find; Connections doesn't use the peek sheet)
 - [x] App: add the guardian's `id` to `GuardianPeekInfo` (`components/GuardianPeekSheet.tsx`) and pass it in the 4 places that open the sheet (`DiscussionsScreen.tsx:156`, `EventsScreen.tsx:254`, `EventDetailScreen.tsx:149`, `TutorialLibraryScreen.tsx:84`), needed to report the guardian and to hide 🚩 on your own profile
@@ -74,8 +74,17 @@ Tasks:
 - [ ] When the purge job is built: add *"Resolved reports are deleted after 1 month."* to privacy policy §6 (left out until then so the policy doesn't promise something that doesn't happen yet)
 - [ ] Test: report each area; own content shows no Report; duplicate report → "already reported"; snapshot survives edit/delete; admin can view and resolve
 
-#### Block (separate, still to design)
-- [ ] Add **Block guardian** (hides their posts, replies, events and messages)
+#### Block: done 2026-11-17 (details: `docs/guardian-block.md`)
+- [x] **Database** (`088_guardian_blocks.sql`): `guardian_blocks` table; hidden **both ways** via restrictive RLS (posts, replies, events, attendees, profiles, connections, chats/messages, tutorials, notifications); interaction stopped (replies, RSVPs, connection requests, opening/sending chat); on block, connection + RSVPs between the two removed silently
+- [x] **Blocked list** (`089_get_my_blocked_guardians.sql`) and notification sources (`090_notification_source_guardian.sql`) so reply/connection notifications are hidden too
+- [x] **`send-guardian-message`** refuses blocked pairs (deployed)
+- [x] **App:** 🚫 (`components/BlockButton.tsx`, `lib/blocking.ts`) in guardian peek sheet, chat header, Connections cards (Connected two-row layout, Requests, Find); **Connections → Blocked** tab with Unblock
+- [x] **FAQ:** "How do I block a guardian?" / "How do I unblock someone?"
+- [ ] Privacy policy line: blocks you create are stored and visible only to you (and admins) (`docs/guardian-block.md` 4.2)
+- [ ] Finish end-to-end tests (sections 6–11 in `docs/guardian-block.md`; 1–5 and notifications passed)
+
+#### Still open for Guideline 1.2: admin moderation
+- [ ] Admins must be able to **remove reported content** and **suspend/remove guardians** within 24 hours; today only via the Supabase dashboard (see `docs/admin-todo.md`)
 
 #### Not in scope
 - Learner chat (unchanged; its "Report User" still saves no message snapshot)

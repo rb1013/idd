@@ -111,7 +111,7 @@ No filtering code is needed in Discussions, Events, Tutorials or Notifications; 
 
 - [x] **4.1 FAQ**: *"How do I block a guardian?"* (🚫 locations; hides both ways; the other person isn't told; unblock in Connections → Blocked; learners' friendships aren't affected; RSVPs between you are removed)
 - [ ] **4.2 Privacy policy**: blocks you create are stored and visible only to you (and admins)
-- [ ] **4.3 Apple checklist #1**: mark Block done for guardians; update App Review notes ("users can report and block")
+- [x] **4.3 Apple checklist #1**: mark Block done for guardians; update App Review notes ("users can report and block")
 
 ## Phase 5: Testing
 
