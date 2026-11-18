@@ -148,7 +148,9 @@ When using Co-Heart, you agree **not** to:
 - Post spam, ads, or misleading information
 - Interfere with the app, bypass its safety or review features, access data that isn't yours, or misuse our systems (for example, by calling our servers outside the app to get around limits)
 
-We may remove content, limit features, or suspend or close accounts that break these rules. Please report concerns in the app or to **coheartsupport@gmail.com**.
+Co-Heart has **zero tolerance** for objectionable content and abusive users. We review reports **within 24 hours** and remove content that breaks these rules, and may suspend or permanently remove the accounts responsible.
+
+We may also remove content, limit features, or suspend or close accounts that break these rules. Please report concerns in the app or to **coheartsupport@gmail.com**.
 
 ## 4. Your content
 You keep ownership of what you post (for example, discussion posts, events, and tutorials you create). You give us a non-exclusive, royalty-free license to host, display, and process that content to run Co-Heart. If you **share a tutorial with other guardians**, you also allow other guardians to view it and use it with their learners for as long as it remains in the shared library. You confirm you have the rights to anything you post or link.
