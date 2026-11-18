@@ -273,6 +273,8 @@ export default function EventDetailScreen() {
         guardian={guardianSheet}
         loading={loadingGuardianSheet}
         onClose={closeGuardianSheet}
+        // Blocked the host → this event is now hidden, so leave; otherwise refresh the attendee list
+        onBlocked={id => { if (id === event.guardianId) navigation.goBack(); else load(); }}
       />
     </View>
   );

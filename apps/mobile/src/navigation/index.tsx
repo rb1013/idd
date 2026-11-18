@@ -97,7 +97,7 @@ export type GuardianNavParamList = {
   LearnerFriendRequests: undefined;
   LearnerFriends: undefined;
   GuardianConnections: undefined;
-  GuardianChat: { conversationId: string; participantName: string; participantPhoto?: string | null };
+  GuardianChat: { conversationId: string; participantName: string; participantPhoto?: string | null; participantId?: string };
   Discussions: undefined;
   DiscussionDetail: { postId: string };
   Events: { tab?: 'mine' | 'upcoming' } | undefined;

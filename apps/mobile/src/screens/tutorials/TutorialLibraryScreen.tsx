@@ -386,6 +386,7 @@ export default function TutorialLibraryScreen() {
         guardian={guardianSheet}
         loading={loadingGuardianSheet}
         onClose={closeGuardianSheet}
+        onBlocked={() => loadTutorials()}   // their shared tutorials disappear
       />
 
       <GuardianFloatingTabBar />

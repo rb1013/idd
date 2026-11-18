@@ -67,6 +67,36 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Guardian block (migration 088): refuse if either guardian has blocked the other.
+    // This function uses the service role (bypasses RLS), so it checks guardian_blocks itself.
+    const { data: others } = await supabaseAdmin
+      .from('guardian_conversation_participants')
+      .select('guardian_id')
+      .eq('conversation_id', conversation_id)
+      .neq('guardian_id', senderId);
+    const otherIds = (others ?? []).map((o: { guardian_id: string }) => o.guardian_id);
+    if (otherIds.length > 0) {
+      const { data: blocks, error: blockErr } = await supabaseAdmin
+        .from('guardian_blocks')
+        .select('blocker_guardian_id')
+        .or(
+          otherIds.map(o =>
+            `and(blocker_guardian_id.eq.${senderId},blocked_guardian_id.eq.${o}),and(blocker_guardian_id.eq.${o},blocked_guardian_id.eq.${senderId})`,
+          ).join(','),
+        )
+        .limit(1);
+      if (blockErr) {
+        return new Response(JSON.stringify({ error: 'Block check failed', detail: blockErr.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (blocks && blocks.length > 0) {
+        return new Response(JSON.stringify({ error: 'GUARDIAN_BLOCKED' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // Layer 2: check custom blocked_words table (same list used by learner chat)
     const { data: blockedWords } = await supabaseAdmin
       .from('blocked_words')

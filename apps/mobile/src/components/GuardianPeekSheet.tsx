@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import AppText from './AppText';
 import ReportFlag from './ReportFlag';
+import BlockButton from './BlockButton';
 import { useAuth } from '../lib/AuthContext';
 import {
   NICO, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT, scale,
@@ -30,12 +31,14 @@ interface Props {
   onClose: () => void;
   /** Optional extra content (e.g. Connect/Accept buttons) rendered below the note. */
   footer?: React.ReactNode;
+  /** Called after this guardian is blocked (🚫) — close the sheet and refresh the screen behind. */
+  onBlocked?: (guardianId: string) => void;
 }
 
 // Single shared "sneak peek" bottom sheet for tapping a guardian's name —
 // used from GuardianConnectionsScreen, EventsScreen, EventDetailScreen, and
 // TutorialLibraryScreen, which previously each had their own copy.
-export default function GuardianPeekSheet({ visible, guardian, loading, onClose, footer }: Props) {
+export default function GuardianPeekSheet({ visible, guardian, loading, onClose, footer, onBlocked }: Props) {
   const { guardian: me } = useAuth();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -60,7 +63,14 @@ export default function GuardianPeekSheet({ visible, guardian, loading, onClose,
                 </View>
                 {/* 🚩 report this profile — hidden on your own profile */}
                 {guardian.id !== me?.id && (
-                  <ReportFlag target={{ area: 'guardian_profile', guardianId: guardian.id }} />
+                  <View style={styles.safetyActions}>
+                    <ReportFlag target={{ area: 'guardian_profile', guardianId: guardian.id }} />
+                    <BlockButton
+                      guardianId={guardian.id}
+                      guardianName={guardian.name}
+                      onBlocked={() => { onClose(); onBlocked?.(guardian.id); }}
+                    />
+                  </View>
                 )}
               </View>
 
@@ -104,6 +114,7 @@ const styles = StyleSheet.create({
   avatarFallback: { justifyContent: 'center', alignItems: 'center' },
   avatarInitial: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
   info: { flex: 1, minWidth: 0, gap: 2 },
+  safetyActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   name: { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
   county: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.medium, color: NICO.text },
 

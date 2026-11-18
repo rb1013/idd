@@ -160,6 +160,12 @@ Our team reviews every report **within 24 hours**. The person you report is not 
 
 To report someone in your **learner's** chat, use the guardian controls inside that chat (see *What can I do if someone bothers my learner?*).
 
+### How do I block a guardian?
+Tap **🚫** next to their name (on their profile card, at the top of your chat, or on their card in **Connections**), then tap **Block**. You won't see each other's posts, events, or profile, and you can't message each other. Your connection and any RSVPs between you are removed. They aren't told. Your learners' friendship isn't affected.
+
+### How do I unblock someone?
+Go to **Connections → Blocked** and tap **Unblock**. You won't be reconnected; send a new request if you'd like to connect again.
+
 ---
 
 ## Privacy, safety & your data

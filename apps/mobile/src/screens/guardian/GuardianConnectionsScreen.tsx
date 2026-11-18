@@ -18,6 +18,8 @@ import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import ReportFlag from '../../components/ReportFlag';
+import BlockButton from '../../components/BlockButton';
+import { unblockGuardian } from '../../lib/blocking';
 import ActiveFilterChips from '../../components/ActiveFilterChips';
 import CountyFilterPill from '../../components/CountyFilterPill';
 import {
@@ -49,7 +51,9 @@ function toggle<T>(arr: T[], val: T): T[] {
 }
 
 type Status = 'none' | 'pending_sent' | 'pending_received' | 'accepted' | 'rejected';
-type Tab = 'connected' | 'requests' | 'find';
+type Tab = 'connected' | 'requests' | 'find' | 'blocked';
+
+interface BlockedGuardian { guardianId: string; name: string; photoUrl: string | null; county: string }
 type RequestsSubTab = 'sent' | 'received';
 
 interface GuardianResult {
@@ -83,6 +87,7 @@ export default function GuardianConnectionsScreen() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [unreadMap, setUnreadMap]   = useState<Record<string, number>>({});
   const [openingChat, setOpeningChat] = useState<string | null>(null);
+  const [blockedGuardians, setBlockedGuardians] = useState<BlockedGuardian[]>([]);
   // Guardian whose chat was most recently opened — the next unread-count
   // refetch forces this entry to 0 so a racy stale server read (see
   // mark_guardian_conversation_read's unmount-time call) can't clobber a
@@ -107,6 +112,7 @@ export default function GuardianConnectionsScreen() {
     useCallback(() => {
       if (guardian) {
         load(guardian.id);
+        loadBlocked();
         supabase.rpc('get_guardian_unread_counts', { p_guardian_id: guardian.id }).then(({ data }) => {
           const map: Record<string, number> = {};
           (data ?? []).forEach((r: any) => { map[r.other_guardian_id] = Number(r.unread_count); });
@@ -135,7 +141,29 @@ export default function GuardianConnectionsScreen() {
     recentChatGuardianRef.current = item.guardianId;
     navigation.navigate('GuardianChat', {
       conversationId, participantName: item.guardianName, participantPhoto: item.photoUrl || null,
+      participantId: item.guardianId,   // needed for 🚫 in the chat header
     });
+  }
+
+  // Blocked tab: guardians I blocked. Their profiles are hidden from me (migration 088), so this
+  // comes from get_my_blocked_guardians() (migration 089), which only returns my own blocks.
+  async function loadBlocked() {
+    const { data } = await supabase.rpc('get_my_blocked_guardians');
+    setBlockedGuardians((data ?? []).map((b: any) => ({
+      guardianId: b.guardian_id, name: b.full_name ?? 'Unknown', photoUrl: b.photo_url ?? null, county: b.county ?? '',
+    })));
+  }
+
+  // After blocking from a card: the database removed the connection / requests, so drop the card now
+  function onGuardianBlocked(guardianId: string) {
+    setResults(prev => prev.filter(r => r.guardianId !== guardianId));
+    loadBlocked();
+  }
+
+  async function unblock(b: BlockedGuardian) {
+    if (!(await unblockGuardian(b.guardianId, b.name))) return;
+    setBlockedGuardians(prev => prev.filter(x => x.guardianId !== b.guardianId));
+    if (guardian) load(guardian.id);   // they reappear in Find (not reconnected)
   }
 
   async function load(myId: string) {
@@ -343,11 +371,9 @@ export default function GuardianConnectionsScreen() {
           {processing === item.guardianId ? (
             <ActivityIndicator color={NICO.primary} />
           ) : (
+            // 4 icons → two rows (decision 10a): 💬 ✕ on top, 🚩 🚫 below
+            <View style={s.actionsColumn}>
             <View style={s.connectionActions}>
-              {/* 🚩 report this guardian's profile (never shown for yourself) */}
-              {item.guardianId !== guardian?.id && (
-                <ReportFlag target={{ area: 'guardian_profile', guardianId: item.guardianId }} />
-              )}
               <TouchableOpacity
                 style={s.connectionMsgBtn}
                 onPress={() => openChat(item)}
@@ -372,6 +398,13 @@ export default function GuardianConnectionsScreen() {
               >
                 <AppText style={s.disconnectIcon}>✕</AppText>
               </TouchableOpacity>
+            </View>
+            {item.guardianId !== guardian?.id && (
+              <View style={s.connectionActions}>
+                <ReportFlag target={{ area: 'guardian_profile', guardianId: item.guardianId }} />
+                <BlockButton guardianId={item.guardianId} guardianName={item.guardianName} onBlocked={() => onGuardianBlocked(item.guardianId)} />
+              </View>
+            )}
             </View>
           )}
         </View>
@@ -404,8 +437,11 @@ export default function GuardianConnectionsScreen() {
             <AppText style={s.connectionName} numberOfLines={1}>{item.guardianName}</AppText>
             {item.county ? <AppText style={s.connectionCounty} numberOfLines={1}>{item.county}</AppText> : null}
           </View>
-          <View style={badge.style}>
-            <AppText style={badge.textStyle}>{badge.label}</AppText>
+          <View style={s.connectionActions}>
+            <BlockButton guardianId={item.guardianId} guardianName={item.guardianName} onBlocked={() => onGuardianBlocked(item.guardianId)} />
+            <View style={badge.style}>
+              <AppText style={badge.textStyle}>{badge.label}</AppText>
+            </View>
           </View>
         </View>
         {item.situationTags.length > 0 && (
@@ -439,6 +475,7 @@ export default function GuardianConnectionsScreen() {
             <ActivityIndicator color={NICO.primary} />
           ) : (
             <View style={s.connectionActions}>
+              <BlockButton guardianId={item.guardianId} guardianName={item.guardianName} onBlocked={() => onGuardianBlocked(item.guardianId)} />
               <TouchableOpacity
                 style={[s.connectionMsgBtn, { backgroundColor: NICO.successLight, borderColor: NICO.success }]}
                 onPress={() => accept(item)}
@@ -491,6 +528,7 @@ export default function GuardianConnectionsScreen() {
               {item.guardianId !== guardian?.id && (
                 <ReportFlag target={{ area: 'guardian_profile', guardianId: item.guardianId }} />
               )}
+              <BlockButton guardianId={item.guardianId} guardianName={item.guardianName} onBlocked={() => onGuardianBlocked(item.guardianId)} />
               <TouchableOpacity style={s.connectionMsgBtn} onPress={() => sendRequest(item)} activeOpacity={0.8}>
                 <AppText style={s.connectionMsgIcon}>🤝</AppText>
               </TouchableOpacity>
@@ -514,7 +552,7 @@ export default function GuardianConnectionsScreen() {
 
       {/* Tab bar */}
       <View style={s.tabBar}>
-        {(['connected', 'requests', 'find'] as Tab[]).map(tab => (
+        {(['connected', 'requests', 'find', 'blocked'] as Tab[]).map(tab => (
           <TouchableOpacity
             key={tab}
             style={[s.tab, activeTab === tab && s.tabActive]}
@@ -522,7 +560,7 @@ export default function GuardianConnectionsScreen() {
             activeOpacity={0.8}
           >
             <AppText style={[s.tabTxt, activeTab === tab && s.tabTxtActive]}>
-              {tab === 'connected' ? 'My Connections' : tab === 'requests' ? 'Requests' : 'Find'}
+              {tab === 'connected' ? 'Connected' : tab === 'requests' ? 'Requests' : tab === 'find' ? 'Find' : 'Blocked'}
             </AppText>
             {tab === 'requests' && receivedRequests.length > 0 && (
               <View style={s.tabBadge}>
@@ -685,6 +723,42 @@ export default function GuardianConnectionsScreen() {
               )}
             </ScrollView>
           )}
+        </View>
+
+      ) : activeTab === 'blocked' ? (
+        /* ── Blocked tab: guardians I blocked ─────────────────────────────── */
+        <View style={s.tabPane}>
+          <ScrollView contentContainerStyle={s.list}>
+            {blockedGuardians.length === 0 ? (
+              <View style={s.empty}>
+                <AppText style={s.emptyEmoji}>🚫</AppText>
+                <AppText style={s.emptyText}>You haven't blocked anyone.</AppText>
+              </View>
+            ) : (
+              <View style={s.connectionList}>
+                {blockedGuardians.map((b, index) => (
+                  <View key={b.guardianId} style={[s.connectionCard, { backgroundColor: BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg, borderColor: 'transparent' }]}>
+                    <View style={s.connectionRow}>
+                      {b.photoUrl ? (
+                        <Image source={{ uri: b.photoUrl }} style={s.connectionAvatar} />
+                      ) : (
+                        <View style={[s.connectionAvatar, s.connectionAvatarFallback, { backgroundColor: avatarColor(b.name) }]}>
+                          <AppText style={s.connectionAvatarInitial}>{b.name[0]?.toUpperCase()}</AppText>
+                        </View>
+                      )}
+                      <View style={s.connectionInfo}>
+                        <AppText style={s.connectionName} numberOfLines={1}>{b.name}</AppText>
+                        {b.county ? <AppText style={s.connectionCounty} numberOfLines={1}>{b.county}</AppText> : null}
+                      </View>
+                      <TouchableOpacity style={s.unblockBtn} onPress={() => unblock(b)} activeOpacity={0.75} accessibilityRole="button" accessibilityLabel={`Unblock ${b.name}`}>
+                        <AppText style={s.unblockBtnText}>Unblock</AppText>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </ScrollView>
         </View>
 
       ) : (
@@ -889,6 +963,9 @@ const s = StyleSheet.create({
   connectionName: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
   connectionCounty: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.medium, color: NICO.text },
   connectionActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  actionsColumn:     { alignItems: 'flex-end', gap: SPACING.sm },
+  unblockBtn:        { paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs + 2, borderRadius: RADIUS.full, borderWidth: 1, borderColor: NICO.primary },
+  unblockBtnText:    { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
   connectionMsgBtn: {
     width: scale(40), height: scale(40), borderRadius: RADIUS.full,
     backgroundColor: NICO.primaryLight, borderWidth: 1.5, borderColor: NICO.primary,

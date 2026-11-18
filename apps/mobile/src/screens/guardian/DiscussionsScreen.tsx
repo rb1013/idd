@@ -621,6 +621,7 @@ export default function DiscussionsScreen() {
         guardian={guardianSheet}
         loading={loadingGuardianSheet}
         onClose={closeGuardianSheet}
+        onBlocked={() => load()}   // their posts disappear (hidden by the database)
       />
       <GuardianFloatingTabBar />
     </View>

@@ -630,6 +630,7 @@ export default function EventsScreen() {
         guardian={guardianSheet}
         loading={loadingGuardianSheet}
         onClose={closeGuardianSheet}
+        onBlocked={() => { setSelectedEvent(null); load(); }}   // their events disappear
       />
       <GuardianFloatingTabBar />
     </View>

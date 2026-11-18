@@ -13,6 +13,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { GuardianNavParamList } from '../../navigation';
 import RainbowDivider from '../../components/RainbowDivider';
 import ReportFlag from '../../components/ReportFlag';
+import BlockButton from '../../components/BlockButton';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import {
   NICO, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT, scale,
@@ -35,22 +36,30 @@ export default function GuardianChatScreen() {
   const headerHeight = useHeaderHeight();
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const { conversationId } = route.params;
+  const { conversationId, participantId, participantName } = route.params;
 
   useNicoHeader(navigation);
 
-  // 🚩 in the header reports the OTHER guardian in this conversation (never yourself)
+  // 🚩 🚫 in the header act on the OTHER guardian in this conversation (never yourself).
+  // After blocking, leave the chat — the conversation is now hidden for both.
   useLayoutEffect(() => {
-    const flag = <ReportFlag target={{ area: 'guardian_chat', conversationId }} style={{ marginRight: SPACING.xs }} />;
+    const actions = (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginRight: SPACING.xs }}>
+        <ReportFlag target={{ area: 'guardian_chat', conversationId }} />
+        {!!participantId && (
+          <BlockButton guardianId={participantId} guardianName={participantName} onBlocked={() => navigation.goBack()} />
+        )}
+      </View>
+    );
     navigation.setOptions({
-      headerRight: () => flag,
+      headerRight: () => actions,
       // iOS 26 wraps custom headerRight elements in a "Liquid Glass" pill by default —
       // hidesSharedBackground turns that off so only our own element renders.
       unstable_headerRightItems: () => [
-        { type: 'custom', element: flag, hidesSharedBackground: true },
+        { type: 'custom', element: actions, hidesSharedBackground: true },
       ],
     });
-  }, [navigation, conversationId]);
+  }, [navigation, conversationId, participantId, participantName]);
 
   const [messages, setMessages] = useState<GuardianMessage[]>([]);
   const [text, setText] = useState('');
@@ -129,7 +138,12 @@ export default function GuardianChatScreen() {
           const body = await (error as any)?.context?.json?.();
           if (body?.error) detail = `${body.error}${body.detail ? ': ' + body.detail : ''}`;
         } catch {}
-        Alert.alert('Send error', detail);
+        // Guardian block (either way): don't reveal it — show a neutral message
+        if (detail.startsWith('GUARDIAN_BLOCKED')) {
+          Alert.alert("Couldn't send message", 'This conversation is no longer available.');
+        } else {
+          Alert.alert('Send error', detail);
+        }
       }
       setText(trimmed);
       return;
