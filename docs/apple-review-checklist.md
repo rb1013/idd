@@ -3,6 +3,21 @@
 **Written:** 2026-11-15 · **Status:** Not started
 Review of the iOS app against Apple's App Store Review Guidelines, with likely rejection reasons ordered by risk. Paths are relative to the repo root.
 
+### Guideline numbers used below
+
+Full text: [App Store Review Guidelines](https://developer.apple.com/app-store/review/guidelines/). The number tells you which part of Apple's rules an item falls under.
+
+| Guideline | Name | In short | Where it applies here |
+|---|---|---|---|
+| **1.2** | User-Generated Content | Apps where users post content must have: a filter for objectionable content, a way to **report** content, a way to **block** abusive users, published contact info, and terms users agree to (zero tolerance for abuse). Reports must be acted on promptly | Discussions, events, chats, profiles (#1); Terms / EULA (#2) |
+| **1.3** | Kids Category | Apps listed in the Kids category must not include third-party ads or analytics, and need a parental gate before links, purchases, or leaving the app | Don't choose the Kids category (#6) |
+| **2.1** | App Completeness | The submitted app must be final and fully working: no crashes, broken features, or placeholders, and the reviewer must be able to use everything (provide a demo account for login-gated features) | Demo account, AI generation working, iPad (#5) |
+| **2.3** | Accurate Metadata | Store description, screenshots, and privacy labels must match what the app actually does | Description, privacy labels, screenshots (#9) |
+| **2.5.4** | Background services | Apps may only declare background modes (audio, location, VoIP…) for features that genuinely run in the background | Unused background audio (#4) |
+| **4.8** | Login Services (Sign in with Apple) | If an app offers third-party login (Google, Facebook…), it must also offer Sign in with Apple. Email/password-only apps don't need it | Not required here ✅ |
+| **5.1.1** | Data Collection and Storage | Privacy policy linked in the app and App Store Connect; permission prompts must clearly explain **why** data is needed; only ask for data the app needs (data minimization); accounts created in the app must be deletable in the app | Privacy policy link (#2), permission messages (#3), required phone number (#8), account deletion ✅ |
+| **5.1.4** | Kids (privacy) | Apps for children must follow children's privacy laws (e.g. COPPA): parental consent, no third-party ads/analytics targeting kids, careful handling of kids' data | Learners may be under 13 (#6) |
+
 ---
 
 ## 🔴 High risk: likely rejection
