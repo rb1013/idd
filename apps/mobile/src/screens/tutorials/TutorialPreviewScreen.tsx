@@ -331,6 +331,8 @@ export default function TutorialPreviewScreen() {
   function switchTab(tab: 'video' | 'slides') {
     setAutoPlay(false);
     player.pause();
+    // Video and Slides share frameIndex — always open the other tab on slide 1
+    setFrameIndex(0);
     setViewTab(tab);
     Animated.timing(viewTabUnderlineX, {
       toValue: tab === 'video' ? 0 : 1,
@@ -455,7 +457,8 @@ export default function TutorialPreviewScreen() {
                   style={[s.autoPlayBtn, autoPlay && s.autoPlayBtnActive]}
                   onPress={() => {
                     if (!autoPlay) { setFrameIndex(0); setAutoPlay(true); }
-                    else setAutoPlay(false);
+                    // Stop also silences the current slide's narration (not just auto-advance)
+                    else { setAutoPlay(false); player.pause(); }
                   }}
                   disabled={frames.length <= 1}
                 >

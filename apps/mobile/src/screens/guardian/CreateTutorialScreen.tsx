@@ -179,10 +179,10 @@ export default function CreateTutorialScreen() {
             <TextInput
               style={s.input}
               value={displayName}
-              onChangeText={t => setDisplayName(t.slice(0, 60))}
+              onChangeText={t => setDisplayName(t.slice(0, 40))}
               placeholder="Give it a name your user will recognise…"
               placeholderTextColor={NICO.textMuted}
-              maxLength={60}
+              maxLength={40}
               returnKeyType="done"
             />
           </LinearGradient>
