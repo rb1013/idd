@@ -132,6 +132,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Reaching this point requires having passed GuardianVerificationScreen's
           // 18+ age check and consent checkbox — DOB itself is never stored.
           is_verified_guardian: true,
+          // When they agreed to the Privacy Policy & Terms (PrivacyConsentScreen), migration 091
+          terms_accepted_at: p.termsAcceptedAt ?? new Date().toISOString(),
         });
         await supabase.rpc('set_guardian_pin', { pin_input: p.pin });
         if (p.photoUri) {

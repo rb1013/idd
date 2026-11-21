@@ -10,7 +10,7 @@ import * as SecureStore from 'expo-secure-store';
 import AppText from '../../components/AppText';
 import ContentContainer from '../../components/ContentContainer';
 import DropdownPicker from '../../components/DropdownPicker';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { FIXED_STATE } from '../../constants/usStates';
 import { CA_COUNTIES } from '../../constants/caCounties';
@@ -23,6 +23,7 @@ import {
 
 export default function RegisterScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const insets = useSafeAreaInsets();
   const [fullName, setFullName]   = useState('');
   const [email, setEmail]         = useState('');
@@ -107,6 +108,8 @@ export default function RegisterScreen() {
       selectedTags,
       pin,
       photoUri: photoUri || null,
+      // When the guardian agreed on PrivacyConsent — saved as guardians.terms_accepted_at
+      termsAcceptedAt: route.params?.termsAcceptedAt ?? new Date().toISOString(),
     }));
 
     setLoading(false);

@@ -5,24 +5,15 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import AppText from '../../components/AppText';
 import ContentContainer from '../../components/ContentContainer';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, FONT_SIZE, FONT_WEIGHT,
-  BTN_SIZE, BTN_VARIANT, scale,
+  BTN_SIZE, BTN_VARIANT,
 } from '../../constants/theme';
 
 const MIN_AGE = 18;
-
-const PRIVACY_COMMITMENTS = [
-  "We don't ask for diagnoses or medical records. The optional support category only helps you find similar families.",
-  'Profiles are only visible to other verified guardians.',
-  'We do not track behavior or use data for advertising.',
-];
-
-const CONSENT_TEXT =
-  "I consent to allowing this app to securely store my learner's first name, age, gender, location, and photo solely to help me search for and connect with nearby families.";
 
 function ageFromDob(d: Date): number {
   const today = new Date();
@@ -34,17 +25,19 @@ function ageFromDob(d: Date): number {
 
 export default function GuardianVerificationScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const insets = useSafeAreaInsets();
+  // From PrivacyConsent (Agree) — carried through sign-up and saved as guardians.terms_accepted_at
+  const termsAcceptedAt: string | undefined = route.params?.termsAcceptedAt;
 
   const [dob, setDob] = useState<Date | null>(null);
   const [tempDob, setTempDob] = useState(new Date(2000, 0, 1));
   const [showDobPicker, setShowDobPicker] = useState(false);
-  const [consent, setConsent] = useState(false);
   const [failModalVisible, setFailModalVisible] = useState(false);
 
   function handleContinue() {
     const isAdult = dob != null && ageFromDob(dob) >= MIN_AGE;
-    if (!isAdult || !consent) {
+    if (!isAdult) {
       setFailModalVisible(true);
       return;
     }
@@ -53,7 +46,7 @@ export default function GuardianVerificationScreen() {
     // Replace (not navigate) so this verification screen doesn't stay in the
     // stack — pressing back from Register should go straight to Login, not
     // back through the consent screen.
-    navigation.replace('GuardianRegister');
+    navigation.replace('GuardianRegister', { termsAcceptedAt });
   }
 
   return (
@@ -79,23 +72,6 @@ export default function GuardianVerificationScreen() {
               {dob ? dob.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'MM / DD / YYYY'}
             </AppText>
             <AppText style={styles.pickerBtnIcon}>📅</AppText>
-          </TouchableOpacity>
-
-          <AppText style={styles.sectionTitle}>Our Privacy Commitments</AppText>
-          <View style={styles.commitmentList}>
-            {PRIVACY_COMMITMENTS.map(line => (
-              <View key={line} style={styles.commitmentRow}>
-                <AppText style={styles.commitmentBullet}>•</AppText>
-                <AppText style={styles.commitmentText}>{line}</AppText>
-              </View>
-            ))}
-          </View>
-
-          <TouchableOpacity style={styles.consentRow} onPress={() => setConsent(v => !v)} activeOpacity={0.8}>
-            <View style={[styles.checkbox, consent && styles.checkboxOn]}>
-              {consent && <AppText style={styles.checkmark}>✓</AppText>}
-            </View>
-            <AppText style={styles.consentText}>{CONSENT_TEXT}</AppText>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.button} onPress={handleContinue} activeOpacity={0.85}>
@@ -133,7 +109,7 @@ export default function GuardianVerificationScreen() {
           <View style={styles.failCard} onStartShouldSetResponder={() => true}>
             <AppText style={styles.failTitle}>Guardian verification failed</AppText>
             <AppText style={styles.failBody}>
-              You should be 18 year of age or older to create an account with us and provide your consent for privacy policy
+              You must be 18 years of age or older to create an account with us.
             </AppText>
             <TouchableOpacity style={styles.failCloseBtn} onPress={() => setFailModalVisible(false)} activeOpacity={0.85}>
               <AppText style={styles.failCloseBtnText}>OK</AppText>
@@ -163,26 +139,6 @@ const styles = StyleSheet.create({
   pickerBtnText: { fontSize: FONT_SIZE.lg, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold },
   placeholder:   { color: NICO.textMuted },
   pickerBtnIcon: { fontSize: FONT_SIZE.xl },
-
-  sectionTitle: { ...TEXT_STYLE.fieldLabel, fontSize: FONT_SIZE.lg, marginBottom: SPACING.md },
-  commitmentList: { gap: SPACING.sm, marginBottom: SPACING.xl },
-  commitmentRow: { flexDirection: 'row', gap: SPACING.sm },
-  commitmentBullet: { fontSize: FONT_SIZE.md, color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold },
-  commitmentText: { flex: 1, fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 21 },
-
-  consentRow: {
-    flexDirection: 'row', gap: SPACING.md, alignItems: 'flex-start',
-    backgroundColor: NICO.background, borderRadius: RADIUS.lg,
-    padding: SPACING.base, marginBottom: SPACING.xl,
-  },
-  checkbox: {
-    width: scale(24), height: scale(24), borderRadius: RADIUS.sm,
-    borderWidth: 2, borderColor: NICO.border, backgroundColor: NICO.surface,
-    justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 2,
-  },
-  checkboxOn: { backgroundColor: NICO.primary, borderColor: NICO.primary },
-  checkmark:  { fontSize: FONT_SIZE.base, fontWeight: FONT_WEIGHT.black, color: NICO.textOnAccent },
-  consentText: { flex: 1, fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 21 },
 
   button:     { ...BTN_SIZE.lg, ...BTN_VARIANT.primary },
   buttonText: { ...TEXT_STYLE.buttonPrimary },

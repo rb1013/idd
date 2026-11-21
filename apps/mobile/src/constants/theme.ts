@@ -99,6 +99,7 @@ export const NICO = {
   text:        '#1C2B39',   // primary text — deep navy-charcoal
   textMuted:   '#4D5760',   // secondary text, placeholders, captions
   textOnAccent:'#FFFFFF',   // text on primary/teal/orange/purple backgrounds
+  link:        '#1A73E8',   // external web links (e.g. Privacy Policy) — standard link blue
 
   // ── Semantic ────────────────────────────────────────────────────────────
   error:       '#E53E3E',

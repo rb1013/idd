@@ -15,6 +15,7 @@ import { NICO } from '../constants/theme';
 // Auth screens
 import LoginScreen from '../screens/auth/LoginScreen';
 import GuardianVerificationScreen from '../screens/auth/GuardianVerificationScreen';
+import PrivacyConsentScreen from '../screens/auth/PrivacyConsentScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import EmailVerificationPendingScreen from '../screens/auth/EmailVerificationPendingScreen';
 import OTPVerificationScreen from '../screens/auth/OTPVerificationScreen';
@@ -66,8 +67,10 @@ import ActivitiesScreen from '../screens/user/ActivitiesScreen';
 
 export type RootStackParamList = {
   Login: undefined;
-  GuardianVerification: undefined;
-  GuardianRegister: undefined;
+  PrivacyConsent: undefined;
+  // termsAcceptedAt: when the guardian agreed on PrivacyConsent (saved as guardians.terms_accepted_at)
+  GuardianVerification: { termsAcceptedAt?: string } | undefined;
+  GuardianRegister: { termsAcceptedAt?: string } | undefined;
   GuardianTabs: undefined;
   UserHome: undefined;
   ResetPassword: undefined;
@@ -338,6 +341,8 @@ export default function Navigation() {
         ) : !session ? (
           <>
             <Stack.Screen name="Login"           component={LoginScreen} />
+            <Stack.Screen name="PrivacyConsent" component={PrivacyConsentScreen}
+              options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Privacy & Terms' }} />
             <Stack.Screen name="GuardianVerification" component={GuardianVerificationScreen}
               options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.surface }, headerTintColor: COLORS.text, title: 'Guardian Verification' }} />
             <Stack.Screen name="GuardianRegister" component={RegisterScreen}

@@ -1,6 +1,6 @@
 # Apple App Store Review Checklist: Co-Heart
 
-**Written:** 2026-11-15 · **Status:** Not started
+**Written:** 2026-11-15 · **Status:** In progress (#1 app side and #2 done)
 Review of the iOS app against Apple's App Store Review Guidelines, with likely rejection reasons ordered by risk. Paths are relative to the repo root.
 
 ### Guideline numbers used below
@@ -90,15 +90,16 @@ Tasks:
 - Learner chat (unchanged; its "Report User" still saves no message snapshot)
 - Admin notifications when a report arrives (would make the 24-hour promise dependable)
 
-### 2. Terms (EULA) and privacy policy in the app (Guidelines 1.2, 5.1.1)
+### 2. Terms (EULA) and privacy policy in the app (Guidelines 1.2, 5.1.1): ✅ done (2026-11-18)
 
-- Sign-up consent (`GuardianVerificationScreen.tsx:136`) mentions "consent for privacy policy", but there is **no link** and **no Terms**.
-- For apps with user-generated content, Apple requires users to **agree to terms** stating there's **no tolerance for objectionable content or abusive users**.
+- Was: sign-up consent on Guardian Verification mentioned "consent for privacy policy", but there was **no link** and **no Terms**.
+- For apps with user-generated content, Apple requires users to **agree to terms** stating there's **no tolerance for objectionable content or abusive users** (Terms §3).
 
-- [ ] Finish legal review of `PRIVACY_POLICY_AND_TERMS.md` and publish it at a **public URL**
-- [ ] Link **Terms** and **Privacy Policy** on sign-up, with an "I agree" checkbox required to continue
-- [ ] Link both from the guardian **Account** screen
-- [ ] Add the privacy policy URL in App Store Connect
+- [x] Finish legal review of `PRIVACY_POLICY_AND_TERMS.md` and publish it at a **public URL** (https://www.yianetwork.org/co-heart/privacy)
+- [x] Link **Terms** and **Privacy Policy** on sign-up, with agreement required to continue: "Before you continue" page (`PrivacyConsentScreen.tsx`) with Agree / Decline; acceptance time saved as `guardians.terms_accepted_at` (migration 091) — 2026-11-18
+- [x] Link both from the guardian **Account** screen (`GuardianAccountScreen.tsx`, "Privacy Policy & Terms of Service" link) — 2026-11-18
+- [x] Add the privacy policy URL in App Store Connect
+- [x] Migration `091_guardian_terms_accepted_at.sql` applied
 
 ### 3. Permission messages vague or unused (Guideline 5.1.1)
 

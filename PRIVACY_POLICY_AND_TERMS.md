@@ -2,7 +2,7 @@
 
 > **DRAFT. Not yet legal advice or a final policy.** Items in **[brackets]** must be filled in. Have this reviewed by a qualified attorney before publishing, especially the sections on children's data and California law.
 
-**Effective date:** [Month DD, YYYY]
+**Effective date:** October 2026
 **Operator:** [Legal name of operator / company] ("Co-Heart," "we," "us")
 **Contact:** coheartsupport@gmail.com · [Mailing address]
 
@@ -51,6 +51,7 @@ By creating a learner profile, you confirm that you are the learner's parent or 
 ### What we do *not* collect
 - We do **not** use advertising trackers or sell data for advertising.
 - We do **not** collect your precise GPS location.
+- We do **not** collect diagnoses, medical records, or health information. The optional Regional Support Category is a general service category, not a diagnosis.
 - If you use **Face ID / Touch ID**, your device handles it. We never receive your biometric data.
 
 ## 3. How we use information
@@ -84,9 +85,12 @@ We share information with service providers only as needed to run Co-Heart:
 | **Supabase** | Database, sign-in, file storage, and server functions (hosted in the United States) | All account and app data |
 | **Anthropic** (Claude) | Writing AI tutorial scripts | The tutorial details you enter (skill, action, comprehension level, language) |
 | **OpenAI** | Generating tutorial images and narration audio | Tutorial text and image descriptions |
-| **Expo** and **Apple** | Delivering push notifications | Device push token and notification content |
 | **Google** (Gmail) | Sending account emails such as verification and password reset codes | Your email address and the email content |
 | **YouTube** (Google) | Playing YouTube videos you link | YouTube may collect data and **may show ads** under its own policies when a video plays. We use YouTube's privacy-enhanced (no-cookie) mode |
+
+<!-- Commented out until push notifications are tested (restore as a table row above):
+| **Expo** and **Apple** | Delivering push notifications | Device push token and notification content |
+-->
 
 We do **not** send your learner's name, photo, or profile to AI providers when generating tutorials. Do not include personal details in the tutorial description.
 

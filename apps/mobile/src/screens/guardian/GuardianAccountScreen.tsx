@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useState } from 'react';
 import {
   View, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator,
-  Image, Alert,
+  Image, Alert, Linking,
 } from 'react-native';
 import AppText from '../../components/AppText';
 import ContentContainer from '../../components/ContentContainer';
@@ -14,6 +14,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { GuardianNavParamList } from '../../navigation';
+import { PRIVACY_TERMS_URL } from '../../constants/legal';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, BTN_SIZE, BTN_VARIANT, FONT_SIZE, FONT_WEIGHT,
 } from '../../constants/theme';
@@ -67,6 +68,12 @@ export default function GuardianAccountScreen() {
     } finally {
       setUploading(false);
     }
+  }
+
+  function openPolicy() {
+    Linking.openURL(PRIVACY_TERMS_URL).catch(() =>
+      Alert.alert("Couldn't open the page", `Please visit ${PRIVACY_TERMS_URL}`),
+    );
   }
 
   function handleDeleteAccount() {
@@ -165,6 +172,12 @@ export default function GuardianAccountScreen() {
           )}
         </View>
 
+        {/* Privacy Policy & Terms (Apple 5.1.1 — reachable after sign-up, not only on PrivacyConsent).
+            Above Edit Profile so it's visible without scrolling on small phones. */}
+        <TouchableOpacity style={s.legalBtn} onPress={openPolicy} activeOpacity={0.7} accessibilityRole="link">
+          <AppText style={s.legalBtnText}>Privacy Policy & Terms of Service</AppText>
+        </TouchableOpacity>
+
         {/* Edit Profile */}
         <TouchableOpacity
           style={s.editBtn}
@@ -233,8 +246,11 @@ const s = StyleSheet.create({
   },
   tagText: { ...TEXT_STYLE.caption, color: NICO.text, fontWeight: FONT_WEIGHT.bold },
 
-  editBtn:     { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.xl },
+  editBtn:     { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.md },
   editBtnText: { ...TEXT_STYLE.buttonPrimary },
+
+  legalBtn:      { marginTop: SPACING.md, padding: SPACING.sm, alignItems: 'center' },
+  legalBtnText:  { ...TEXT_STYLE.labelSmall, color: NICO.link, textDecorationLine: 'underline' },
 
   deleteBtn:     { marginTop: SPACING.md, padding: SPACING.base, alignItems: 'center' },
   deleteBtnText: { ...TEXT_STYLE.labelSmall, color: NICO.error },
