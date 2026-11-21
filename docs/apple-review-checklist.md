@@ -37,7 +37,7 @@ Apple requires apps with user-generated content to have **all of**: a content fi
 #### Filter
 - [x] Shared in-app filter `apps/mobile/src/lib/contentFilter.ts` (chat, discussions, events)
 - [x] Server whole-word `blocked_words` check: chat edge functions (`_shared/blockedWords.ts`), discussions (`085`), events (`086`)
-- [ ] **Deploy / apply:** `send-message` + `send-guardian-message`, then run migrations `085` and `086` in the SQL Editor
+- [x] **Deploy / apply:** `send-message` + `send-guardian-message`, then run migrations `085` and `086` in the SQL Editor
 - [x] Guardian chat: remove direct `INSERT` on `guardian_messages` (`077_guardian_chat.sql:72`) so the server filter can't be bypassed (done in `088`)
 
 #### Report: agreed design (2026-11-16)
@@ -80,7 +80,7 @@ Tasks:
 - [x] **`send-guardian-message`** refuses blocked pairs (deployed)
 - [x] **App:** 🚫 (`components/BlockButton.tsx`, `lib/blocking.ts`) in guardian peek sheet, chat header, Connections cards (Connected two-row layout, Requests, Find); **Connections → Blocked** tab with Unblock
 - [x] **FAQ:** "How do I block a guardian?" / "How do I unblock someone?"
-- [ ] Privacy policy line: blocks you create are stored and visible only to you (and admins) (`docs/guardian-block.md` 4.2)
+- [x] Privacy policy line: blocks you create are stored and visible only to you (and admins) (`docs/guardian-block.md` 4.2): §2 "Blocks" — 2026-11-20 (website copy to be updated)
 - [ ] Finish end-to-end tests (sections 6–11 in `docs/guardian-block.md`; 1–5 and notifications passed)
 
 #### Still open for Guideline 1.2: admin moderation
@@ -108,7 +108,7 @@ Info.plist strings are generic, e.g. *"Allow $(PRODUCT_NAME) to access your phot
 | Permission | Used? | Action |
 |---|---|---|
 | Photos | ✅ Profile and learner photos (`launchImageLibraryAsync`) | [ ] Rewrite: "Co-Heart uses your photos so you can add a profile picture for you or your learner." |
-| Face ID | ✅ Learner quick login (`apps/mobile/src/lib/biometricStore.ts`) | [ ] Rewrite with the real reason |
+| Face ID | ⏸️ Not used yet: `promptBiometric()` in `apps/mobile/src/lib/biometricStore.ts` is never called (no prompt shown). Code and `expo-local-authentication` kept for future learner quick login | [ ] Keep the key, rewrite the text: "Co-Heart uses Face ID so your learner can sign in quickly and securely." |
 | Camera | ❌ (photo library only) | [ ] Remove |
 | Location (3 keys) | ❌ `expo-location` installed but unused | [ ] Uninstall `expo-location`, remove keys |
 | Microphone | ❌ No recording | [ ] Remove (configure the `expo-audio` plugin) |

@@ -44,6 +44,9 @@ By creating a learner profile, you confirm that you are the learner's parent or 
 ### Reports
 - When you report a discussion post or reply, an event, a guardian chat, or a guardian's profile, we record who reported it, who it's about, the reason you chose, and **a copy of the reported content** as it was at that moment (for a chat, the recent messages; for a profile, the name and photo).
 
+### Blocks
+- When you block a guardian, we keep a record of who you blocked and when, so the block can be enforced. Only you (in **Connections → Blocked**) and Co-Heart admins can see it. The blocked guardian is not notified. The record is deleted when you unblock them, or when either account is deleted.
+
 ### Information collected automatically
 - A **push notification token** for your device, so we can send notifications
 - Basic technical information needed to run the service (for example, sign-in sessions and error information)
