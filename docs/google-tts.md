@@ -15,8 +15,8 @@
   | | Result |
   |---|---|
   | Existing narration `.mp3` files | ✅ Keep playing (stored in our Supabase Storage) |
-  | Creating a new AI tutorial | ❌ **Fails completely**: image and audio are generated together per slide, so a TTS failure fails the whole job |
-  | Re-generate tutorial | ❌ Fails |
+  | Creating a new AI tutorial | ⚠️ **TTS error** (e.g. model rejected): tutorial is created **without narration audio**. `generateAndStoreAudio()` catches the error and returns `null`, and the app falls back to the phone's voice (`expo-speech` in `SlideshowPlayerScreen.tsx`). ❌ **TTS timeout** (no reply within `AUDIO_TIMEOUT_MS` = 20s): the **whole job fails**, because `withTimeout` rejects outside that error handling and `Promise.all` fails. (Corrected 2026-11-21; earlier this said "fails completely" for any error) |
+  | Re-generate tutorial | Same as creating: `regenerate-tutorial` deletes the old files and queues a new `process-tutorial-job`. TTS error → slides without narration audio (phone's voice); timeout → job fails |
   | Save & regenerate audio (slide editor) | ❌ Error |
   | Regenerate image, YouTube tutorials | ✅ Unaffected |
 
@@ -97,8 +97,11 @@ Decode `audioContent` from base64 and upload the bytes as today.
 
 - [ ] New `packages/supabase/supabase/functions/_shared/tts.ts`:
   - `synthesizeSpeech(text: string): Promise<ArrayBuffer>`: reads `GOOGLE_TTS_API_KEY`, `TTS_VOICE` (and optional rate) **per call**, calls `text:synthesize`, decodes base64 to bytes, and throws a clear error naming the voice on failure.
+  - `TTS_VOICE` is the **full** voice name (e.g. `en-US-Chirp3-HD-Aoede`); `languageCode` is taken from its first two parts (`en-US`), so there's no separate language setting. Tutorials are English only (`CreateTutorialScreen.tsx` sends `language: 'English'`); a per-language voice mapping is only needed if other languages are added.
+  - The helper does **only** the Google call and decoding. Each function keeps its existing upload and failure handling (`process-tutorial-job`: `upsert: true`, returns `null` on failure; `regenerate-frame`: no upsert, throws and removes new uploads).
 - [ ] `process-tutorial-job/index.ts`: replace the OpenAI TTS call in `generateAndStoreAudio()` with `synthesizeSpeech()`; remove `TTS_MODEL` / `TTS_VOICE`.
 - [ ] `regenerate-frame/index.ts`: replace the OpenAI call in `regenerateAudio()` with `synthesizeSpeech()`.
+- No OpenAI fallback / `TTS_PROVIDER` switch: switch over cleanly (decided 2026-11-21).
 - [ ] Keep the existing timeouts (`AUDIO_TIMEOUT_MS = 20s` in `process-tutorial-job`).
 - [ ] Deploy: `cd packages/supabase && npx supabase functions deploy process-tutorial-job regenerate-frame`
 
@@ -120,10 +123,17 @@ Decode `audioContent` from base64 and upload the bytes as today.
 
 ## Other follow-ups
 
-- [ ] **Privacy policy** (`PRIVACY_POLICY_AND_TERMS.md`, service providers table): add **Google Cloud**, "Creating narration audio; tutorial narration text only". Update the **OpenAI** row to images only. Only narration text is sent, never learner names or profiles.
+- [x] **Privacy policy** (`PRIVACY_POLICY_AND_TERMS.md` §5, service providers table): added **Google (Cloud Text-to-Speech)**, "Creating narration audio for AI tutorials; tutorial narration text only"; **OpenAI** row now images only (repo copy, 2026-11-21). Only narration text is sent, never learner names or profiles.
+- [ ] **Website copy (yianetwork.org):** make the same change **when the Google switch is deployed**, not before (until then OpenAI still creates narration)
 - [ ] Update `TODO.md` / `RLS.md` references to `tts-1` once switched.
 
 ---
+
+## Decisions
+
+- [x] **Rollback switch:** none; replace OpenAI TTS directly (2026-11-21)
+- [x] **Existing tutorials:** keep their OpenAI `nova` narration as is; only new or regenerated audio uses Google (2026-11-21)
+- [x] **Language:** English only, one voice (2026-11-21)
 
 ## Open decisions
 

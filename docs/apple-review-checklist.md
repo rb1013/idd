@@ -160,7 +160,30 @@ Private AI tutorials reach learners **without admin review**.
 ### 9. Metadata accuracy (Guideline 2.3)
 
 - [ ] Store description (`docs/desc.md`) matches the app
-- [ ] **App Privacy labels** match the privacy policy: contact info, user content, photos, identifiers (push token); YouTube; Google TTS (narration text) once switched
+- [ ] **App Privacy labels** match the privacy policy (answer sheet below)
+
+#### App Privacy labels: answer sheet
+
+Filled in at **App Store Connect → your app → App Privacy** (the "nutrition label" shown on the App Store page). Apple relies on these answers; a reviewer may reject if they clearly don't match the app or the privacy policy. Can be edited at any time without a new build.
+
+For each data type Apple asks: collected? → purpose → linked to the user's identity? → used for tracking? Co-Heart answers **Tracking: No** for everything (no ad SDKs or analytics trackers).
+
+| Apple category | What Co-Heart collects | Linked to user | Purpose |
+|---|---|---|---|
+| Contact Info: Name, Email Address, Phone Number | Guardian account; learner name | Yes | App Functionality |
+| Contact Info: Other User Contact Info | County | Yes | App Functionality |
+| User Content: Photos or Videos | Profile and learner photos | Yes | App Functionality |
+| User Content: Emails or Text Messages | Guardian chat, learner phrase messages | Yes | App Functionality |
+| User Content: Other User Content | Discussions, events, tutorials, reports | Yes | App Functionality |
+| Identifiers: User ID | Account ID | Yes | App Functionality |
+| Identifiers: Device ID | Push token (only once push notifications are enabled) | Yes | App Functionality |
+| Other Data | Date of birth / age, learner gender, likes and dislikes, abilities, comprehension level, Regional Support Category | Yes | App Functionality |
+
+- [ ] **Health & Fitness: not collected.** Matches the privacy policy: no diagnoses, medical records, or health information; the Regional Support Category is a service category, not a diagnosis
+- [ ] **Not collected:** Location, Financial Info, Browsing/Search History, Usage Data, Diagnostics, Sensitive Info, Contacts, Purchases
+- [ ] **YouTube:** embedded videos may collect data under YouTube's own policy; disclosed in the privacy policy (§5). Apple's labels cover data collected by the app's own code and SDKs
+- [ ] **Children:** learners may be under 13; labels don't change, but answer the age rating questions honestly (#6)
+- [ ] **Google TTS (once switched):** only tutorial narration text is sent, not personal data, so no new label; update the privacy policy's service providers table (`docs/google-tts.md`)
 - [ ] Screenshots show the real app, with no "beta" or TestFlight wording
 
 ---

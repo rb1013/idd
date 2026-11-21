@@ -87,7 +87,8 @@ We share information with service providers only as needed to run Co-Heart:
 |---|---|---|
 | **Supabase** | Database, sign-in, file storage, and server functions (hosted in the United States) | All account and app data |
 | **Anthropic** (Claude) | Writing AI tutorial scripts | The tutorial details you enter (skill, action, comprehension level, language) |
-| **OpenAI** | Generating tutorial images and narration audio | Tutorial text and image descriptions |
+| **OpenAI** | Generating tutorial images | Image descriptions for each tutorial slide |
+| **Google** (Cloud Text-to-Speech) | Creating narration audio for AI tutorials | Tutorial narration text only |
 | **Google** (Gmail) | Sending account emails such as verification and password reset codes | Your email address and the email content |
 | **YouTube** (Google) | Playing YouTube videos you link | YouTube may collect data and **may show ads** under its own policies when a video plays. We use YouTube's privacy-enhanced (no-cookie) mode |
 
