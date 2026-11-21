@@ -14,7 +14,7 @@ import * as Notifications from 'expo-notifications';
 import { useAuth } from '../../lib/AuthContext';
 import { supabase } from '../../lib/supabase';
 import {
-  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, BUTTERFLY_BORDER, BUTTERFLY_TILES, FONT_SIZE, FONT_WEIGHT, BTN_SIZE, BTN_VARIANT, scale,
+  NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, BUTTERFLY_BORDER, BUTTERFLY_TILES, FONT_SIZE, FONT_WEIGHT, BTN_SIZE, BTN_VARIANT, scale, IS_TABLET,
 } from '../../constants/theme';
 import { GuardianNavParamList } from '../../navigation';
 
@@ -220,16 +220,18 @@ export default function GuardianHomeScreen() {
             no white gap — hugs its content (label + horizontal tile scroller). */}
         <View style={s.greyZone}>
           <ContentContainer>
-            <View style={s.sectionHeaderRow}>
+            <View style={[s.sectionHeaderRow, IS_TABLET && s.centeredRow]}>
               <AppText style={s.sectionLabel}>Activities For Guardian</AppText>
-              <AppText style={s.scrollHintArrow}>→</AppText>
+              {/* Scroll hint — on iPad all tiles fit on screen, so there's nothing to scroll to */}
+              {!IS_TABLET && <AppText style={s.scrollHintArrow}>→</AppText>}
             </View>
           </ContentContainer>
 
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={s.guardianScrollContent}
+            // iPad: all tiles fit, so center them instead of starting at the left edge
+            contentContainerStyle={[s.guardianScrollContent, IS_TABLET && s.guardianScrollContentCentered]}
           >
             {GUARDIAN_TILES.map(tile => {
               const color = BUTTERFLY_TILES[tile.ci];
@@ -488,6 +490,8 @@ const s = StyleSheet.create({
     color:      NICO.text,
   },
   guardianScrollContent: { flexDirection: 'row', gap: SPACING.md, paddingHorizontal: SPACING.base },
+  guardianScrollContentCentered: { flexGrow: 1, justifyContent: 'center' },
+  centeredRow: { justifyContent: 'center' },
   guardianCard: {
     width: scale(148),
     borderRadius: RADIUS.xl,
