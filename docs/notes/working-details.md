@@ -8,12 +8,13 @@
 |---|---|---|
 | **Script generation** — captions, narration text, image prompts per frame | **Claude** (`claude-haiku-4-5`) | Structured JSON output, better at writing simple clear language for IDD users, cheap + fast |
 | **Image generation** — actual visuals per frame | **OpenAI DALL·E 3** | Claude can't generate images |
-| **Audio narration** — MP3 per frame | **OpenAI TTS-1** | Claude can't generate audio |
+| **Audio narration** — MP3 per frame | **Google Cloud Text-to-Speech** (Chirp 3: HD voice from `TTS_VOICE`; replaced OpenAI TTS-1, Nov 2026) | Claude can't generate audio; reads text word for word |
 
 ### Where to get the keys
 
 - **CLAUDE_API_KEY** — [console.anthropic.com](https://console.anthropic.com) → API Keys
 - **OPENAI_API_KEY** — [platform.openai.com](https://platform.openai.com) → API Keys (requires billing enabled)
+- **GOOGLE_TTS_API_KEY**, **TTS_VOICE**, optional **TTS_SPEAKING_RATE** — Google Cloud Console (Text-to-Speech API key, restricted to that API); see `docs/google-tts.md`
 
 ### Where to add them
 
@@ -25,7 +26,7 @@ Supabase dashboard → **Edge Functions** → **Manage secrets**
 |---|---|
 | Claude script | ~$0.002 |
 | DALL·E 3 images (4×) | ~$0.16 |
-| TTS-1 audio (4 frames) | ~$0.001 |
+| Google TTS audio (4 frames, ~600 chars) | $0 within the free 1M chars/month (~$0.02 beyond) |
 | **Total** | **~$0.17 per tutorial** |
 
 ---
@@ -90,7 +91,7 @@ When a guardian submits a tutorial form, the `create-tutorial` edge function ins
 The webhook watches `tutorial_jobs` for new `INSERT` events and automatically fires `process-tutorial-job`, which does the heavy work:
 - Calls Claude for the script
 - Calls DALL·E 3 for each image
-- Calls OpenAI TTS for each audio file
+- Calls Google Cloud Text-to-Speech for each audio file (`_shared/tts.ts`)
 - Updates the tutorial status to `preview`
 
 Without the webhook, `process-tutorial-job` would never get called and tutorials would stay stuck at `generating` forever. It's the async job queue — `create-tutorial` queues the job, the webhook kicks off the worker.

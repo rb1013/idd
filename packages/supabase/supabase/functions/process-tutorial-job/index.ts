@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { IMAGE_BUCKET, AUDIO_BUCKET, IMMUTABLE_CACHE_SECONDS } from '../_shared/tutorialStorage.ts';
+import { synthesizeSpeech } from '../_shared/tts.ts';
 
 const CLAUDE_API_KEY        = Deno.env.get('CLAUDE_API_KEY')!;
 const OPENAI_API_KEY        = Deno.env.get('OPENAI_API_KEY')!;
@@ -13,8 +14,6 @@ const DEFAULT_IMAGE_MODEL = 'gpt-image-2.6-flare';
 const imageModel = () => Deno.env.get('IMAGE_MODEL') || DEFAULT_IMAGE_MODEL;
 
 const IMAGE_SIZE   = '1024x1024';
-const TTS_VOICE    = 'nova';      // friendly, clear voice
-const TTS_MODEL    = 'tts-1';
 
 // Triggered by DB Webhook on tutorial_jobs INSERT
 serve(async (req) => {
@@ -275,7 +274,7 @@ async function generateAndStoreImage(
   }
 }
 
-// ── OpenAI TTS-1 audio generation ─────────────────────────────────────────────
+// ── Google Cloud TTS audio generation (_shared/tts.ts) ────────────────────────
 
 async function generateAndStoreAudio(
   supabase: ReturnType<typeof createClient>,
@@ -283,26 +282,7 @@ async function generateAndStoreAudio(
   storagePath: string,
 ): Promise<string | null> {
   try {
-    const res = await fetch('https://api.openai.com/v1/audio/speech', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: TTS_MODEL,
-        input: text,
-        voice: TTS_VOICE,
-        response_format: 'mp3',
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(`TTS error: ${JSON.stringify(err)}`);
-    }
-
-    const audioData = await res.arrayBuffer();
+    const audioData = await synthesizeSpeech(text);
 
     const { error: uploadErr } = await supabase.storage
       .from(AUDIO_BUCKET)

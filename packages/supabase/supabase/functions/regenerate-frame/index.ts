@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   IMAGE_BUCKET, AUDIO_BUCKET, IMMUTABLE_CACHE_SECONDS, StoredFile, storagePathFromUrl, removeFiles,
 } from '../_shared/tutorialStorage.ts';
+import { synthesizeSpeech } from '../_shared/tts.ts';
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!;
 const SUPABASE_URL   = Deno.env.get('SUPABASE_URL')!;
@@ -66,7 +67,7 @@ serve(async (req) => {
         if (oldPath) replaced.push({ bucket: IMAGE_BUCKET, path: oldPath });
       }
 
-      // Audio regeneration (OpenAI TTS-1) — when tts_text changed OR regenerate_audio flag set
+      // Audio regeneration (Google TTS, _shared/tts.ts) — when tts_text changed OR regenerate_audio flag set
       const audioText = tts_text ?? frame.tts_text;
       if ((regenerate_audio || tts_text !== undefined) && audioText) {
         const audioUrl = await regenerateAudio(supabase, audioText, `${storagePath}.mp3`);
@@ -168,26 +169,7 @@ async function regenerateAudio(
   text: string,
   storagePath: string,
 ): Promise<string | null> {
-  const res = await fetch('https://api.openai.com/v1/audio/speech', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'tts-1',
-      input: text,
-      voice: 'nova',
-      response_format: 'mp3',
-    }),
-  });
-
-  if (!res.ok) {
-    let detail = '';
-    try { detail = JSON.stringify(await res.json()); } catch { detail = await res.text().catch(() => ''); }
-    throw new Error(`TTS error: ${res.status} — ${detail}`);
-  }
-  const audioData = await res.arrayBuffer();
+  const audioData = await synthesizeSpeech(text);
 
   const { error: uploadErr } = await supabase.storage
     .from(AUDIO_BUCKET)

@@ -1,6 +1,6 @@
 # Replacing OpenAI `tts-1` with Google Cloud Text-to-Speech
 
-**Status:** Planned, not started
+**Status:** ✅ Done: deployed and tested 2026-11-21 (Google Cloud TTS, Chirp 3: HD).
 **Written:** 2026-11-15
 **Deadline:** switch and deploy **before January 6, 2027** (ideally tested in December)
 
@@ -80,13 +80,13 @@ Decode `audioContent` from base64 and upload the bytes as today.
 
 ## Setup (one-time, done by you)
 
-- [ ] **Google Cloud Console:** create a project (e.g. `co-heart`).
-- [ ] **Enable billing** on the project (required even within the free allowance).
-- [ ] **Enable "Cloud Text-to-Speech API".**
-- [ ] **Create an API key**, then **restrict it to the Text-to-Speech API only**.
-- [ ] **Set a budget alert** (e.g. $5/month) so unexpected usage is noticed.
-- [ ] **Choose a voice:** listen to samples, note the exact voice name (e.g. a `en-US-Chirp3-HD-…` voice).
-- [ ] **Supabase → Edge Functions → Secrets:**
+- [x] **Google Cloud Console:** create a project (e.g. `co-heart`).
+- [x] **Enable billing** on the project (required even within the free allowance).
+- [x] **Enable "Cloud Text-to-Speech API".**
+- [x] **Create an API key**, then **restrict it to the Text-to-Speech API only**.
+- [x] **Set a budget alert** (e.g. $5/month) so unexpected usage is noticed.
+- [x] **Choose a voice:** listen to samples, note the exact voice name (e.g. a `en-US-Chirp3-HD-…` voice).
+- [x] **Supabase → Edge Functions → Secrets:**
   - `GOOGLE_TTS_API_KEY` = the API key
   - `TTS_VOICE` = the chosen voice name (changeable later without a code change, like `IMAGE_MODEL`)
   - *(optional)* `TTS_SPEAKING_RATE` = e.g. `0.9`
@@ -95,15 +95,17 @@ Decode `audioContent` from base64 and upload the bytes as today.
 
 ## Code changes (to implement)
 
-- [ ] New `packages/supabase/supabase/functions/_shared/tts.ts`:
+**Status (2026-11-21):** deployed and tested. Previous OpenAI implementation (removed, not commented out): see commit `7b12cee`, `generateAndStoreAudio()` in `process-tutorial-job/index.ts` and `regenerateAudio()` in `regenerate-frame/index.ts` (`POST /v1/audio/speech`, `model: 'tts-1'`, `voice: 'nova'`, `response_format: 'mp3'`).
+
+- [x] New `packages/supabase/supabase/functions/_shared/tts.ts`:
   - `synthesizeSpeech(text: string): Promise<ArrayBuffer>`: reads `GOOGLE_TTS_API_KEY`, `TTS_VOICE` (and optional rate) **per call**, calls `text:synthesize`, decodes base64 to bytes, and throws a clear error naming the voice on failure.
   - `TTS_VOICE` is the **full** voice name (e.g. `en-US-Chirp3-HD-Aoede`); `languageCode` is taken from its first two parts (`en-US`), so there's no separate language setting. Tutorials are English only (`CreateTutorialScreen.tsx` sends `language: 'English'`); a per-language voice mapping is only needed if other languages are added.
   - The helper does **only** the Google call and decoding. Each function keeps its existing upload and failure handling (`process-tutorial-job`: `upsert: true`, returns `null` on failure; `regenerate-frame`: no upsert, throws and removes new uploads).
-- [ ] `process-tutorial-job/index.ts`: replace the OpenAI TTS call in `generateAndStoreAudio()` with `synthesizeSpeech()`; remove `TTS_MODEL` / `TTS_VOICE`.
-- [ ] `regenerate-frame/index.ts`: replace the OpenAI call in `regenerateAudio()` with `synthesizeSpeech()`.
+- [x] `process-tutorial-job/index.ts`: replace the OpenAI TTS call in `generateAndStoreAudio()` with `synthesizeSpeech()`; remove `TTS_MODEL` / `TTS_VOICE`.
+- [x] `regenerate-frame/index.ts`: replace the OpenAI call in `regenerateAudio()` with `synthesizeSpeech()`.
 - No OpenAI fallback / `TTS_PROVIDER` switch: switch over cleanly (decided 2026-11-21).
-- [ ] Keep the existing timeouts (`AUDIO_TIMEOUT_MS = 20s` in `process-tutorial-job`).
-- [ ] Deploy: `cd packages/supabase && npx supabase functions deploy process-tutorial-job regenerate-frame`
+- [x] Keep the existing timeouts (`AUDIO_TIMEOUT_MS = 20s` in `process-tutorial-job`).
+- [x] Deploy: `cd packages/supabase && npx supabase functions deploy process-tutorial-job regenerate-frame`
 
 `OPENAI_API_KEY` is still needed for images (`IMAGE_MODEL`).
 
@@ -111,21 +113,21 @@ Decode `audioContent` from base64 and upload the bytes as today.
 
 ## Test
 
-- [ ] Create a new AI tutorial: generates fully, narration plays, the voice sounds right.
-- [ ] Slide editor → **Save & regenerate audio**: new narration plays immediately.
-- [ ] **Re-generate tutorial**: all slides get new audio.
-- [ ] Narration is read **word for word** (compare with `tts_text`).
-- [ ] Listen with learners in mind: pace, clarity, tone.
-- [ ] Check usage in the Google Cloud console after a few tutorials.
-- [ ] Wrong or missing key → a clear error in Edge Function logs.
+- [x] Create a new AI tutorial: generates fully, narration plays, the voice sounds right.
+- [x] Slide editor → **Save & regenerate audio**: new narration plays immediately.
+- [x] **Re-generate tutorial**: all slides get new audio.
+- [x] Narration is read **word for word** (compare with `tts_text`).
+- [x] Listen with learners in mind: pace, clarity, tone.
+- [x] Check usage in the Google Cloud console after a few tutorials.
+- [x] Wrong or missing key → a clear error in Edge Function logs.
 
 ---
 
 ## Other follow-ups
 
 - [x] **Privacy policy** (`PRIVACY_POLICY_AND_TERMS.md` §5, service providers table): added **Google (Cloud Text-to-Speech)**, "Creating narration audio for AI tutorials; tutorial narration text only"; **OpenAI** row now images only (repo copy, 2026-11-21). Only narration text is sent, never learner names or profiles.
-- [ ] **Website copy (yianetwork.org):** make the same change **when the Google switch is deployed**, not before (until then OpenAI still creates narration)
-- [ ] Update `TODO.md` / `RLS.md` references to `tts-1` once switched.
+- [x] **Website copy (yianetwork.org):** same change made after the switch was deployed (2026-11-21)
+- [x] Update docs that mentioned `tts-1` (`TODO.md` / `RLS.md` had none; updated `docs/notes/working-details.md`, `AI-generation.md`, `tutorial-quota-logic.md`, `tutorials-flow.md`). `apps/mobile/ttutorial-todo.md` left as the original plan
 
 ---
 
@@ -137,9 +139,9 @@ Decode `audioContent` from base64 and upload the bytes as today.
 
 ## Open decisions
 
-- [ ] **Voice tier:** Chirp 3: HD (recommended) or Neural2?
-- [ ] **Specific voice name** (after listening to samples)
-- [ ] **Speaking rate:** 1.0 (normal) or ~0.9 (slightly slower)?
+- [x] **Voice tier:** Chirp 3: HD (recommended) or Neural2?
+- [x] **Specific voice name** (after listening to samples)
+- [x] **Speaking rate:** 1.0 (normal) or ~0.9 (slightly slower)?
 
 ---
 

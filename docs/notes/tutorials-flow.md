@@ -3,7 +3,7 @@
 1. **Guardian** fills in the 3-section form → taps "Create Tutorial"
 2. `create-tutorial` edge function validates quota, inserts tutorial (`status: generating`), queues a job → returns instantly
 3. **DB Webhook** fires `process-tutorial-job` in the background
-4. Function calls **Claude** for script → **DALL·E 3** per frame image → **OpenAI TTS** per frame audio → uploads to Storage
+4. Function calls **Claude** for script → **DALL·E 3** per frame image → **Google Cloud TTS** per frame audio → uploads to Storage
 5. Tutorial flips to `status: preview`, guardian gets polled in the app
 6. **Guardian** reviews frames, edits text/images if needed → submits for review
 7. **Admin** sees it in the moderation queue → approves or rejects with notes

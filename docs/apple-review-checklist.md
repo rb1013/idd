@@ -130,7 +130,7 @@ Was: Info.plist strings were generic, e.g. *"Allow $(PRODUCT_NAME) to access you
   - [ ] Sample tutorials, friends, discussions and events
 - [ ] **AI generation working on review day:**
   - [x] Image model updated (`IMAGE_MODEL` = `gpt-image-2.6-flare`, deployed)
-  - [ ] **TTS switched to Google** before **January 6, 2027** (`docs/google-tts.md`), or creating a tutorial fails completely
+  - [x] **TTS switched to Google** before **January 6, 2027** (`docs/google-tts.md`): deployed and tested 2026-11-21
 - [ ] **iPad:** `supportsTablet: true` kept (the app has iPad layout: `IS_TABLET`, `scale()`, `ContentContainer` max width 520 in `constants/theme.ts`). Reviewers often test on iPad, so check every screen on an iPad simulator before submitting
 
 ---

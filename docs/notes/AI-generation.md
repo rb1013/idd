@@ -11,7 +11,7 @@ When a guardian creates a tutorial, the generation pipeline runs asynchronously 
 3. **`process-tutorial-job` edge function** — does the actual AI work:
    - Calls **Claude** (`claude-haiku-4-5`) to generate the script (captions, narration, image prompts per frame)
    - Calls **DALL·E 3** (`gpt-image-1`) to generate an image per frame
-   - Calls **OpenAI TTS-1** to generate audio narration per frame
+   - Calls **Google Cloud Text-to-Speech** (`_shared/tts.ts`) to generate audio narration per frame
    - Inserts frames into `tutorial_frames` and updates tutorial status to `preview` (or `approved` if private)
 
 The "My Tutorials" screen polls every 4s and updates the status badge automatically when generation completes.
@@ -24,7 +24,7 @@ The "My Tutorials" screen polls every 4s and updates the status badge automatica
 |------|---------|-----|
 | Script (captions, narration, image prompts) | Claude `claude-haiku-4-5` | Structured JSON, IDD-appropriate language, cheap + fast |
 | Image generation | OpenAI `gpt-image-1` | Claude cannot generate images |
-| Audio narration | OpenAI TTS-1 (`nova` voice) | Claude cannot generate audio |
+| Audio narration | Google Cloud Text-to-Speech, Chirp 3: HD (`TTS_VOICE` secret); OpenAI TTS-1 `nova` before Nov 2026 | Claude cannot generate audio |
 
 ---
 
@@ -122,5 +122,5 @@ These rules are baked into `buildPrompt()` in `create-tutorial/index.ts` and app
 |---------|------|
 | Claude script | ~$0.002 |
 | DALL·E 3 images (3×) | ~$0.12 |
-| TTS-1 audio (3 frames) | ~$0.001 |
+| Google TTS audio (3 frames) | $0 within the free 1M chars/month |
 | **Total** | **~$0.12 per tutorial** |
