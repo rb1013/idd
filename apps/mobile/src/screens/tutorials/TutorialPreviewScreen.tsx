@@ -16,8 +16,9 @@ import type { TutorialWithFrames, TutorialFrame, TutorialStatus } from '../../ty
 import YoutubePlayer from '../../components/YoutubePlayer';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
-  BTN_SIZE, BTN_VARIANT, scale,
+  BTN_SIZE, BTN_VARIANT, BUTTERFLY_BORDER, scale,
 } from '../../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
@@ -453,19 +454,26 @@ export default function TutorialPreviewScreen() {
             {/* Top row: mode control (left) + small regenerate button (right) */}
             <View style={s.frameActions}>
               {viewTab === 'video' ? (
-                <TouchableOpacity
-                  style={[s.autoPlayBtn, autoPlay && s.autoPlayBtnActive]}
-                  onPress={() => {
-                    if (!autoPlay) { setFrameIndex(0); setAutoPlay(true); }
-                    // Stop also silences the current slide's narration (not just auto-advance)
-                    else { setAutoPlay(false); player.pause(); }
-                  }}
-                  disabled={frames.length <= 1}
+                <LinearGradient
+                  colors={[...BUTTERFLY_BORDER.colors]}
+                  start={BUTTERFLY_BORDER.start}
+                  end={BUTTERFLY_BORDER.end}
+                  style={s.autoPlayBtnBorder}
                 >
-                  <AppText style={s.autoPlayBtnText}>
-                    {autoPlay ? '⏸  Stop' : '▶  Play'}
-                  </AppText>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[s.autoPlayBtn, autoPlay && s.autoPlayBtnActive]}
+                    onPress={() => {
+                      if (!autoPlay) { setFrameIndex(0); setAutoPlay(true); }
+                      // Stop also silences the current slide's narration (not just auto-advance)
+                      else { setAutoPlay(false); player.pause(); }
+                    }}
+                    disabled={frames.length <= 1}
+                  >
+                    <AppText style={s.autoPlayBtnText}>
+                      {autoPlay ? '⏸  Stop' : '▶  Play'}
+                    </AppText>
+                  </TouchableOpacity>
+                </LinearGradient>
               ) : (
                 <AppText style={s.frameCounter}>Frame {frameIndex + 1} of {frames.length}</AppText>
               )}
@@ -505,17 +513,24 @@ export default function TutorialPreviewScreen() {
             {viewTab === 'slides' && (
               <View style={s.frameSlideActions}>
                 {currentFrame?.audio_url && (
-                  <TouchableOpacity
-                    style={s.audioBtn}
-                    onPress={() => {
-                      if (playerStatus.playing) { player.pause(); }
-                      else { player.pause(); player.seekTo(0); player.play(); }
-                    }}
+                  <LinearGradient
+                    colors={[...BUTTERFLY_BORDER.colors]}
+                    start={BUTTERFLY_BORDER.start}
+                    end={BUTTERFLY_BORDER.end}
+                    style={s.audioBtnBorder}
                   >
-                    <AppText style={s.audioBtnIcon}>
-                      {playerStatus.playing ? '⏸' : '🔊'}
-                    </AppText>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={s.audioBtn}
+                      onPress={() => {
+                        if (playerStatus.playing) { player.pause(); }
+                        else { player.pause(); player.seekTo(0); player.play(); }
+                      }}
+                    >
+                      <AppText style={s.audioBtnIcon}>
+                        {playerStatus.playing ? '⏸' : '🔊'}
+                      </AppText>
+                    </TouchableOpacity>
+                  </LinearGradient>
                 )}
                 {isCreator && ['preview', 'rejected'].includes(tutorial.status) && (
                   <TouchableOpacity
@@ -822,9 +837,10 @@ const s = StyleSheet.create({
 
   frameContainer:    { backgroundColor: NICO.surface, borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 20, ...SHADOW.sm },
   frameActions:      { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: SPACING.sm, padding: 14, paddingBottom: SPACING.sm },
-  frameSlideActions: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 },
+  frameSlideActions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: SPACING.sm, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 },
   frameCounter:      { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 
+  autoPlayBtnBorder: { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.full },
   autoPlayBtn:       { backgroundColor: NICO.background, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
   autoPlayBtnActive: { backgroundColor: NICO.border },
   autoPlayBtnText:   { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
@@ -832,10 +848,12 @@ const s = StyleSheet.create({
   regenSmallBtnDisabled: { opacity: 0.5 },
   regenSmallBtnText: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 
-  audioBtn:     { width: scale(40), height: scale(40), borderRadius: RADIUS.full, backgroundColor: NICO.primaryLight, borderWidth: 1, borderColor: NICO.primary, justifyContent: 'center', alignItems: 'center' },
+  audioBtnBorder: { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.full },
+  audioBtn:     { width: scale(40), height: scale(40), borderRadius: RADIUS.full, backgroundColor: NICO.primaryLight, justifyContent: 'center', alignItems: 'center' },
   audioBtnIcon: { fontSize: FONT_SIZE.xl },
-  editBtn:      { backgroundColor: NICO.primaryLight, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderWidth: 1, borderColor: NICO.primary },
-  editBtnText:  { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
+  // Same pill look as "Re-generate tutorial" (regenSmallBtn)
+  editBtn:      { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADIUS.full, backgroundColor: NICO.background, justifyContent: 'center', alignItems: 'center' },
+  editBtnText:  { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 
   frameImage:          { width: '100%', aspectRatio: 1, backgroundColor: '#000' },
   image:               { width: '100%', height: '100%' },
