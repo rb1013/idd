@@ -835,11 +835,12 @@ export default function LearnerFriendsScreen() {
                       </TouchableOpacity>
                     )}
                     {l.connectionStatus === 'none' && (
-                      <TouchableOpacity style={[s.reqBtn, s.connectBtn, isSending && s.btnDisabled]}
-                        onPress={() => sendRequest(l)} disabled={isSending} activeOpacity={0.8}>
+                      <TouchableOpacity style={[s.connectIconBtn, isSending && s.btnDisabled]}
+                        onPress={() => sendRequest(l)} disabled={isSending} activeOpacity={0.8}
+                        hitSlop={8} accessibilityRole="button" accessibilityLabel={`Connect with ${l.name}`}>
                         {isSending
-                          ? <ActivityIndicator size="small" color={NICO.textOnAccent} />
-                          : <AppText style={s.connectBtnTxt}>Connect</AppText>
+                          ? <ActivityIndicator size="small" color={NICO.primary} />
+                          : <AppText style={s.connectIcon}>🤝</AppText>
                         }
                       </TouchableOpacity>
                     )}
@@ -1073,8 +1074,9 @@ const s = StyleSheet.create({
   pendingBadgeTxt: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
   respondBtn:      { ...BTN_VARIANT.primary },
   respondBtnTxt:   { color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.sm },
-  connectBtn:      { ...BTN_VARIANT.primary },
-  connectBtnTxt:   { color: NICO.textOnAccent, fontWeight: FONT_WEIGHT.bold, fontSize: FONT_SIZE.sm },
+  // Find tab: icon-only "Connect" (🤝), round like the 🚩 / 🚫 icon buttons
+  connectIconBtn:  { width: scale(40), height: scale(40), borderRadius: scale(20), backgroundColor: NICO.surface, justifyContent: 'center', alignItems: 'center' },
+  connectIcon:     { fontSize: scale(20) },
 
   // Friends tab
   infoIconCircle: {

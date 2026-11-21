@@ -117,7 +117,7 @@ export default function LoginScreen({ navigation }: Props) {
 
           <View style={s.dividerRow}>
             <View style={s.dividerLine} />
-            <AppText style={s.dividerText}>NEW TO CO-HEART?</AppText>
+            <AppText style={s.dividerText}>NEW TO CO-HEART ?</AppText>
             <View style={s.dividerLine} />
           </View>
 
