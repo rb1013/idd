@@ -24,7 +24,7 @@ export default function ForgotPasswordScreen() {
     if (errMsg) { Alert.alert('Invalid email', errMsg); return; }
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(normalised, {
-      redirectTo: 'nicoidd://auth/callback',
+      redirectTo: 'coheart://auth/callback',
     });
     setLoading(false);
     if (error) {

@@ -60,7 +60,7 @@ export default function ResetOTPScreen() {
   async function resend() {
     setResending(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'nicoidd://auth/callback',
+      redirectTo: 'coheart://auth/callback',
     });
     setResending(false);
     if (error) {

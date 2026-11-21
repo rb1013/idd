@@ -131,7 +131,7 @@ Info.plist strings are generic, e.g. *"Allow $(PRODUCT_NAME) to access your phot
 - [ ] **AI generation working on review day:**
   - [x] Image model updated (`IMAGE_MODEL` = `gpt-image-2.6-flare`, deployed)
   - [ ] **TTS switched to Google** before **January 6, 2027** (`docs/google-tts.md`), or creating a tutorial fails completely
-- [ ] **iPad:** `supportsTablet: true`, and reviewers often test on iPad. Check every screen on an iPad simulator, or set `supportsTablet: false`
+- [x] **iPad:** set `supportsTablet: false` in `apps/mobile/app.json` (iPhone-only) — 2026-11-21. Reviewers may still open it on an iPad in iPhone compatibility mode, so do a quick check on an iPad simulator
 
 ---
 
@@ -168,7 +168,7 @@ Private AI tutorials reach learners **without admin review**.
 ## 🟡 Low risk: cleanup
 
 - [ ] **Rename:** `apps/mobile/app.json` `"name": "nico-beta-rb"` → `Co-Heart`; the Xcode target and product name `nicobetarb` leak into permission prompts and return after `expo prebuild` (home-screen name is already Co-Heart)
-- [ ] **Export compliance:** add `ITSAppUsesNonExemptEncryption = false` to Info.plist (standard HTTPS only)
+- [x] **Export compliance:** `ITSAppUsesNonExemptEncryption = false` via `ios.config.usesNonExemptEncryption: false` in `apps/mobile/app.json` (standard HTTPS only) — 2026-11-21
 - [x] **Account deletion:** guardians can delete their account in the app (Account → Delete account); learner profiles can be deleted. Mention the location in review notes.
 - [x] **Sign in with Apple:** not required (email login only, no third-party logins)
 

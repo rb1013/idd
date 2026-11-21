@@ -95,7 +95,7 @@ export default function RegisterScreen() {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
-      options: { emailRedirectTo: 'nicoidd://auth/callback' },
+      options: { emailRedirectTo: 'coheart://auth/callback' },
     });
     if (error) { Alert.alert('Registration failed', error.message); setLoading(false); return; }
 
