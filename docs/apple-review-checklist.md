@@ -1,6 +1,6 @@
 # Apple App Store Review Checklist: Co-Heart
 
-**Written:** 2026-11-15 · **Status:** In progress (#1 app side and #2 done)
+**Written:** 2026-11-15 · **Status:** In progress (#1 app side, #2, #3, #4 and rename done; build 1.0.0 (6) uploaded 2026-11-21)
 Review of the iOS app against Apple's App Store Review Guidelines, with likely rejection reasons ordered by risk. Paths are relative to the repo root.
 
 ### Guideline numbers used below
@@ -101,25 +101,25 @@ Tasks:
 - [x] Add the privacy policy URL in App Store Connect
 - [x] Migration `091_guardian_terms_accepted_at.sql` applied
 
-### 3. Permission messages vague or unused (Guideline 5.1.1)
+### 3. Permission messages vague or unused (Guideline 5.1.1): ✅ done (2026-11-21, build 1.0.0 (6))
 
-Info.plist strings are generic, e.g. *"Allow $(PRODUCT_NAME) to access your photos"*. `$(PRODUCT_NAME)` is **`nicobetarb`**, so users would see "Allow nicobetarb to access…".
+Was: Info.plist strings were generic, e.g. *"Allow $(PRODUCT_NAME) to access your photos"*, with `$(PRODUCT_NAME)` = **`nicobetarb`**.
 
 | Permission | Used? | Action |
 |---|---|---|
-| Photos | ✅ Profile and learner photos (`launchImageLibraryAsync`) | [ ] Rewrite: "Co-Heart uses your photos so you can add a profile picture for you or your learner." |
-| Face ID | ⏸️ Not used yet: `promptBiometric()` in `apps/mobile/src/lib/biometricStore.ts` is never called (no prompt shown). Code and `expo-local-authentication` kept for future learner quick login | [ ] Keep the key, rewrite the text: "Co-Heart uses Face ID so your learner can sign in quickly and securely." |
-| Camera | ❌ (photo library only) | [ ] Remove |
-| Location (3 keys) | ❌ `expo-location` installed but unused | [ ] Uninstall `expo-location`, remove keys |
-| Microphone | ❌ No recording | [ ] Remove (configure the `expo-audio` plugin) |
-| Motion | ❌ | [ ] Remove |
+| Photos | ✅ Profile and learner photos (`launchImageLibraryAsync`) | [x] Rewritten: "Co-Heart uses your photos so you can add a profile picture for you or your learner." (`expo-image-picker` plugin) |
+| Face ID | ⏸️ Not used yet: `promptBiometric()` in `apps/mobile/src/lib/biometricStore.ts` is never called (no prompt shown). Code and `expo-local-authentication` kept for future learner quick login | [x] Key kept, text rewritten: "Co-Heart uses Face ID so your learner can sign in quickly and securely." (`expo-local-authentication` plugin) |
+| Camera | ❌ (photo library only) | [x] Removed (`expo-image-picker` `cameraPermission: false`) |
+| Location (3 keys) | ❌ `expo-location` was installed but unused | [x] `expo-location` uninstalled, keys gone |
+| Microphone | ❌ No recording | [x] Removed (`microphonePermission: false` on `expo-audio` and `expo-image-picker`) |
+| Motion | ❌ (came from `expo-location`) | [x] Removed with `expo-location` |
 
-- [ ] Set these in `apps/mobile/app.json` (`ios.infoPlist` and plugin options) so `expo prebuild` doesn't restore the old values
+- [x] Set in `apps/mobile/app.json` plugin options so `expo prebuild` keeps them
 
-### 4. Background audio declared but unused (Guideline 2.5.4)
+### 4. Background audio declared but unused (Guideline 2.5.4): ✅ done (2026-11-21, build 1.0.0 (6))
 
-- `UIBackgroundModes` contains `audio`, but narration only plays in the foreground.
-- [ ] Remove the `audio` background mode (likely via `expo-audio` plugin config)
+- Was: `UIBackgroundModes` contained `audio`, but narration only plays in the foreground.
+- [x] Removed: `expo-audio` `enableBackgroundPlayback: false` and `expo-video` `supportsBackgroundPlayback: false` in `apps/mobile/app.json`. Narration and video still play in the foreground and stop when the app is left.
 
 ### 5. Reviewer must be able to use every feature (Guideline 2.1)
 
@@ -131,7 +131,7 @@ Info.plist strings are generic, e.g. *"Allow $(PRODUCT_NAME) to access your phot
 - [ ] **AI generation working on review day:**
   - [x] Image model updated (`IMAGE_MODEL` = `gpt-image-2.6-flare`, deployed)
   - [ ] **TTS switched to Google** before **January 6, 2027** (`docs/google-tts.md`), or creating a tutorial fails completely
-- [x] **iPad:** set `supportsTablet: false` in `apps/mobile/app.json` (iPhone-only) — 2026-11-21. Reviewers may still open it on an iPad in iPhone compatibility mode, so do a quick check on an iPad simulator
+- [ ] **iPad:** `supportsTablet: true` kept (the app has iPad layout: `IS_TABLET`, `scale()`, `ContentContainer` max width 520 in `constants/theme.ts`). Reviewers often test on iPad, so check every screen on an iPad simulator before submitting
 
 ---
 
@@ -167,7 +167,7 @@ Private AI tutorials reach learners **without admin review**.
 
 ## 🟡 Low risk: cleanup
 
-- [ ] **Rename:** `apps/mobile/app.json` `"name": "nico-beta-rb"` → `Co-Heart`; the Xcode target and product name `nicobetarb` leak into permission prompts and return after `expo prebuild` (home-screen name is already Co-Heart)
+- [x] **Rename:** done 2026-11-21 in `apps/mobile/app.json`: name `Co-Heart` (Xcode project `CoHeart`), slug `coheart`, scheme `coheart` (auth `redirectTo` → `coheart://auth/callback`), bundle ID and Android package `com.yia.coheart`, `appleTeamId`. Old `com.yia.nico` App Store Connect record deleted; uploads go to the `com.yia.coheart` record. Build number is set in Xcode (Info → Bundle version) after each prebuild, not in app.json
 - [x] **Export compliance:** `ITSAppUsesNonExemptEncryption = false` via `ios.config.usesNonExemptEncryption: false` in `apps/mobile/app.json` (standard HTTPS only) — 2026-11-21
 - [x] **Account deletion:** guardians can delete their account in the app (Account → Delete account); learner profiles can be deleted. Mention the location in review notes.
 - [x] **Sign in with Apple:** not required (email login only, no third-party logins)
@@ -190,7 +190,7 @@ Security gaps that anyone could exploit once the app is public (see `RLS.md`, `T
 3. **Publish** the privacy policy and Terms at a public URL (after legal review)
 4. **App Store Connect:** age rating, not Kids (#6); privacy labels (#9); screenshots
 5. **Review notes:** demo account and PIN, learner-mode explanation, safety and moderation summary, account deletion location
-6. **iPad** check, or turn tablet support off
+6. **iPad** check (tablet support stays on)
 7. **Security fixes** before public release
 
 ---

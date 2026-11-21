@@ -8,8 +8,9 @@
     "userInterfaceStyle": "light",
     "scheme": "coheart",
     "ios": {
-      "supportsTablet": false,
+      "supportsTablet": true,
       "bundleIdentifier": "com.yia.coheart",
+      "appleTeamId": "U27QF5YLNF",
       "config": {
         "usesNonExemptEncryption": false
       }
