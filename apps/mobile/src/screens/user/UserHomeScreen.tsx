@@ -19,7 +19,7 @@ import AvatarWithMood from '../../components/AvatarWithMood';
 import ContentContainer from '../../components/ContentContainer';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
-  BUTTERFLY_BORDER, BUTTERFLY_TILES, tileWidth, scale,
+  BUTTERFLY_BORDER, BUTTERFLY_TILES, tileWidth, IS_TABLET, scale,
 } from '../../constants/theme';
 
 function LogoutIcon() {
@@ -60,7 +60,14 @@ const MOODS = [
   { emoji: '🤗', label: 'Grateful' },
 ];
 
-const { width } = Dimensions.get('window');   // user card / mood picker popups
+const { width } = Dimensions.get('window');   // user card / mood picker popups (phone)
+
+// Mood picker on iPad: exactly 4 moods per row (16 moods → 4 even rows). Sized from the mood button,
+// gap and card padding — not the launch-time screen width, which cut the card off after rotating.
+const MOOD_OPTION_W = scale(72);
+const MOOD_PICKER_W = IS_TABLET
+  ? MOOD_OPTION_W * 4 + SPACING.sm * 3 + SPACING.lg * 2
+  : width - 48;   // iPhone unchanged
 const TILE_W = tileWidth(24, 16);   // 24px padding each side, 16px gap (shared 2-column grid, 520pt on iPad)
 
 // Fixed feature colors — consistent with the guardian dashboard's own tile assignments
@@ -540,7 +547,7 @@ const s = StyleSheet.create({
   pickerCard: {
     backgroundColor: NICO.surface, borderRadius: RADIUS['3xl'],
     paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: SPACING.xl,
-    width: width - 48, alignItems: 'center',
+    width: MOOD_PICKER_W, alignItems: 'center',
     ...SHADOW.lg,
   },
   closeBtn: {
@@ -552,7 +559,7 @@ const s = StyleSheet.create({
   pickerTitle: { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.text, marginBottom: SPACING.lg },
   moodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, justifyContent: 'center' },
   moodOption: {
-    alignItems: 'center', gap: 4, padding: SPACING.sm, borderRadius: RADIUS.lg, width: scale(72),
+    alignItems: 'center', gap: 4, padding: SPACING.sm, borderRadius: RADIUS.lg, width: MOOD_OPTION_W,
     backgroundColor: NICO.background, borderWidth: 2, borderColor: 'transparent',
   },
   moodOptionSelected: { borderColor: NICO.primary, backgroundColor: NICO.primaryLight },
