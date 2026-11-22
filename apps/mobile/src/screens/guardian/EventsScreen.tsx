@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert,
   Modal, ScrollView, TextInput,
@@ -49,10 +49,12 @@ interface EventItem {
   guardianName: string;
   guardianId: string;
   goingCount: number;
-  // Guardians who RSVP'd "going" (blocked guardians are already hidden by RLS) — shown in the sheet
-  goingAttendees: { guardianId: string; name: string }[];
+  // Whether I've RSVP'd. Attendee names aren't part of the list — the sheet loads them on open.
+  iAmGoing: boolean;
   createdAt: string;
 }
+
+interface Attendee { guardianId: string; name: string }
 
 function formatTime(timeStr: string): string {
   const [h, m] = timeStr.split(':');
@@ -163,43 +165,64 @@ export default function EventsScreen() {
       venue: e.venue ?? '',
       guardianName: e.guardians?.full_name ?? 'Unknown',
       guardianId: e.guardian_id,
-      goingCount: (e.event_participants ?? []).filter((p: any) => p.rsvp === 'going').length,
-      goingAttendees: (e.event_participants ?? [])
-        .filter((p: any) => p.rsvp === 'going')
-        .map((p: any) => ({ guardianId: p.guardian_id, name: p.guardians?.full_name ?? 'Unknown' })),
+      goingCount: e.going?.[0]?.count ?? 0,
+      iAmGoing: (e.mine ?? []).length > 0,
       createdAt: e.created_at ?? '',
     };
   }
 
   async function load() {
+    if (!guardian) return;
     setLoading(true);
+    attendeeCache.current = {};   // names may have changed — reload them when a sheet opens
     // Local date, not UTC: toISOString() would roll over to tomorrow in the California evening
     const today = toLocalDateStr(new Date());
-    const SELECT = 'id, name, description, category, event_date, event_time, duration, venue, guardian_id, created_at, guardians!events_guardian_id_fkey(full_name), event_participants(guardian_id, rsvp, guardians!event_participants_guardian_id_fkey(full_name))';
+    // Per event: the going count (a number, not the rows) and only MY RSVP row (for Attending and
+    // the button). Attendee names are loaded by the sheet when it opens (loadAttendees).
+    const SELECT = 'id, name, description, category, event_date, event_time, duration, venue, guardian_id, created_at, guardians!events_guardian_id_fkey(full_name), going:event_participants(count), mine:event_participants(guardian_id)';
 
     const { data } = await supabase
       .from('events')
       .select(SELECT)
+      .eq('mine.guardian_id', guardian.id)   // filters the "mine" rows, not the events
       .gte('event_date', today)
       .order('event_date', { ascending: true });
 
-    const rows = data ?? [];
-    setEvents(rows.map(mapEvent));
-
-    // Attending: events the logged-in guardian RSVPd 'going' to, not created by them.
-    // Worked out from the RSVPs already in this one query (no extra calls); soonest first, like Upcoming.
-    setAttendingEvents(
-      guardian
-        ? rows
-            .filter((e: any) =>
-              e.guardian_id !== guardian.id &&
-              (e.event_participants ?? []).some((p: any) => p.guardian_id === guardian.id && p.rsvp === 'going'))
-            .map(mapEvent)
-        : [],
-    );
+    const list = (data ?? []).map(mapEvent);
+    setEvents(list);
+    // Attending: events I RSVP'd to that I'm not hosting; soonest first, like Upcoming
+    setAttendingEvents(list.filter(e => e.iAmGoing && e.guardianId !== guardian.id));
 
     setLoading(false);
   }
+
+  // ── Who's coming: loaded per event when its sheet opens ───────────────────────
+  const [attendees, setAttendees]           = useState<Attendee[] | null>(null);   // null = loading
+  const [attendeesError, setAttendeesError] = useState(false);
+  const attendeesForRef = useRef<string | null>(null);   // event the list belongs to (ignore late answers)
+  const attendeeCache   = useRef<Record<string, Attendee[]>>({});   // reopening an event is instant
+
+  async function loadAttendees(eventId: string) {
+    attendeesForRef.current = eventId;
+    setAttendeesError(false);
+    const cached = attendeeCache.current[eventId];
+    if (cached) { setAttendees(cached); return; }
+    setAttendees(null);
+    const { data, error } = await supabase
+      .from('event_participants')
+      .select('guardian_id, guardians!event_participants_guardian_id_fkey(full_name)')
+      .eq('event_id', eventId);
+    if (attendeesForRef.current !== eventId) return;   // another sheet was opened meanwhile
+    if (error) { setAttendeesError(true); return; }
+    const list = (data ?? []).map((p: any) => ({ guardianId: p.guardian_id, name: p.guardians?.full_name ?? 'Unknown' }));
+    attendeeCache.current[eventId] = list;
+    setAttendees(list);
+  }
+
+  useEffect(() => {
+    if (selectedEvent) loadAttendees(selectedEvent.id);
+    else { attendeesForRef.current = null; setAttendees(null); setAttendeesError(false); }
+  }, [selectedEvent?.id]);
 
   const applyFilters = (list: EventItem[], f: EventFilters) => {
     if (f.name.trim()) list = list.filter(e => e.name.toLowerCase().includes(f.name.trim().toLowerCase()));
@@ -219,11 +242,8 @@ export default function EventsScreen() {
 
   const filtered = tab === 'mine' ? visibleMine : tab === 'attending' ? visibleAttending : visibleUpcoming;
 
-  // My RSVP for the open event comes from the already-loaded attendee list (no extra request);
-  // rsvpEvent() updates selectedEvent.goingAttendees, so this stays in sync.
-  const nudgeRsvp: Rsvp | null =
-    selectedEvent && guardian && selectedEvent.goingAttendees.some(a => a.guardianId === guardian.id)
-      ? 'going' : null;
+  // My RSVP for the open event comes from the page load (no wait for the attendee names)
+  const nudgeRsvp: Rsvp | null = selectedEvent?.iAmGoing ? 'going' : null;
 
   async function openGuardianSheet(guardianId: string) {
     setGuardianSheet(null);
@@ -265,17 +285,20 @@ export default function EventsScreen() {
     setNudgeRsvping(false);
     if (error) { Alert.alert("Couldn't save your RSVP", 'Please try again.'); return; }
 
-    // Count and the "Who's coming" list both update with my RSVP
-    const me = { guardianId: guardian.id, name: guardian.full_name };
+    // Count, my RSVP and (if loaded) the "Who's coming" list all update with my RSVP
     const bump = (e: EventItem): EventItem => e.id !== event.id ? e : {
       ...e,
       goingCount: Math.max(0, e.goingCount + (wasGoing ? -1 : 1)),
-      goingAttendees: wasGoing
-        ? e.goingAttendees.filter(a => a.guardianId !== me.guardianId)
-        : [...e.goingAttendees.filter(a => a.guardianId !== me.guardianId), me],
+      iAmGoing: !wasGoing,
     };
     setEvents(prev => prev.map(bump));
     setSelectedEvent(prev => (prev ? bump(prev) : prev));
+    const me: Attendee = { guardianId: guardian.id, name: guardian.full_name };
+    const withMe = (list: Attendee[]) => wasGoing
+      ? list.filter(a => a.guardianId !== me.guardianId)
+      : [...list.filter(a => a.guardianId !== me.guardianId), me];
+    if (attendeeCache.current[event.id]) attendeeCache.current[event.id] = withMe(attendeeCache.current[event.id]);
+    if (attendeesForRef.current === event.id) setAttendees(prev => (prev ? withMe(prev) : prev));
     // Attending updates right away (it's otherwise only rebuilt when the screen loads)
     setAttendingEvents(prev => wasGoing
       ? prev.filter(e => e.id !== event.id)
@@ -575,12 +598,18 @@ export default function EventsScreen() {
                 {/* Who's coming — plain names; only this part scrolls */}
                 <AppText style={s.nudgeListTitle}>Who's coming</AppText>
                 <ScrollView style={s.nudgeList} showsVerticalScrollIndicator>
-                  {selectedEvent.goingAttendees.length === 0 ? (
+                  {attendeesError ? (
+                    <TouchableOpacity onPress={() => loadAttendees(selectedEvent.id)} activeOpacity={0.7}>
+                      <AppText style={s.nudgeListEmpty}>Couldn't load who's coming. Tap to retry.</AppText>
+                    </TouchableOpacity>
+                  ) : attendees === null ? (
+                    <ActivityIndicator size="small" color={NICO.primary} style={s.nudgeListLoading} />
+                  ) : attendees.length === 0 ? (
                     <AppText style={s.nudgeListEmpty}>No one has RSVP'd yet</AppText>
                   ) : (
                     // Two columns side by side
                     <View style={s.nudgeListGrid}>
-                      {selectedEvent.goingAttendees.map((a, i) => (
+                      {attendees.map((a, i) => (
                         // Left column left-aligned, right column right-aligned
                         <AppText
                           key={a.guardianId}
@@ -760,6 +789,7 @@ const s = StyleSheet.create({
   nudgeListTitle: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: SPACING.sm },
   nudgeList:      { flexShrink: 1 },   // takes the remaining sheet height (maxHeight 80%), then scrolls
   nudgeListGrid:  { flexDirection: 'row', flexWrap: 'wrap' },
+  nudgeListLoading: { alignSelf: 'flex-start', marginVertical: SPACING.sm },
   nudgeListName:  { width: '50%', paddingRight: SPACING.sm, fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, paddingVertical: SPACING.xs },
   nudgeListNameRight: { textAlign: 'right', paddingRight: 0, paddingLeft: SPACING.sm },
   nudgeListEmpty: { fontSize: FONT_SIZE.md, color: NICO.text, fontStyle: 'italic' },
