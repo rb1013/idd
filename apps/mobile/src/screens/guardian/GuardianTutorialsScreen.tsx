@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View, FlatList, TouchableOpacity, StyleSheet,
   Image, ActivityIndicator, Alert, TextInput, ScrollView,
@@ -97,6 +97,10 @@ const PENDING_STATUS_OPTIONS: { key: TutorialStatus; label: string }[] = [
 const MY_STATUSES: TutorialStatus[]      = ['approved', 'rejected'];
 const PENDING_STATUSES: TutorialStatus[] = ['generating', 'preview', 'pending'];
 
+// Only what the cards, filters and link buttons use (no ai_prompt / admin_notes etc.).
+// TutorialPreview loads the full row by id when a tutorial is opened.
+const LIST_COLUMNS = 'id, title, display_name, category, comprehension_level, format, is_public, link_count, source, status, thumbnail_url, created_at';
+
 export default function GuardianTutorialsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<GuardianNavParamList>>();
   const route = useRoute<RouteProp<GuardianNavParamList, 'Learning'>>();
@@ -109,6 +113,9 @@ export default function GuardianTutorialsScreen() {
   // ── My Tutorials tab ──────────────────────────────────────────────────────
   const [myTutorials, setMyTutorials]   = useState<Tutorial[]>([]);
   const [loadingMy, setLoadingMy]       = useState(true);
+  // Set after the first load of each list: later loads (screen refocus) refresh without a spinner
+  const myLoadedRef       = useRef(false);
+  const approvedLoadedRef = useRef(false);
   const [myFilters, setMyFilters]       = useState<TutorialStatus[]>(
     route.params?.initialStatus ? [route.params.initialStatus] : []
   );
@@ -156,31 +163,38 @@ export default function GuardianTutorialsScreen() {
   }
 
   async function loadMy(guardianId: string) {
-    setLoadingMy(true);
+    // Spinner only on the first load; on return visits keep the list and refresh quietly
+    if (!myLoadedRef.current) setLoadingMy(true);
     const [{ data: tuts }, { data: quotaRow }, { data: settings }] = await Promise.all([
-      supabase.from('tutorials').select('*').eq('created_by_guardian_id', guardianId).order('created_at', { ascending: false }),
+      supabase.from('tutorials').select(LIST_COLUMNS).eq('created_by_guardian_id', guardianId).order('created_at', { ascending: false }),
       supabase.from('guardian_tutorial_quota').select('count').eq('guardian_id', guardianId).eq('month', new Date().toISOString().slice(0, 7)).single(),
       supabase.from('app_settings').select('tutorial_quota_limit').single(),
     ]);
     setMyTutorials((tuts as Tutorial[]) || []);
     const limit = settings?.tutorial_quota_limit ?? 10;
     setQuota({ used: quotaRow?.count ?? 0, limit });
+    myLoadedRef.current = true;
     setLoadingMy(false);
   }
 
   async function loadLearner(guardianId: string) {
-    const { data } = await supabase.from('user_profiles').select('id').eq('guardian_id', guardianId).maybeSingle();
+    // One request: the learner together with their linked tutorial IDs (was two in a row)
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('id, user_tutorials(tutorial_id)')
+      .eq('guardian_id', guardianId)
+      .maybeSingle();
     if (data?.id) {
       setLearnerUserId(data.id);
-      const { data: linked } = await supabase.from('user_tutorials').select('tutorial_id').eq('user_id', data.id);
-      setLinkedIds(new Set((linked ?? []).map((r: any) => r.tutorial_id)));
+      setLinkedIds(new Set(((data as any).user_tutorials ?? []).map((r: any) => r.tutorial_id)));
     }
   }
 
   async function loadApproved() {
-    setLoadingSearch(true);
-    const { data } = await supabase.from('tutorials').select('*, guardian:guardians!created_by_guardian_id(full_name)').eq('status', 'approved').eq('is_public', true).order('created_at', { ascending: false });
-    setApproved((data as TutorialWithGuardian[]) || []);
+    if (!approvedLoadedRef.current) setLoadingSearch(true);
+    const { data } = await supabase.from('tutorials').select(`${LIST_COLUMNS}, guardian:guardians!created_by_guardian_id(full_name)`).eq('status', 'approved').eq('is_public', true).order('created_at', { ascending: false });
+    setApproved((data as unknown as TutorialWithGuardian[]) || []);
+    approvedLoadedRef.current = true;
     setLoadingSearch(false);
   }
 
