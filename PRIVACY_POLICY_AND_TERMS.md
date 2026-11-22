@@ -27,7 +27,7 @@ By creating a learner profile, you confirm that you are the learner's parent or 
 - Date of birth (to confirm you are 18 or older)
 - Password (securely handled by our authentication provider; we never see it in plain text)
 - A 6-digit Guardian PIN (stored only in hashed form)
-- **Optional:** a *Regional Support Category*, such as your learner's school support plan or California Regional Center service category, used to help you find families with similar needs
+- **Optional:** a *Regional Support Category*, such as your learner's support plan as per California Regional Center services, used to help you find families with similar needs
 - Content you create: connection requests, messages to other guardians, community events and RSVPs, discussion posts and replies, and tutorials you create or link
 
 ### Information about learners (provided by the guardian)

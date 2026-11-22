@@ -756,12 +756,14 @@ export default function TutorialPreviewScreen() {
                 <Image source={{ uri: editingFrame.image_url }} style={s.editorImage} resizeMode="cover" />
               )}
               <AppText style={s.editorFieldLabel}>What should the image show?</AppText>
+              {/* Each image is drawn on its own, so spell out the child to keep them the same across slides */}
+              <AppText style={s.editorFieldHint}>Describe the child clearly: girl or boy, age, clothing, and the action.</AppText>
               <TextInput
                 style={[s.editorInput, { height: 80 }, editorBusy && s.editorInputDisabled]}
                 value={editImagePrompt}
                 onChangeText={t => setEditImagePrompt(t.slice(0, IMAGE_PROMPT_MAX))}
                 editable={!editorBusy}
-                placeholder="e.g. A child kicking a soccer ball on a green field"
+                placeholder="e.g. An 8-year-old girl in a yellow t-shirt kicking a soccer ball"
                 placeholderTextColor={NICO.textMuted}
                 multiline
                 textAlignVertical="top"
@@ -900,6 +902,7 @@ const s = StyleSheet.create({
   editorDivider:     { height: 1, backgroundColor: NICO.border, marginHorizontal: SPACING.lg },
   editorFieldRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   editorFieldLabel:  { ...TEXT_STYLE.fieldLabel },
+  editorFieldHint:   { fontSize: FONT_SIZE.sm, color: NICO.text, lineHeight: 18, marginTop: 2, marginBottom: SPACING.xs },
   editorFieldValue:  { ...TEXT_STYLE.fieldValue, lineHeight: 22 },
   editorPencilBtn:   { padding: 4 },
   editorPencilText:  { fontSize: FONT_SIZE.lg },
