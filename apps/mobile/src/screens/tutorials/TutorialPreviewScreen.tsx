@@ -757,7 +757,7 @@ export default function TutorialPreviewScreen() {
               )}
               <AppText style={s.editorFieldLabel}>What should the image show?</AppText>
               {/* Each image is drawn on its own, so spell out the child to keep them the same across slides */}
-              <AppText style={s.editorFieldHint}>Describe the child clearly: girl or boy, age, clothing, and the action.</AppText>
+              <AppText style={s.editorFieldHint}>Describe the character clearly: girl or boy, age, clothing, and the action.</AppText>
               <TextInput
                 style={[s.editorInput, { height: 80 }, editorBusy && s.editorInputDisabled]}
                 value={editImagePrompt}

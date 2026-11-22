@@ -64,7 +64,7 @@ export default function CreateTutorialScreen() {
 
   async function handleSubmit() {
     if (!targetSkill) { Alert.alert('Required', 'Please select a target skill'); return; }
-    if (!coreAction.trim()) { Alert.alert('Required', 'Please describe the core action'); return; }
+    if (!coreAction.trim()) { Alert.alert('Required', 'Please describe the character and action'); return; }
     if (!displayName.trim()) { Alert.alert('Required', 'Please enter a tutorial name'); return; }
     if (!guardian) return;
     if (quota && quota.used >= quota.limit) {
@@ -147,7 +147,9 @@ export default function CreateTutorialScreen() {
 
         <Divider />
 
-        <FieldBlock label="Core Action *" hint="e.g. Dribbling a soccer ball (max 60 chars)">
+        {/* Saved as core_action. Describing the character here keeps the same child in every frame
+            (and in "Re-generate tutorial" / empty-box "Regenerate image", which reuse it). */}
+        <FieldBlock label="Character and Action *" hint="Describe the character (girl or boy, age, clothing) and what they do. Do not include personal details.">
           <LinearGradient
             colors={[...BUTTERFLY_BORDER.colors]}
             start={BUTTERFLY_BORDER.start}
@@ -155,16 +157,20 @@ export default function CreateTutorialScreen() {
             style={s.inputGradient}
           >
             <TextInput
-              style={s.input}
+              style={[s.input, s.inputMultiline]}
               value={coreAction}
-              onChangeText={t => setCoreAction(t.slice(0, 60))}
-              placeholder="Describe what the user will learn to do…"
+              onChangeText={t => setCoreAction(t.slice(0, 200))}
+              placeholder="e.g. An 8-year-old girl in a yellow t-shirt dribbling a soccer ball"
               placeholderTextColor={NICO.textMuted}
-              maxLength={60}
+              maxLength={200}
+              multiline
+              textAlignVertical="top"
               returnKeyType="done"
+              // Wraps like a text area, but Return still closes the keyboard (no line breaks)
+              submitBehavior="blurAndSubmit"
             />
           </LinearGradient>
-          <AppText style={s.charCount}>{coreAction.length}/60</AppText>
+          <AppText style={s.charCount}>{coreAction.length}/200</AppText>
         </FieldBlock>
 
         <Divider />
@@ -299,6 +305,7 @@ const s = StyleSheet.create({
   // Input with butterfly border
   inputGradient:  { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
   input:          { ...INPUT.base, borderWidth: 0 },
+  inputMultiline: { height: 80, paddingTop: SPACING.md },
   charCount:      { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.medium, alignSelf: 'flex-end' },
 
   // Skill selector

@@ -60,5 +60,6 @@ Rules:
 - One clear idea per frame. Each frame builds on the previous.
 - Positive framing only. No negatives or warnings.
 - Each image_prompt must describe exactly what visual to show for that specific step.
+- Each image is generated separately, so: if a character is described, use that exact same character (gender, age, clothing) in every image_prompt. If none is described, choose one and keep it the same in all frames.
 - caption must be 4 words or fewer, sentence case.`;
 }
