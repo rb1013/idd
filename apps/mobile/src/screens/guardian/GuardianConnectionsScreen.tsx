@@ -9,7 +9,6 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { calcAge } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
 import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
@@ -32,20 +31,6 @@ type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
 const AVATAR_COLORS = [NICO.teal, NICO.orange, NICO.coral, NICO.pink, NICO.purple, NICO.primary];
 
-const AGE_GROUPS     = ['Under 10', '10–14', '15–18', '19–25', '26–35', '36+'];
-const GENDER_OPTIONS = ['Male', 'Female'];
-
-function getAgeGroup(dob: string | null): string | null {
-  const age = calcAge(dob);
-  if (age === null) return null;
-  if (age < 10)  return 'Under 10';
-  if (age <= 14) return '10–14';
-  if (age <= 18) return '15–18';
-  if (age <= 25) return '19–25';
-  if (age <= 35) return '26–35';
-  return '36+';
-}
-
 function toggle<T>(arr: T[], val: T): T[] {
   return arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
 }
@@ -63,10 +48,6 @@ interface GuardianResult {
   photoUrl: string;
   county: string;
   situationTags: string[];
-  learnerName: string;
-  learnerRegion: string;
-  learnerDob: string | null;
-  learnerGender: string;
   status: Status;
   connectionId: string | null;
   isRequester: boolean;
@@ -103,9 +84,7 @@ export default function GuardianConnectionsScreen() {
   // Find tab search + filters
   const [searchName, setSearchName] = useState('');
   const [searchCounty, setSearchCounty] = useState('');
-  const [filterAgeGroups, setFilterAgeGroups] = useState<string[]>([]);
   const [filterTags,      setFilterTags]      = useState<string[]>([]);
-  const [filterGenders,   setFilterGenders]   = useState<string[]>([]);
   const [sheetOpen, setSheetOpen]             = useState(false);
 
   useFocusEffect(
@@ -169,28 +148,20 @@ export default function GuardianConnectionsScreen() {
   async function load(myId: string) {
     setLoading(true);
 
-    const { data: guardians } = await supabase
-      .from('guardians')
-      .select('id, full_name, email, photo_url, county, situation_tags')
-      .neq('id', myId);
-
-    if (!guardians || guardians.length === 0) { setLoading(false); return; }
-
-    const otherIds = guardians.map((g: any) => g.id);
-
-    const [{ data: learners }, { data: connections }] = await Promise.all([
+    // Guardian search uses only the guardian's own details — no learner data from other families.
+    // The two requests don't depend on each other, so they run in parallel (one round trip).
+    const [{ data: guardians }, { data: connections }] = await Promise.all([
       supabase
-        .from('user_profiles')
-        .select('id, name, date_of_birth, gender, region, guardian_id')
-        .in('guardian_id', otherIds),
+        .from('guardians')
+        .select('id, full_name, email, photo_url, county, situation_tags')
+        .neq('id', myId),
       supabase
         .from('guardian_connections')
         .select('id, requester_id, addressee_id, status')
         .or(`requester_id.eq.${myId},addressee_id.eq.${myId}`),
     ]);
 
-    const learnerMap: Record<string, any> = {};
-    (learners ?? []).forEach((l: any) => { if (!learnerMap[l.guardian_id]) learnerMap[l.guardian_id] = l; });
+    if (!guardians || guardians.length === 0) { setResults([]); setLoading(false); return; }
 
     function getStatus(otherId: string): { status: Status; connectionId: string | null; isRequester: boolean } {
       const c = (connections ?? []).find((r: any) =>
@@ -209,7 +180,6 @@ export default function GuardianConnectionsScreen() {
     }
 
     const list: GuardianResult[] = guardians.map((g: any) => {
-      const l = learnerMap[g.id];
       const { status, connectionId, isRequester } = getStatus(g.id);
       return {
         guardianId:    g.id,
@@ -218,10 +188,6 @@ export default function GuardianConnectionsScreen() {
         photoUrl:      g.photo_url ?? '',
         county:        g.county ?? '',
         situationTags: g.situation_tags ?? [],
-        learnerName:   l?.name ?? '',
-        learnerRegion: l?.region ?? '',
-        learnerDob:    l?.date_of_birth ?? null,
-        learnerGender: l?.gender ?? '',
         status,
         connectionId,
         isRequester,
@@ -330,12 +296,10 @@ export default function GuardianConnectionsScreen() {
       // 'none' and 'rejected' are both discoverable (re-request allowed)
       const matchName   = !searchName || r.guardianName.toLowerCase().includes(searchName.toLowerCase());
       const matchCounty   = !searchCounty || r.county.toLowerCase().includes(searchCounty.toLowerCase());
-      const matchAge    = filterAgeGroups.length === 0 || filterAgeGroups.includes(getAgeGroup(r.learnerDob) ?? '');
       const matchTags   = filterTags.length === 0 || filterTags.some(t => r.situationTags.includes(t));
-      const matchGender = filterGenders.length === 0 || filterGenders.includes(r.learnerGender);
-      return matchName && matchCounty && matchAge && matchTags && matchGender;
+      return matchName && matchCounty && matchTags;
     }),
-  [results, searchName, searchCounty, filterAgeGroups, filterTags, filterGenders]);
+  [results, searchName, searchCounty, filterTags]);
 
   // ── Pagination ───────────────────────────────────────────────────────────────
 
@@ -344,11 +308,11 @@ export default function GuardianConnectionsScreen() {
   const { visible: visibleConnected, showLoadMore: showLoadMoreConnected, loadMore: loadMoreConnected, showCapMessage: showCapConnected, pageSize } =
     useVisibleCount(filteredConnected, resetKeyConnected);
 
-  const resetKeyDiscover = `${searchName}|${searchCounty}|${filterAgeGroups.join(',')}|${filterTags.join(',')}|${filterGenders.join(',')}`;
+  const resetKeyDiscover = `${searchName}|${searchCounty}|${filterTags.join(',')}`;
   const { visible: visibleDiscovered, showLoadMore: showLoadMoreDiscovered, loadMore: loadMoreDiscovered, showCapMessage: showCapDiscovered, pageSize: pageSizeDiscover } =
     useVisibleCount(discovered, resetKeyDiscover);
 
-  const hasFindMore = filterAgeGroups.length + filterTags.length + filterGenders.length > 0;
+  const hasFindMore = filterTags.length > 0;
 
   // ── Card renderers ───────────────────────────────────────────────────────────
 
@@ -791,16 +755,8 @@ export default function GuardianConnectionsScreen() {
                 key: `tag-${t}`, label: `🎯 ${t}`,
                 onRemove: () => setFilterTags(prev => prev.filter(x => x !== t)),
               })),
-              ...filterAgeGroups.map(g => ({
-                key: `age-${g}`, label: `👤 ${g}`,
-                onRemove: () => setFilterAgeGroups(prev => prev.filter(x => x !== g)),
-              })),
-              ...filterGenders.map(g => ({
-                key: `gender-${g}`, label: `⚧ ${g}`,
-                onRemove: () => setFilterGenders(prev => prev.filter(x => x !== g)),
-              })),
             ]}
-            onClearAll={() => { setFilterAgeGroups([]); setFilterTags([]); setFilterGenders([]); }}
+            onClearAll={() => setFilterTags([])}
           />
 
           <FlatList
@@ -838,20 +794,8 @@ export default function GuardianConnectionsScreen() {
                 selected: filterTags,
                 onToggle: v => setFilterTags(prev => toggle(prev, v)),
               },
-              {
-                key: 'age', emoji: '👤', title: 'Learner Age',
-                options: AGE_GROUPS.map(g => ({ key: g, label: g })),
-                selected: filterAgeGroups,
-                onToggle: v => setFilterAgeGroups(prev => toggle(prev, v)),
-              },
-              {
-                key: 'gender', emoji: '⚧', title: 'Learner Gender',
-                options: GENDER_OPTIONS.map(g => ({ key: g, label: g })),
-                selected: filterGenders,
-                onToggle: v => setFilterGenders(prev => toggle(prev, v)),
-              },
             ] satisfies FilterSheetSection[]}
-            onClearAll={() => { setFilterAgeGroups([]); setFilterTags([]); setFilterGenders([]); }}
+            onClearAll={() => setFilterTags([])}
             onDone={() => setSheetOpen(false)}
           />
         </View>

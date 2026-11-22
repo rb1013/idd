@@ -14,8 +14,9 @@ export default function MoreFiltersLink({ onPress, isActive = false, label = 'Mo
     <TouchableOpacity onPress={onPress} activeOpacity={0.65} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
       <AppText style={{
         fontSize: FONT_SIZE.md,
-        fontWeight: isActive ? FONT_WEIGHT.bold : FONT_WEIGHT.medium,
-        color: isActive ? NICO.primary : NICO.textMuted,
+        // Dark in both states so it's easy to see; bold marks that filters are applied
+        fontWeight: isActive ? FONT_WEIGHT.bold : FONT_WEIGHT.semiBold,
+        color: NICO.text,
         textDecorationLine: 'underline',
       }}>
         {label}
