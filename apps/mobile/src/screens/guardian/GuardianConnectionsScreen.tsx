@@ -44,7 +44,6 @@ type RequestsSubTab = 'sent' | 'received';
 interface GuardianResult {
   guardianId: string;
   guardianName: string;
-  guardianEmail: string;
   photoUrl: string;
   county: string;
   situationTags: string[];
@@ -64,6 +63,7 @@ export default function GuardianConnectionsScreen() {
 
   const [results, setResults]       = useState<GuardianResult[]>([]);
   const [loading, setLoading]       = useState(true);
+  const loadedRef = useRef(false);   // set after the first load; later loads refresh without a spinner
   const [sending, setSending]       = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
   const [unreadMap, setUnreadMap]   = useState<Record<string, number>>({});
@@ -146,14 +146,16 @@ export default function GuardianConnectionsScreen() {
   }
 
   async function load(myId: string) {
-    setLoading(true);
+    // Spinner only on the first load; on return visits (e.g. back from a chat) keep the list on
+    // screen — same tab, filters and scroll — and refresh it quietly
+    if (!loadedRef.current) setLoading(true);
 
     // Guardian search uses only the guardian's own details — no learner data from other families.
     // The two requests don't depend on each other, so they run in parallel (one round trip).
     const [{ data: guardians }, { data: connections }] = await Promise.all([
       supabase
         .from('guardians')
-        .select('id, full_name, email, photo_url, county, situation_tags')
+        .select('id, full_name, photo_url, county, situation_tags')   // no email: other guardians' emails are never needed
         .neq('id', myId),
       supabase
         .from('guardian_connections')
@@ -161,7 +163,7 @@ export default function GuardianConnectionsScreen() {
         .or(`requester_id.eq.${myId},addressee_id.eq.${myId}`),
     ]);
 
-    if (!guardians || guardians.length === 0) { setResults([]); setLoading(false); return; }
+    if (!guardians || guardians.length === 0) { setResults([]); loadedRef.current = true; setLoading(false); return; }
 
     function getStatus(otherId: string): { status: Status; connectionId: string | null; isRequester: boolean } {
       const c = (connections ?? []).find((r: any) =>
@@ -184,7 +186,6 @@ export default function GuardianConnectionsScreen() {
       return {
         guardianId:    g.id,
         guardianName:  g.full_name ?? 'Unknown',
-        guardianEmail: g.email ?? '',
         photoUrl:      g.photo_url ?? '',
         county:        g.county ?? '',
         situationTags: g.situation_tags ?? [],
@@ -195,6 +196,7 @@ export default function GuardianConnectionsScreen() {
     });
 
     setResults(list);
+    loadedRef.current = true;
     setLoading(false);
   }
 

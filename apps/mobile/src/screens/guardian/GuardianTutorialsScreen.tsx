@@ -21,7 +21,7 @@ import MoreFiltersLink from '../../components/MoreFiltersLink';
 import ActiveFilterChips from '../../components/ActiveFilterChips';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
-  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, CARD_BTN_ALIGN, scale, GRID_COLS, GRID_CARD_W,
+  BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, CARD_BTN_ALIGN, scale, CARD_GRID_COLS, CARD_GRID,
 } from '../../constants/theme';
 
 type TutorialWithGuardian = Tutorial & { guardian?: { full_name: string } | null };
@@ -350,10 +350,9 @@ export default function GuardianTutorialsScreen() {
             <FlatList
               data={visibleSearch}
               keyExtractor={t => t.id}
-              numColumns={GRID_COLS}
-              key={String(GRID_COLS)}
-              columnWrapperStyle={styles.gridRow}
-              contentContainerStyle={styles.gridList}
+              numColumns={CARD_GRID_COLS}
+              columnWrapperStyle={CARD_GRID.row}
+              contentContainerStyle={CARD_GRID.list}
               ListFooterComponent={
                 showLoadMoreSearch ? (
                   <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreSearch} activeOpacity={0.7}>
@@ -542,10 +541,9 @@ export default function GuardianTutorialsScreen() {
             <FlatList
               data={visibleMy}
               keyExtractor={t => t.id}
-              numColumns={GRID_COLS}
-              key={String(GRID_COLS)}
-              columnWrapperStyle={styles.gridRow}
-              contentContainerStyle={styles.gridList}
+              numColumns={CARD_GRID_COLS}
+              columnWrapperStyle={CARD_GRID.row}
+              contentContainerStyle={CARD_GRID.list}
               ListHeaderComponent={
                 filteredMy.length > 0
                   ? <AppText style={styles.listCount}>{filteredMy.length} tutorial{filteredMy.length !== 1 ? 's' : ''}</AppText>
@@ -696,10 +694,9 @@ export default function GuardianTutorialsScreen() {
             <FlatList
               data={visiblePending}
               keyExtractor={t => t.id}
-              numColumns={GRID_COLS}
-              key={String(GRID_COLS)}
-              columnWrapperStyle={styles.gridRow}
-              contentContainerStyle={styles.gridList}
+              numColumns={CARD_GRID_COLS}
+              columnWrapperStyle={CARD_GRID.row}
+              contentContainerStyle={CARD_GRID.list}
               ListHeaderComponent={
                 filteredPending.length > 0
                   ? <AppText style={styles.listCount}>{filteredPending.length} tutorial{filteredPending.length !== 1 ? 's' : ''}</AppText>
@@ -858,10 +855,8 @@ const styles = StyleSheet.create({
   linkBtnTextLinked: { ...TEXT_STYLE.buttonSmall, color: NICO.success },
 
   // Search tab grid
-  gridList: { padding: SPACING.md, paddingBottom: SPACING['2xl'] },
-  gridRow:  { gap: SPACING.md, marginBottom: SPACING.md, justifyContent: 'flex-start' },
   gridCard: {
-    width: GRID_CARD_W, backgroundColor: 'white', borderRadius: RADIUS.xl,
+    width: CARD_GRID.cardWidth, backgroundColor: 'white', borderRadius: RADIUS.xl,
     borderWidth: 1, borderColor: NICO.border, overflow: 'hidden',
     ...SHADOW.md,
   },

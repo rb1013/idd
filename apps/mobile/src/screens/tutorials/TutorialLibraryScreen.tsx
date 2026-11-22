@@ -22,7 +22,7 @@ import { useVisibleCount } from '../../hooks/useVisibleCount';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
   BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES,
-  CARD_BTN_ALIGN, GRID_COLS, GRID_CARD_W, scale,
+  CARD_BTN_ALIGN, CARD_GRID_COLS, CARD_GRID, scale,
 } from '../../constants/theme';
 
 type RouteType = RouteProp<GuardianNavParamList, 'TutorialLibrary'>;
@@ -296,10 +296,9 @@ export default function TutorialLibraryScreen() {
         <FlatList
           data={visibleTutorials}
           keyExtractor={t => t.id}
-          numColumns={GRID_COLS}
-          key={String(GRID_COLS)}
-          columnWrapperStyle={s.gridRow}
-          contentContainerStyle={s.gridList}
+          numColumns={CARD_GRID_COLS}
+          columnWrapperStyle={CARD_GRID.row}
+          contentContainerStyle={CARD_GRID.list}
           ListFooterComponent={
             showLoadMore ? (
               <TouchableOpacity style={s.loadMoreBtn} onPress={loadMore} activeOpacity={0.7}>
@@ -445,10 +444,8 @@ const s = StyleSheet.create({
 
   filterBar: { paddingHorizontal: SPACING.base, paddingBottom: SPACING.sm, alignItems: 'flex-end' },
 
-  gridList: { padding: SPACING.md, paddingBottom: SPACING['2xl'] },
-  gridRow:  { gap: SPACING.md, marginBottom: SPACING.md, justifyContent: 'flex-start' },
   gridCard: {
-    width: GRID_CARD_W, borderRadius: RADIUS.xl,
+    width: CARD_GRID.cardWidth, borderRadius: RADIUS.xl,
     borderWidth: 1, borderColor: 'transparent', overflow: 'hidden',
     ...SHADOW.md,
   },

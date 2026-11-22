@@ -423,12 +423,36 @@ export const BTN = {
  */
 export const CARD_BTN_ALIGN: 'stretch' | 'center' = IS_TABLET ? 'center' : 'stretch';
 
-/** Grid columns for search/browse result lists: 2 on phone, 3 on tablet. */
-export const GRID_COLS = IS_TABLET ? 3 : 2;
+// ── 2-column tile grids ───────────────────────────────────────────────────────
+// Every tile grid (tutorial cards, learner home / friends / learn tiles) is 2 columns on phone and
+// iPad, laid out in the content column: 520pt on iPad (centred), the screen width on phone.
+// The width is fixed, so rotating the iPad or Split View can never make tiles overflow (sizing from
+// the launch-time screen width did — a landscape launch cut off the 3rd card in portrait).
 
-/** Card width that fills GRID_COLS columns with SPACING.base list padding and SPACING.sm column gap. */
-export const GRID_CARD_W =
-  (width - SPACING.base * 2 - SPACING.sm * (GRID_COLS - 1)) / GRID_COLS;
+/** Width 2-column tile grids are laid out in. */
+export const TILE_GRID_W = IS_TABLET && MAX_CONTENT_WIDTH ? MAX_CONTENT_WIDTH : width;
+
+/** Width of one tile in a 2-column grid with the given side padding and gap between tiles. */
+export function tileWidth(sidePadding: number, gap: number): number {
+  return (TILE_GRID_W - sidePadding * 2 - gap) / 2;
+}
+
+/** Tutorial card grids (Tutorials hub, guardian Learn): FlatList numColumns, styles and card width
+ *  share one padding / gap, so the cards always add up to the grid width. */
+export const CARD_GRID_COLS = 2;
+const CARD_GRID_SPACING = SPACING.md;
+export const CARD_GRID = {
+  /** FlatList contentContainerStyle — centres the grid in the content column on iPad */
+  list: { width: TILE_GRID_W, alignSelf: 'center' as const, padding: CARD_GRID_SPACING, paddingBottom: SPACING['2xl'] },
+  /** FlatList columnWrapperStyle */
+  row:  { gap: CARD_GRID_SPACING, marginBottom: CARD_GRID_SPACING, justifyContent: 'flex-start' as const },
+  cardWidth: tileWidth(CARD_GRID_SPACING, CARD_GRID_SPACING),
+};
+
+/** @deprecated Old names, kept only so the *.backup.tsx screens still compile. Use CARD_GRID. */
+export const GRID_COLS = CARD_GRID_COLS;
+/** @deprecated See GRID_COLS. */
+export const GRID_CARD_W = CARD_GRID.cardWidth;
 
 /** Base TextInput style. */
 export const INPUT = {

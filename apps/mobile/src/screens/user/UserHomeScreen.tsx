@@ -19,7 +19,7 @@ import AvatarWithMood from '../../components/AvatarWithMood';
 import ContentContainer from '../../components/ContentContainer';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
-  BUTTERFLY_BORDER, BUTTERFLY_TILES, MAX_CONTENT_WIDTH, IS_TABLET, scale,
+  BUTTERFLY_BORDER, BUTTERFLY_TILES, tileWidth, scale,
 } from '../../constants/theme';
 
 function LogoutIcon() {
@@ -60,9 +60,8 @@ const MOODS = [
   { emoji: '🤗', label: 'Grateful' },
 ];
 
-const { width } = Dimensions.get('window');
-const CONTENT_W = IS_TABLET && MAX_CONTENT_WIDTH ? MAX_CONTENT_WIDTH : width;
-const TILE_W = (CONTENT_W - 48 - 16) / 2;
+const { width } = Dimensions.get('window');   // user card / mood picker popups
+const TILE_W = tileWidth(24, 16);   // 24px padding each side, 16px gap (shared 2-column grid, 520pt on iPad)
 
 // Fixed feature colors — consistent with the guardian dashboard's own tile assignments
 const FRIENDS_COLOR    = BUTTERFLY_TILES[0]; // teal

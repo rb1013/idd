@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Alert, Dimensions,
+  ActivityIndicator, Alert,
 } from 'react-native';
 import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
@@ -17,12 +17,10 @@ import { UserStackParamList } from '../../navigation';
 import AvatarWithMood from '../../components/AvatarWithMood';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
-  BUTTERFLY_TILES, MAX_CONTENT_WIDTH, IS_TABLET, scale,
+  BUTTERFLY_TILES, tileWidth, scale,
 } from '../../constants/theme';
 
-const { width } = Dimensions.get('window');
-const CONTENT_W = IS_TABLET && MAX_CONTENT_WIDTH ? MAX_CONTENT_WIDTH : width;
-const TILE_W = (CONTENT_W - SPACING.base * 2 - SPACING.md) / 2;
+const TILE_W = tileWidth(SPACING.base, SPACING.md);   // shared 2-column grid, 520pt on iPad
 
 const EMPTY_MESSAGE = 'No friends added yet. Ask your guardian to add friends for you!';
 

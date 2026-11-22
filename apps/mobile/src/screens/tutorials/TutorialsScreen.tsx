@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import {
   View, ScrollView, TouchableOpacity, StyleSheet,
-  Image, ActivityIndicator, Dimensions, Platform,
+  Image, ActivityIndicator, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppText from '../../components/AppText';
@@ -18,12 +18,10 @@ import { UserStackParamList } from '../../navigation';
 import type { Tutorial } from '../../types';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
-  BTN_SIZE, BTN_VARIANT, BUTTERFLY_TILES, MAX_CONTENT_WIDTH, IS_TABLET, scale,
+  BTN_SIZE, BTN_VARIANT, BUTTERFLY_TILES, tileWidth, scale,
 } from '../../constants/theme';
 
-const { width } = Dimensions.get('window');
-const CONTENT_W = IS_TABLET && MAX_CONTENT_WIDTH ? MAX_CONTENT_WIDTH : width;
-const TILE_W = (CONTENT_W - 40 - 12) / 2; // 20px padding each side, 12px gap
+const TILE_W = tileWidth(20, 12); // 20px padding each side, 12px gap (shared 2-column grid, 520pt on iPad)
 
 const FORMAT_EMOJI: Record<string, string> = { video: '🎬', slideshow: '🖼' };
 
