@@ -23,7 +23,7 @@ By creating a learner profile, you confirm that you are the learner's parent or 
 ## 2. Information we collect
 
 ### Information about guardians (provided by you)
-- Full name, email address, phone number, and county
+- Full name, email address, and county
 - Date of birth (to confirm you are 18 or older)
 - Password (securely handled by our authentication provider; we never see it in plain text)
 - A 6-digit Guardian PIN (stored only in hashed form)

@@ -26,16 +26,13 @@ Co-Heart is built for families in **California**.
 
 ### How do I create an account?
 Guardians sign up in the app. You'll:
-1. Confirm you're an adult and agree to the consent step.
-2. Enter your name, email, phone number, county, and a password.
+1. Agree to the Privacy Policy and Terms of Service, then confirm you're 18 or older.
+2. Enter your name, email, county, and a password.
 3. Choose a **6-digit Guardian PIN**.
 4. Enter the 6-digit code we email you to verify your address.
 
 ### What are the password rules?
 At least **6 characters**, including at least **one uppercase letter**, **one lowercase letter**, and **one number**.
-
-### What phone number format should I use?
-A 10-digit US number, digits only (for example, `2025550123`). The `+1` is added for you.
 
 ### I didn't get the verification or reset email.
 - Check your spam or junk folder.

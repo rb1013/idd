@@ -27,8 +27,6 @@ type ConnectionStatus = 'none' | 'pending_sent' | 'pending_received' | 'accepted
 interface GuardianProfile {
   name: string;
   county: string | null;
-  email: string | null;
-  phone: string | null;
 }
 
 interface LearnerProfile {
@@ -88,13 +86,12 @@ export default function LearnerPublicProfileScreen() {
 
     let guardianProfile: GuardianProfile | null = null;
     if (p.guardian_id) {
-      const { data: g } = await supabase.from('guardians').select('full_name, county, email, phone').eq('id', p.guardian_id).single();
+      // Email and phone are not shown to other guardians (privacy policy §4) — connect to share contact details
+      const { data: g } = await supabase.from('guardians').select('full_name, county').eq('id', p.guardian_id).single();
       if (g) {
         guardianProfile = {
           name: g.full_name,
           county: g.county ?? null,
-          email: g.email ?? null,
-          phone: g.phone ?? null,
         };
       }
     }
@@ -201,8 +198,7 @@ export default function LearnerPublicProfileScreen() {
             <AppText style={s.guardianCardTitle}>Guardian Profile</AppText>
             <InfoRow label="Name"   value={profile.guardian.name}   fallback="Not set" />
             <InfoRow label="County" value={profile.guardian.county} fallback="Not set" />
-            <InfoRow label="Email"  value={profile.guardian.email}  fallback="Not set" noCapitalize />
-            <InfoRow label="Phone"  value={profile.guardian.phone}  fallback="Not set" noCapitalize />
+            <AppText style={s.guardianNote}>*** Please connect with guardian to get contact details</AppText>
           </View>
         )}
 
@@ -297,6 +293,7 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: NICO.border,
   },
   guardianCardTitle: { fontSize: IS_TABLET ? FONT_SIZE.xl : FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: SPACING.sm },
+  guardianNote: { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, fontStyle: 'italic', marginTop: SPACING.sm },
 
   actionCard: {
     backgroundColor: NICO.surface, borderRadius: RADIUS.xl, padding: SPACING.base, gap: SPACING.md,

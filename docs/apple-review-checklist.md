@@ -15,7 +15,7 @@ Full text: [App Store Review Guidelines](https://developer.apple.com/app-store/r
 | **2.3** | Accurate Metadata | Store description, screenshots, and privacy labels must match what the app actually does | Description, privacy labels, screenshots (#9) |
 | **2.5.4** | Background services | Apps may only declare background modes (audio, location, VoIP…) for features that genuinely run in the background | Unused background audio (#4) |
 | **4.8** | Login Services (Sign in with Apple) | If an app offers third-party login (Google, Facebook…), it must also offer Sign in with Apple. Email/password-only apps don't need it | Not required here ✅ |
-| **5.1.1** | Data Collection and Storage | Privacy policy linked in the app and App Store Connect; permission prompts must clearly explain **why** data is needed; only ask for data the app needs (data minimization); accounts created in the app must be deletable in the app | Privacy policy link (#2), permission messages (#3), required phone number (#8), account deletion ✅ |
+| **5.1.1** | Data Collection and Storage | Privacy policy linked in the app and App Store Connect; permission prompts must clearly explain **why** data is needed; only ask for data the app needs (data minimization); accounts created in the app must be deletable in the app | Privacy policy link (#2), permission messages (#3), phone number removed (#8), account deletion ✅ |
 | **5.1.4** | Kids (privacy) | Apps for children must follow children's privacy laws (e.g. COPPA): parental consent, no third-party ads/analytics targeting kids, careful handling of kids' data | Learners may be under 13 (#6) |
 
 ---
@@ -153,9 +153,11 @@ Private AI tutorials reach learners **without admin review**.
 - [ ] In review notes, describe the safeguards: prompt guidance, admin review of public tutorials, guardians preview everything
 - [ ] Consider adding **Report** on tutorials
 
-### 8. Phone number required at sign-up (Guideline 5.1.1, data minimization)
+### 8. Phone number required at sign-up (Guideline 5.1.1, data minimization): ✅ done (2026-11-21)
 
-- [ ] If the phone number isn't used by any feature, make it **optional**, or explain its purpose on the sign-up screen
+- [x] Phone isn't used by any feature, so the input is **commented out** (not deleted) on sign-up (`RegisterScreen.tsx`) and Edit Profile (`GuardianEditAccountScreen.tsx`), with their `validatePhone` calls; the Account screen Phone row and the `phone` insert in `AuthContext.tsx` are commented out too. `guardians.phone` is nullable, so new guardians get `null`; existing values (dummy test data) are left as is. `constants/countryCodes.ts` helpers kept for a possible restore
+- [x] Learner public profile (`LearnerPublicProfileScreen.tsx`) no longer shows the guardian's **email or phone** to other guardians (matches privacy policy §4); shows "Please connect with guardian to get contact details" instead
+- [x] Privacy policy §2 and FAQ no longer mention phone number (website copy to be updated)
 
 ### 9. Metadata accuracy (Guideline 2.3)
 
@@ -170,7 +172,7 @@ For each data type Apple asks: collected? → purpose → linked to the user's i
 
 | Apple category | What Co-Heart collects | Linked to user | Purpose |
 |---|---|---|---|
-| Contact Info: Name, Email Address, Phone Number | Guardian account; learner name | Yes | App Functionality |
+| Contact Info: Name, Email Address | Guardian account; learner name (phone is no longer collected) | Yes | App Functionality |
 | Contact Info: Other User Contact Info | County | Yes | App Functionality |
 | User Content: Photos or Videos | Profile and learner photos | Yes | App Functionality |
 | User Content: Emails or Text Messages | Guardian chat, learner phrase messages | Yes | App Functionality |

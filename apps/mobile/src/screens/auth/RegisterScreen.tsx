@@ -14,7 +14,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { FIXED_STATE } from '../../constants/usStates';
 import { CA_COUNTIES } from '../../constants/caCounties';
-import { validatePhone, buildE164, sanitizePhoneInput, PHONE_MAX_LENGTH } from '../../constants/countryCodes';
+// Phone input commented out: not used by any feature (guardians.phone is nullable). Uncomment to restore.
+// import { validatePhone, buildE164, sanitizePhoneInput, PHONE_MAX_LENGTH } from '../../constants/countryCodes';
 import { emailError, passwordError, passwordMatchError, PASSWORD_HINT } from '../../lib/validators';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
@@ -27,7 +28,7 @@ export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
   const [fullName, setFullName]   = useState('');
   const [email, setEmail]         = useState('');
-  const [phone, setPhone] = useState('');
+  // const [phone, setPhone] = useState('');
   const [password, setPassword]   = useState('');
   const [confirm, setConfirm]     = useState('');
   const [county, setCounty]       = useState('');
@@ -74,8 +75,8 @@ export default function RegisterScreen() {
     if (pin.length !== 6)                { Alert.alert('Please create a 6-digit PIN'); return; }
     if (pin !== confirmPin)              { Alert.alert('PINs do not match'); return; }
 
-    const phoneError = validatePhone(phone);
-    if (phoneError) { Alert.alert('Invalid phone number', phoneError); return; }
+    // const phoneError = validatePhone(phone);
+    // if (phoneError) { Alert.alert('Invalid phone number', phoneError); return; }
 
     setLoading(true);
 
@@ -102,7 +103,7 @@ export default function RegisterScreen() {
     await SecureStore.setItemAsync('pending_guardian_registration', JSON.stringify({
       email: email.toLowerCase().trim(),
       fullName,
-      phone: buildE164('+1', phone),
+      // phone: buildE164('+1', phone),
       county,
       state: FIXED_STATE,
       selectedTags,
@@ -161,6 +162,7 @@ export default function RegisterScreen() {
           placeholderTextColor={NICO.textMuted}
         />
 
+        {/* Phone input commented out (not used by any feature)
         <AppText style={styles.label}>Phone<AppText style={styles.required}> *</AppText></AppText>
         <View style={styles.phoneRow}>
           <View style={styles.countryCodeBtn}>
@@ -177,6 +179,7 @@ export default function RegisterScreen() {
             placeholderTextColor={NICO.textMuted}
           />
         </View>
+        */}
 
         <AppText style={styles.label}>Password<AppText style={styles.required}> *</AppText></AppText>
         <TextInput
@@ -217,7 +220,7 @@ export default function RegisterScreen() {
         <AppText style={styles.label}>Regional Support Category (optional)</AppText>
         <View style={styles.helperBox}>
           <AppText style={styles.helperText}>
-            ℹ️  Select the category that matches your learner's school support plan or California Regional Center services. This helps you find local families with similar needs.
+            ℹ️  Select the category that matches your learner's support plan as per California Regional Center services. This helps you find local families with similar needs.
           </AppText>
         </View>
         <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowTagPicker(true)} activeOpacity={0.7}>

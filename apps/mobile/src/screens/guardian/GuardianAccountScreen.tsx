@@ -143,8 +143,10 @@ export default function GuardianAccountScreen() {
           <View style={s.divider} />
           <InfoRow label="Email"   value={guardian?.email ?? '—'} />
           <View style={s.divider} />
+          {/* Phone row commented out (phone input removed; not used by any feature)
           <InfoRow label="Phone"   value={guardian?.phone || '—'} />
           <View style={s.divider} />
+          */}
           <InfoRow label="Country" value="USA" />
           <View style={s.divider} />
           <InfoRow label="State"   value={guardian?.state || '—'} />

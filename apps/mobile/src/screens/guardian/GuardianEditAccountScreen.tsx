@@ -10,7 +10,8 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { FIXED_STATE } from '../../constants/usStates';
 import { CA_COUNTIES } from '../../constants/caCounties';
-import { validatePhone, buildE164, sanitizePhoneInput, PHONE_MAX_LENGTH } from '../../constants/countryCodes';
+// Phone input commented out: not used by any feature (guardians.phone is nullable). Uncomment to restore.
+// import { validatePhone, buildE164, sanitizePhoneInput, PHONE_MAX_LENGTH } from '../../constants/countryCodes';
 import { useNavigation } from '@react-navigation/native';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, INPUT, BTN_SIZE, BTN_VARIANT, FONT_SIZE, FONT_WEIGHT,
@@ -21,10 +22,10 @@ export default function GuardianEditAccountScreen() {
   const navigation = useNavigation();
 
   const [name, setName]   = useState(guardian?.full_name ?? '');
-  const [phone, setPhone] = useState(() => {
-    const raw = guardian?.phone ?? '';
-    return (raw.startsWith('+1') ? raw.slice(2) : raw).replace(/\D/g, '');
-  });
+  // const [phone, setPhone] = useState(() => {
+  //   const raw = guardian?.phone ?? '';
+  //   return (raw.startsWith('+1') ? raw.slice(2) : raw).replace(/\D/g, '');
+  // });
   const [county, setCounty]             = useState(guardian?.county ?? '');
   const [selectedTags, setSelectedTags] = useState<string[]>(guardian?.situation_tags ?? []);
 
@@ -56,13 +57,13 @@ export default function GuardianEditAccountScreen() {
     if (!name.trim()) { Alert.alert('Name cannot be empty'); return; }
     if (!county) { Alert.alert('Please select a county'); return; }
 
-    const phoneError = validatePhone(phone);
-    if (phoneError) { Alert.alert('Invalid phone number', phoneError); return; }
+    // const phoneError = validatePhone(phone);
+    // if (phoneError) { Alert.alert('Invalid phone number', phoneError); return; }
 
     setSaving(true);
     const { error } = await supabase.from('guardians').update({
       full_name:      name.trim(),
-      phone:          buildE164('+1', phone),
+      // phone:          buildE164('+1', phone),   // not sent, so existing values are left untouched
       state:          FIXED_STATE,
       county,
       country:        'USA',
@@ -96,6 +97,7 @@ export default function GuardianEditAccountScreen() {
             />
           </View>
 
+          {/* Phone input commented out (not used by any feature)
           <View style={s.field}>
             <AppText style={s.label}>Phone<AppText style={s.required}> *</AppText></AppText>
             <View style={s.phoneRow}>
@@ -114,6 +116,7 @@ export default function GuardianEditAccountScreen() {
               />
             </View>
           </View>
+          */}
 
           <View style={s.field}>
             <AppText style={s.label}>Email</AppText>

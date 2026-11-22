@@ -124,7 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: userId,
           email: p.email,
           full_name: p.fullName,
-          phone: p.phone,
+          // phone: p.phone,   // phone input commented out at sign-up; guardians.phone stays null
           county: p.county,
           state: p.state,
           country: 'USA',
