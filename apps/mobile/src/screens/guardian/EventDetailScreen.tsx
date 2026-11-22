@@ -6,7 +6,6 @@ import {
 import AppText from '../../components/AppText';
 import ReportFlag from '../../components/ReportFlag';
 import RainbowDivider from '../../components/RainbowDivider';
-import GuardianPeekSheet from '../../components/GuardianPeekSheet';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -33,11 +32,6 @@ interface EventDetail {
   venue: string; guardianName: string; guardianId: string;
 }
 interface Attendee { guardianId: string; guardianName: string; rsvp: Rsvp }
-
-interface GuardianProfile {
-  id: string; name: string; photoUrl: string | null;
-  county: string; situationTags: string[];
-}
 
 function formatTime(timeStr: string): string {
   const [h, m] = timeStr.split(':');
@@ -71,8 +65,6 @@ export default function EventDetailScreen() {
   const [myRsvp, setMyRsvp]       = useState<Rsvp | null>(null);
   const [loading, setLoading]     = useState(true);
   const [rsvping, setRsvping]     = useState(false);
-  const [guardianSheet, setGuardianSheet]           = useState<GuardianProfile | null>(null);
-  const [loadingGuardianSheet, setLoadingGuardianSheet] = useState(false);
 
   useEffect(() => { load(); }, [eventId]);
 
@@ -149,42 +141,6 @@ export default function EventDetailScreen() {
     setRsvping(false);
   }
 
-  async function openGuardianSheet(guardianId: string) {
-    setGuardianSheet(null);
-    setLoadingGuardianSheet(true);
-    const { data } = await supabase
-      .from('guardians')
-      .select('id, full_name, photo_url, county, situation_tags')
-      .eq('id', guardianId)
-      .single();
-    if (data) {
-      setGuardianSheet({
-        id: data.id, name: data.full_name ?? '',
-        photoUrl: data.photo_url ?? null,
-        county: data.county ?? '',
-        situationTags: data.situation_tags ?? [],
-      });
-    }
-    setLoadingGuardianSheet(false);
-  }
-
-  function closeGuardianSheet() {
-    setGuardianSheet(null);
-    setLoadingGuardianSheet(false);
-  }
-
-  async function deleteEvent() {
-    if (!event) return;
-    Alert.alert('Delete event', 'This will permanently delete the event and all RSVPs.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: async () => {
-          await supabase.from('events').delete().eq('id', event.id);
-          navigation.goBack();
-        },
-      },
-    ]);
-  }
 
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
   if (!event)  return <View style={s.center}><AppText style={s.errorText}>Event not found</AppText></View>;
@@ -209,14 +165,8 @@ export default function EventDetailScreen() {
             <AppText style={s.eventName}>{event.name}</AppText>
             <AppText style={s.eventOrganiser}>By {event.guardianName}</AppText>
           </View>
-          {isOrganiser ? (
-            <TouchableOpacity onPress={deleteEvent} style={s.deleteBtn} activeOpacity={0.7}>
-              <AppText style={s.deleteBtnText}>🗑</AppText>
-            </TouchableOpacity>
-          ) : (
-            // 🚩 for everyone except the host (who sees 🗑)
-            <ReportFlag target={{ area: 'event', eventId: event.id }} />
-          )}
+          {/* 🚩 for everyone except the host. Hosts delete events from the Events list (My events), not here. */}
+          {!isOrganiser && <ReportFlag target={{ area: 'event', eventId: event.id }} />}
         </View>
 
         {/* Details card */}
@@ -266,20 +216,12 @@ export default function EventDetailScreen() {
         {going.length > 0 && (
           <View style={s.card}>
             <AppText style={s.sectionTitle}>Who's coming ({going.length})</AppText>
-            {going.map(a => <AttendeeRow key={a.guardianId} name={a.guardianName} onPress={() => openGuardianSheet(a.guardianId)} />)}
+            {/* Plain names, same as the Events sheet (no profile sheet on tap) */}
+            {going.map(a => <AttendeeRow key={a.guardianId} name={a.guardianName} />)}
           </View>
         )}
 
       </ScrollView>
-
-      <GuardianPeekSheet
-        visible={!!guardianSheet || loadingGuardianSheet}
-        guardian={guardianSheet}
-        loading={loadingGuardianSheet}
-        onClose={closeGuardianSheet}
-        // Blocked the host → this event is now hidden, so leave; otherwise refresh the attendee list
-        onBlocked={id => { if (id === event.guardianId) navigation.goBack(); else load(); }}
-      />
     </View>
   );
 }
@@ -293,15 +235,15 @@ function DetailRow({ icon, text }: { icon: string; text: string }) {
   );
 }
 
-function AttendeeRow({ name, onPress }: { name: string; onPress: () => void }) {
+function AttendeeRow({ name }: { name: string }) {
   const color = AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
   return (
-    <TouchableOpacity style={s.attendeeRow} onPress={onPress} activeOpacity={0.7}>
+    <View style={s.attendeeRow}>
       <View style={[s.attendeeAvatar, { backgroundColor: color }]}>
         <AppText style={s.attendeeInitial}>{name[0]?.toUpperCase()}</AppText>
       </View>
-      <AppText style={[s.attendeeName, s.attendeeNameLink]}>{name}</AppText>
-    </TouchableOpacity>
+      <AppText style={s.attendeeName}>{name}</AppText>
+    </View>
   );
 }
 
@@ -326,8 +268,6 @@ const s = StyleSheet.create({
   headerInfo:     { flex: 1, gap: SPACING.xs },
   eventName:      { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.text },
   eventOrganiser: { fontSize: FONT_SIZE.md, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
-  deleteBtn:      { padding: SPACING.sm },
-  deleteBtnText:  { fontSize: FONT_SIZE.xl },
 
   card: {
     backgroundColor: NICO.surface, borderRadius: RADIUS.xl, padding: SPACING.base, gap: SPACING.md,
@@ -355,5 +295,4 @@ const s = StyleSheet.create({
   attendeeAvatar:  { width: scale(32), height: scale(32), borderRadius: scale(16), justifyContent: 'center', alignItems: 'center' },
   attendeeInitial: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },
   attendeeName:     { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
-  attendeeNameLink: { color: NICO.primary, textDecorationLine: 'underline' },
 });

@@ -49,6 +49,8 @@ interface EventItem {
   guardianName: string;
   guardianId: string;
   goingCount: number;
+  // Guardians who RSVP'd "going" (blocked guardians are already hidden by RLS) — shown in the sheet
+  goingAttendees: { guardianId: string; name: string }[];
   createdAt: string;
 }
 
@@ -65,14 +67,6 @@ function toLocalDateStr(d: Date): string {
   return `${y}-${m}-${dd}`;
 }
 
-function formatFullDate(dateStr: string, timeStr?: string | null): string {
-  const d = new Date(dateStr + 'T12:00:00');
-  const date = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  if (!timeStr) return date;
-  const [h, m] = timeStr.split(':');
-  const hours = parseInt(h, 10);
-  return `${date} at ${hours % 12 || 12}:${m} ${hours >= 12 ? 'PM' : 'AM'}`;
-}
 
 type EventsRoute = RouteProp<GuardianNavParamList, 'Events'>;
 
@@ -130,7 +124,6 @@ export default function EventsScreen() {
   const [tab, setTab] = useState<EventsTab>(route.params?.tab ?? 'upcoming');
   const [attendingEvents, setAttendingEvents] = useState<EventItem[]>([]);
   const [selectedEvent, setSelectedEvent]       = useState<EventItem | null>(null);
-  const [nudgeRsvp, setNudgeRsvp]               = useState<Rsvp | null>(null);
 
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
 
@@ -171,6 +164,9 @@ export default function EventsScreen() {
       guardianName: e.guardians?.full_name ?? 'Unknown',
       guardianId: e.guardian_id,
       goingCount: (e.event_participants ?? []).filter((p: any) => p.rsvp === 'going').length,
+      goingAttendees: (e.event_participants ?? [])
+        .filter((p: any) => p.rsvp === 'going')
+        .map((p: any) => ({ guardianId: p.guardian_id, name: p.guardians?.full_name ?? 'Unknown' })),
       createdAt: e.created_at ?? '',
     };
   }
@@ -179,7 +175,7 @@ export default function EventsScreen() {
     setLoading(true);
     // Local date, not UTC: toISOString() would roll over to tomorrow in the California evening
     const today = toLocalDateStr(new Date());
-    const SELECT = 'id, name, description, category, event_date, event_time, duration, venue, guardian_id, created_at, guardians!events_guardian_id_fkey(full_name), event_participants(guardian_id, rsvp)';
+    const SELECT = 'id, name, description, category, event_date, event_time, duration, venue, guardian_id, created_at, guardians!events_guardian_id_fkey(full_name), event_participants(guardian_id, rsvp, guardians!event_participants_guardian_id_fkey(full_name))';
 
     const { data } = await supabase
       .from('events')
@@ -223,16 +219,11 @@ export default function EventsScreen() {
 
   const filtered = tab === 'mine' ? visibleMine : tab === 'attending' ? visibleAttending : visibleUpcoming;
 
-  useEffect(() => {
-    if (!selectedEvent || !guardian) { setNudgeRsvp(null); return; }
-    supabase
-      .from('event_participants')
-      .select('rsvp')
-      .eq('event_id', selectedEvent.id)
-      .eq('guardian_id', guardian.id)
-      .maybeSingle()
-      .then(({ data }) => setNudgeRsvp(data?.rsvp === 'going' ? 'going' : null));
-  }, [selectedEvent?.id]);
+  // My RSVP for the open event comes from the already-loaded attendee list (no extra request);
+  // rsvpEvent() updates selectedEvent.goingAttendees, so this stays in sync.
+  const nudgeRsvp: Rsvp | null =
+    selectedEvent && guardian && selectedEvent.goingAttendees.some(a => a.guardianId === guardian.id)
+      ? 'going' : null;
 
   async function openGuardianSheet(guardianId: string) {
     setGuardianSheet(null);
@@ -274,9 +265,15 @@ export default function EventsScreen() {
     setNudgeRsvping(false);
     if (error) { Alert.alert("Couldn't save your RSVP", 'Please try again.'); return; }
 
-    setNudgeRsvp(wasGoing ? null : 'going');
-    const bump = (e: EventItem): EventItem =>
-      e.id === event.id ? { ...e, goingCount: Math.max(0, e.goingCount + (wasGoing ? -1 : 1)) } : e;
+    // Count and the "Who's coming" list both update with my RSVP
+    const me = { guardianId: guardian.id, name: guardian.full_name };
+    const bump = (e: EventItem): EventItem => e.id !== event.id ? e : {
+      ...e,
+      goingCount: Math.max(0, e.goingCount + (wasGoing ? -1 : 1)),
+      goingAttendees: wasGoing
+        ? e.goingAttendees.filter(a => a.guardianId !== me.guardianId)
+        : [...e.goingAttendees.filter(a => a.guardianId !== me.guardianId), me],
+    };
     setEvents(prev => prev.map(bump));
     setSelectedEvent(prev => (prev ? bump(prev) : prev));
     // Attending updates right away (it's otherwise only rebuilt when the screen loads)
@@ -529,7 +526,7 @@ export default function EventsScreen() {
               <>
                 <View style={s.nudgePill} />
 
-                {/* Title + tappable creator name (the date is in the 📅 row below) */}
+                {/* Title + host, with 🚩 (non-hosts) and ✕. Date / time / venue are on the card. */}
                 <View style={s.nudgeHeader}>
                   <View style={s.nudgeTitleBlock}>
                     {selectedEvent.category && (
@@ -540,87 +537,67 @@ export default function EventsScreen() {
                     <AppText style={s.nudgeTitle}>{selectedEvent.name}</AppText>
                     <AppText style={s.nudgeHost}>By {selectedEvent.guardianName}</AppText>
                   </View>
-                  {/* 🚩 for everyone except the host */}
                   {selectedEvent.guardianId !== guardian?.id && (
                     <ReportFlag target={{ area: 'event', eventId: selectedEvent.id }} />
                   )}
+                  {/* Always reachable — a long attendee list can leave no backdrop to tap */}
+                  <TouchableOpacity
+                    style={s.nudgeCloseBtn}
+                    onPress={() => setSelectedEvent(null)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Close"
+                  >
+                    <AppText style={s.nudgeCloseIcon}>✕</AppText>
+                  </TouchableOpacity>
                 </View>
 
-                <ScrollView style={s.nudgeBody} showsVerticalScrollIndicator={false}>
-                  {/* Date */}
-                  <View style={s.nudgeRow}>
-                    <AppText style={s.nudgeRowIcon}>📅</AppText>
-                    <AppText style={s.nudgeRowText}>{formatFullDate(selectedEvent.eventDate)}</AppText>
-                  </View>
-
-                  {/* Time · duration */}
-                  {(!!selectedEvent.eventTime || !!selectedEvent.duration) && (
-                    <View style={s.nudgeRow}>
-                      <AppText style={s.nudgeRowIcon}>🕒</AppText>
-                      <AppText style={s.nudgeRowText}>
-                        {[selectedEvent.eventTime ? formatTime(selectedEvent.eventTime) : null, selectedEvent.duration]
-                          .filter(Boolean).join('  ·  ')}
-                      </AppText>
-                    </View>
-                  )}
-
-                  {/* Venue */}
-                  {!!selectedEvent.venue && (
-                    <View style={s.nudgeRow}>
-                      <AppText style={s.nudgeRowIcon}>📍</AppText>
-                      <AppText style={s.nudgeRowText}>{selectedEvent.venue}</AppText>
-                    </View>
-                  )}
-
-                  {/* Going count */}
-                  <View style={s.nudgeRow}>
-                    <AppText style={s.nudgeRowIcon}>👥</AppText>
-                    <AppText style={s.nudgeRowText}>
-                      {selectedEvent.goingCount === 0
-                        ? 'No one has RSVPd yet'
-                        : `${selectedEvent.goingCount} ${selectedEvent.goingCount === 1 ? 'person' : 'people'} going`}
-                    </AppText>
-                  </View>
-
-                  {/* Description */}
-                  {!!selectedEvent.description && (
-                    <AppText style={s.nudgeDescription}>{selectedEvent.description}</AppText>
-                  )}
-                </ScrollView>
-
-                {/* RSVP buttons — hidden for the event creator */}
-                {selectedEvent.guardianId !== guardian?.id && (
-                  <View style={s.nudgeRsvpRow}>
-                    {RSVP_OPTIONS.map(opt => {
-                      const active = nudgeRsvp === opt.value;
-                      return (
-                        <TouchableOpacity
-                          key={opt.value}
-                          style={[s.nudgeRsvpBtn, active && { backgroundColor: opt.activeBg, borderColor: opt.activeBg }]}
-                          onPress={() => rsvpEvent(opt.value)}
-                          disabled={nudgeRsvping}
-                          activeOpacity={0.8}
-                        >
-                          <AppText style={[s.nudgeRsvpBtnText, active && { color: opt.activeColor, fontWeight: '800' }]}>
-                            {opt.label}
-                          </AppText>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
+                {!!selectedEvent.description && (
+                  <AppText style={s.nudgeDescription}>{selectedEvent.description}</AppText>
                 )}
 
-                {/* Action button */}
-                <TouchableOpacity
-                  style={s.nudgeBtn}
-                  onPress={() => {
-                    setSelectedEvent(null);
-                    navigation.navigate('EventDetail', { eventId: selectedEvent.id });
-                  }}
-                  activeOpacity={0.85}
-                >
-                  <AppText style={s.nudgeBtnText}>View who is going</AppText>
-                </TouchableOpacity>
+                {/* Count + RSVP on one row (host sees the count only) */}
+                <View style={s.nudgeCountRow}>
+                  <AppText style={s.nudgeCountText}>👥 {selectedEvent.goingCount} going</AppText>
+                  {selectedEvent.guardianId !== guardian?.id && RSVP_OPTIONS.map(opt => {
+                    const active = nudgeRsvp === opt.value;
+                    return (
+                      <TouchableOpacity
+                        key={opt.value}
+                        style={[s.nudgeRsvpBtn, active && { backgroundColor: opt.activeBg, borderColor: opt.activeBg }]}
+                        onPress={() => rsvpEvent(opt.value)}
+                        disabled={nudgeRsvping}
+                        activeOpacity={0.8}
+                      >
+                        <AppText style={[s.nudgeRsvpBtnText, active && { color: opt.activeColor, fontWeight: '800' }]}>
+                          {opt.label}
+                        </AppText>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Who's coming — plain names; only this part scrolls */}
+                <AppText style={s.nudgeListTitle}>Who's coming</AppText>
+                <ScrollView style={s.nudgeList} showsVerticalScrollIndicator>
+                  {selectedEvent.goingAttendees.length === 0 ? (
+                    <AppText style={s.nudgeListEmpty}>No one has RSVP'd yet</AppText>
+                  ) : (
+                    // Two columns side by side
+                    <View style={s.nudgeListGrid}>
+                      {selectedEvent.goingAttendees.map((a, i) => (
+                        // Left column left-aligned, right column right-aligned
+                        <AppText
+                          key={a.guardianId}
+                          style={[s.nudgeListName, i % 2 === 1 && s.nudgeListNameRight]}
+                          numberOfLines={1}
+                        >
+                          • {a.name}
+                        </AppText>
+                      ))}
+                    </View>
+                  )}
+                </ScrollView>
               </>
             )}
           </View>
@@ -771,22 +748,30 @@ const s = StyleSheet.create({
   nudgeTitle:    { ...TEXT_STYLE.screenTitle },
   nudgeHost:     { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 
-  nudgeBody: { marginBottom: SPACING.base },
+  nudgeCloseBtn:  { width: 44, height: 44, justifyContent: 'center', alignItems: 'center', marginRight: -SPACING.sm },
+  nudgeCloseIcon: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 
-  nudgeRow:         { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginBottom: SPACING.md },
-  nudgeRowIcon:     { fontSize: FONT_SIZE.xl, marginTop: 1 },
-  nudgeRowText:     { flex: 1, fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, lineHeight: 23 },
   nudgeDescription: {
     fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, lineHeight: 24,
-    marginTop: SPACING.sm, paddingTop: SPACING.base,
-    borderTopWidth: 1, borderTopColor: NICO.border,
+    marginBottom: SPACING.base,
   },
 
-  // Single "Going" button: compact and centered rather than full width
-  nudgeRsvpRow:    { flexDirection: 'row', justifyContent: 'center', gap: SPACING.sm, marginBottom: SPACING.md },
-  nudgeRsvpBtn:    { minWidth: scale(110), paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: RADIUS.lg, alignItems: 'center', borderWidth: 1.5, borderColor: NICO.border, backgroundColor: NICO.background },
-  nudgeRsvpBtnText:{ fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
+  // Fixed row: count on the left, compact RSVP button on the right
+  nudgeCountRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.md,
+    paddingVertical: SPACING.md, borderTopWidth: 1, borderBottomWidth: 1, borderColor: NICO.border,
+    marginBottom: SPACING.md,
+  },
+  nudgeCountText: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 
-  nudgeBtn:    { ...BTN_SIZE.lg, ...BTN_VARIANT.primary },
-  nudgeBtnText:{ ...TEXT_STYLE.buttonPrimary },
+  nudgeListTitle: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: SPACING.sm },
+  nudgeList:      { flexShrink: 1 },   // takes the remaining sheet height (maxHeight 80%), then scrolls
+  nudgeListGrid:  { flexDirection: 'row', flexWrap: 'wrap' },
+  nudgeListName:  { width: '50%', paddingRight: SPACING.sm, fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, paddingVertical: SPACING.xs },
+  nudgeListNameRight: { textAlign: 'right', paddingRight: 0, paddingLeft: SPACING.sm },
+  nudgeListEmpty: { fontSize: FONT_SIZE.md, color: NICO.text, fontStyle: 'italic' },
+
+  // paddingVertical 8.5 (was 12) → button ~15% shorter
+  nudgeRsvpBtn:    { minWidth: scale(110), paddingHorizontal: SPACING.lg, paddingVertical: scale(8.5), borderRadius: RADIUS.lg, alignItems: 'center', borderWidth: 1.5, borderColor: NICO.border, backgroundColor: NICO.background },
+  nudgeRsvpBtnText:{ fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 });
