@@ -529,11 +529,6 @@ export default function EventsScreen() {
                 {/* Title + host, with 🚩 (non-hosts) and ✕. Date / time / venue are on the card. */}
                 <View style={s.nudgeHeader}>
                   <View style={s.nudgeTitleBlock}>
-                    {selectedEvent.category && (
-                      <View style={s.nudgeCategoryChip}>
-                        <AppText style={s.nudgeCategoryText}>{selectedEvent.category}</AppText>
-                      </View>
-                    )}
                     <AppText style={s.nudgeTitle}>{selectedEvent.name}</AppText>
                     <AppText style={s.nudgeHost}>By {selectedEvent.guardianName}</AppText>
                   </View>
@@ -743,8 +738,6 @@ const s = StyleSheet.create({
 
   nudgeHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.base, marginBottom: SPACING.lg },
   nudgeTitleBlock:   { flex: 1, gap: SPACING.xs },
-  nudgeCategoryChip: { alignSelf: 'flex-start', backgroundColor: NICO.primaryLight, borderRadius: RADIUS.full, paddingHorizontal: SPACING.sm, paddingVertical: 3 },
-  nudgeCategoryText: { fontSize: FONT_SIZE.sm, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
   nudgeTitle:    { ...TEXT_STYLE.screenTitle },
   nudgeHost:     { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.primary },
 

@@ -219,7 +219,9 @@ export default function DiscussionsScreen() {
     setLoading(true);
     const { data } = await supabase
       .from('discussion_posts')
-      .select('id, title, body, created_at, guardian_id, category_id, guardians(full_name), discussion_replies(id), discussion_category_options(label)')
+      // discussion_replies(count): the database returns just the number (RLS still hides blocked
+      // guardians' replies), instead of one row per reply that was only being counted here
+      .select('id, title, body, created_at, guardian_id, category_id, guardians(full_name), discussion_replies(count), discussion_category_options(label)')
       .order('created_at', { ascending: false });
 
     setPosts(
@@ -227,7 +229,7 @@ export default function DiscussionsScreen() {
         id: p.id, title: p.title, body: p.body, createdAt: p.created_at,
         guardianId: p.guardian_id,
         guardianName: p.guardians?.full_name ?? 'Unknown',
-        replyCount: (p.discussion_replies ?? []).length,
+        replyCount: p.discussion_replies?.[0]?.count ?? 0,
         categoryId: p.category_id ?? undefined,
         categoryLabel: p.discussion_category_options?.label ?? undefined,
       }))
