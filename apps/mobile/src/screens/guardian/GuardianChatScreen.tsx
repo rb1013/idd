@@ -88,10 +88,17 @@ export default function GuardianChatScreen() {
   // Mark read on enter and exit
   useEffect(() => {
     if (!guardian) return;
-    const stamp = () => supabase.rpc('mark_guardian_conversation_read', {
-      p_conversation_id: conversationId,
-      p_guardian_id: guardian.id,
-    });
+    // supabase-js queries are lazy: without .then()/await the request is never sent, which is why
+    // last_read_at never moved and the Connections unread badge kept coming back.
+    const stamp = () => {
+      supabase.rpc('mark_guardian_conversation_read', {
+        p_conversation_id: conversationId,
+        p_guardian_id: guardian.id,
+      }).then(({ data, error }) => {
+        if (error) console.warn('mark_guardian_conversation_read failed:', error.message);
+        else if (data === 0) console.warn('mark_guardian_conversation_read matched no row', conversationId);
+      });
+    };
     stamp();
     return () => { stamp(); };
   }, [conversationId, guardian]);

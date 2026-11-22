@@ -46,10 +46,13 @@ function NoFriendsEmptyState() {
   );
 }
 
-function isOnline(lastSeenAt: string | null): boolean {
-  if (!lastSeenAt) return false;
-  return Date.now() - new Date(lastSeenAt).getTime() < 5 * 60 * 1000;
-}
+// Online dot disabled for learners: no engagement signals (online / last seen / unread counts)
+// that could encourage compulsive use (see privacy policy §8). Uncomment (and re-add last_seen_at
+// to the friends query) to restore.
+// function isOnline(lastSeenAt: string | null): boolean {
+//   if (!lastSeenAt) return false;
+//   return Date.now() - new Date(lastSeenAt).getTime() < 5 * 60 * 1000;
+// }
 
 interface CategoryItem { name: string; emoji: string; }
 
@@ -57,7 +60,6 @@ interface Friend {
   id: string;
   name: string;
   photo_url: string | null;
-  last_seen_at: string | null;
   current_mood: string | null;
   is_pinned: boolean;
   likes: CategoryItem[];
@@ -114,8 +116,8 @@ export default function FriendsHubScreen() {
       .from('friendships')
       .select(`
         id, requester_id, addressee_id, requester_pinned, addressee_pinned,
-        requester:user_profiles!friendships_requester_id_fkey(id, name, photo_url, last_seen_at, current_mood),
-        addressee:user_profiles!friendships_addressee_id_fkey(id, name, photo_url, last_seen_at, current_mood)
+        requester:user_profiles!friendships_requester_id_fkey(id, name, photo_url, current_mood),
+        addressee:user_profiles!friendships_addressee_id_fkey(id, name, photo_url, current_mood)
       `)
       .eq('status', 'accepted')
       .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
@@ -126,7 +128,7 @@ export default function FriendsHubScreen() {
       const isRequester = f.requester_id === userId;
       const friend = isRequester ? f.addressee : f.requester;
       const isPinned = isRequester ? f.requester_pinned : f.addressee_pinned;
-      return { id: friend.id, name: friend.name, photo_url: friend.photo_url, last_seen_at: friend.last_seen_at, current_mood: friend.current_mood ?? null, is_pinned: isPinned, likes: [] as CategoryItem[], dislikes: [] as CategoryItem[] };
+      return { id: friend.id, name: friend.name, photo_url: friend.photo_url, current_mood: friend.current_mood ?? null, is_pinned: isPinned, likes: [] as CategoryItem[], dislikes: [] as CategoryItem[] };
     });
 
     if (list.length > 0) {
@@ -188,7 +190,7 @@ export default function FriendsHubScreen() {
           <View style={[s.tileGrid, sorted.length < 3 && s.tileGridStart]}>
             {sorted.map((friend, idx) => {
               const tile = BUTTERFLY_TILES[idx % BUTTERFLY_TILES.length];
-              const online = isOnline(friend.last_seen_at);
+              // const online = isOnline(friend.last_seen_at);   // online dot disabled
               return (
                 <TouchableOpacity
                   key={friend.id}
@@ -205,7 +207,7 @@ export default function FriendsHubScreen() {
                   </TouchableOpacity>
                   <View style={s.tileAvatarWrap}>
                     <AvatarWithMood name={friend.name} photo={friend.photo_url} size={scale(68)} mood={friend.current_mood} />
-                    {online && <View style={s.onlineDot} />}
+                    {/* {online && <View style={s.onlineDot} />} — online dot disabled for learners */}
                   </View>
                   <AppText style={s.tileName} numberOfLines={2}>{friend.name}</AppText>
                   {friend.likes.length > 0 && (

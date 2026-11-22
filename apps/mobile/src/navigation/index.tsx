@@ -56,6 +56,8 @@ import UserHomeScreen from '../screens/user/UserHomeScreen';
 import FriendsHubScreen from '../screens/user/FriendsHubScreen';
 import DiscoveryScreen from '../screens/discovery/DiscoveryScreen';
 // import MessagesScreen from '../screens/messages/MessagesScreen'; // Messages tile removed
+// Intentionally off: it shows learners unread-message counts, and learners get no engagement signals
+// (online status / last seen / unread counts) — privacy policy §8. Update the policy before restoring.
 import ChatScreen from '../screens/chat/ChatScreen';
 import TutorialsScreen from '../screens/tutorials/TutorialsScreen';
 import VideoPlayerScreen from '../screens/tutorials/VideoPlayerScreen';

@@ -144,7 +144,7 @@ Learners may be under 13 and use learner mode.
 - [ ] **Do not** choose the Kids category or "Made for Kids" (strict rules: no third-party ads or analytics, parental gate for links; YouTube embeds can show ads and track)
 - [ ] Present the app as a **guardian tool** with a supervised learner mode
 - [ ] Answer the age rating questions honestly (user-generated content, messaging); expect 12+/13+ or higher
-- [ ] In review notes, describe the safety features: guardian-only accounts (18+), PIN-gated guardian mode, no free typing for learners, profanity filtering, moderation
+- [ ] In review notes, describe the safety features: guardian-only accounts (18+), PIN-gated guardian mode, no free typing for learners, profanity filtering, moderation, and **no engagement signals for learners** (no online status / last seen, no unread-message counts; privacy policy §8)
 
 ### 7. AI-generated content
 
@@ -235,7 +235,9 @@ one learner set up.
 
 Safety: only guardians can create accounts; learner chat uses pre-written phrases and picture
 cards (no free typing) with profanity filtering; guardians can report and block users;
-shared AI tutorials are reviewed by our team before appearing in the library.
+shared AI tutorials are reviewed by our team before appearing in the library. Learner mode shows
+no online status, last-seen times, or unread-message counts, so nothing nudges learners to keep
+checking the app.
 
 Account deletion: Mentor & Connect → Account → Delete account.
 Support: coheartsupport@gmail.com

@@ -48,7 +48,7 @@ export default function ChatScreen() {
   // still references this state, so it stays declared (unused by the UI, harmless).
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
-  const [friendLastSeen, setFriendLastSeen] = useState<string | null>(null);
+  // const [friendLastSeen, setFriendLastSeen] = useState<string | null>(null);   // online status disabled
   const [boardVisible, setBoardVisible] = useState(false);
   const [blockedVisible, setBlockedVisible] = useState(false);
 
@@ -175,9 +175,11 @@ export default function ChatScreen() {
     setGuardianWorking(false);
   }
 
-  const isOnline = friendLastSeen
-    ? Date.now() - new Date(friendLastSeen).getTime() < 5 * 60 * 1000
-    : false;
+  // Online status disabled for learners: no engagement signals (online / last seen / unread counts)
+  // that could encourage compulsive use (see privacy policy §8). Uncomment to restore.
+  // const isOnline = friendLastSeen
+  //   ? Date.now() - new Date(friendLastSeen).getTime() < 5 * 60 * 1000
+  //   : false;
 
   // Native header stays a thin bar (native back pill on the left, shield on the
   // right) — the photo+name block moved into its own custom banner rendered in
@@ -194,22 +196,22 @@ export default function ChatScreen() {
     });
   }, [navigation]);
 
-  // Fetch friend's last_seen_at for online status
-  useEffect(() => {
-    if (!activeUser) return;
-    supabase
-      .from('conversation_participants')
-      .select('user_id, user_profiles!inner(last_seen_at)')
-      .eq('conversation_id', conversationId)
-      .neq('user_id', activeUser.id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          const profile = data.user_profiles as any;
-          setFriendLastSeen(profile?.last_seen_at ?? null);
-        }
-      });
-  }, [conversationId, activeUser]);
+  // Fetch friend's last_seen_at for online status — disabled (see isOnline above)
+  // useEffect(() => {
+  //   if (!activeUser) return;
+  //   supabase
+  //     .from('conversation_participants')
+  //     .select('user_id, user_profiles!inner(last_seen_at)')
+  //     .eq('conversation_id', conversationId)
+  //     .neq('user_id', activeUser.id)
+  //     .single()
+  //     .then(({ data }) => {
+  //       if (data) {
+  //         const profile = data.user_profiles as any;
+  //         setFriendLastSeen(profile?.last_seen_at ?? null);
+  //       }
+  //     });
+  // }, [conversationId, activeUser]);
 
   // Realtime subscription
   useEffect(() => {
@@ -227,16 +229,17 @@ export default function ChatScreen() {
     return () => { supabase.removeChannel(channel); };
   }, [conversationId]);
 
-  // Mark read on enter and exit
-  useEffect(() => {
-    if (!activeUser) return;
-    const stamp = () => supabase.rpc('mark_conversation_read', {
-      p_conversation_id: conversationId,
-      p_user_id: activeUser.id,
-    });
-    stamp();
-    return () => { stamp(); };
-  }, [conversationId, activeUser]);
+  // Mark read on enter and exit — disabled: learners see no unread counts (Messages screen is off),
+  // so their read times aren't recorded. (It never actually ran: the lazy query had no .then()/await.)
+  // useEffect(() => {
+  //   if (!activeUser) return;
+  //   const stamp = () => supabase.rpc('mark_conversation_read', {
+  //     p_conversation_id: conversationId,
+  //     p_user_id: activeUser.id,
+  //   });
+  //   stamp();
+  //   return () => { stamp(); };
+  // }, [conversationId, activeUser]);
 
   async function fetchMessages() {
     const { data, error } = await supabase
@@ -317,7 +320,7 @@ export default function ChatScreen() {
         }
         <View style={styles.headerNameCol}>
           <Text style={styles.headerName}>{participantName}</Text>
-          {isOnline && <Text style={styles.headerOnline}>● Online</Text>}
+          {/* {isOnline && <Text style={styles.headerOnline}>● Online</Text>} — online status disabled for learners */}
         </View>
       </TouchableOpacity>
 

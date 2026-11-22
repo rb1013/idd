@@ -122,7 +122,7 @@ We may also disclose information if required by law, to protect someone's safety
 
 ## 8. Children's privacy
 
-We take learners' privacy seriously. Learner profiles exist only under a guardian's account and with the guardian's consent. Learners cannot type free text in chat, guardian controls are protected by a PIN, and guardians can block or report other users. A guardian may review, change, or delete their learner's information at any time, or ask us to stop collecting it, by using the app or emailing us. If we learn that we collected a child's information without proper consent, we will delete it.
+We take learners' privacy seriously. Learner profiles exist only under a guardian's account and with the guardian's consent. Learners cannot type free text in chat, guardian controls are protected by a PIN, and guardians can block or report other users. Learners' online status and activity are not shown to other users, and learner mode shows no unread-message counts. A guardian may review, change, or delete their learner's information at any time, or ask us to stop collecting it, by using the app or emailing us. If we learn that we collected a child's information without proper consent, we will delete it.
 
 ## 9. Security
 

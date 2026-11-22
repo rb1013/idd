@@ -73,16 +73,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', state => {
-      if (state === 'active' && activeUserRef.current) {
-        supabase.from('user_profiles')
-          .update({ last_seen_at: new Date().toISOString() })
-          .eq('id', activeUserRef.current.id);
-      }
-    });
-    return () => sub.remove();
-  }, []);
+  // last_seen_at tracking disabled: learners' online status isn't shown (no engagement signals for
+  // learners, privacy policy §8), so their activity isn't recorded. It never actually ran anyway —
+  // the lazy query had no .then()/await. Uncomment (with a .then()) to restore.
+  // useEffect(() => {
+  //   const sub = AppState.addEventListener('change', state => {
+  //     if (state === 'active' && activeUserRef.current) {
+  //       supabase.from('user_profiles')
+  //         .update({ last_seen_at: new Date().toISOString() })
+  //         .eq('id', activeUserRef.current.id);
+  //     }
+  //   });
+  //   return () => sub.remove();
+  // }, []);
 
   async function fetchRole(userId: string) {
     // Safety net: never stay in loading state longer than 10 seconds
@@ -110,9 +113,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (profileData) {
         setActiveUser(profileData);
         setGuardian(null);
-        supabase.from('user_profiles')
-          .update({ last_seen_at: new Date().toISOString() })
-          .eq('id', profileData.id);
+        // last_seen_at tracking disabled (see the AppState effect above)
+        // supabase.from('user_profiles')
+        //   .update({ last_seen_at: new Date().toISOString() })
+        //   .eq('id', profileData.id);
         return;
       }
 
