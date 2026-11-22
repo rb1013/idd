@@ -185,31 +185,20 @@ export default function EventsScreen() {
       .gte('event_date', today)
       .order('event_date', { ascending: true });
 
-    setEvents((data ?? []).map(mapEvent));
+    const rows = data ?? [];
+    setEvents(rows.map(mapEvent));
 
-    // Attending: events where logged-in guardian RSVPd 'going', not created by them
-    if (guardian) {
-      const { data: rsvps } = await supabase
-        .from('event_participants')
-        .select('event_id')
-        .eq('guardian_id', guardian.id)
-        .eq('rsvp', 'going');
-
-      const attendingIds = (rsvps ?? []).map((r: any) => r.event_id as string);
-
-      if (attendingIds.length > 0) {
-        const { data: aData } = await supabase
-          .from('events')
-          .select(SELECT)
-          .in('id', attendingIds)
-          .neq('guardian_id', guardian.id)
-          .gte('event_date', today)
-          .order('event_date', { ascending: false });
-        setAttendingEvents((aData ?? []).map(mapEvent));
-      } else {
-        setAttendingEvents([]);
-      }
-    }
+    // Attending: events the logged-in guardian RSVPd 'going' to, not created by them.
+    // Worked out from the RSVPs already in this one query (no extra calls); soonest first, like Upcoming.
+    setAttendingEvents(
+      guardian
+        ? rows
+            .filter((e: any) =>
+              e.guardian_id !== guardian.id &&
+              (e.event_participants ?? []).some((p: any) => p.guardian_id === guardian.id && p.rsvp === 'going'))
+            .map(mapEvent)
+        : [],
+    );
 
     setLoading(false);
   }

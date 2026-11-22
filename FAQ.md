@@ -94,9 +94,12 @@ Yes. The activities report shows the last **7 days**. Older activity history is 
 Short lessons that teach a skill step by step. Learners watch them as a narrated, auto-advancing slideshow or as a video.
 
 ### What kinds of tutorials can I add?
-- **AI-generated tutorials** — describe the skill and the main action, and Co-Heart creates an illustrated slideshow for you.
+- **AI-generated tutorials** — choose the skill, describe the character and the action, and Co-Heart creates an illustrated slideshow for you.
 - **YouTube videos** — link any public YouTube video.
 - **Library tutorials** — browse tutorials other guardians have made that our team has approved, and add them for your learner.
+
+### How long are AI-generated tutorials, and what language are they in?
+AI-generated tutorials are always in **English** and run about **30–40 seconds**: a few short slides, each with a simple caption and spoken narration.
 
 ### Do AI-generated tutorials need to be approved?
 Only if you share them. When you create a tutorial, you choose whether to **Share with other guardians**:

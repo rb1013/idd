@@ -167,7 +167,8 @@ export default function GuardianNotificationsScreen() {
         activeOpacity={0.8}
       >
         {wasUnread && <View style={s.unreadStripe} />}
-        {!wasUnread && <AppText style={s.readTick}>✓</AppText>}
+        {/* Read tick: not on tutorial cards, whose ✕ button sits in the same corner */}
+        {!wasUnread && !isTutorial && <AppText style={s.readTick}>✓</AppText>}
         <AppText style={s.cardIcon}>{meta.icon}</AppText>
         <View style={s.cardBody}>
           <AppText style={s.cardLabel}>{meta.label}</AppText>
