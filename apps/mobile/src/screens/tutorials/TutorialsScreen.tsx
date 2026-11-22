@@ -83,28 +83,16 @@ export default function TutorialsScreen() {
   );
 
   async function fetchTutorials(userId: string) {
+    // One request: this learner's linked tutorials (public, private and YouTube alike), approved only,
+    // with just the columns the tiles use — the players load the full tutorial by id.
     const { data: links } = await supabase
       .from('user_tutorials')
-      .select('tutorial_id')
-      .eq('user_id', userId);
+      .select('tutorials!inner(id, title, display_name, category, format, thumbnail_url, created_at)')
+      .eq('user_id', userId)
+      .eq('tutorials.status', 'approved');
 
-    if (!links || links.length === 0) {
-      setTutorials([]);
-      setCategories(['All']);
-      setLoading(false);
-      return;
-    }
-
-    const tutorialIds = links.map((l: any) => l.tutorial_id);
-
-    const { data: tuts } = await supabase
-      .from('tutorials')
-      .select('*')
-      .in('id', tutorialIds)
-      .eq('status', 'approved')
-      .order('created_at', { ascending: false });
-
-    const items = (tuts ?? []) as Tutorial[];
+    const items = ((links ?? []).map((l: any) => l.tutorials).filter(Boolean) as Tutorial[])
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));   // newest first, as before
     setTutorials(items);
     const cats = [...new Set(items.map(t => t.category))];
     setCategories(['All', ...cats]);

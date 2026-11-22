@@ -114,7 +114,8 @@ export default function TutorialLibraryScreen() {
     useCallback(() => {
       loadTutorials();
       loadSkills();
-      if (guardian) loadGuardianUsers(guardian.id);
+      // The learner tab loads the learner together with their tutorials (loadLearnerTutorials)
+      if (guardian && activeTabRef.current !== 'learner') loadGuardianUsers(guardian.id);
     }, [guardian]),
   );
 
@@ -126,16 +127,39 @@ export default function TutorialLibraryScreen() {
   async function loadTutorials() {
     setLoading(true);
     const tab = activeTabRef.current;
-    let query = supabase
+    if (tab === 'learner') { await loadLearnerTutorials(); setLoading(false); return; }
+    // Find tab (hidden for now): public approved tutorials
+    const { data } = await supabase
       .from('tutorials')
       .select('*, guardian:guardians!created_by_guardian_id(id, full_name)')
       .eq('status', 'approved')
+      .eq('is_public', true)
       .order('created_at', { ascending: false });
-    // Find tab: only public tutorials. Learner tab: include private (guardian's own)
-    if (tab !== 'learner') query = query.eq('is_public', true);
-    const { data } = await query;
     setTutorials((data as TutorialWithGuardian[]) || []);
     setLoading(false);
+  }
+
+  // Learner tab: one request for the guardian's learner and only that learner's linked, approved
+  // tutorials (public, private and YouTube alike) — instead of every approved tutorial filtered here.
+  // Only the columns the cards, search and filters use; TutorialPreview loads the full row by id.
+  async function loadLearnerTutorials() {
+    if (!guardian) return;
+    const { data } = await supabase
+      .from('user_profiles')
+      .select(`id, name, photo_url,
+        user_tutorials(tutorials!inner(
+          id, title, display_name, category, topic, comprehension_level, format, source,
+          thumbnail_url, created_at, guardian:guardians!created_by_guardian_id(id, full_name)))`)
+      .eq('guardian_id', guardian.id)
+      .eq('user_tutorials.tutorials.status', 'approved');
+    const profiles = (data ?? []) as any[];
+    setUsers(profiles.map(p => ({ id: p.id, name: p.name, photo_url: p.photo_url })) as LinkedUser[]);
+    const linked = ((profiles[0]?.user_tutorials ?? []) as any[])
+      .map(l => l.tutorials).filter(Boolean)
+      .sort((a: any, b: any) => b.created_at.localeCompare(a.created_at)) as TutorialWithGuardian[];
+    setTutorials(linked);
+    setLinkedTutorialIds(new Set(linked.map(t => t.id)));
+    setLinkedLoaded(true);
   }
 
   async function loadGuardianUsers(guardianId: string) {
