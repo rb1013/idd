@@ -21,6 +21,7 @@ import { containsProfanity, isBlockedWordsError, showKindWordsAlert } from '../.
 import { useAuth } from '../../lib/AuthContext';
 import { GuardianNavParamList } from '../../navigation';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
+import { DISCUSSION_TOPIC_MAX, DISCUSSION_DETAILS_MAX } from '../../constants';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
   BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, scale,
@@ -200,7 +201,7 @@ export default function DiscussionsScreen() {
       : '';
     Alert.alert(
       'Delete discussion',
-      `Are you sure you want to delete "${post.title}"? This cannot be undone.${replyWarning}`,
+      `Are you sure you want to delete this discussion? This cannot be undone.${replyWarning}`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -549,9 +550,10 @@ export default function DiscussionsScreen() {
                     onChangeText={setNewTitle}
                     placeholder="What's on your mind?"
                     placeholderTextColor={NICO.textMuted}
-                    maxLength={80}
+                    maxLength={DISCUSSION_TOPIC_MAX}
                   />
                 </LinearGradient>
+                <AppText style={s.charCount}>{newTitle.length}/{DISCUSSION_TOPIC_MAX}</AppText>
 
                 {categories.length > 0 && (
                   <>
@@ -596,9 +598,10 @@ export default function DiscussionsScreen() {
                     placeholderTextColor={NICO.textMuted}
                     multiline
                     numberOfLines={4}
-                    maxLength={600}
+                    maxLength={DISCUSSION_DETAILS_MAX}
                   />
                 </LinearGradient>
+                <AppText style={s.charCount}>{newBody.length}/{DISCUSSION_DETAILS_MAX}</AppText>
 
                 <TouchableOpacity
                   style={[{ ...BTN_SIZE.lg, ...BTN_VARIANT.primary }, (!newTitle.trim() || !newBody.trim() || (categories.length > 0 && !selectedCategory) || submitting) && { opacity: 0.5 }]}
@@ -741,6 +744,7 @@ const s = StyleSheet.create({
   },
   fieldInput:    { ...INPUT.base, borderWidth: 0 },
   fieldTextArea: { minHeight: scale(100), textAlignVertical: 'top' },
+  charCount:     { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.medium, alignSelf: 'flex-end', marginTop: -SPACING.xs },
   submitBtnText: { ...TEXT_STYLE.buttonPrimary },
 
   pickerBtn: {

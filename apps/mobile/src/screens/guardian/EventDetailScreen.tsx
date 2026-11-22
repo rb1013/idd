@@ -23,11 +23,13 @@ type Nav   = NativeStackNavigationProp<GuardianNavParamList>;
 
 const AVATAR_COLORS = [NICO.teal, NICO.orange, NICO.coral, NICO.pink, NICO.purple, NICO.primary];
 
-type Rsvp = 'going' | 'interested';
+// Only "Going" is offered: tap to RSVP, tap again to cancel. Older 'interested' rows (dummy data)
+// are ignored; the DB check still allows them.
+type Rsvp = 'going';
 
 interface EventDetail {
   id: string; name: string; description: string;
-  eventDate: string; eventTime: string | null;
+  eventDate: string; eventTime: string | null; duration: string | null;
   venue: string; guardianName: string; guardianId: string;
 }
 interface Attendee { guardianId: string; guardianName: string; rsvp: Rsvp }
@@ -35,6 +37,12 @@ interface Attendee { guardianId: string; guardianName: string; rsvp: Rsvp }
 interface GuardianProfile {
   id: string; name: string; photoUrl: string | null;
   county: string; situationTags: string[];
+}
+
+function formatTime(timeStr: string): string {
+  const [h, m] = timeStr.split(':');
+  const hours = parseInt(h, 10);
+  return `${hours % 12 || 12}:${m} ${hours >= 12 ? 'PM' : 'AM'}`;
 }
 
 function formatDate(dateStr: string, timeStr?: string | null): string {
@@ -47,8 +55,7 @@ function formatDate(dateStr: string, timeStr?: string | null): string {
 }
 
 const RSVP_OPTIONS: { value: Rsvp; label: string; activeColor: string; activeBg: string }[] = [
-  { value: 'going',      label: '✓ Going',      activeColor: NICO.success, activeBg: NICO.successLight },
-  { value: 'interested', label: '★ Interested',  activeColor: NICO.warning, activeBg: NICO.warningLight },
+  { value: 'going',      label: '✓ I will attend',      activeColor: NICO.success, activeBg: NICO.successLight },
 ];
 
 export default function EventDetailScreen() {
@@ -74,7 +81,7 @@ export default function EventDetailScreen() {
     const [{ data: e }, { data: participants }] = await Promise.all([
       supabase
         .from('events')
-        .select('id, name, description, event_date, event_time, venue, guardian_id, guardians!events_guardian_id_fkey(full_name)')
+        .select('id, name, description, event_date, event_time, duration, venue, guardian_id, guardians!events_guardian_id_fkey(full_name)')
         .eq('id', eventId)
         .single(),
       supabase
@@ -86,15 +93,17 @@ export default function EventDetailScreen() {
     if (e) {
       setEvent({
         id: e.id, name: e.name, description: e.description ?? '',
-        eventDate: e.event_date, eventTime: e.event_time ?? null,
+        eventDate: e.event_date, eventTime: e.event_time ?? null, duration: (e as any).duration ?? null,
         venue: e.venue ?? '',
         guardianName: (e.guardians as any)?.full_name ?? 'Unknown', guardianId: e.guardian_id,
       });
     }
 
-    const list: Attendee[] = (participants ?? []).map((p: any) => ({
-      guardianId: p.guardian_id, guardianName: p.guardians?.full_name ?? 'Unknown', rsvp: p.rsvp,
-    }));
+    const list: Attendee[] = (participants ?? [])
+      .filter((p: any) => p.rsvp === 'going')
+      .map((p: any) => ({
+        guardianId: p.guardian_id, guardianName: p.guardians?.full_name ?? 'Unknown', rsvp: 'going' as const,
+      }));
     setAttendees(list);
     setMyRsvp(list.find(a => a.guardianId === guardian?.id)?.rsvp ?? null);
 
@@ -118,17 +127,19 @@ export default function EventDetailScreen() {
     setRsvping(true);
     if (myRsvp === status) {
       // Tapping the active pill → unselect (delete RSVP)
-      await supabase
+      const { error } = await supabase
         .from('event_participants')
         .delete()
         .eq('event_id', event.id)
         .eq('guardian_id', guardian.id);
+      if (error) { setRsvping(false); Alert.alert("Couldn't save your RSVP", 'Please try again.'); return; }
       setMyRsvp(null);
       setAttendees(prev => prev.filter(a => a.guardianId !== guardian.id));
     } else {
-      await supabase
+      const { error } = await supabase
         .from('event_participants')
         .upsert({ event_id: event.id, guardian_id: guardian.id, rsvp: status }, { onConflict: 'event_id,guardian_id' });
+      if (error) { setRsvping(false); Alert.alert("Couldn't save your RSVP", 'Please try again.'); return; }
       setMyRsvp(status);
       setAttendees(prev => [
         ...prev.filter(a => a.guardianId !== guardian.id),
@@ -179,7 +190,6 @@ export default function EventDetailScreen() {
   if (!event)  return <View style={s.center}><AppText style={s.errorText}>Event not found</AppText></View>;
 
   const going       = attendees.filter(a => a.rsvp === 'going');
-  const interested  = attendees.filter(a => a.rsvp === 'interested');
   const isOrganiser = event.guardianId === guardian?.id;
 
   return (
@@ -211,7 +221,13 @@ export default function EventDetailScreen() {
 
         {/* Details card */}
         <View style={s.card}>
-          <DetailRow icon="📅" text={formatDate(event.eventDate, event.eventTime)} />
+          <DetailRow icon="📅" text={formatDate(event.eventDate)} />
+          {(!!event.eventTime || !!event.duration) && (
+            <DetailRow
+              icon="🕒"
+              text={[event.eventTime ? formatTime(event.eventTime) : null, event.duration].filter(Boolean).join('  ·  ')}
+            />
+          )}
           {!!event.venue && <DetailRow icon="📍" text={event.venue} />}
           {!!event.description && (
             <>
@@ -247,22 +263,10 @@ export default function EventDetailScreen() {
         )}
 
         {/* Attendees */}
-        {(going.length > 0 || interested.length > 0) && (
+        {going.length > 0 && (
           <View style={s.card}>
-            <AppText style={s.sectionTitle}>Who's coming ({going.length + interested.length})</AppText>
-            {going.length > 0 && (
-              <>
-                {interested.length > 0 && <AppText style={s.groupLabel}>Going ({going.length})</AppText>}
-                {going.map(a => <AttendeeRow key={a.guardianId} name={a.guardianName} onPress={() => openGuardianSheet(a.guardianId)} />)}
-              </>
-            )}
-            {interested.length > 0 && going.length > 0 && <View style={s.divider} />}
-            {interested.length > 0 && (
-              <>
-                <AppText style={s.groupLabel}>Interested ({interested.length})</AppText>
-                {interested.map(a => <AttendeeRow key={a.guardianId} name={a.guardianName} onPress={() => openGuardianSheet(a.guardianId)} />)}
-              </>
-            )}
+            <AppText style={s.sectionTitle}>Who's coming ({going.length})</AppText>
+            {going.map(a => <AttendeeRow key={a.guardianId} name={a.guardianName} onPress={() => openGuardianSheet(a.guardianId)} />)}
           </View>
         )}
 
@@ -339,14 +343,14 @@ const s = StyleSheet.create({
 
   sectionTitle: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.black, color: NICO.text, marginBottom: SPACING.xs },
 
-  rsvpRow: { flexDirection: 'row', gap: SPACING.sm },
+  // Single "Going" button: compact and centered rather than full width
+  rsvpRow: { flexDirection: 'row', justifyContent: 'center', gap: SPACING.sm },
   rsvpBtn: {
-    flex: 1, paddingVertical: SPACING.md, borderRadius: RADIUS.lg, alignItems: 'center',
+    minWidth: scale(110), paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: RADIUS.lg, alignItems: 'center',
     borderWidth: 1.5, borderColor: NICO.border, backgroundColor: NICO.background,
   },
-  rsvpBtnText: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
+  rsvpBtnText: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 
-  groupLabel:      { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.black, color: NICO.text, marginBottom: SPACING.xs },
   attendeeRow:     { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   attendeeAvatar:  { width: scale(32), height: scale(32), borderRadius: scale(16), justifyContent: 'center', alignItems: 'center' },
   attendeeInitial: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.extraBold, color: '#fff' },

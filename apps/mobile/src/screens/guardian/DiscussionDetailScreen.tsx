@@ -15,6 +15,7 @@ import { supabase } from '../../lib/supabase';
 import { containsProfanity, isBlockedWordsError, showKindWordsAlert } from '../../lib/contentFilter';
 import { useAuth } from '../../lib/AuthContext';
 import { GuardianNavParamList } from '../../navigation';
+import { DISCUSSION_REPLY_MAX } from '../../constants';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
   BUTTERFLY_BORDER, scale,
@@ -175,25 +176,29 @@ export default function DiscussionDetailScreen() {
 
       {/* Reply bar */}
       <View style={[s.replyBar, { paddingBottom: Math.max(insets.bottom + 8, 16) }]}>
-        <LinearGradient
-          colors={[...BUTTERFLY_BORDER.colors]}
-          start={BUTTERFLY_BORDER.start}
-          end={BUTTERFLY_BORDER.end}
-          style={s.replyInputGradient}
-        >
-          <TextInput
-            style={s.replyInput}
-            value={replyText}
-            onChangeText={setReplyText}
-            placeholder="Write a reply…"
-            placeholderTextColor={NICO.textMuted}
-            returnKeyType="send"
-            submitBehavior="submit"
-            onSubmitEditing={submitReply}
-            maxLength={500}
-            multiline
-          />
-        </LinearGradient>
+        {/* Reply box with its character count underneath */}
+        <View style={s.replyInputCol}>
+          <LinearGradient
+            colors={[...BUTTERFLY_BORDER.colors]}
+            start={BUTTERFLY_BORDER.start}
+            end={BUTTERFLY_BORDER.end}
+            style={s.replyInputGradient}
+          >
+            <TextInput
+              style={s.replyInput}
+              value={replyText}
+              onChangeText={setReplyText}
+              placeholder="Write a reply…"
+              placeholderTextColor={NICO.textMuted}
+              returnKeyType="send"
+              submitBehavior="submit"
+              onSubmitEditing={submitReply}
+              maxLength={DISCUSSION_REPLY_MAX}
+              multiline
+            />
+          </LinearGradient>
+          <AppText style={s.replyCharCount}>{replyText.length}/{DISCUSSION_REPLY_MAX}</AppText>
+        </View>
         <TouchableOpacity
           style={[s.sendBtn, (!replyText.trim() || sending) && { opacity: 0.4 }]}
           onPress={submitReply}
@@ -265,10 +270,12 @@ const s = StyleSheet.create({
     backgroundColor: NICO.screenBg,
     borderTopWidth: 1, borderTopColor: NICO.border,
   },
+  replyInputCol: { flex: 1 },
   replyInputGradient: {
-    flex: 1, padding: BUTTERFLY_BORDER.width,
+    padding: BUTTERFLY_BORDER.width,
     borderRadius: RADIUS.xl + BUTTERFLY_BORDER.width,
   },
+  replyCharCount: { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.medium, alignSelf: 'flex-end', marginTop: 2 },
   replyInput: {
     backgroundColor: NICO.screenBg, borderRadius: RADIUS.xl,
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,

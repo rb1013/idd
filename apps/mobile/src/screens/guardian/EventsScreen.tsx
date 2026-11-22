@@ -24,7 +24,9 @@ import {
 } from '../../constants/theme';
 
 type Nav  = NativeStackNavigationProp<GuardianNavParamList>;
-type Rsvp = 'going' | 'interested' | 'not_going';
+// Only "Going" is offered: tap to RSVP, tap again to cancel (deletes the row). Older 'interested'
+// rows (dummy data) are ignored everywhere; the DB check still allows them.
+type Rsvp = 'going';
 
 interface GuardianProfile {
   id: string; name: string; photoUrl: string | null;
@@ -32,9 +34,7 @@ interface GuardianProfile {
 }
 
 const RSVP_OPTIONS: { value: Rsvp; label: string; activeColor: string; activeBg: string }[] = [
-  { value: 'going',      label: '✓ Going',     activeColor: NICO.success,   activeBg: NICO.successLight },
-  { value: 'interested', label: '★ Interested', activeColor: NICO.warning,   activeBg: NICO.warningLight },
-  { value: 'not_going',  label: "✕ Can't go",  activeColor: NICO.textMuted, activeBg: NICO.background   },
+  { value: 'going',      label: '✓ I will attend',     activeColor: NICO.success,   activeBg: NICO.successLight },
 ];
 
 interface EventItem {
@@ -42,6 +42,7 @@ interface EventItem {
   name: string;
   eventDate: string;
   eventTime: string | null;
+  duration: string | null;
   venue: string;
   description: string;
   category: string | null;
@@ -165,6 +166,7 @@ export default function EventsScreen() {
       category: e.category ?? null,
       eventDate: e.event_date,
       eventTime: e.event_time ?? null,
+      duration: e.duration ?? null,
       venue: e.venue ?? '',
       guardianName: e.guardians?.full_name ?? 'Unknown',
       guardianId: e.guardian_id,
@@ -177,7 +179,7 @@ export default function EventsScreen() {
     setLoading(true);
     // Local date, not UTC: toISOString() would roll over to tomorrow in the California evening
     const today = toLocalDateStr(new Date());
-    const SELECT = 'id, name, description, category, event_date, event_time, venue, guardian_id, created_at, guardians!events_guardian_id_fkey(full_name), event_participants(guardian_id, rsvp)';
+    const SELECT = 'id, name, description, category, event_date, event_time, duration, venue, guardian_id, created_at, guardians!events_guardian_id_fkey(full_name), event_participants(guardian_id, rsvp)';
 
     const { data } = await supabase
       .from('events')
@@ -229,7 +231,7 @@ export default function EventsScreen() {
       .eq('event_id', selectedEvent.id)
       .eq('guardian_id', guardian.id)
       .maybeSingle()
-      .then(({ data }) => setNudgeRsvp((data?.rsvp as Rsvp) ?? null));
+      .then(({ data }) => setNudgeRsvp(data?.rsvp === 'going' ? 'going' : null));
   }, [selectedEvent?.id]);
 
   async function openGuardianSheet(guardianId: string) {
@@ -256,23 +258,32 @@ export default function EventsScreen() {
     setLoadingGuardianSheet(false);
   }
 
-  async function rsvpEvent(status: Rsvp) {
+  // "Going" toggle: tap to RSVP, tap again to cancel (same as EventDetailScreen)
+  async function rsvpEvent(_status: Rsvp) {
     if (!selectedEvent || !guardian) return;
+    const event = selectedEvent;
+    const wasGoing = nudgeRsvp === 'going';
     setNudgeRsvping(true);
-    await supabase
-      .from('event_participants')
-      .upsert(
-        { event_id: selectedEvent.id, guardian_id: guardian.id, rsvp: status },
-        { onConflict: 'event_id,guardian_id' },
-      );
-    setNudgeRsvp(status);
-    // Update going count in list
-    if (status === 'going' && nudgeRsvp !== 'going') {
-      setEvents(prev => prev.map(e => e.id === selectedEvent.id ? { ...e, goingCount: e.goingCount + 1 } : e));
-    } else if (status !== 'going' && nudgeRsvp === 'going') {
-      setEvents(prev => prev.map(e => e.id === selectedEvent.id ? { ...e, goingCount: Math.max(0, e.goingCount - 1) } : e));
-    }
+    const { error } = wasGoing
+      ? await supabase.from('event_participants').delete()
+          .eq('event_id', event.id).eq('guardian_id', guardian.id)
+      : await supabase.from('event_participants').upsert(
+          { event_id: event.id, guardian_id: guardian.id, rsvp: 'going' },
+          { onConflict: 'event_id,guardian_id' },
+        );
     setNudgeRsvping(false);
+    if (error) { Alert.alert("Couldn't save your RSVP", 'Please try again.'); return; }
+
+    setNudgeRsvp(wasGoing ? null : 'going');
+    const bump = (e: EventItem): EventItem =>
+      e.id === event.id ? { ...e, goingCount: Math.max(0, e.goingCount + (wasGoing ? -1 : 1)) } : e;
+    setEvents(prev => prev.map(bump));
+    setSelectedEvent(prev => (prev ? bump(prev) : prev));
+    // Attending updates right away (it's otherwise only rebuilt when the screen loads)
+    setAttendingEvents(prev => wasGoing
+      ? prev.filter(e => e.id !== event.id)
+      : [...prev.filter(e => e.id !== event.id), bump(event)]
+          .sort((a, b) => a.eventDate.localeCompare(b.eventDate)));
   }
 
   async function deleteEvent(id: string) {
@@ -377,10 +388,13 @@ export default function EventsScreen() {
 
                 <View style={s.info}>
                   <AppText style={s.eventName}>{e.name}</AppText>
-                  <AppText style={s.eventMeta}>
-                    {e.eventTime ? formatTime(e.eventTime) : ''}
-                    {e.venue ? (e.eventTime ? '  ·  ' : '') + e.venue : ''}
-                  </AppText>
+                  {/* Time · duration on one row, address on the next */}
+                  {(!!e.eventTime || !!e.duration) && (
+                    <AppText style={s.eventMeta}>
+                      {[e.eventTime ? formatTime(e.eventTime) : null, e.duration].filter(Boolean).join('  ·  ')}
+                    </AppText>
+                  )}
+                  {!!e.venue && <AppText style={s.eventMeta}>{e.venue}</AppText>}
                   {showHost ? (
                     <TouchableOpacity
                       onPress={() => openGuardianSheet(e.guardianId)}
@@ -515,19 +529,8 @@ export default function EventsScreen() {
               <>
                 <View style={s.nudgePill} />
 
-                {/* Date tag + title + tappable creator name */}
+                {/* Title + tappable creator name (the date is in the 📅 row below) */}
                 <View style={s.nudgeHeader}>
-                  {(() => {
-                    const d = new Date(selectedEvent.eventDate + 'T12:00:00');
-                    return (
-                      <View style={s.nudgeDateTag}>
-                        <AppText style={s.nudgeDateDay}>{d.getDate()}</AppText>
-                        <AppText style={s.nudgeDateMonth}>
-                          {d.toLocaleDateString(undefined, { month: 'short' }).toUpperCase()}
-                        </AppText>
-                      </View>
-                    );
-                  })()}
                   <View style={s.nudgeTitleBlock}>
                     {selectedEvent.category && (
                       <View style={s.nudgeCategoryChip}>
@@ -544,11 +547,22 @@ export default function EventsScreen() {
                 </View>
 
                 <ScrollView style={s.nudgeBody} showsVerticalScrollIndicator={false}>
-                  {/* Date & time */}
+                  {/* Date */}
                   <View style={s.nudgeRow}>
                     <AppText style={s.nudgeRowIcon}>📅</AppText>
-                    <AppText style={s.nudgeRowText}>{formatFullDate(selectedEvent.eventDate, selectedEvent.eventTime)}</AppText>
+                    <AppText style={s.nudgeRowText}>{formatFullDate(selectedEvent.eventDate)}</AppText>
                   </View>
+
+                  {/* Time · duration */}
+                  {(!!selectedEvent.eventTime || !!selectedEvent.duration) && (
+                    <View style={s.nudgeRow}>
+                      <AppText style={s.nudgeRowIcon}>🕒</AppText>
+                      <AppText style={s.nudgeRowText}>
+                        {[selectedEvent.eventTime ? formatTime(selectedEvent.eventTime) : null, selectedEvent.duration]
+                          .filter(Boolean).join('  ·  ')}
+                      </AppText>
+                    </View>
+                  )}
 
                   {/* Venue */}
                   {!!selectedEvent.venue && (
@@ -661,7 +675,7 @@ const s = StyleSheet.create({
   },
   dateTagDay:   { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary, lineHeight: 24 },
   dateTagMonth: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.primary, letterSpacing: 0.5 },
-  dateTagYear:  { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.medium, color: NICO.primary, opacity: 0.8 },
+  dateTagYear:  { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 
   info:         { flex: 1, gap: 3 },
   eventName:    { ...TEXT_STYLE.bodyMedium, fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold },
@@ -751,12 +765,6 @@ const s = StyleSheet.create({
   },
 
   nudgeHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.base, marginBottom: SPACING.lg },
-  nudgeDateTag: {
-    width: scale(52), height: scale(60), borderRadius: RADIUS.lg,
-    backgroundColor: NICO.primaryLight, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  },
-  nudgeDateDay:   { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary },
-  nudgeDateMonth: { fontSize: FONT_SIZE.xs, fontWeight: FONT_WEIGHT.bold, color: NICO.primary, letterSpacing: 0.5 },
   nudgeTitleBlock:   { flex: 1, gap: SPACING.xs },
   nudgeCategoryChip: { alignSelf: 'flex-start', backgroundColor: NICO.primaryLight, borderRadius: RADIUS.full, paddingHorizontal: SPACING.sm, paddingVertical: 3 },
   nudgeCategoryText: { fontSize: FONT_SIZE.sm, color: NICO.primary, fontWeight: FONT_WEIGHT.bold },
@@ -774,9 +782,10 @@ const s = StyleSheet.create({
     borderTopWidth: 1, borderTopColor: NICO.border,
   },
 
-  nudgeRsvpRow:    { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.md },
-  nudgeRsvpBtn:    { flex: 1, paddingVertical: SPACING.md, borderRadius: RADIUS.lg, alignItems: 'center', borderWidth: 1.5, borderColor: NICO.border, backgroundColor: NICO.background },
-  nudgeRsvpBtnText:{ fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.textMuted },
+  // Single "Going" button: compact and centered rather than full width
+  nudgeRsvpRow:    { flexDirection: 'row', justifyContent: 'center', gap: SPACING.sm, marginBottom: SPACING.md },
+  nudgeRsvpBtn:    { minWidth: scale(110), paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: RADIUS.lg, alignItems: 'center', borderWidth: 1.5, borderColor: NICO.border, backgroundColor: NICO.background },
+  nudgeRsvpBtnText:{ fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.bold, color: NICO.text },
 
   nudgeBtn:    { ...BTN_SIZE.lg, ...BTN_VARIANT.primary },
   nudgeBtnText:{ ...TEXT_STYLE.buttonPrimary },

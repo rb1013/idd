@@ -142,6 +142,17 @@ export const COMPREHENSION_LEVELS = [
 
 export const GENDERS = ['Male', 'Female', 'Prefer not to say'];
 
+// Character limits for Create / Edit Event (shared so both forms stay in sync)
+export const EVENT_NAME_MAX        = 40;
+export const EVENT_VENUE_MAX       = 40;
+export const EVENT_DESCRIPTION_MAX = 150;
+export const EVENT_DURATION_MAX    = 10;
+
+// Character limits for discussions (Create / Edit post sheet and the reply box)
+export const DISCUSSION_TOPIC_MAX   = 40;
+export const DISCUSSION_DETAILS_MAX = 150;
+export const DISCUSSION_REPLY_MAX   = 100;
+
 export const LANGUAGES = [
   'English', 'Spanish', 'French', 'German', 'Mandarin',
   'Hindi', 'Arabic', 'Portuguese', 'Russian', 'Japanese',

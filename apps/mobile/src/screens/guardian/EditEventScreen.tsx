@@ -17,6 +17,7 @@ import {
   BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, scale,
 } from '../../constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
+import { EVENT_NAME_MAX, EVENT_VENUE_MAX, EVENT_DESCRIPTION_MAX, EVENT_DURATION_MAX } from '../../constants';
 
 type Route = RouteProp<GuardianNavParamList, 'EditEvent'>;
 type Nav   = NativeStackNavigationProp<GuardianNavParamList>;
@@ -170,9 +171,10 @@ export default function EditEventScreen() {
                 onChangeText={setName}
                 placeholder="e.g. Saturday Play Date"
                 placeholderTextColor={NICO.textMuted}
-                maxLength={100}
+                maxLength={EVENT_NAME_MAX}
               />
             </LinearGradient>
+            <AppText style={s.charCount}>{name.length}/{EVENT_NAME_MAX}</AppText>
           </Field>
 
           {categories.length > 0 && (
@@ -243,9 +245,10 @@ export default function EditEventScreen() {
                 onChangeText={setDuration}
                 placeholder="e.g. 2 hours"
                 placeholderTextColor={NICO.textMuted}
-                maxLength={50}
+                maxLength={EVENT_DURATION_MAX}
               />
             </LinearGradient>
+            <AppText style={s.charCount}>{duration.length}/{EVENT_DURATION_MAX}</AppText>
           </Field>
 
           <Field label="Venue" required>
@@ -256,9 +259,10 @@ export default function EditEventScreen() {
                 onChangeText={setVenue}
                 placeholder="Central Park, New York"
                 placeholderTextColor={NICO.textMuted}
-                maxLength={200}
+                maxLength={EVENT_VENUE_MAX}
               />
             </LinearGradient>
+            <AppText style={s.charCount}>{venue.length}/{EVENT_VENUE_MAX}</AppText>
           </Field>
 
           <Field label="Description" required>
@@ -271,8 +275,10 @@ export default function EditEventScreen() {
                 placeholderTextColor={NICO.textMuted}
                 multiline
                 numberOfLines={4}
+                maxLength={EVENT_DESCRIPTION_MAX}
               />
             </LinearGradient>
+            <AppText style={s.charCount}>{description.length}/{EVENT_DESCRIPTION_MAX}</AppText>
           </Field>
 
           <TouchableOpacity
@@ -387,6 +393,7 @@ const s = StyleSheet.create({
   inputGradient: { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
   input:         { ...INPUT.base, borderWidth: 0 },
   textArea:      { minHeight: scale(100), textAlignVertical: 'top' },
+  charCount:     { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.medium, alignSelf: 'flex-end', marginTop: 4 },
 
   selectGradient: { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.md + BUTTERFLY_BORDER.width },
   pickerBtn: {

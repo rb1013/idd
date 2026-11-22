@@ -145,7 +145,7 @@ The PIN keeps these controls away from your learner. If you need help, email **c
 Yes. Use the **Find** tab to search by name, county, or Regional Support Category, send a connection request, and message guardians once you're connected. Before connecting, you'll only see a short preview (photo, name, county, and category tags).
 
 ### What else is in the community section?
-- **Events** — browse or create community events and RSVP (going, interested, or not going).
+- **Events** — browse or create community events. Tap **I will attend** to RSVP (tap it again to cancel); events you're attending appear under **Attending**.
 - **Discussions** — post topics and reply to other guardians. You can edit or delete your own posts.
 - **Resources** — helpful information and support links.
 
