@@ -21,7 +21,7 @@ import { containsProfanity, isBlockedWordsError, showKindWordsAlert } from '../.
 import { useAuth } from '../../lib/AuthContext';
 import { GuardianNavParamList } from '../../navigation';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
-import { DISCUSSION_TOPIC_MAX, DISCUSSION_DETAILS_MAX } from '../../constants';
+import { DISCUSSION_TOPIC_MAX, DISCUSSION_DETAILS_MAX, GUARDIAN_NAME_MAX, DISCUSSION_TITLE_SEARCH_MAX } from '../../constants';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
   BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, scale,
@@ -299,6 +299,7 @@ export default function DiscussionsScreen() {
           placeholderTextColor={NICO.textMuted}
           value={filterTitle}
           onChangeText={setFilterTitle}
+          maxLength={DISCUSSION_TITLE_SEARCH_MAX}
           clearButtonMode="while-editing"
         />
       </LinearGradient>
@@ -520,6 +521,7 @@ export default function DiscussionsScreen() {
               placeholderTextColor={NICO.textMuted}
               value={filterGuardian}
               onChangeText={setFilterGuardian}
+              maxLength={GUARDIAN_NAME_MAX}   // same limit as the guardian name itself
               clearButtonMode="while-editing"
             />
           </View>

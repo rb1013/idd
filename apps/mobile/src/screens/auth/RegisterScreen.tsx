@@ -13,6 +13,7 @@ import DropdownPicker from '../../components/DropdownPicker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { FIXED_STATE } from '../../constants/usStates';
+import { GUARDIAN_NAME_MAX } from '../../constants';
 import { CA_COUNTIES } from '../../constants/caCounties';
 // Phone input commented out: not used by any feature (guardians.phone is nullable). Uncomment to restore.
 // import { validatePhone, buildE164, sanitizePhoneInput, PHONE_MAX_LENGTH } from '../../constants/countryCodes';
@@ -148,7 +149,7 @@ export default function RegisterScreen() {
           onChangeText={setFullName}
           placeholder="Your full name"
           placeholderTextColor={NICO.textMuted}
-          maxLength={20}
+          maxLength={GUARDIAN_NAME_MAX}
         />
 
         <AppText style={styles.label}>Email<AppText style={styles.required}> *</AppText></AppText>

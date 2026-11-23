@@ -147,11 +147,14 @@ export const EVENT_NAME_MAX        = 40;
 export const EVENT_VENUE_MAX       = 40;
 export const EVENT_DESCRIPTION_MAX = 150;
 export const EVENT_DURATION_MAX    = 10;
+export const EVENT_NAME_SEARCH_MAX = 30;   // 'Search by name' box on the Events list (all tabs)
 
 // Character limits for discussions (Create / Edit post sheet and the reply box)
 export const DISCUSSION_TOPIC_MAX   = 40;
 export const DISCUSSION_DETAILS_MAX = 150;
 export const DISCUSSION_REPLY_MAX   = 100;
+export const DISCUSSION_TITLE_SEARCH_MAX = 30;   // 'Search by title' box (All / My tabs)
+export const TUTORIAL_NAME_SEARCH_MAX = 30;      // 'Search by name' boxes in Tutorials (Search / My Tutorials / Pending)
 
 export const LANGUAGES = [
   'English', 'Spanish', 'French', 'German', 'Mandarin',
@@ -196,6 +199,9 @@ export const US_STATES = [
 // Co-Heart is for teens and young adults; learners must be 13 or older.
 
 export const LEARNER_MIN_AGE = 13;
+
+/** Guardian name length (sign-up, Edit Profile, and the guardian-name search filter). */
+export const GUARDIAN_NAME_MAX = 20;
 
 /** Latest date of birth allowed for a learner (today minus LEARNER_MIN_AGE years) — the date picker's maximum. */
 export function learnerLatestDob(): Date {

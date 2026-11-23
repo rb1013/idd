@@ -10,6 +10,7 @@ import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import GuardianPeekSheet from '../../components/GuardianPeekSheet';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import { LinearGradient } from 'expo-linear-gradient';
+import { EVENT_NAME_SEARCH_MAX } from '../../constants';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -349,6 +350,7 @@ export default function EventsScreen() {
             placeholderTextColor={NICO.textMuted}
             value={filterName}
             onChangeText={setFilterName}
+            maxLength={EVENT_NAME_SEARCH_MAX}
             clearButtonMode="while-editing"
           />
         </LinearGradient>

@@ -10,7 +10,7 @@ import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navig
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { TUTORIAL_COMPREHENSION } from '../../constants';
+import { TUTORIAL_COMPREHENSION, TUTORIAL_NAME_SEARCH_MAX } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import type { Tutorial, TutorialStatus, TutorialSource } from '../../types';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
@@ -318,6 +318,7 @@ export default function GuardianTutorialsScreen() {
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder="Search by name…"
+                maxLength={TUTORIAL_NAME_SEARCH_MAX}
                 placeholderTextColor={NICO.textMuted}
                 clearButtonMode="while-editing"
               />
@@ -444,6 +445,7 @@ export default function GuardianTutorialsScreen() {
                 value={mySearchQuery}
                 onChangeText={setMySearchQuery}
                 placeholder="Search by name…"
+                maxLength={TUTORIAL_NAME_SEARCH_MAX}
                 placeholderTextColor={NICO.textMuted}
                 clearButtonMode="while-editing"
               />
@@ -626,6 +628,7 @@ export default function GuardianTutorialsScreen() {
                 value={pendingSearch}
                 onChangeText={setPendingSearch}
                 placeholder="Search by name…"
+                maxLength={TUTORIAL_NAME_SEARCH_MAX}
                 placeholderTextColor={NICO.textMuted}
                 clearButtonMode="while-editing"
               />

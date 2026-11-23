@@ -15,6 +15,7 @@ import FilterSheet, { FilterSheetSection } from '../../components/FilterSheet';
 import RainbowDivider from '../../components/RainbowDivider';
 import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import useNicoHeader from '../../hooks/useNicoHeader';
+import { GUARDIAN_NAME_MAX } from '../../constants';
 import MoreFiltersLink from '../../components/MoreFiltersLink';
 import ReportFlag from '../../components/ReportFlag';
 import BlockButton from '../../components/BlockButton';
@@ -549,7 +550,8 @@ export default function GuardianConnectionsScreen() {
                 style={s.searchInput}
                 value={connectedSearchName}
                 onChangeText={setConnectedSearchName}
-                placeholder="Search by name…"
+                placeholder="Search by guardian name…"
+                maxLength={GUARDIAN_NAME_MAX}
                 placeholderTextColor={NICO.textMuted}
                 clearButtonMode="while-editing"
               />
@@ -737,6 +739,7 @@ export default function GuardianConnectionsScreen() {
                 value={searchName}
                 onChangeText={setSearchName}
                 placeholder="Search by guardian name…"
+                maxLength={GUARDIAN_NAME_MAX}
                 placeholderTextColor={NICO.textMuted}
                 clearButtonMode="while-editing"
               />
