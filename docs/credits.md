@@ -1,17 +1,18 @@
 # Co-Heart — Credits & Licenses
 
-**Last updated:** 2026-11-22
+**Last updated:** 2026-11-22 (symbols: ARASAAC only)
 **Published:** on the website privacy page (yianetwork.org/co-heart/privacy), and in `PRIVACY_POLICY_AND_TERMS.md` (Part 3). Keep all three in sync.
 
-## Before publishing — confirm the **[bracketed]** items
-1. **Symbols:** check which libraries the learner chat's picture symbols come from (OpenSymbols shows the source and license on each symbol's page). Keep the matching lines, delete the rest. ARASAAC is almost certainly included.
-2. **Non-commercial licenses** (ARASAAC, Sclera): fine for a free, ad-free app; revisit if Co-Heart ever charges.
-3. **Word list:** confirm where `apps/mobile/src/lib/badWordsList.json` came from; if it isn't LDNOOBW, replace that line.
+## Notes
+1. **Symbols (confirmed 2026-11-22):** all 25 picture symbols are **ARASAAC** pictograms, reviewed and stored in our own Storage (`aac-symbols` bucket; files in `packages/supabase/seed/aac-symbols/`, see its README). The app no longer searches OpenSymbols. If a symbol from another library is ever added, add its credit here.
+2. **Non-commercial license** (ARASAAC, CC BY-NC-SA): fine for a free, ad-free app; revisit if Co-Heart ever charges. Symbols are shown unmodified (ShareAlike only applies to modified versions).
+3. **Word list — still to confirm:** where `apps/mobile/src/lib/badWordsList.json` came from; if it isn't LDNOOBW, replace that line (the only **[bracketed]** item left).
+4. **Website timing:** publish this version (and remove OpenSymbols from §5 Service providers) once the app build that loads symbols from our Storage is live; earlier builds still contact OpenSymbols.
 
 ## Where each item is used in the code
 | Item | Code |
 |---|---|
-| OpenSymbols search API | `apps/mobile/src/lib/aacSymbols.ts` (`fetchRemoteSymbol`) |
+| ARASAAC symbols (our Storage) | `apps/mobile/src/lib/aacSymbols.ts` (`refreshBoard`), table `aac_symbols` (migration 095) |
 | bad-words / badwords-list | `apps/mobile/src/lib/contentFilter.ts` (npm `bad-words` ^4.1.5) |
 | Extra word list | `apps/mobile/src/lib/badWordsList.json` |
 | YouTube embeds | `apps/mobile/src/components/YoutubePlayer.tsx` |
@@ -24,12 +25,7 @@
 Co-Heart uses the following third-party content and open-source software. We thank their creators.
 
 ### Picture symbols (learner chat)
-The picture-symbol cards learners use to chat are found through **OpenSymbols** (opensymbols.org), a free service that gathers symbols from open symbol libraries. Each symbol remains the property of its creator and is used under its own license:
-
-- **ARASAAC:** The pictographic symbols are the property of the Government of Aragón and were created by Sergio Palao for ARASAAC (arasaac.org), which distributes them under a Creative Commons BY-NC-SA license.
-- **Mulberry Symbols:** by Steve Lee, licensed under CC BY-SA 2.0 UK. **[confirm used]**
-- **Twemoji:** by Twitter, Inc. and other contributors, licensed under CC BY 4.0. **[confirm used]**
-- **Sclera Pictograms:** by Sclera vzw, licensed under CC BY-NC 2.0 BE. **[confirm used]**
+The picture symbols learners use to chat are **ARASAAC** pictograms (obtained via OpenSymbols, opensymbols.org). The pictographic symbols are the property of the Government of Aragón and were created by Sergio Palao for ARASAAC (arasaac.org), which distributes them under a Creative Commons BY-NC-SA license. They are shown unmodified.
 
 ### Content filtering
 To help keep conversations kind, Co-Heart checks text against lists of inappropriate words:

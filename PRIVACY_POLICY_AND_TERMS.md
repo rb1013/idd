@@ -89,7 +89,6 @@ We share information with service providers only as needed to run Co-Heart:
 | **Anthropic** (Claude) | Writing AI tutorial scripts | The tutorial details you enter (skill, action, comprehension level, language) |
 | **OpenAI** | Generating tutorial images | Image descriptions for each tutorial slide |
 | **Google** (Cloud Text-to-Speech) | Creating narration audio for AI tutorials | Tutorial narration text only |
-| **OpenSymbols** | Loading picture symbols for learner chat | Symbol search words only (e.g. "eat", "play") and the device's IP address. No names or messages |
 | **Google** (Gmail) | Sending account emails such as verification and password reset codes | Your email address and the email content |
 | **YouTube** (Google) | Playing YouTube videos you link | YouTube may collect data and **may show ads** under its own policies when a video plays. We use YouTube's privacy-enhanced (no-cookie) mode |
 
@@ -207,12 +206,7 @@ Questions about these Terms or the Privacy Policy: **coheartsupport@gmail.com** 
 Co-Heart uses the following third-party content and open-source software. We thank their creators.
 
 ### Picture symbols (learner chat)
-The picture-symbol cards learners use to chat are found through **OpenSymbols** (opensymbols.org), a free service that gathers symbols from open symbol libraries. Each symbol remains the property of its creator and is used under its own license:
-
-- **ARASAAC:** The pictographic symbols are the property of the Government of Aragón and were created by Sergio Palao for ARASAAC (arasaac.org), which distributes them under a Creative Commons BY-NC-SA license.
-- **Mulberry Symbols:** by Steve Lee, licensed under CC BY-SA 2.0 UK. **[confirm used]**
-- **Twemoji:** by Twitter, Inc. and other contributors, licensed under CC BY 4.0. **[confirm used]**
-- **Sclera Pictograms:** by Sclera vzw, licensed under CC BY-NC 2.0 BE. **[confirm used]**
+The picture symbols learners use to chat are **ARASAAC** pictograms (obtained via OpenSymbols, opensymbols.org). The pictographic symbols are the property of the Government of Aragón and were created by Sergio Palao for ARASAAC (arasaac.org), which distributes them under a Creative Commons BY-NC-SA license. They are shown unmodified.
 
 ### Content filtering
 To help keep conversations kind, Co-Heart checks text against lists of inappropriate words:
