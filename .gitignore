@@ -17,3 +17,6 @@ build/
 
 # Local-only helper script, not meant to be committed
 merge-dev-to-main.sh
+
+# Local reference of blocked words (generated, not committed)
+badwords.md

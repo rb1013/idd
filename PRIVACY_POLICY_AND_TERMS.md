@@ -211,9 +211,8 @@ The picture symbols learners use to chat are **ARASAAC** pictograms (obtained vi
 ### Content filtering
 To help keep conversations kind, Co-Heart checks text against lists of inappropriate words:
 
-- **bad-words** (JavaScript library) by Michael Price, MIT License.
-- **badwords-list**, MIT License.
-- **"List of Dirty, Naughty, Obscene, and Otherwise Bad Words"** by Shutterstock, licensed under CC BY 4.0 (github.com/LDNOOBW). **[confirm this is the source of the extra word list]**
+- **bad-words** and its word list **badwords-list**, by Michael Price, MIT License.
+- **"List of Dirty, Naughty, Obscene, and Otherwise Bad Words"** by Shutterstock, licensed under CC BY 4.0 (github.com/LDNOOBW).
 
 These lists are used only to block words. They are never shown to users.
 

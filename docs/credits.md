@@ -6,7 +6,7 @@
 ## Notes
 1. **Symbols (confirmed 2026-11-22):** all 25 picture symbols are **ARASAAC** pictograms, reviewed and stored in our own Storage (`aac-symbols` bucket; files in `packages/supabase/seed/aac-symbols/`, see its README). The app no longer searches OpenSymbols. If a symbol from another library is ever added, add its credit here.
 2. **Non-commercial license** (ARASAAC, CC BY-NC-SA): fine for a free, ad-free app; revisit if Co-Heart ever charges. Symbols are shown unmodified (ShareAlike only applies to modified versions).
-3. **Word list — still to confirm:** where `apps/mobile/src/lib/badWordsList.json` came from; if it isn't LDNOOBW, replace that line (the only **[bracketed]** item left).
+3. **Word list (confirmed 2026-11-22):** `apps/mobile/src/lib/badWordsList.json` is from the LDNOOBW English list (260 of its 261 words, same order; "booty" was added by us). The server `blocked_words` table is our own admin-entered data, not a third-party list.
 4. **Website timing:** publish this version (and remove OpenSymbols from §5 Service providers) once the app build that loads symbols from our Storage is live; earlier builds still contact OpenSymbols.
 
 ## Where each item is used in the code
@@ -30,9 +30,8 @@ The picture symbols learners use to chat are **ARASAAC** pictograms (obtained vi
 ### Content filtering
 To help keep conversations kind, Co-Heart checks text against lists of inappropriate words:
 
-- **bad-words** (JavaScript library) by Michael Price, MIT License.
-- **badwords-list**, MIT License.
-- **"List of Dirty, Naughty, Obscene, and Otherwise Bad Words"** by Shutterstock, licensed under CC BY 4.0 (github.com/LDNOOBW). **[confirm this is the source of the extra word list]**
+- **bad-words** and its word list **badwords-list**, by Michael Price, MIT License.
+- **"List of Dirty, Naughty, Obscene, and Otherwise Bad Words"** by Shutterstock, licensed under CC BY 4.0 (github.com/LDNOOBW).
 
 These lists are used only to block words. They are never shown to users.
 
