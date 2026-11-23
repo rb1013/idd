@@ -12,7 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { COMPREHENSION_LEVELS, GENDERS, LANGUAGES, FIXED_STATE, CA_COUNTIES } from '../../constants';
+import { COMPREHENSION_LEVELS, GENDERS, LANGUAGES, FIXED_STATE, CA_COUNTIES, learnerLatestDob, isLearnerOldEnough, LEARNER_AGE_ALERT } from '../../constants';
 import DropdownPicker from '../../components/DropdownPicker';
 import type { Category } from '../../types';
 import MultiSelectChips from '../../components/MultiSelectChips';
@@ -47,7 +47,6 @@ export default function EditUserScreen({ navigation, route }: Props) {
   const [showDobPicker, setShowDobPicker] = useState(false);
   const [tempDob, setTempDob] = useState(new Date());
   const [gender, setGender] = useState('');
-  const [username, setUsername] = useState('');
   const [languages, setLanguages] = useState<string[]>([]);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
@@ -88,7 +87,6 @@ export default function EditUserScreen({ navigation, route }: Props) {
       setName(p.name);
       if (p.date_of_birth) setDob(new Date(p.date_of_birth + 'T12:00:00'));
       setGender(p.gender || '');
-      setUsername(p.username || '');
       setLanguages(p.languages || []);
       setCounty(p.county || '');
       setCountry(p.country || 'USA');
@@ -112,6 +110,8 @@ export default function EditUserScreen({ navigation, route }: Props) {
 
   async function handleSave() {
     if (!name.trim() || !dob || !gender || !county) { Alert.alert('Please fill in all required fields'); return; }
+    // Learners must be 13+ (also catches an existing under-13 date opened in Edit)
+    if (!isLearnerOldEnough(dob)) { Alert.alert(LEARNER_AGE_ALERT.title, LEARNER_AGE_ALERT.message); return; }
     setLoading(true);
 
     let photo_url = existingPhotoUrl;
@@ -251,12 +251,14 @@ export default function EditUserScreen({ navigation, route }: Props) {
               </AppText>
               <AppText style={{ fontSize: 18 }}>📅</AppText>
             </TouchableOpacity>
+            {/* Same style as the Regional Support Category tip on sign-up (RegisterScreen helperBox) */}
+            <View style={styles.helperBox}>
+              <AppText style={styles.helperText}>
+                ℹ️  Learners must be 13 years of age or older. Co-Heart is designed for teens and young adults with intellectual and developmental disabilities.
+              </AppText>
+            </View>
             <AppText style={styles.label}>Gender<AppText style={styles.required}> *</AppText></AppText>
             <MultiSelectChips options={GENDERS.filter(g => g !== 'Prefer not to say')} selected={gender ? [gender] : []} onToggle={(v) => setGender(v[0] || '')} single />
-            <AppText style={styles.label}>Username</AppText>
-            <View style={styles.readonlyField}>
-              <AppText style={styles.readonlyText}>{username || '—'}</AppText>
-            </View>
           </View>
         )}
 
@@ -359,7 +361,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
               value={tempDob}
               mode="date"
               display="spinner"
-              maximumDate={new Date()}
+              maximumDate={learnerLatestDob()}   // learners must be 13+ (younger dates can't be picked)
               onChange={(_, d) => { if (d) setTempDob(d); }}
               style={{ height: 220 }}
             />
@@ -430,6 +432,12 @@ const styles = StyleSheet.create({
   photoText: { color: NICO.primary, fontSize: FONT_SIZE.base, textAlign: 'center' },
   label: { ...TEXT_STYLE.fieldLabel, marginBottom: SPACING.sm, marginTop: SPACING.base },
   required: { color: NICO.error, fontWeight: FONT_WEIGHT.black },
+  helperBox: {
+    backgroundColor: NICO.primaryLight, borderRadius: RADIUS.md,
+    padding: SPACING.md, marginTop: SPACING.sm,
+    borderLeftWidth: 3, borderLeftColor: NICO.primary,
+  },
+  helperText: { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 20 },
   input: {
     backgroundColor: NICO.surface, borderWidth: 1.5, borderColor: NICO.border,
     borderRadius: RADIUS.md, padding: SPACING.md, fontSize: FONT_SIZE.lg, color: NICO.text, marginBottom: 4,
@@ -455,15 +463,6 @@ const styles = StyleSheet.create({
   arrowText: { fontSize: FONT_SIZE['4xl'], color: NICO.text, lineHeight: 32, fontWeight: FONT_WEIGHT.bold },
   saveBtn: { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, paddingHorizontal: scale(40) },
   saveBtnText: { ...TEXT_STYLE.buttonPrimary },
-  readonlyField: {
-    backgroundColor: NICO.background,
-    borderWidth: 1.5,
-    borderColor: NICO.border,
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
-    marginBottom: 4,
-  },
-  readonlyText: { ...TEXT_STYLE.body, color: NICO.textMuted },
 
   pickerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

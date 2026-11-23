@@ -292,8 +292,14 @@ export default function GuardianHomeScreen() {
                 </LinearGradient>
               ) : null}
               {hasLearner ? (
-                <TouchableOpacity onPress={() => navigation.navigate('EditUser', { userId: learners[0].id })} activeOpacity={0.7}>
-                  <AppText style={s.zoneLabel}>{`${firstname}'s zone`}</AppText>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('EditUser', { userId: learners[0].id })}
+                  activeOpacity={0.7}
+                  accessibilityRole="link"
+                  accessibilityHint={`Opens ${firstname}'s profile`}
+                >
+                  {/* Link style (blue + underline) so it's clearly tappable — opens the learner's profile */}
+                  <AppText style={[s.zoneLabel, s.zoneLabelLink]}>{`${firstname}'s zone`}</AppText>
                 </TouchableOpacity>
               ) : (
                 <AppText style={s.zoneLabel}>Your Learner</AppText>
@@ -542,6 +548,7 @@ const s = StyleSheet.create({
   },
   learnerHeroInitial: { ...TEXT_STYLE.displayHero, color: NICO.primary, fontSize: FONT_SIZE['3xl'] },
   zoneLabel: { ...TEXT_STYLE.cardTitle, color: NICO.primary },
+  zoneLabelLink: { color: NICO.link, textDecorationLine: 'underline' },
 
   // Learner tiles — vertical rows, curved off-white pills sitting on the white panel
   learnerTileList: { gap: 14 },

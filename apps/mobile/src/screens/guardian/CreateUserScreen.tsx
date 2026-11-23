@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform, Modal,
@@ -12,7 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { saveBiometricUser, saveCredentialSnapshot } from '../../lib/biometricStore';
-import { COMPREHENSION_LEVELS, GENDERS, LANGUAGES, FIXED_STATE, CA_COUNTIES } from '../../constants';
+import { COMPREHENSION_LEVELS, GENDERS, LANGUAGES, FIXED_STATE, CA_COUNTIES, learnerLatestDob, isLearnerOldEnough, LEARNER_AGE_ALERT } from '../../constants';
 import DropdownPicker from '../../components/DropdownPicker';
 import { Category } from '../../types';
 import MultiSelectChips from '../../components/MultiSelectChips';
@@ -51,10 +51,6 @@ export default function CreateUserScreen({ navigation }: Props) {
   const [showDobPicker, setShowDobPicker] = useState(false);
   const [tempDob, setTempDob] = useState(new Date());
   const [gender, setGender] = useState('');
-  const [username, setUsername] = useState('');
-  const [usernameError, setUsernameError] = useState('');
-  const [checkingUsername, setCheckingUsername] = useState(false);
-  const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [languages, setLanguages] = useState<string[]>([]);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [county, setCounty] = useState('');
@@ -78,29 +74,6 @@ export default function CreateUserScreen({ navigation }: Props) {
   const dislikeCategories = categories.filter(c => c.type === 'dislike');
   const abilityCategories = categories.filter(c => c.type === 'ability');
 
-  async function checkUsernameAvailable(val: string): Promise<boolean> {
-    const trimmed = val.trim().toLowerCase();
-    if (!trimmed) { setUsernameError(''); setCheckingUsername(false); return false; }
-    setCheckingUsername(true);
-    const { data } = await supabase.from('user_profiles').select('id').eq('username', trimmed).limit(1);
-    setCheckingUsername(false);
-    const taken = !!(data && data.length > 0);
-    if (taken) setUsernameError('Username already taken');
-    else setUsernameError('');
-    return !taken;
-  }
-
-  function handleUsernameChange(val: string) {
-    setUsername(val);
-    setUsernameError('');
-    if (usernameTimer.current) clearTimeout(usernameTimer.current);
-    if (val.trim()) {
-      usernameTimer.current = setTimeout(() => checkUsernameAvailable(val), 600);
-    } else {
-      setCheckingUsername(false);
-    }
-  }
-
   async function pickPhoto() {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
@@ -108,11 +81,8 @@ export default function CreateUserScreen({ navigation }: Props) {
 
   async function handleSubmit() {
     if (!name.trim() || !dob || !gender || !county) { Alert.alert('Please fill in all required fields'); return; }
-    if (!username.trim()) { Alert.alert('Please enter a username'); return; }
-
-    // Always do a fresh check at submit time in case the debounce hasn't fired yet
-    const available = await checkUsernameAvailable(username);
-    if (!available) { Alert.alert('Username not available', 'Please choose a different username.'); return; }
+    // Learners must be 13+ (also catches an existing under-13 date opened in Edit)
+    if (!isLearnerOldEnough(dob)) { Alert.alert(LEARNER_AGE_ALERT.title, LEARNER_AGE_ALERT.message); return; }
 
     setLoading(true);
 
@@ -132,19 +102,21 @@ export default function CreateUserScreen({ navigation }: Props) {
       }
     }
 
-    const trimmedUsername = username.trim().toLowerCase();
-    const fabricatedEmail = `${trimmedUsername}@nico.app`;
     const generatedPassword = generatePassword();
 
+    // No username: new learners are identified by their profile id (username column left empty)
     const { data: userProfile, error } = await supabase.from('user_profiles').insert({
       guardian_id: guardian!.id,
       name, date_of_birth: formatDobForDb(dob!), gender, languages, photo_url, county, region, country,
-      username: trimmedUsername,
     }).select().single();
 
     if (error) { Alert.alert('Error creating profile', error.message); setLoading(false); return; }
 
     const userId = userProfile.id;
+    // Internal sign-in email for learner mode only — never shown or mailed (the account is created
+    // already confirmed). Built from the learner's id: unique and contains nothing personal.
+    // A subdomain we control. (Learners created before this keep their '<username>@nico.app'.)
+    const fabricatedEmail = `${userId}@learners.yianetwork.org`;
 
     const likeIds = selectedLikes.map(n => likeCategories.find(c => c.name === n)?.id).filter(Boolean) as string[];
     const dislikeIds = selectedDislikes.map(n => dislikeCategories.find(c => c.name === n)?.id).filter(Boolean) as string[];
@@ -243,24 +215,15 @@ export default function CreateUserScreen({ navigation }: Props) {
               </AppText>
               <AppText style={{ fontSize: 18 }}>📅</AppText>
             </TouchableOpacity>
+            {/* Same style as the Regional Support Category tip on sign-up (RegisterScreen helperBox) */}
+            <View style={styles.helperBox}>
+              <AppText style={styles.helperText}>
+                ℹ️  Learners must be 13 years of age or older. Co-Heart is designed for teens and young adults with intellectual and developmental disabilities.
+              </AppText>
+            </View>
 
             <AppText style={styles.label}>Gender<AppText style={styles.required}> *</AppText></AppText>
             <MultiSelectChips options={GENDERS.filter(g => g !== 'Prefer not to say')} selected={gender ? [gender] : []} onToggle={(v) => setGender(v[0] || '')} single />
-
-            <AppText style={styles.label}>Username<AppText style={styles.required}> *</AppText></AppText>
-            <TextInput
-              style={[styles.input, usernameError ? styles.inputError : null]}
-              value={username}
-              onChangeText={handleUsernameChange}
-              onBlur={() => { if (usernameTimer.current) clearTimeout(usernameTimer.current); checkUsernameAvailable(username); }}
-              placeholder="e.g. alex123"
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholderTextColor={NICO.textMuted}
-            />
-            {checkingUsername && <AppText style={styles.checkingText}>Checking availability...</AppText>}
-            {!checkingUsername && usernameError ? <AppText style={styles.errorText}>{usernameError}</AppText> : null}
-            {!checkingUsername && !usernameError && username.trim() ? <AppText style={styles.availableText}>Username available</AppText> : null}
           </View>
         )}
 
@@ -372,7 +335,7 @@ export default function CreateUserScreen({ navigation }: Props) {
               value={tempDob}
               mode="date"
               display="spinner"
-              maximumDate={new Date()}
+              maximumDate={learnerLatestDob()}   // learners must be 13+ (younger dates can't be picked)
               onChange={(_, d) => { if (d) setTempDob(d); }}
               style={{ height: 220 }}
             />
@@ -435,7 +398,12 @@ const styles = StyleSheet.create({
   photoText: { color: NICO.primary, fontSize: FONT_SIZE.base, textAlign: 'center' },
   label: { ...TEXT_STYLE.fieldLabel, marginBottom: SPACING.sm, marginTop: SPACING.base },
   required: { color: NICO.error, fontWeight: FONT_WEIGHT.black },
-  usernameHint: { fontSize: FONT_SIZE.base, color: NICO.textMuted, lineHeight: 18, marginBottom: SPACING.sm },
+  helperBox: {
+    backgroundColor: NICO.primaryLight, borderRadius: RADIUS.md,
+    padding: SPACING.md, marginTop: SPACING.sm,
+    borderLeftWidth: 3, borderLeftColor: NICO.primary,
+  },
+  helperText: { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 20 },
   input: {
     backgroundColor: NICO.surface,
     borderWidth: 1.5,
@@ -446,10 +414,6 @@ const styles = StyleSheet.create({
     color: NICO.text,
     marginBottom: 4,
   },
-  inputError: { borderColor: NICO.error },
-  errorText: { fontSize: FONT_SIZE.base, color: NICO.error, marginTop: 2, marginBottom: 4 },
-  checkingText: { fontSize: FONT_SIZE.base, color: NICO.textMuted, marginTop: 2, marginBottom: 4 },
-  availableText: { fontSize: FONT_SIZE.base, color: NICO.success, marginTop: 2, marginBottom: 4 },
   toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.md },
   toggleLabel: { ...TEXT_STYLE.body },
   toggle: { width: scale(52), height: scale(30), borderRadius: scale(15), backgroundColor: NICO.border, justifyContent: 'center', padding: 2 },

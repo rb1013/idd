@@ -192,6 +192,28 @@ export const US_STATES = [
   'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming',
 ];
 
+// ── Learner minimum age (Create / Edit learner) ───────────────────────────────
+// Co-Heart is for teens and young adults; learners must be 13 or older.
+
+export const LEARNER_MIN_AGE = 13;
+
+/** Latest date of birth allowed for a learner (today minus LEARNER_MIN_AGE years) — the date picker's maximum. */
+export function learnerLatestDob(): Date {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - LEARNER_MIN_AGE);
+  return d;
+}
+
+/** True if a learner born on `dob` is at least LEARNER_MIN_AGE today. */
+export function isLearnerOldEnough(dob: Date): boolean {
+  return dob.getTime() <= learnerLatestDob().getTime();
+}
+
+export const LEARNER_AGE_ALERT = {
+  title: `Learner must be ${LEARNER_MIN_AGE} or older`,
+  message: 'Co-Heart is designed for teens and young adults with intellectual and developmental disabilities.',
+};
+
 export function calcAge(dob: string | null | undefined): number | null {
   if (!dob) return null;
   const birth = new Date(dob + 'T12:00:00');
