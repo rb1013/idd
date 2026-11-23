@@ -75,6 +75,16 @@ type EventsRoute = RouteProp<GuardianNavParamList, 'Events'>;
 
 type EventsTab = 'upcoming' | 'mine' | 'attending';
 
+// Per event: the going count (a number, not the rows) and only MY RSVP row (for Attending and the
+// button; filtered with .eq('mine.guardian_id', me)). Attendee names are loaded by the sheet on open.
+const EVENT_SELECT = 'id, name, description, category, event_date, event_time, duration, venue, guardian_id, created_at, guardians!events_guardian_id_fkey(full_name), going:event_participants(count), mine:event_participants(guardian_id)';
+
+/** Same, but only events I RSVP'd to ('!inner' drops events without my row) — Attending → Past. */
+const EVENT_SELECT_ATTENDED = EVENT_SELECT.replace('mine:event_participants(guardian_id)', 'mine:event_participants!inner(guardian_id)');
+
+/** Hosting / Attending → Past: how many of my most recent past events to show (no filters, no paging). */
+const PAST_EVENTS_LIMIT = 20;
+
 // No "from" date: every tab only lists events from today onward, so only an end date ("Until") is useful
 interface EventFilters {
   name: string;
@@ -125,6 +135,16 @@ export default function EventsScreen() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<EventsTab>(route.params?.tab ?? 'upcoming');
+  // Hosting and Attending: Upcoming (as before) or Past (my last 20 past events), per tab
+  type PastTab = 'mine' | 'attending';
+  const [viewByTab, setViewByTab]     = useState<Record<PastTab, 'upcoming' | 'past'>>({ mine: 'upcoming', attending: 'upcoming' });
+  const [pastByTab, setPastByTab]     = useState<Record<PastTab, EventItem[]>>({ mine: [], attending: [] });
+  const [pastLoading, setPastLoading] = useState(false);
+  const pastLoadedRef = useRef<Record<PastTab, boolean>>({ mine: false, attending: false });
+  const pastTab: PastTab | null = tab === 'mine' || tab === 'attending' ? tab : null;
+  const isPastView = !!pastTab && viewByTab[pastTab] === 'past';
+  // Past events (date before today) say "attended" / "Who came" instead of "going" / "Who's coming"
+  const isPastEvent = (e: EventItem) => e.eventDate < toLocalDateStr(new Date());
   const [attendingEvents, setAttendingEvents] = useState<EventItem[]>([]);
   const [selectedEvent, setSelectedEvent]       = useState<EventItem | null>(null);
 
@@ -178,13 +198,9 @@ export default function EventsScreen() {
     attendeeCache.current = {};   // names may have changed — reload them when a sheet opens
     // Local date, not UTC: toISOString() would roll over to tomorrow in the California evening
     const today = toLocalDateStr(new Date());
-    // Per event: the going count (a number, not the rows) and only MY RSVP row (for Attending and
-    // the button). Attendee names are loaded by the sheet when it opens (loadAttendees).
-    const SELECT = 'id, name, description, category, event_date, event_time, duration, venue, guardian_id, created_at, guardians!events_guardian_id_fkey(full_name), going:event_participants(count), mine:event_participants(guardian_id)';
-
     const { data } = await supabase
       .from('events')
-      .select(SELECT)
+      .select(EVENT_SELECT)
       .eq('mine.guardian_id', guardian.id)   // filters the "mine" rows, not the events
       .gte('event_date', today)
       .order('event_date', { ascending: true });
@@ -195,6 +211,27 @@ export default function EventsScreen() {
     setAttendingEvents(list.filter(e => e.iAmGoing && e.guardianId !== guardian.id));
 
     setLoading(false);
+    // Past lists refresh with the rest — but only the ones opened this visit
+    (['mine', 'attending'] as const).forEach(t => { if (pastLoadedRef.current[t]) loadPast(t); });
+  }
+
+  // ── Hosting / Attending → Past: my last PAST_EVENTS_LIMIT events before today, newest first ──
+  // Hosting = events I created (delete allowed, no edit); Attending = events by others I RSVP'd to.
+  // Loaded only when that tab's Past is first opened; read-only (no RSVP on past events).
+  async function loadPast(which: PastTab) {
+    if (!guardian) return;
+    if (!pastLoadedRef.current[which]) setPastLoading(true);
+    const today = toLocalDateStr(new Date());
+    let query = supabase
+      .from('events')
+      .select(which === 'mine' ? EVENT_SELECT : EVENT_SELECT_ATTENDED)
+      .eq('mine.guardian_id', guardian.id)
+      .lt('event_date', today);
+    query = which === 'mine' ? query.eq('guardian_id', guardian.id) : query.neq('guardian_id', guardian.id);
+    const { data } = await query.order('event_date', { ascending: false }).limit(PAST_EVENTS_LIMIT);
+    setPastByTab(prev => ({ ...prev, [which]: (data ?? []).map(mapEvent) }));
+    pastLoadedRef.current[which] = true;
+    setPastLoading(false);
   }
 
   // ── Who's coming: loaded per event when its sheet opens ───────────────────────
@@ -307,6 +344,10 @@ export default function EventsScreen() {
           .sort((a, b) => a.eventDate.localeCompare(b.eventDate)));
   }
 
+  useEffect(() => {
+    if (isPastView && pastTab && !pastLoadedRef.current[pastTab]) loadPast(pastTab);
+  }, [isPastView, pastTab]);
+
   async function deleteEvent(id: string) {
     Alert.alert('Delete event', 'This will permanently delete the event and all RSVPs.', [
       { text: 'Cancel', style: 'cancel' },
@@ -314,6 +355,7 @@ export default function EventsScreen() {
         text: 'Delete', style: 'destructive', onPress: async () => {
           await supabase.from('events').delete().eq('id', id);
           setEvents(prev => prev.filter(e => e.id !== id));
+          setPastByTab(prev => ({ mine: prev.mine.filter(e => e.id !== id), attending: prev.attending.filter(e => e.id !== id) }));
         },
       },
     ]);
@@ -341,7 +383,28 @@ export default function EventsScreen() {
         ))}
       </View>
 
-      {/* Filters (values are per tab) */}
+      {/* Hosting / Attending: Upcoming | Past */}
+      {pastTab && (
+        <View style={s.hostToggleRow}>
+          {(['upcoming', 'past'] as const).map(v => (
+            <TouchableOpacity
+              key={v}
+              style={[s.hostToggleBtn, viewByTab[pastTab] === v && s.hostToggleBtnActive]}
+              onPress={() => setViewByTab(prev => ({ ...prev, [pastTab]: v }))}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityState={{ selected: viewByTab[pastTab] === v }}
+            >
+              <AppText style={[s.hostToggleTxt, viewByTab[pastTab] === v && s.hostToggleTxtActive]}>
+                {v === 'upcoming' ? 'Upcoming' : 'Past'}
+              </AppText>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {/* Filters (values are per tab) — none for Past */}
+      {!isPastView && (
       <View style={s.filterOuter}>
         <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={s.searchGradient}>
           <TextInput
@@ -383,9 +446,13 @@ export default function EventsScreen() {
           )}
         </View>
       </View>
+      )}
 
+      {isPastView && pastLoading ? (
+        <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>
+      ) : (
       <FlatList
-        data={filtered}
+        data={isPastView && pastTab ? pastByTab[pastTab] : filtered}
         keyExtractor={e => e.id}
         contentContainerStyle={s.list}
         renderItem={({ item: e, index }) => {
@@ -433,14 +500,17 @@ export default function EventsScreen() {
                 {isMine ? (
                   <View style={s.mineRightCol}>
                     <View style={s.cardIconRow}>
-                      <TouchableOpacity
-                        style={s.cardIconBtn}
-                        onPress={() => navigation.navigate('EditEvent', { eventId: e.id })}
-                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                        activeOpacity={0.7}
-                      >
-                        <AppText style={s.cardIconBtnTxt}>✏️</AppText>
-                      </TouchableOpacity>
+                      {/* Past events can't be edited (delete still allowed) */}
+                      {!isPastView && (
+                        <TouchableOpacity
+                          style={s.cardIconBtn}
+                          onPress={() => navigation.navigate('EditEvent', { eventId: e.id })}
+                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                          activeOpacity={0.7}
+                        >
+                          <AppText style={s.cardIconBtnTxt}>✏️</AppText>
+                        </TouchableOpacity>
+                      )}
                       <TouchableOpacity
                         style={[s.cardIconBtn, s.cardIconBtnDelete]}
                         onPress={() => deleteEvent(e.id)}
@@ -452,13 +522,13 @@ export default function EventsScreen() {
                     </View>
                     <View style={s.goingBadge}>
                       <AppText style={s.goingNum}>{e.goingCount}</AppText>
-                      <AppText style={s.goingLabel}>going</AppText>
+                      <AppText style={s.goingLabel}>{isPastEvent(e) ? 'attended' : 'going'}</AppText>
                     </View>
                   </View>
                 ) : (
                   <View style={s.goingBadge}>
                     <AppText style={s.goingNum}>{e.goingCount}</AppText>
-                    <AppText style={s.goingLabel}>going</AppText>
+                    <AppText style={s.goingLabel}>{isPastEvent(e) ? 'attended' : 'going'}</AppText>
                   </View>
                 )}
               </TouchableOpacity>
@@ -466,6 +536,7 @@ export default function EventsScreen() {
           );
         }}
         ListFooterComponent={(() => {
+          if (isPastView) return null;   // at most 20, no paging
           const showMore    = tab === 'mine' ? showLoadMoreMine : tab === 'attending' ? showLoadMoreAttending : showLoadMoreUpcoming;
           const doPaginate  = tab === 'mine' ? loadMoreMine     : tab === 'attending' ? loadMoreAttending     : loadMoreUpcoming;
           const ps          = tab === 'mine' ? pageSizeMine     : tab === 'attending' ? pageSizeAttending     : pageSizeUpcoming;
@@ -486,14 +557,17 @@ export default function EventsScreen() {
           <View style={s.empty}>
             <AppText style={s.emptyEmoji}>🎉</AppText>
             <AppText style={s.emptyText}>
-              {tab === 'mine' ? "You haven't created any events" : tab === 'attending' ? "No upcoming events you're attending" : 'No upcoming events'}
+              {isPastView ? (tab === 'mine' ? 'No past events yet' : "No past events you've attended") : tab === 'mine' ? "You haven't created any events" : tab === 'attending' ? "No upcoming events you're attending" : 'No upcoming events'}
             </AppText>
-            <AppText style={s.emptyHint}>
-              {tab === 'attending' ? 'RSVP Going on an event to see it here' : 'Tap below to create one'}
-            </AppText>
+            {!isPastView && (
+              <AppText style={s.emptyHint}>
+                {tab === 'attending' ? 'RSVP Going on an event to see it here' : 'Tap below to create one'}
+              </AppText>
+            )}
           </View>
         }
       />
+      )}
 
 
       {/* Filter: "Until" date picker (today onward) */}
@@ -557,7 +631,8 @@ export default function EventsScreen() {
                     <AppText style={s.nudgeTitle}>{selectedEvent.name}</AppText>
                     <AppText style={s.nudgeHost}>By {selectedEvent.guardianName}</AppText>
                   </View>
-                  {selectedEvent.guardianId !== guardian?.id && (
+                  {/* 🚩 for upcoming events by others; not on past events */}
+                  {selectedEvent.guardianId !== guardian?.id && !isPastEvent(selectedEvent) && (
                     <ReportFlag target={{ area: 'event', eventId: selectedEvent.id }} />
                   )}
                   {/* Always reachable — a long attendee list can leave no backdrop to tap */}
@@ -578,8 +653,8 @@ export default function EventsScreen() {
 
                 {/* Count + RSVP on one row (host sees the count only) */}
                 <View style={s.nudgeCountRow}>
-                  <AppText style={s.nudgeCountText}>👥 {selectedEvent.goingCount} going</AppText>
-                  {selectedEvent.guardianId !== guardian?.id && RSVP_OPTIONS.map(opt => {
+                  <AppText style={s.nudgeCountText}>👥 {selectedEvent.goingCount} {isPastEvent(selectedEvent) ? 'attended' : 'going'}</AppText>
+                  {selectedEvent.guardianId !== guardian?.id && !isPastEvent(selectedEvent) && RSVP_OPTIONS.map(opt => {
                     const active = nudgeRsvp === opt.value;
                     return (
                       <TouchableOpacity
@@ -598,7 +673,7 @@ export default function EventsScreen() {
                 </View>
 
                 {/* Who's coming — plain names; only this part scrolls */}
-                <AppText style={s.nudgeListTitle}>Who's coming</AppText>
+                <AppText style={s.nudgeListTitle}>{isPastEvent(selectedEvent) ? 'Who came' : "Who's coming"}</AppText>
                 <ScrollView style={s.nudgeList} showsVerticalScrollIndicator>
                   {attendeesError ? (
                     <TouchableOpacity onPress={() => loadAttendees(selectedEvent.id)} activeOpacity={0.7}>
@@ -658,6 +733,16 @@ const s = StyleSheet.create({
   tabActive:    { borderBottomColor: NICO.primary },
   tabTxt:       { ...TEXT_STYLE.tabLabel },
   tabTxtActive: { ...TEXT_STYLE.tabLabel, color: NICO.primary, fontWeight: FONT_WEIGHT.extraBold },
+
+  // Hosting: Upcoming | Past switch
+  hostToggleRow: {
+    flexDirection: 'row', alignSelf: 'center', marginTop: SPACING.md,
+    backgroundColor: NICO.background, borderRadius: RADIUS.full, padding: 3,
+  },
+  hostToggleBtn:       { paddingHorizontal: SPACING.xl, paddingVertical: SPACING.xs + 2, borderRadius: RADIUS.full },
+  hostToggleBtnActive: { backgroundColor: NICO.surface, ...SHADOW.sm },
+  hostToggleTxt:       { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
+  hostToggleTxtActive: { fontWeight: FONT_WEIGHT.extraBold, color: NICO.primary },
 
   list: { padding: SPACING.base, paddingBottom: 48, gap: SPACING.sm },
 
