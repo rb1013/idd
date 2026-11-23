@@ -89,6 +89,7 @@ We share information with service providers only as needed to run Co-Heart:
 | **Anthropic** (Claude) | Writing AI tutorial scripts | The tutorial details you enter (skill, action, comprehension level, language) |
 | **OpenAI** | Generating tutorial images | Image descriptions for each tutorial slide |
 | **Google** (Cloud Text-to-Speech) | Creating narration audio for AI tutorials | Tutorial narration text only |
+| **OpenSymbols** | Loading picture symbols for learner chat | Symbol search words only (e.g. "eat", "play") and the device's IP address. No names or messages |
 | **Google** (Gmail) | Sending account emails such as verification and password reset codes | Your email address and the email content |
 | **YouTube** (Google) | Playing YouTube videos you link | YouTube may collect data and **may show ads** under its own policies when a video plays. We use YouTube's privacy-enhanced (no-cookie) mode |
 
@@ -198,3 +199,35 @@ If you downloaded Co-Heart from the App Store, these Terms are between you and u
 
 ## 15. Contact
 Questions about these Terms or the Privacy Policy: **coheartsupport@gmail.com** · [Mailing address]
+
+---
+
+# Part 3 — Credits & Licenses
+
+Co-Heart uses the following third-party content and open-source software. We thank their creators.
+
+### Picture symbols (learner chat)
+The picture-symbol cards learners use to chat are found through **OpenSymbols** (opensymbols.org), a free service that gathers symbols from open symbol libraries. Each symbol remains the property of its creator and is used under its own license:
+
+- **ARASAAC:** The pictographic symbols are the property of the Government of Aragón and were created by Sergio Palao for ARASAAC (arasaac.org), which distributes them under a Creative Commons BY-NC-SA license.
+- **Mulberry Symbols:** by Steve Lee, licensed under CC BY-SA 2.0 UK. **[confirm used]**
+- **Twemoji:** by Twitter, Inc. and other contributors, licensed under CC BY 4.0. **[confirm used]**
+- **Sclera Pictograms:** by Sclera vzw, licensed under CC BY-NC 2.0 BE. **[confirm used]**
+
+### Content filtering
+To help keep conversations kind, Co-Heart checks text against lists of inappropriate words:
+
+- **bad-words** (JavaScript library) by Michael Price, MIT License.
+- **badwords-list**, MIT License.
+- **"List of Dirty, Naughty, Obscene, and Otherwise Bad Words"** by Shutterstock, licensed under CC BY 4.0 (github.com/LDNOOBW). **[confirm this is the source of the extra word list]**
+
+These lists are used only to block words. They are never shown to users.
+
+### Videos, images and narration
+- **YouTube** videos linked by guardians are shown through YouTube's embedded player and are subject to the YouTube Terms of Service. YouTube and its videos belong to their respective owners.
+- **AI tutorial images** are created with OpenAI's image models, and **narration audio** is created with Google Cloud Text-to-Speech.
+
+### Open-source software
+Co-Heart is built with open-source software, including **React Native** and **Expo** (MIT License) and the **Supabase** client libraries (MIT License). A full list of open-source components and their licenses is available on request at **coheartsupport@gmail.com**.
+
+All trademarks belong to their respective owners.

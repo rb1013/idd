@@ -1,7 +1,7 @@
 # Co-Heart — App Store Description
 
-**Length:** 3,409 characters (Apple limit: 4,000)
-**Last updated:** 2026-11-15
+**Length:** 3,906 characters (Apple limit: 4,000)
+**Last updated:** 2026-11-22
 
 Paste the text inside the block below into App Store Connect → App Information → Description. The App Store shows plain text only, so headings are in CAPS and lists use • bullets.
 
@@ -14,9 +14,11 @@ FOR LEARNERS
 
 • Daily Activities: A picture checklist of everyday tasks like brushing teeth or packing a bag. Learners tick items off and see their progress grow.
 
-• AI generated Tutorials: Step-by-step lessons play as narrated, auto-advancing slideshows or videos, with large visuals and simple language.
+• Tutorials: Short step-by-step lessons play as narrated, auto-advancing slideshows or videos, with large visuals and simple language.
 
 • Friends & Chat: Learners connect with friends their guardian approves. Chat uses pre-written phrases and picture-symbol cards instead of open typing, so communication is easy and safe.
+
+• Read Aloud: Tap the speaker on tiles, friends and messages to hear them read out.
 
 • Big, Simple Design: Large buttons, clear pictures and a quick mood check-in, made for easy use.
 
@@ -28,7 +30,7 @@ FOR GUARDIANS
 
 • Activity Checklist: Choose up to 10 daily activities from a ready-made list, then view a 7-day progress report.
 
-• AI-Created Tutorials: Describe a skill and the main action, and Co-Heart creates an illustrated, narrated slideshow for your learner. Preview every tutorial before your learner sees it.
+• AI-Created Tutorials: Choose a skill and describe the character and the action, and Co-Heart creates a short (about 30–40 second), illustrated, narrated English slideshow. Preview and edit every slide before your learner sees it.
 
 • YouTube Videos: Add any public YouTube video as a private tutorial for your learner.
 
@@ -36,19 +38,23 @@ FOR GUARDIANS
 
 • Friend Management: Review friend requests, discover other learners, and see a short profile before your learner connects.
 
-• Guardian Network: Find guardians by county or Regional Support Category, send connection requests, and message families who understand your journey.
+• Guardian Network: Find guardians by name, county or Regional Support Category, send connection requests, and chat with the families you connect with.
 
-• Community: Browse and create local events and RSVP. Ask questions and share tips in guardian-only Discussions, and find helpful Resources.
+• Community: Browse and create local events, tap "I will attend" and see who's coming. Ask questions and share tips in guardian-only Discussions, and find helpful Resources.
 
 SAFETY AND PRIVACY BUILT IN
 
 • Guardian Mode is protected by a 6-digit PIN, so learners can't change settings.
 
-• No free typing in learner chat, plus a profanity filter.
+• No free typing in learner chat, plus a profanity filter on chats, discussions and events.
 
-• Block, report or delete chats from inside your learner's conversation with your PIN.
+• Report or block anyone in Discussions, Events, guardian chat and profiles. Our team reviews reports within 24 hours, with zero tolerance for abusive content.
 
-• Activity history is deleted automatically after 7 days.
+• Learners never see online status or unread-message counts, so nothing nudges them to keep checking the app.
+
+• Contact details are never shown to other families. Connect first, then chat in the app.
+
+• We don't ask for diagnoses or medical records, and activity history is deleted automatically after 7 days.
 
 • Co-Heart never shows ads or uses advertising trackers. Linked YouTube videos may include YouTube's own ads.
 
@@ -60,9 +66,17 @@ Choose "Mentor & Connect" to manage everything, or "Grow & Connect" to hand the 
 
 BUILT FOR CALIFORNIA FAMILIES
 
-Co-Heart is designed for families across California, with county-based search and support categories that reflect school support plans and Regional Center services.
+Co-Heart is designed for families across California, with county-based search and support categories based on California Regional Center services.
 
 Co-Heart helps learners build independence one small step at a time, and helps guardians feel a little less alone along the way.
 
 Questions or feedback? Contact us at coheartsupport@gmail.com.
+```
+
+## Promotional Text
+
+**Length:** 168 characters (Apple limit: 170). Can be changed at any time without a new review.
+
+```text
+Plan your learner's day, create simple AI tutorials, and connect with families who understand. A safe, ad-free app for IDD families, with a PIN-protected guardian mode.
 ```
