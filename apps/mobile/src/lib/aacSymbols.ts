@@ -1,128 +1,113 @@
 import { File, Directory, Paths } from 'expo-file-system';
+import { supabase } from './supabase';
 
-const symbolsDir = new Directory(Paths.document, 'aac_symbols');
-const metadataFile = new File(symbolsDir, 'symbols.json');
+// Learner chat board content, managed by admins in the database (migrations 094 / 095):
+//   aac_phrases  — "Say hello" phrases (emoji + label, sent as text)
+//   aac_symbols  — picture symbols (images in the public 'aac-symbols' Storage bucket, sent as image URL)
+//
+// Caching: the board and its images are kept on the phone (aac_board/).
+//   - First open: load both lists, download every symbol image, save the cache.
+//   - Later opens: show the cache instantly, then refreshBoard() re-reads both lists once (silently)
+//     and compares each row's updated_at with the cached copy; only changed / new images are
+//     downloaded again, removed ones are deleted. No timer — one check per board open.
+
+const SYMBOL_BUCKET = 'aac-symbols';
+const boardDir  = new Directory(Paths.document, 'aac_board');
+const boardFile = new File(boardDir, 'board.json');
+// Old cache from the OpenSymbols version (searched images); removed on the first refresh
+const legacyDir = new Directory(Paths.document, 'aac_symbols');
+
+export interface AACPhrase {
+  id: string;
+  emoji: string;
+  label: string;   // shown under the emoji, and read aloud
+  phrase: string;  // text sent as the message
+  updated_at: string;
+}
 
 export interface AACSymbol {
-  keyword: string;
-  name: string;
-  imageUrl: string;  // remote URL — sent as message content so recipient can render it
-  localUri: string;  // local file URI — used for board rendering, works offline
+  key: string;
+  label: string;       // shown under the picture, and read aloud
+  image_path: string;  // file name in the 'aac-symbols' bucket
+  updated_at: string;
+  imageUrl: string;    // public URL — sent as the message so the recipient can render it
+  localUri: string;    // cached file on this phone (or the remote URL if the download failed)
 }
 
-export interface PhraseSymbol {
-  emoji: string;
-  label: string;   // shown under the emoji
-  phrase: string;  // text sent as the message
+export interface AACBoard {
+  phrases: AACPhrase[];
+  symbols: AACSymbol[];
 }
 
-export const PHRASE_SYMBOLS: PhraseSymbol[] = [
-  { emoji: '👋', label: 'Hello!',          phrase: 'Hello! 👋'           },
-  { emoji: '🌅', label: 'Good morning',    phrase: 'Good morning! 🌅'    },
-  { emoji: '🌙', label: 'Good night',      phrase: 'Good night! 🌙'      },
-  { emoji: '🙂', label: 'How are you?',    phrase: 'How are you? 🙂'     },
-  { emoji: '😊', label: "I'm fine!",       phrase: "I'm fine! 😊"        },
-  { emoji: '🤝', label: 'Nice to meet',    phrase: 'Nice to meet you! 🤝' },
-  { emoji: '🎉', label: "That's great!",   phrase: "That's great! 🎉"    },
-  { emoji: '🥺', label: 'I miss you',      phrase: 'I miss you 🥺'       },
-  { emoji: '❤️', label: 'I love you',      phrase: 'I love you ❤️'       },
-  { emoji: '😂', label: 'So funny!',       phrase: 'That is so funny! 😂' },
-];
-
-const SYMBOL_DEFINITIONS = [
-  { keyword: 'hello',     name: 'Hello'     },
-  { keyword: 'goodbye',   name: 'Goodbye'   },
-  { keyword: 'happy',     name: 'Happy'     },
-  { keyword: 'sad',       name: 'Sad'       },
-  { keyword: 'tired',     name: 'Tired'     },
-  { keyword: 'angry',     name: 'Angry'     },
-  { keyword: 'yes',       name: 'Yes'       },
-  { keyword: 'no',        name: 'No'        },
-  { keyword: 'help',      name: 'Help'      },
-  { keyword: 'thank you', name: 'Thank you' },
-  { keyword: 'hug',       name: 'Hug'       },
-  { keyword: 'love',      name: 'Love'      },
-  { keyword: 'hungry',    name: 'Hungry'    },
-  { keyword: 'play',      name: 'Play'      },
-  { keyword: 'wait',      name: 'Wait'      },
-  { keyword: 'bathroom',  name: 'Bathroom'  },
-  { keyword: 'water',     name: 'Water'     },
-  { keyword: 'eat',       name: 'Eat'       },
-  { keyword: 'drink',     name: 'Drink'     },
-  { keyword: 'sleep',     name: 'Sleep'     },
-  { keyword: 'more',      name: 'More'      },
-  { keyword: 'stop',      name: 'Stop'      },
-  { keyword: 'please',    name: 'Please'    },
-  { keyword: 'sorry',     name: 'Sorry'     },
-  { keyword: 'friend',    name: 'Friend'    },
-];
-
-async function fetchRemoteSymbol(keyword: string): Promise<{ imageUrl: string; name: string } | null> {
+/** The board saved on this phone by the last successful refresh, or null on first use. */
+export async function readCachedBoard(): Promise<AACBoard | null> {
   try {
-    const res = await fetch(
-      `https://www.opensymbols.org/api/v1/symbols/search?q=${encodeURIComponent(keyword)}&limit=10`,
-    );
-    const data: any[] = await res.json();
-    if (!data?.length) return null;
-    // Prefer PNG/JPG — React Native Image doesn't render SVG natively
-    const raster = data.find(s => s.image_url && !/\.svg(\?|$)/i.test(s.image_url));
-    const symbol = raster ?? data[0];
-    return { imageUrl: symbol.image_url, name: symbol.name ?? keyword };
+    if (!boardFile.exists) return null;
+    const board = JSON.parse(await boardFile.text()) as AACBoard;
+    return Array.isArray(board?.phrases) && Array.isArray(board?.symbols) ? board : null;
   } catch {
     return null;
   }
 }
 
-export async function loadAACSymbols(): Promise<AACSymbol[]> {
-  if (!symbolsDir.exists) {
-    symbolsDir.create();
+/**
+ * Re-reads both lists from the database and brings the cache up to date (see top of file).
+ * Throws if the lists can't be loaded (e.g. offline) — callers keep showing the cached board.
+ */
+export async function refreshBoard(cached: AACBoard | null): Promise<AACBoard> {
+  const [phrasesRes, symbolsRes] = await Promise.all([
+    supabase.from('aac_phrases').select('id, emoji, label, phrase, updated_at')
+      .eq('is_active', true).order('sort_order'),
+    supabase.from('aac_symbols').select('key, label, image_path, updated_at')
+      .eq('is_active', true).order('sort_order'),
+  ]);
+  if (phrasesRes.error) throw phrasesRes.error;
+  if (symbolsRes.error) throw symbolsRes.error;
+
+  if (!boardDir.exists) boardDir.create();
+  if (legacyDir.exists) { try { legacyDir.delete(); } catch {} }
+
+  const cachedByKey = new Map((cached?.symbols ?? []).map(s => [s.key, s]));
+
+  const symbols: AACSymbol[] = await Promise.all((symbolsRes.data ?? []).map(async row => {
+    const imageUrl = supabase.storage.from(SYMBOL_BUCKET).getPublicUrl(row.image_path).data.publicUrl;
+    const prev = cachedByKey.get(row.key);
+    const unchanged = prev
+      && prev.updated_at === row.updated_at
+      && prev.image_path === row.image_path
+      && !prev.localUri.startsWith('http')          // last download had failed — try again
+      && new File(prev.localUri).exists;
+    if (unchanged) return { ...prev!, label: row.label };
+
+    // New or changed: download to a file name that includes updated_at, so a replaced image never
+    // reuses the old file name (the image component would otherwise keep showing the old picture).
+    const ext = (row.image_path.split('.').pop() || 'png').toLowerCase();
+    const stamp = Date.parse(row.updated_at) || Date.now();
+    const target = new File(boardDir, `${row.key}_${stamp}.${ext}`);
+    try {
+      const file = await File.downloadFileAsync(imageUrl, target, { idempotent: true });
+      return { key: row.key, label: row.label, image_path: row.image_path, updated_at: row.updated_at, imageUrl, localUri: file.uri };
+    } catch {
+      // Keep the remote URL so the board still works; the next refresh retries the download
+      return { key: row.key, label: row.label, image_path: row.image_path, updated_at: row.updated_at, imageUrl, localUri: imageUrl };
+    }
+  }));
+
+  const board: AACBoard = { phrases: (phrasesRes.data ?? []) as AACPhrase[], symbols };
+
+  // Delete cached images that are no longer used (removed, hidden or replaced symbols)
+  const keep = new Set(symbols.map(s => s.localUri));
+  for (const entry of boardDir.list()) {
+    if (entry instanceof File && entry.name !== boardFile.name && !keep.has(entry.uri)) {
+      try { entry.delete(); } catch {}
+    }
   }
 
-  let cached: AACSymbol[] = [];
-  if (metadataFile.exists) {
-    const raw = await metadataFile.text();
-    cached = JSON.parse(raw) as AACSymbol[];
-  }
-
-  // Only fetch/download keywords we don't already have cached — so adding a
-  // new keyword to SYMBOL_DEFINITIONS later triggers a one-time, delta-only
-  // top-up on next load instead of re-downloading everything that's unchanged.
-  const cachedByKeyword = new Map(cached.map(s => [s.keyword, s]));
-  const missingDefs = SYMBOL_DEFINITIONS.filter(d => !cachedByKeyword.has(d.keyword));
-
-  if (missingDefs.length > 0) {
-    const fetched = await Promise.all(
-      missingDefs.map(async ({ keyword, name }) => {
-        const remote = await fetchRemoteSymbol(keyword);
-        if (!remote) return null;
-
-        const ext = remote.imageUrl.split('.').pop()?.split('?')[0]?.toLowerCase() || 'png';
-        const localFile = new File(symbolsDir, keyword.replace(/ /g, '_') + '.' + ext);
-
-        try {
-          await File.downloadFileAsync(remote.imageUrl, localFile);
-          return { keyword, name, imageUrl: remote.imageUrl, localUri: localFile.uri };
-        } catch {
-          // Download failed — keep remote URL so board still works on first open
-          return { keyword, name, imageUrl: remote.imageUrl, localUri: remote.imageUrl };
-        }
-      }),
-    );
-    fetched.forEach(s => { if (s) cachedByKeyword.set(s.keyword, s); });
-  }
-
-  // Re-derive from SYMBOL_DEFINITIONS so order always matches the current list,
-  // and a keyword removed from it quietly drops out of the cache too.
-  const ordered = SYMBOL_DEFINITIONS
-    .map(def => cachedByKeyword.get(def.keyword))
-    .filter(Boolean) as AACSymbol[];
-
-  if (missingDefs.length > 0) {
-    metadataFile.write(JSON.stringify(ordered));
-  }
-  return ordered;
+  boardFile.write(JSON.stringify(board));
+  return board;
 }
 
+/** Symbol messages are stored as the image URL; everything else is plain text. */
 export function isSymbolMessage(content: string): boolean {
   return content.startsWith('http://') || content.startsWith('https://');
 }

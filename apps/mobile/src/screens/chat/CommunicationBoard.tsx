@@ -4,7 +4,7 @@ import {
   Image, ActivityIndicator, FlatList, ScrollView,
 } from 'react-native';
 import { speakLearner } from '../../lib/speech';
-import { loadAACSymbols, AACSymbol, PHRASE_SYMBOLS, PhraseSymbol } from '../../lib/aacSymbols';
+import { readCachedBoard, refreshBoard, AACBoard } from '../../lib/aacSymbols';
 import { COLORS } from '../../constants';
 
 interface Props {
@@ -14,17 +14,28 @@ interface Props {
 }
 
 export default function CommunicationBoard({ visible, onClose, onSend }: Props) {
-  const [symbols, setSymbols] = useState<AACSymbol[]>([]);
+  const [board, setBoard]     = useState<AACBoard | null>(null);
   const [loading, setLoading] = useState(false);
+  const [failed, setFailed]   = useState(false);
+
+  // Each time the board opens: show the cached board instantly (if any), then refresh once in the
+  // background. First open (no cache): wait for the refresh, which also downloads the images.
+  async function openBoard() {
+    setFailed(false);
+    const cached = board ?? await readCachedBoard();
+    if (cached) setBoard(cached);
+    else setLoading(true);
+    try {
+      setBoard(await refreshBoard(cached));
+    } catch {
+      if (!cached) setFailed(true);   // nothing to show yet; with a cache, keep it quietly
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    if (visible && symbols.length === 0) {
-      setLoading(true);
-      loadAACSymbols().then(s => {
-        setSymbols(s);
-        setLoading(false);
-      });
-    }
+    if (visible) openBoard();
   }, [visible]);
 
   return (
@@ -34,13 +45,26 @@ export default function CommunicationBoard({ visible, onClose, onSend }: Props) 
           <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.75}>
             <Text style={styles.closeBtnText}>✕</Text>
           </TouchableOpacity>
+          {loading ? (
+            <View style={styles.loadingWrap}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={styles.loadingText}>Loading…</Text>
+            </View>
+          ) : failed || !board ? (
+            <View style={styles.loadingWrap}>
+              <Text style={styles.loadingText}>Couldn't load the board.{'\n'}Check your connection and try again.</Text>
+              <TouchableOpacity style={styles.retryBtn} onPress={openBoard} activeOpacity={0.8}>
+                <Text style={styles.retryBtnText}>Try again</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Introductory phrases */}
             <Text style={styles.sectionLabel}>Say hello 👋</Text>
             <View style={styles.phraseGrid}>
-              {PHRASE_SYMBOLS.map(p => (
+              {board.phrases.map(p => (
                 <TouchableOpacity
-                  key={p.phrase}
+                  key={p.id}
                   style={styles.phraseCell}
                   onPressIn={() => speakLearner(p.label)}
                   onPress={() => { onSend(p.phrase); onClose(); }}
@@ -54,38 +78,32 @@ export default function CommunicationBoard({ visible, onClose, onSend }: Props) 
 
             {/* Picture symbols */}
             <Text style={styles.sectionLabel}>Symbols 🖼️</Text>
-            {loading ? (
-              <View style={styles.loadingWrap}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-                <Text style={styles.loadingText}>Downloading symbols…{'\n'}This only happens once.</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={symbols}
-                numColumns={5}
-                keyExtractor={item => item.keyword}
-                scrollEnabled={false}
-                contentContainerStyle={styles.grid}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.cell}
-                    onPressIn={() => speakLearner(item.name)}
-                    onPress={() => { onSend(item.imageUrl); onClose(); }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.imgWrap}>
-                      <Image
-                        source={{ uri: item.localUri }}
-                        style={styles.symbolImg}
-                        resizeMode="contain"
-                      />
-                    </View>
-                    <Text style={styles.symbolName} numberOfLines={1}>{item.name}</Text>
-                  </TouchableOpacity>
-                )}
-              />
-            )}
+            <FlatList
+              data={board.symbols}
+              numColumns={5}
+              keyExtractor={item => item.key}
+              scrollEnabled={false}
+              contentContainerStyle={styles.grid}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.cell}
+                  onPressIn={() => speakLearner(item.label)}
+                  onPress={() => { onSend(item.imageUrl); onClose(); }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.imgWrap}>
+                    <Image
+                      source={{ uri: item.localUri }}
+                      style={styles.symbolImg}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <Text style={styles.symbolName} numberOfLines={1}>{item.label}</Text>
+                </TouchableOpacity>
+              )}
+            />
           </ScrollView>
+          )}
         </View>
       </TouchableOpacity>
     </Modal>
@@ -140,6 +158,10 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 14, color: COLORS.textLight, textAlign: 'center', lineHeight: 22,
   },
+  retryBtn: {
+    paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, backgroundColor: COLORS.primary,
+  },
+  retryBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
   grid: {
     gap: 8,
   },
