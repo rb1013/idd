@@ -9,7 +9,7 @@ Paths are relative to the repo root. Related: `docs/apple-review-checklist.md` #
 
 | # | Decision |
 |---|---|
-| 1 | **Both ways (mutual).** "A blocks B" hides each from the other and stops all interaction. B is **not notified** |
+| 1 | **Both ways (mutual).** "A blocks B" hides each from the other and stops all interaction. B is **not notified** — but both see the other's guardian as **"Guardian: Blocked"** on learner cards / profiles (decided 2026-11-23) |
 | 2 | **Enforced in the database** (RLS + triggers), not by app-side filtering. No extra queries in screens, covers every screen, can't be bypassed via the API |
 | 3 | **Replies hidden completely** (no "hidden reply" placeholder), including on a third person's post |
 | 4 | **Reply count = replies the viewer can read** (not a stored number). Already the case: `DiscussionsScreen.tsx:229` counts the loaded replies, so it becomes correct automatically |

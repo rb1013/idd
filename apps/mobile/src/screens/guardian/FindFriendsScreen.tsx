@@ -293,9 +293,8 @@ export default function FindFriendsScreen() {
                 <AppText style={s.cardMeta} numberOfLines={1}>
                   {l.county}
                 </AppText>
-                {l.guardianName && (
-                  <AppText style={s.cardMeta}>Guardian: {l.guardianName}</AppText>
-                )}
+                {/* No guardian back = the two guardians are blocked (either way) — guardians RLS hides them */}
+                <AppText style={s.cardMeta}>Guardian: {l.guardianName ?? <AppText style={s.guardianBlocked}>Blocked</AppText>}</AppText>
               </View>
               {l.connectionStatus === 'accepted' && (
                 <View style={s.friendBadge}><AppText style={s.friendBadgeTxt}>✓ Friends</AppText></View>
@@ -397,6 +396,8 @@ const s = StyleSheet.create({
   cardInfo:  { flex: 1, minWidth: 0, gap: 2 },
   cardName:  { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
   cardMeta:  { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.medium },
+  // "Guardian: Blocked" — guardian hidden by a guardian block (FAQ: How do I block a guardian?)
+  guardianBlocked: { color: NICO.error, fontWeight: FONT_WEIGHT.bold },
   avatarCol: { alignItems: 'center', gap: 2 },
   avatarAge: { fontSize: FONT_SIZE.md, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold },
 

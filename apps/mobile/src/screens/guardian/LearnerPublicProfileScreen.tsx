@@ -192,15 +192,23 @@ export default function LearnerPublicProfileScreen() {
           <InfoRow label="Comprehension Level" value={profile.comprehension_level}     fallback="Not set" />
         </View>
 
-        {/* Guardian profile */}
-        {profile.guardian && (
-          <View style={s.guardianCard}>
-            <AppText style={s.guardianCardTitle}>Guardian Profile</AppText>
-            <InfoRow label="Name"   value={profile.guardian.name}   fallback="Not set" />
-            <InfoRow label="County" value={profile.guardian.county} fallback="Not set" />
-            <AppText style={s.guardianNote}>*** Please connect with guardian to get contact details</AppText>
-          </View>
-        )}
+        {/* Guardian profile. No guardian back = the two guardians are blocked (either way) —
+            guardians RLS hides them — shown as "Blocked" (FAQ: How do I block a guardian?) */}
+        <View style={s.guardianCard}>
+          <AppText style={s.guardianCardTitle}>Guardian Profile</AppText>
+          {profile.guardian ? (
+            <>
+              <InfoRow label="Name"   value={profile.guardian.name}   fallback="Not set" />
+              <InfoRow label="County" value={profile.guardian.county} fallback="Not set" />
+              <AppText style={s.guardianNote}>*** Please connect with guardian to get contact details</AppText>
+            </>
+          ) : (
+            <View style={s.infoRow}>
+              <AppText style={s.infoLabel}>Guardian</AppText>
+              <AppText style={[s.infoValue, s.guardianBlocked]}>Blocked</AppText>
+            </View>
+          )}
+        </View>
 
         {/* Connect action — pinned to bottom. Nothing to show when the other learner sent the request
             (accept / decline is in Manage Friends › Requests), so no empty card then. */}
@@ -290,6 +298,7 @@ const s = StyleSheet.create({
   guardianCardTitle: { fontSize: IS_TABLET ? FONT_SIZE.xl : FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text, marginBottom: SPACING.sm },
   guardianNote: { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, fontStyle: 'italic', marginTop: SPACING.sm },
 
+  guardianBlocked: { color: NICO.error, fontWeight: FONT_WEIGHT.bold },
   actionCard: {
     backgroundColor: NICO.surface, borderRadius: RADIUS.xl, padding: SPACING.base, gap: SPACING.md,
     borderWidth: 1, borderColor: NICO.border,

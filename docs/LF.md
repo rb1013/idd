@@ -44,7 +44,9 @@ Run migration **096** first. Test with a **non-admin** guardian.
 | F14 | Avantika blocks Sara from Shahin's chat (see Setup) → Find Friends | Sara isn't listed |
 | F15 | Avantika reports Sara from Shahin's chat (see Setup) → Find Friends | Sara isn't listed (see the note at the end) |
 | F16 | Many learners (more than one page) | "Load N more" shows, and the list resets to the top when filters change |
-| F17 | Avantika blocked guardian Ceasar (Connections) | Julia's card shows **no Guardian line** (the name is hidden) |
+| F17 | Avantika blocked guardian Ceasar (Connections) → Find Friends | Julia's card shows **"Guardian: Blocked"** (red) |
+| F18 | Same block, logged in as **Ceasar** → Find Friends | Shahin's card also shows **"Guardian: Blocked"** (both sides see it) |
+| F19 | Same block → open Julia's profile (as Avantika) | Guardian Profile section shows **Guardian: Blocked**; no name, county or contact note |
 
 ## Manage Friends: loading
 | # | Steps | Expected |
