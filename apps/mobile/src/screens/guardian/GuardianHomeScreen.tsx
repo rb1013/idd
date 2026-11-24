@@ -38,7 +38,8 @@ type LearnerTileDef = TileDef & { params?: Record<string, unknown> };
 const TOGGLE_COLOR = BUTTERFLY_TILES[0];
 
 const LEARNER_TILES: LearnerTileDef[] = [
-  { label: 'Friends',    emoji: '👥', sub: 'Find friends & create a social circle for your child', ci: 0, screen: 'LearnerFriends'                                  },
+  { label: 'Find Friends',   emoji: '🔍', sub: 'Discover learners to connect with',                 ci: 0, screen: 'FindFriends'                                     },
+  { label: 'Manage Friends', emoji: '👥', sub: 'Friends, requests & blocked',                       ci: 0, screen: 'LearnerFriends'                                  },
   { label: 'Learn',      emoji: '📚', sub: 'Manage tutorials for great learning experience',        ci: 0, screen: 'TutorialLibrary', params: { linkedOnly: true }  },
   { label: 'Activities', emoji: '✅', sub: 'Assign daily activities to keep a track',                ci: 0, screen: 'Activities'                                      },
   { label: 'Schedule',   emoji: '📅', sub: 'Mark calendar with upcoming classes',                    ci: 0, screen: 'UserSchedule'                                    },
@@ -310,7 +311,7 @@ export default function GuardianHomeScreen() {
               <>
                 <View style={s.learnerTileList}>
                   {LEARNER_TILES.map(tile => {
-                    const showBadge = tile.label === 'Friends' && pendingFriendRequests > 0;
+                    const showBadge = tile.label === 'Manage Friends' && pendingFriendRequests > 0;
                     return (
                       <Pressable
                         key={tile.label}
@@ -341,7 +342,7 @@ export default function GuardianHomeScreen() {
                   })}
                 </View>
 
-                {/* Messaging toggle */}
+                {/* Messaging toggle — commented out for phase 2 launch: messaging stays enabled for all learners
                 <TouchableOpacity
                   style={s.settingRow}
                   onPress={toggleMessaging}
@@ -367,7 +368,7 @@ export default function GuardianHomeScreen() {
                   )}
                 </TouchableOpacity>
 
-                {/* Messaging info modal */}
+                {/* Messaging info modal * /}
                 <Modal visible={showMessagingInfo} transparent animationType="fade" onRequestClose={() => setShowMessagingInfo(false)}>
                   <TouchableOpacity style={s.infoOverlay} activeOpacity={1} onPress={() => setShowMessagingInfo(false)}>
                     <View style={s.infoCard} onStartShouldSetResponder={() => true}>
@@ -381,6 +382,7 @@ export default function GuardianHomeScreen() {
                     </View>
                   </TouchableOpacity>
                 </Modal>
+                */}
 
                 {/* TTS toggle — commented out for now, will use it later
                 <TouchableOpacity

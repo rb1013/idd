@@ -123,7 +123,7 @@ Email **coheartsupport@gmail.com** and let us know which tutorial it was.
 ## Friends & chat
 
 ### How does my learner make friends?
-You manage your learner's friends: review and accept friend requests, and search for other learners to connect with. Before connecting, you can see a short public profile, including the other learner's guardian.
+You manage your learner's friends from two tiles on your dashboard: **Find Friends** to search for other learners and send a friend request, and **Manage Friends** to see friends, accept or decline requests, and manage blocked learners. Before connecting, you can see a short public profile, including the other learner's guardian. If a request is declined, it's simply removed — either family can send a new one later.
 
 ### Can my learner type messages freely?
 No. To keep chat safe, learners communicate using **pre-written phrases** and **picture-symbol cards** (a communication board), not open typing. A profanity filter also checks every message as an extra safeguard.
@@ -131,7 +131,7 @@ No. To keep chat safe, learners communicate using **pre-written phrases** and **
 ### What can I do if someone bothers my learner?
 Open your learner's chat with that person and tap the **🛡️ red shield** at the top of the screen. Enter your **6-digit Guardian PIN** (it continues automatically once all 6 digits are entered), then choose an action:
 - **🗑️ Delete Chat** — removes the conversation.
-- **🚫 Block User** — removes them from your learner's friends list. You can unblock them later from the **Learner's Friends** page.
+- **🚫 Block User** — removes them from your learner's friends list. You can unblock them later from the **Manage Friends** page (Blocked tab).
 - **📢 Report User** — sends a report to our team, who will review it **within 24 hours**. They stay your learner's friend unless you also block them.
 - **🔒 Block & Delete Chat** — blocks them and removes the conversation.
 

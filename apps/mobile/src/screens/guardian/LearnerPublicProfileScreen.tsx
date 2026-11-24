@@ -202,7 +202,9 @@ export default function LearnerPublicProfileScreen() {
           </View>
         )}
 
-        {/* Connect action — pinned to bottom */}
+        {/* Connect action — pinned to bottom. Nothing to show when the other learner sent the request
+            (accept / decline is in Manage Friends › Requests), so no empty card then. */}
+        {profile.connectionStatus !== 'pending_received' && (
         <View style={s.actionCard}>
           {profile.connectionStatus === 'accepted' && (
             <View style={s.statusRow}>
@@ -215,14 +217,6 @@ export default function LearnerPublicProfileScreen() {
               <AppText style={s.statusIcon}>⏳</AppText>
               <AppText style={s.statusText}>Friend request sent — waiting for guardian to accept</AppText>
             </View>
-          )}
-          {profile.connectionStatus === 'pending_received' && (
-            <TouchableOpacity
-              style={s.connectBtn}
-              onPress={() => navigation.navigate('LearnerFriendRequests')}
-            >
-              <AppText style={s.connectBtnText}>Respond to friend request →</AppText>
-            </TouchableOpacity>
           )}
           {profile.connectionStatus === 'none' && (
             <>
@@ -242,6 +236,7 @@ export default function LearnerPublicProfileScreen() {
             </>
           )}
         </View>
+        )}
       </ScrollView>
     </View>
   );
