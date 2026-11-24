@@ -59,21 +59,19 @@ export default function ChatScreen() {
   const [pinLoading, setPinLoading] = useState(false);
 
   // Guardian action modal state
-  type ActionStep = 'menu' | 'reason' | 'scope' | 'confirm';
+  type ActionStep = 'menu' | 'reason' | 'confirm';
   type ActionType = 'delete_chat' | 'block_user' | 'report_user' | 'block_delete' | 'block_delete_report';
   const [guardianModalVisible, setGuardianModalVisible] = useState(false);
   const [actionStep, setActionStep] = useState<ActionStep>('menu');
   const [selectedAction, setSelectedAction] = useState<ActionType | null>(null);
   const [actionReason, setActionReason] = useState('');
-  const [deleteScope, setDeleteScope] = useState<'all' | 'custom'>('all');
-  const [deleteScopeN, setDeleteScopeN] = useState('');
   const [guardianWorking, setGuardianWorking] = useState(false);
 
   const ACTIONS: { type: ActionType; label: string; icon: string; needsDelete: boolean }[] = [
     { type: 'delete_chat',          label: 'Delete Chat',                    icon: '🗑️',  needsDelete: true },
     { type: 'block_user',           label: 'Block User',                     icon: '🚫',  needsDelete: false },
     { type: 'report_user',          label: 'Report User',                    icon: '📢',  needsDelete: false },
-    { type: 'block_delete',         label: 'Block & Delete Chat',            icon: '🔒',  needsDelete: true },
+    // { type: 'block_delete',         label: 'Block & Delete Chat',            icon: '🔒',  needsDelete: true },
     // { type: 'block_delete_report',  label: 'Block, Delete Chat & Report',    icon: '⛔',  needsDelete: true },
   ];
   const flatListRef = useRef<FlatList>(null);
@@ -118,8 +116,6 @@ export default function ChatScreen() {
     setActionStep('menu');
     setSelectedAction(null);
     setActionReason('');
-    setDeleteScope('all');
-    setDeleteScopeN('');
     setGuardianWorking(false);
   }
 
@@ -135,12 +131,7 @@ export default function ChatScreen() {
   }
 
   function afterReason() {
-    const action = ACTIONS.find(a => a.type === selectedAction);
-    if (action?.needsDelete) {
-      setActionStep('scope');
-    } else {
-      setActionStep('confirm');
-    }
+    setActionStep('confirm');   // every action: Reason → Confirm (Delete always removes all messages)
   }
 
   async function executeGuardianAction() {
@@ -154,7 +145,7 @@ export default function ChatScreen() {
         reason: actionReason.trim() || undefined,
       };
       if (ACTIONS.find(a => a.type === selectedAction)?.needsDelete) {
-        body.delete_scope = deleteScope === 'all' ? 'all' : (parseInt(deleteScopeN, 10) || 'all');
+        body.delete_scope = 'all';   // Delete Chat always removes every message in the conversation
       }
       const { data, error } = await supabase.functions.invoke('guardian-action', {
         body,
@@ -492,6 +483,8 @@ export default function ChatScreen() {
         animationType="slide"
         onRequestClose={() => { setGuardianModalVisible(false); resetGuardianModal(); }}
       >
+        {/* Lifts the actions sheet above the keyboard (reason / "Last N messages" inputs), same as the PIN modal */}
+        <KeyboardAvoidingModalView>
         <TouchableOpacity
           style={guardianStyles.overlay}
           activeOpacity={1}
@@ -528,7 +521,7 @@ export default function ChatScreen() {
                   placeholderTextColor={NICO.textMuted}
                   multiline
                   maxLength={100}
-                  autoFocus
+                  // No autoFocus: the step opens with everything visible; the keyboard appears on tap
                 />
                 <View style={guardianStyles.btnRow}>
                   <TouchableOpacity style={guardianStyles.backBtn} onPress={resetGuardianModal} activeOpacity={0.8}>
@@ -540,46 +533,6 @@ export default function ChatScreen() {
                     disabled={!actionReason.trim()}
                     activeOpacity={0.8}
                   >
-                    <Text style={guardianStyles.nextBtnTxt}>Next</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-
-            {/* Step: scope */}
-            {actionStep === 'scope' && (
-              <>
-                <Text style={guardianStyles.sheetTitle}>How many messages to delete?</Text>
-                <TouchableOpacity
-                  style={[guardianStyles.scopeOption, deleteScope === 'all' && guardianStyles.scopeOptionActive]}
-                  onPress={() => setDeleteScope('all')} activeOpacity={0.8}
-                >
-                  <Text style={guardianStyles.scopeOptionTxt}>All messages</Text>
-                  {deleteScope === 'all' && <Text style={guardianStyles.scopeCheck}>✓</Text>}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[guardianStyles.scopeOption, deleteScope === 'custom' && guardianStyles.scopeOptionActive]}
-                  onPress={() => setDeleteScope('custom')} activeOpacity={0.8}
-                >
-                  <Text style={guardianStyles.scopeOptionTxt}>Last N messages</Text>
-                  {deleteScope === 'custom' && <Text style={guardianStyles.scopeCheck}>✓</Text>}
-                </TouchableOpacity>
-                {deleteScope === 'custom' && (
-                  <TextInput
-                    style={guardianStyles.scopeInput}
-                    value={deleteScopeN}
-                    onChangeText={setDeleteScopeN}
-                    keyboardType="number-pad"
-                    placeholder="e.g. 10"
-                    placeholderTextColor={NICO.textMuted}
-                    maxLength={5}
-                  />
-                )}
-                <View style={guardianStyles.btnRow}>
-                  <TouchableOpacity style={guardianStyles.backBtn} onPress={() => setActionStep('reason')} activeOpacity={0.8}>
-                    <Text style={guardianStyles.backBtnTxt}>Back</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={guardianStyles.nextBtn} onPress={() => setActionStep('confirm')} activeOpacity={0.8}>
                     <Text style={guardianStyles.nextBtnTxt}>Next</Text>
                   </TouchableOpacity>
                 </View>
@@ -599,7 +552,7 @@ export default function ChatScreen() {
                     {hasDelete && (
                       <Text style={guardianStyles.summaryLine}>
                         <Text style={guardianStyles.summaryKey}>Delete: </Text>
-                        {deleteScope === 'all' ? 'All messages' : `Last ${deleteScopeN || '?'} messages`}
+                        All messages
                       </Text>
                     )}
                   </View>
@@ -623,7 +576,7 @@ export default function ChatScreen() {
                     </View>
                   )}
                   <View style={guardianStyles.btnRow}>
-                    <TouchableOpacity style={guardianStyles.backBtn} onPress={() => setActionStep(action?.needsDelete ? 'scope' : 'reason')} activeOpacity={0.8}>
+                    <TouchableOpacity style={guardianStyles.backBtn} onPress={() => setActionStep('reason')} activeOpacity={0.8}>
                       <Text style={guardianStyles.backBtnTxt}>Back</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -644,6 +597,7 @@ export default function ChatScreen() {
 
           </View>
         </TouchableOpacity>
+        </KeyboardAvoidingModalView>
       </Modal>
       </KeyboardAvoidingView>
     </View>
@@ -819,18 +773,6 @@ const guardianStyles = StyleSheet.create({
     borderWidth: 1.5, borderColor: NICO.border, borderRadius: RADIUS.lg,
     padding: SPACING.md, fontSize: FONT_SIZE.md, color: NICO.text,
     minHeight: scale(80), textAlignVertical: 'top',
-  },
-
-  scopeOption: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: SPACING.md, borderWidth: 1.5, borderColor: NICO.border, borderRadius: RADIUS.lg,
-  },
-  scopeOptionActive: { borderColor: NICO.primary, backgroundColor: NICO.primaryLight },
-  scopeOptionTxt:    { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
-  scopeCheck:        { fontSize: FONT_SIZE.xl, color: NICO.primary, fontWeight: FONT_WEIGHT.black },
-  scopeInput: {
-    borderWidth: 1.5, borderColor: NICO.border, borderRadius: RADIUS.md,
-    padding: SPACING.md, fontSize: FONT_SIZE.xl, color: NICO.text, textAlign: 'center',
   },
 
   summaryBox: {
