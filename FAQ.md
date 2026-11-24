@@ -104,7 +104,7 @@ AI-generated tutorials are always in **English** and run about **30–40 seconds
 ### Do AI-generated tutorials need to be approved?
 Only if you share them. When you create a tutorial, you choose whether to **Share with other guardians**:
 - **Not shared (private):** ready to use as soon as it's generated, with no review needed. Private tutorials don't appear in the shared library and aren't shown to other families.
-- **Shared (public):** after it's generated, preview it and tap **Submit for Review**. The Co-Heart team checks it before it appears in the shared library for all guardians. You'll get a notification when it's approved or if it needs changes, and you can withdraw it from review at any time.
+- **Shared (public):** after it's generated, preview it and tap **Submit for Review**. The Co-Heart team checks it **within 48 hours**, before it appears in the shared library for all guardians. You'll get a notification when it's approved or if it needs changes, and you can withdraw it from review at any time.
 
 ### Is there a limit on AI-generated tutorials?
 Yes, each guardian can create a limited number per month (currently **10**). The count resets at the start of each month.
@@ -136,6 +136,31 @@ Open your learner's chat with that person and tap the **🛡️ red shield** at 
 - **🔒 Block & Delete Chat** — blocks them and removes the conversation.
 
 The PIN keeps these controls away from your learner. If you need help, email **coheartsupport@gmail.com**.
+
+---
+
+## Blocking a learner
+
+### Can my learner block another learner?
+No. Learners can never block anyone. Only a **guardian** can block a learner, on behalf of their own learner.
+
+### How do I block a learner?
+From your learner's **chat** with that learner:
+1. Open the chat and tap the **🛡️ red shield** at the top of the screen.
+2. Enter your **6-digit Guardian PIN**.
+3. Tap **🚫 Block User**, add a reason if you'd like, and confirm.
+
+### Why can I only block a learner from the chat?
+Chat is the only place where learners interact with each other, so it's where a reason to block someone would come from. Blocking from the chat ties the block to that interaction, so learners aren't blocked without a reason. That's why there's no Block button on learner cards or profiles.
+
+### What happens when I block a learner?
+- They're hidden from your learner's friends list and from **Find Friends**.
+- Your learner can't chat with them.
+- The other family isn't sent a notification.
+- Your learner's other friendships aren't affected, and blocking a learner doesn't block their guardian.
+
+### Where can I see or undo a block?
+Go to **Manage Friends → Blocked**. You'll see each blocked learner and the reason you gave. Tap **Unblock** to undo it; they reappear in your learner's friends list if they were friends before.
 
 ---
 

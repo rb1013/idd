@@ -265,7 +265,7 @@ export default function TutorialPreviewScreen() {
     await supabase.from('tutorials').update({ status: 'pending', updated_at: new Date().toISOString() }).eq('id', tutorialId);
     setTutorial(prev => prev ? { ...prev, status: 'pending' } : prev);
     setSubmitting(false);
-    Alert.alert('Submitted!', 'Your tutorial has been submitted for admin review. You\'ll be notified once it\'s approved.');
+    Alert.alert('Submitted!', 'Your tutorial has been submitted for admin review. We review shared tutorials within 48 hours, and you\'ll be notified once it\'s approved.');
   }
 
   async function withdrawFromReview() {
