@@ -181,7 +181,8 @@ export default function GuardianHomeScreen() {
   */
 
   const initial   = guardian?.full_name?.[0]?.toUpperCase() ?? 'G';
-  const firstname = learners[0]?.name?.split(' ')[0] ?? 'Learner';
+  // Full learner name (max 20 chars) — was only the first word, which cut names oddly
+  const learnerName = learners[0]?.name?.trim() || 'Learner';
   const hasLearner = learners.length > 0;
 
   return (
@@ -286,7 +287,7 @@ export default function GuardianHomeScreen() {
                       <Image source={{ uri: learners[0].photo_url }} style={s.learnerHeroPhoto} />
                     ) : (
                       <View style={s.learnerHeroPhoto}>
-                        <AppText style={s.learnerHeroInitial}>{firstname[0]?.toUpperCase() ?? 'L'}</AppText>
+                        <AppText style={s.learnerHeroInitial}>{learnerName[0]?.toUpperCase() ?? 'L'}</AppText>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -294,13 +295,14 @@ export default function GuardianHomeScreen() {
               ) : null}
               {hasLearner ? (
                 <TouchableOpacity
+                  style={s.zoneLinkWrap}
                   onPress={() => navigation.navigate('EditUser', { userId: learners[0].id })}
                   activeOpacity={0.7}
                   accessibilityRole="link"
-                  accessibilityHint={`Opens ${firstname}'s profile`}
+                  accessibilityHint={`Opens ${learnerName}'s profile`}
                 >
                   {/* Link style (blue + underline) so it's clearly tappable — opens the learner's profile */}
-                  <AppText style={[s.zoneLabel, s.zoneLabelLink]}>{`${firstname}'s zone`}</AppText>
+                  <AppText style={[s.zoneLabel, s.zoneLabelLink]}>{`${learnerName}'s zone`}</AppText>
                 </TouchableOpacity>
               ) : (
                 <AppText style={s.zoneLabel}>Your Learner</AppText>
@@ -550,6 +552,8 @@ const s = StyleSheet.create({
   learnerHeroInitial: { ...TEXT_STYLE.displayHero, color: NICO.primary, fontSize: FONT_SIZE['3xl'] },
   zoneLabel: { ...TEXT_STYLE.cardTitle, color: NICO.primary },
   zoneLabelLink: { color: NICO.link, textDecorationLine: 'underline' },
+  // Lets a long name wrap next to the photo instead of running off the screen
+  zoneLinkWrap: { flexShrink: 1 },
 
   // Learner tiles — vertical rows, curved off-white pills sitting on the white panel
   learnerTileList: { gap: 14 },

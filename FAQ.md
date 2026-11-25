@@ -173,7 +173,7 @@ Go to **Manage Friends → Blocked**. You'll see each blocked learner and the re
 Yes. Use the **Find** tab to search by name, county, or Regional Support Category, send a connection request, and message guardians once you're connected. Before connecting, you'll only see a short preview (photo, name, county, and category tags).
 
 ### What else is in the community section?
-- **Events** — browse or create community events. Tap **I will attend** to RSVP (tap it again to cancel); events you're attending appear under **Attending**.
+- **Events** — browse or create community events. Tap **I will attend** to RSVP (tap it again to cancel); events you're attending appear under **You Attend**, and events you created under **You Host**.
 - **Discussions** — post topics and reply to other guardians. You can edit or delete your own posts.
 - **Resources** — helpful information and support links.
 

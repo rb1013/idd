@@ -377,7 +377,7 @@ export default function EventsScreen() {
             activeOpacity={0.8}
           >
             <AppText style={[s.tabTxt, tab === t && s.tabTxtActive]}>
-              {t === 'upcoming' ? 'Upcoming' : t === 'mine' ? 'Hosting' : 'Attending'}
+              {t === 'upcoming' ? 'All Events' : t === 'mine' ? 'You Host' : 'You Attend'}
             </AppText>
           </TouchableOpacity>
         ))}
