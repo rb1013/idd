@@ -213,7 +213,11 @@ export default function ChatScreen() {
         event: 'INSERT', schema: 'public', table: 'messages',
         filter: `conversation_id=eq.${conversationId}`,
       }, payload => {
-        setMessages(prev => [...prev, payload.new as Message]);
+        // Skip if already added by the send reply (same check as GuardianChatScreen) — otherwise the
+        // sender's own message appears twice (duplicate key) now that realtime is on
+        setMessages(prev => prev.some(m => m.id === (payload.new as Message).id)
+          ? prev
+          : [...prev, payload.new as Message]);
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       })
       .subscribe();
