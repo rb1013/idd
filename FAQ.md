@@ -128,6 +128,9 @@ You manage your learner's friends from two tiles on your dashboard: **Find Frien
 ### Can my learner type messages freely?
 No. To keep chat safe, learners communicate using **pre-written phrases** and **picture-symbol cards** (a communication board), not open typing. A profanity filter also checks every message as an extra safeguard.
 
+### Can I turn off messaging for my learner?
+Yes. On your dashboard, in your learner's zone, switch on **Disable Messaging** (tap **ⓘ** next to it for details). While it's on, your learner can't open or send messages in any of their friend chats. Their friends list stays as it is, and you can switch messaging back on at any time.
+
 ### What can I do if someone bothers my learner?
 Open your learner's chat with that person and tap the **🛡️ red shield** at the top of the screen. Enter your **6-digit Guardian PIN** (it continues automatically once all 6 digits are entered), then choose an action:
 - **🗑️ Delete Chat** — removes the conversation.

@@ -342,7 +342,7 @@ export default function GuardianHomeScreen() {
                   })}
                 </View>
 
-                {/* Messaging toggle — commented out for phase 2 launch: messaging stays enabled for all learners
+                {/* Messaging toggle */}
                 <TouchableOpacity
                   style={s.settingRow}
                   onPress={toggleMessaging}
@@ -368,7 +368,7 @@ export default function GuardianHomeScreen() {
                   )}
                 </TouchableOpacity>
 
-                {/* Messaging info modal * /}
+                {/* Messaging info modal */}
                 <Modal visible={showMessagingInfo} transparent animationType="fade" onRequestClose={() => setShowMessagingInfo(false)}>
                   <TouchableOpacity style={s.infoOverlay} activeOpacity={1} onPress={() => setShowMessagingInfo(false)}>
                     <View style={s.infoCard} onStartShouldSetResponder={() => true}>
@@ -382,7 +382,6 @@ export default function GuardianHomeScreen() {
                     </View>
                   </TouchableOpacity>
                 </Modal>
-                */}
 
                 {/* TTS toggle — commented out for now, will use it later
                 <TouchableOpacity
