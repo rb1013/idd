@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View, FlatList, TouchableOpacity, StyleSheet,
   TextInput, Modal, KeyboardAvoidingView, Platform,
@@ -21,7 +21,7 @@ import { containsProfanity, isBlockedWordsError, showKindWordsAlert } from '../.
 import { useAuth } from '../../lib/AuthContext';
 import { GuardianNavParamList } from '../../navigation';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
-import { DISCUSSION_TOPIC_MAX, DISCUSSION_DETAILS_MAX, GUARDIAN_NAME_MAX, DISCUSSION_TITLE_SEARCH_MAX } from '../../constants';
+import { DISCUSSION_TOPIC_MAX, DISCUSSION_DETAILS_MAX, GUARDIAN_NAME_MAX, DISCUSSION_TITLE_SEARCH_MAX, DISCUSSION_ARCHIVE_MONTHS } from '../../constants';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, FONT_SIZE, FONT_WEIGHT,
   BTN_SIZE, BTN_VARIANT, INPUT, BUTTERFLY_BORDER, BUTTERFLY_TILES, scale,
@@ -44,7 +44,6 @@ function timeAgo(dateStr: string): string {
 interface Post {
   id: string;
   title: string;
-  body: string;
   createdAt: string;
   guardianId: string;
   guardianName: string;
@@ -64,7 +63,7 @@ interface DiscussionFilters {
   category: Category | null;
 }
 
-// Fixed recent-date ranges (no custom dates). Older posts are found via title / category / guardian filters.
+// Fixed recent-date ranges (no custom dates). Only the last DISCUSSION_ARCHIVE_MONTHS months are loaded.
 type DateRange = 'any' | '7d' | '14d' | '30d';
 
 const DATE_RANGE_OPTIONS: { key: DateRange; label: string; days: number | null }[] = [
@@ -97,6 +96,8 @@ export default function DiscussionsScreen() {
 
   const [posts, setPosts]           = useState<Post[]>([]);
   const [loading, setLoading]       = useState(true);
+  // Spinner on the first load only; return visits / reloads keep the list and refresh quietly
+  const loadedRef = useRef(false);
   const [tab, setTab]               = useState<DiscussionTab>('mine');
   const [showCreate, setShowCreate] = useState(false);
 
@@ -171,7 +172,26 @@ export default function DiscussionsScreen() {
     setLoadingGuardianSheet(false);
   }
 
+  // Archive window (months): hard-coded DISCUSSION_ARCHIVE_MONTHS. Reading it from admin App Settings
+  // (app_settings.discussion_archive_months) made the list query wait for that request first.
+  const archiveMonths: number = DISCUSSION_ARCHIVE_MONTHS;
+  // const [archiveMonths, setArchiveMonths] = useState(DISCUSSION_ARCHIVE_MONTHS);
+  // const archiveMonthsReq = useRef<Promise<number> | null>(null);
+  // function getArchiveMonths(): Promise<number> {
+  //   if (!archiveMonthsReq.current) {
+  //     archiveMonthsReq.current = Promise.resolve(
+  //       supabase.from('app_settings').select('discussion_archive_months').single()
+  //     ).then(({ data }) => {
+  //       const months = data?.discussion_archive_months ?? DISCUSSION_ARCHIVE_MONTHS;
+  //       setArchiveMonths(months);
+  //       return months;
+  //     }, () => DISCUSSION_ARCHIVE_MONTHS);
+  //   }
+  //   return archiveMonthsReq.current;
+  // }
+
   useEffect(() => {
+    // getArchiveMonths();
     supabase.from('discussion_category_options').select('id, label').order('label')
       .then(({ data }) => setCategories(data ?? []));
   }, []);
@@ -187,10 +207,13 @@ export default function DiscussionsScreen() {
     setEditingPostId(null);
   }
 
-  function openEditSheet(post: Post) {
+  async function openEditSheet(post: Post) {
+    // The list doesn't load details (body) — fetch it for the edit sheet
+    const { data, error } = await supabase.from('discussion_posts').select('body').eq('id', post.id).single();
+    if (error || !data) { Alert.alert('Error', error?.message ?? 'Could not load this discussion.'); return; }
     setEditingPostId(post.id);
     setNewTitle(post.title);
-    setNewBody(post.body);
+    setNewBody(data.body ?? '');
     setSelectedCategory(post.categoryId ? (categories.find(c => c.id === post.categoryId) ?? null) : null);
     setShowCreate(true);
   }
@@ -216,17 +239,23 @@ export default function DiscussionsScreen() {
   }
 
   async function load() {
-    setLoading(true);
+    if (!loadedRef.current) setLoading(true);
+    // Only the last DISCUSSION_ARCHIVE_MONTHS months; older discussions are archived (note in the list)
+    // const months = await getArchiveMonths();
+    const since = new Date();
+    since.setMonth(since.getMonth() - archiveMonths);
     const { data } = await supabase
       .from('discussion_posts')
       // discussion_replies(count): the database returns just the number (RLS still hides blocked
-      // guardians' replies), instead of one row per reply that was only being counted here
-      .select('id, title, body, created_at, guardian_id, category_id, guardians(full_name), discussion_replies(count), discussion_category_options(label)')
+      // guardians' replies), instead of one row per reply that was only being counted here.
+      // No body: cards show the title only; details load on the discussion page.
+      .select('id, title, created_at, guardian_id, category_id, guardians(full_name), discussion_replies(count), discussion_category_options(label)')
+      .gte('created_at', since.toISOString())
       .order('created_at', { ascending: false });
 
     setPosts(
       (data ?? []).map((p: any) => ({
-        id: p.id, title: p.title, body: p.body, createdAt: p.created_at,
+        id: p.id, title: p.title, createdAt: p.created_at,
         guardianId: p.guardian_id,
         guardianName: p.guardians?.full_name ?? 'Unknown',
         replyCount: p.discussion_replies?.[0]?.count ?? 0,
@@ -234,6 +263,7 @@ export default function DiscussionsScreen() {
         categoryLabel: p.discussion_category_options?.label ?? undefined,
       }))
     );
+    loadedRef.current = true;
     setLoading(false);
   }
 
@@ -274,7 +304,8 @@ export default function DiscussionsScreen() {
     return list;
   };
 
-  const allFiltered  = applyFilters([...posts], filtersByTab.all);
+  // All Discussions = other guardians' discussions only (yours are on My Discussions)
+  const allFiltered  = applyFilters(posts.filter(p => p.guardianId !== guardian?.id), filtersByTab.all);
   const mineFiltered = applyFilters(posts.filter(p => p.guardianId === guardian?.id), filtersByTab.mine);
 
   // More Filters (category + guardian name) only exists on the All tab
@@ -392,6 +423,11 @@ export default function DiscussionsScreen() {
           contentStyle={{ paddingHorizontal: 0, paddingBottom: 0 }}
         />
       )}
+
+      <AppText style={s.archiveNote}>
+        <AppText style={s.archiveNoteAsterisk}>* </AppText>
+        Discussions older than {archiveMonths} {archiveMonths === 1 ? 'month' : 'months'} are archived. Contact coheartsupport@gmail.com
+      </AppText>
     </View>
   );
 
@@ -458,7 +494,6 @@ export default function DiscussionsScreen() {
                 </View>
               )}
               <AppText style={s.postTitle}>{p.title}</AppText>
-              <AppText style={s.postBody} numberOfLines={2}>{p.body}</AppText>
               <View style={s.postMeta}>
                 <TouchableOpacity onPress={(e) => { e.stopPropagation(); openGuardianSheet(p.guardianId); }} hitSlop={{ top: 6, bottom: 6, left: 0, right: 6 }}>
                   <AppText style={s.guardianLink}>{p.guardianName}</AppText>
@@ -486,7 +521,7 @@ export default function DiscussionsScreen() {
               <AppText style={s.emptyText}>
                 {tab === 'mine'
                   ? (posts.filter(p => p.guardianId === guardian?.id).length === 0 ? "No discussions started" : 'No results')
-                  : (posts.length === 0 ? 'No discussions yet' : 'No results')}
+                  : (posts.filter(p => p.guardianId !== guardian?.id).length === 0 ? 'No discussions yet' : 'No results')}
               </AppText>
               <AppText style={s.emptyHint}>
                 {tab === 'mine' && posts.filter(p => p.guardianId === guardian?.id).length === 0
@@ -681,7 +716,13 @@ const s = StyleSheet.create({
     ...SHADOW.md,
   },
   postTitle: { ...TEXT_STYLE.cardTitle },
-  postBody:  { fontSize: FONT_SIZE.lg, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 22 },
+  // Light grey box, spaced away from the results / More Filters row
+  archiveNote: {
+    fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text,
+    backgroundColor: NICO.background, borderRadius: RADIUS.md, overflow: 'hidden',
+    paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, marginTop: SPACING.sm,
+  },
+  archiveNoteAsterisk: { fontWeight: FONT_WEIGHT.extraBold, color: NICO.error },   // same as the Tutorials Pending note
   postMeta:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: SPACING.xs },
   metaText:  { ...TEXT_STYLE.caption },
   metaDot:   { fontSize: FONT_SIZE.sm, color: NICO.border },

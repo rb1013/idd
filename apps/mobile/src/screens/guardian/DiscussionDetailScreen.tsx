@@ -51,6 +51,8 @@ export default function DiscussionDetailScreen() {
   const [post, setPost]         = useState<Post | null>(null);
   const [replies, setReplies]   = useState<Reply[]>([]);
   const [loading, setLoading]   = useState(true);
+  // Spinner on the first load only; return visits / reload after a reply refresh quietly
+  const loadedRef = useRef(false);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending]   = useState(false);
   const listRef = useRef<FlatList>(null);
@@ -59,7 +61,7 @@ export default function DiscussionDetailScreen() {
   useFocusEffect(useCallback(() => { load(); }, [postId]));
 
   async function load() {
-    setLoading(true);
+    if (!loadedRef.current) setLoading(true);
     if (guardian) {
       supabase.from('notifications')
         .update({ read: true })
@@ -83,6 +85,7 @@ export default function DiscussionDetailScreen() {
 
     if (p) setPost({ id: p.id, title: p.title, body: p.body, guardianName: (p.guardians as any)?.full_name ?? 'Unknown', guardianId: p.guardian_id, createdAt: p.created_at });
     setReplies((r ?? []).map((x: any) => ({ id: x.id, content: x.content, guardianName: x.guardians?.full_name ?? 'Unknown', guardianId: x.guardian_id, createdAt: x.created_at })));
+    loadedRef.current = true;
     setLoading(false);
   }
 

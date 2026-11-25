@@ -42,12 +42,17 @@ export default function AppSettingsPage() {
   const [savingDiscussionLimit, setSavingDiscussionLimit] = useState(false);
   const [savedDiscussionLimit, setSavedDiscussionLimit]   = useState(false);
 
+  const [archiveMonths, setArchiveMonths]           = useState<number>(3);
+  const [draftArchiveMonths, setDraftArchiveMonths] = useState<string>('3');
+  const [savingArchiveMonths, setSavingArchiveMonths] = useState(false);
+  const [savedArchiveMonths, setSavedArchiveMonths]   = useState(false);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { load(); }, []);
 
   async function load() {
-    const { data } = await supabase.from('app_settings').select('tutorial_quota_limit, tutorial_default_duration, tutorial_image_timeout_ms, tutorial_max_frames, report_snapshot_limit, pagination_page_size, notif_tutorial_window_hours, notif_discussion_limit').single();
+    const { data } = await supabase.from('app_settings').select('tutorial_quota_limit, tutorial_default_duration, tutorial_image_timeout_ms, tutorial_max_frames, report_snapshot_limit, pagination_page_size, notif_tutorial_window_hours, notif_discussion_limit, discussion_archive_months').single();
     if (data) {
       setQuotaLimit(data.tutorial_quota_limit);
       setDraftQuota(String(data.tutorial_quota_limit));
@@ -65,6 +70,8 @@ export default function AppSettingsPage() {
       setDraftTutorialWindow(String(data.notif_tutorial_window_hours ?? 48));
       setDiscussionLimit(data.notif_discussion_limit ?? 30);
       setDraftDiscussionLimit(String(data.notif_discussion_limit ?? 30));
+      setArchiveMonths(data.discussion_archive_months ?? 3);
+      setDraftArchiveMonths(String(data.discussion_archive_months ?? 3));
     }
     setLoading(false);
   }
@@ -165,6 +172,18 @@ export default function AppSettingsPage() {
     setTimeout(() => setSavedDiscussionLimit(false), 2500);
   }
 
+  async function saveArchiveMonths(e: React.FormEvent) {
+    e.preventDefault();
+    const val = parseInt(draftArchiveMonths, 10);
+    if (isNaN(val) || val < 1) return;
+    setSavingArchiveMonths(true);
+    await supabase.from('app_settings').update({ discussion_archive_months: val, updated_at: new Date().toISOString() }).eq('id', 1);
+    setArchiveMonths(val);
+    setSavingArchiveMonths(false);
+    setSavedArchiveMonths(true);
+    setTimeout(() => setSavedArchiveMonths(false), 2500);
+  }
+
   if (loading) return <div style={{ padding: 32 }}>Loading…</div>;
 
   const dirtyTutorialWindow  = parseInt(draftTutorialWindow, 10) !== tutorialWindow;
@@ -175,6 +194,7 @@ export default function AppSettingsPage() {
   const dirtyFrames   = parseInt(draftFrames, 10) !== maxFrames;
   const dirtySnapshot = parseInt(draftSnapshot, 10) !== snapshotLimit;
   const dirtyPageSize = parseInt(draftPageSize, 10) !== pageSize;
+  const dirtyArchiveMonths = parseInt(draftArchiveMonths, 10) !== archiveMonths;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
@@ -234,6 +254,17 @@ export default function AppSettingsPage() {
           saving={savingPageSize} saved={savedPageSize} dirty={dirtyPageSize}
           invalid={isNaN(parseInt(draftPageSize, 10)) || parseInt(draftPageSize, 10) < 1}
           min={1} max={50}
+        />
+      </SectionCard>
+
+      <SectionCard title="Discussions">
+        <SettingRow
+          label="Discussion Archive (months)"
+          description="The mobile Discussions list shows only discussions from the last N months. Older discussions are archived: not deleted, just not shown in the list (they still open from notifications). Guardians see a note to contact support for older ones."
+          draft={draftArchiveMonths} onDraftChange={setDraftArchiveMonths} onSave={saveArchiveMonths}
+          saving={savingArchiveMonths} saved={savedArchiveMonths} dirty={dirtyArchiveMonths}
+          invalid={isNaN(parseInt(draftArchiveMonths, 10)) || parseInt(draftArchiveMonths, 10) < 1}
+          min={1} max={24}
         />
       </SectionCard>
 
