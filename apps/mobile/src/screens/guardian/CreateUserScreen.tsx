@@ -79,6 +79,22 @@ export default function CreateUserScreen({ navigation }: Props) {
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   }
 
+  // Next: the Social Profile step can't be left until its required fields (*) are filled
+  function goNext() {
+    if (step === 'social') {
+      const missing = [
+        !name.trim() && 'Name',
+        !dob         && 'Date of Birth',
+        !gender      && 'Gender',
+      ].filter(Boolean);
+      if (missing.length > 0) {
+        Alert.alert('Please fill in all required fields', `Missing: ${missing.join(', ')}`);
+        return;
+      }
+    }
+    setStep(steps[stepIndex + 1]);
+  }
+
   async function handleSubmit() {
     if (!name.trim() || !dob || !gender || !county) { Alert.alert('Please fill in all required fields'); return; }
     // Learners must be 13+ (also catches an existing under-13 date opened in Edit)
@@ -309,7 +325,7 @@ export default function CreateUserScreen({ navigation }: Props) {
           </TouchableOpacity>
         )}
         {stepIndex < steps.length - 1 ? (
-          <TouchableOpacity style={styles.nextBtn} onPress={() => setStep(steps[stepIndex + 1])}>
+          <TouchableOpacity style={styles.nextBtn} onPress={goNext}>
             <AppText style={styles.nextBtnText}>Next</AppText>
           </TouchableOpacity>
         ) : (
@@ -420,18 +436,24 @@ const styles = StyleSheet.create({
   toggleOn: { backgroundColor: NICO.primary },
   toggleThumb: { width: scale(26), height: scale(26), borderRadius: scale(13), backgroundColor: '#fff' },
   toggleThumbOn: { alignSelf: 'flex-end' },
+  // Back / Next / Create Profile: compact buttons, centred
   navRow: {
-    flexDirection: 'row', gap: SPACING.md, padding: SPACING.base, paddingBottom: SPACING['2xl'],
+    flexDirection: 'row', justifyContent: 'center', gap: SPACING.md, padding: SPACING.base, paddingBottom: SPACING['2xl'],
     backgroundColor: NICO.screenBg, borderTopWidth: 1, borderTopColor: NICO.border,
   },
   charCount: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, textAlign: 'right', marginTop: 4 },
   emptyHint: { ...TEXT_STYLE.hint, marginTop: SPACING.base, textAlign: 'center' },
   backBtn: {
-    flex: 1, padding: SPACING.base, borderRadius: RADIUS.md,
+    width: '30%', minWidth: 130, paddingVertical: SPACING.base, paddingHorizontal: SPACING.sm, borderRadius: RADIUS.md,
     borderWidth: 1.5, borderColor: NICO.border, alignItems: 'center',
   },
   backBtnText: { ...TEXT_STYLE.bodyMedium },
-  nextBtn: { flex: 2, ...BTN_VARIANT.primary, borderRadius: RADIUS.md, padding: SPACING.base, alignItems: 'center' },
+  // Next / Create Profile: 30% of the row (was flex 2 — full width without Back).
+  // minWidth keeps "Create Profile" on one line on small phones.
+  nextBtn: {
+    width: '30%', minWidth: 130,
+    ...BTN_VARIANT.primary, borderRadius: RADIUS.md, paddingVertical: SPACING.base, paddingHorizontal: SPACING.sm, alignItems: 'center',
+  },
   nextBtnText: { ...TEXT_STYLE.buttonPrimary },
 
   pickerBtn: {
