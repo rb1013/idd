@@ -163,6 +163,7 @@ const styles = StyleSheet.create({
   },
   failTitle: { fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, color: NICO.error },
   failBody:  { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, lineHeight: 24 },
-  failCloseBtn:     { ...BTN_SIZE.md, ...BTN_VARIANT.primary, marginTop: SPACING.xs },
+  // 30% of the card width (was full width), centred
+  failCloseBtn:     { ...BTN_SIZE.md, ...BTN_VARIANT.primary, marginTop: SPACING.xs, width: '30%', alignSelf: 'center' },
   failCloseBtnText: { ...TEXT_STYLE.buttonPrimary },
 });
