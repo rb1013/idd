@@ -424,10 +424,19 @@ export default function DiscussionsScreen() {
         />
       )}
 
-      <AppText style={s.archiveNote}>
-        <AppText style={s.archiveNoteAsterisk}>* </AppText>
-        Discussions older than {archiveMonths} {archiveMonths === 1 ? 'month' : 'months'} are archived. Contact coheartsupport@gmail.com
-      </AppText>
+      {/* Grey box is a View and "Contact Us" its own button: a link nested inside padded text
+          doesn't receive taps reliably on iOS */}
+      <View style={s.archiveNote}>
+        <AppText style={s.archiveNoteText}>
+          <AppText style={s.archiveNoteAsterisk}>* </AppText>
+          Discussions older than {archiveMonths} {archiveMonths === 1 ? 'month' : 'months'} are archived.{' '}
+        </AppText>
+        {/* Opens the Support page (Contact Us section) */}
+        <TouchableOpacity onPress={() => navigation.navigate('Resources')} activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }} accessibilityRole="link">
+          <AppText style={[s.archiveNoteText, s.archiveNoteLink]}>Contact Us</AppText>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -718,11 +727,13 @@ const s = StyleSheet.create({
   postTitle: { ...TEXT_STYLE.cardTitle },
   // Light grey box, spaced away from the results / More Filters row
   archiveNote: {
-    fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text,
-    backgroundColor: NICO.background, borderRadius: RADIUS.md, overflow: 'hidden',
+    flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center',
+    backgroundColor: NICO.background, borderRadius: RADIUS.md,
     paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, marginTop: SPACING.sm,
   },
+  archiveNoteText: { fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
   archiveNoteAsterisk: { fontWeight: FONT_WEIGHT.extraBold, color: NICO.error },   // same as the Tutorials Pending note
+  archiveNoteLink:     { fontWeight: FONT_WEIGHT.bold, color: NICO.link, textDecorationLine: 'underline' },
   postMeta:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: SPACING.xs },
   metaText:  { ...TEXT_STYLE.caption },
   metaDot:   { fontSize: FONT_SIZE.sm, color: NICO.border },

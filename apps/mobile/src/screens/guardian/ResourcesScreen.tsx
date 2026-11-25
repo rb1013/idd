@@ -8,6 +8,7 @@ import useNicoHeader from '../../hooks/useNicoHeader';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { GuardianNavParamList } from '../../navigation';
+import { SUPPORT_EMAIL } from '../../constants/legal';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, FONT_SIZE, FONT_WEIGHT, BUTTERFLY_TILES,
 } from '../../constants/theme';
@@ -114,6 +115,19 @@ export default function ResourcesScreen() {
       <RainbowDivider />
       <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
         <ContentContainer>
+          {/* Contact Us — above the California directory */}
+          <AppText style={s.pageTitle}>Contact Us</AppText>
+          <View style={[s.card, s.contactCard]}>
+            <AppText style={[s.cardSummary, s.contactText]}>
+              Questions, feedback, or need help with Co-Heart? Email us:
+            </AppText>
+            <View style={s.contactRow}>
+              <AppText style={s.cardAudienceLabel}>Email: </AppText>
+              {/* Plain text, not a link */}
+              <AppText style={s.contactEmail} selectable>{SUPPORT_EMAIL}</AppText>
+            </View>
+          </View>
+
           <AppText style={s.pageTitle}>California Support Services</AppText>
           <AppText style={s.pageSubtitle}>
             A directory of California state and community programs for individuals with developmental disabilities and their families. These programs are specific to California — availability may differ if you're located elsewhere.
@@ -172,6 +186,12 @@ const s = StyleSheet.create({
 
   pageTitle:    { ...TEXT_STYLE.screenTitle, marginBottom: SPACING.sm },
   pageSubtitle: { ...TEXT_STYLE.hint, fontSize: FONT_SIZE.md, lineHeight: 22, textAlign: 'justify', marginBottom: SPACING.xl },
+
+  contactCard: { marginBottom: SPACING.xl },
+  contactRow:  { flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap' },
+  // Already the darkest text colour (NICO.text) — heavier weight so it reads darker
+  contactText: { fontWeight: FONT_WEIGHT.bold, textAlign: 'left' },
+  contactEmail: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.success },
 
   categoryBlock: { marginBottom: SPACING.lg },
   categoryHeading: {

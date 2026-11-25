@@ -74,7 +74,7 @@ export default function GuardianFloatingTabBar({ homeIcon = '🗂️', homeLabel
           <View style={[s.iconCircle, resourcesActive && s.iconCircleActive]}>
             <AppText style={s.icon}>📖</AppText>
           </View>
-          <AppText style={[s.label, resourcesActive && s.labelActive]}>Resources</AppText>
+          <AppText style={[s.label, resourcesActive && s.labelActive]}>Support</AppText>
         </TouchableOpacity>
         <TouchableOpacity style={s.item} onPress={handleSignOut} activeOpacity={0.75}>
           <View style={s.iconCircle}>

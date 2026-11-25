@@ -175,7 +175,7 @@ Yes. Use the **Find** tab to search by name, county, or Regional Support Categor
 ### What else is in the community section?
 - **Events** — browse or create community events. Tap **I will attend** to RSVP (tap it again to cancel); events you're attending appear under **You Attend**, and events you created under **You Host**.
 - **Discussions** — post topics and reply to other guardians. You can edit or delete your own posts.
-- **Resources** — helpful information and support links.
+- **Support** — how to contact us (email **coheartsupport@gmail.com**), plus a directory of California support services.
 
 ### How do I report something?
 Tap the **🚩** on the item, choose a reason (**Offensive**, **Spam**, **Harassment**, or **Sensitive**), and tap **Report**. You can report:
