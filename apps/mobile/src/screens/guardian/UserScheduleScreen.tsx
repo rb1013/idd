@@ -190,6 +190,10 @@ export default function UserScheduleScreen() {
   // Weekly sheet state
   const [weeklySheet, setWeeklySheet] = useState(false);
   const [addDay, setAddDay] = useState(1);
+  // Editing an existing weekly class (null = adding). Its day never changes.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  // Edit of a class whose Valid from is today or earlier: dates locked, only name + times editable
+  const [datesLocked, setDatesLocked] = useState(false);
   const [wTitle, setWTitle] = useState('');
   const [wStart, setWStart] = useState('9:00 AM');
   const [wEnd, setWEnd] = useState('10:00 AM');
@@ -225,6 +229,7 @@ export default function UserScheduleScreen() {
   }
 
   function openWeeklySheet(dow: number) {
+    setEditingId(null); setDatesLocked(false);
     setAddDay(dow);
     setWTitle('');
     setWStart('9:00 AM'); setWEnd('10:00 AM');
@@ -232,6 +237,18 @@ export default function UserScheduleScreen() {
     setWFrom(from); setWUntil(addMonths(from, 3)); setUntilEdited(false);
     setWeeklySheet(true);
   }
+  // Tap a class card → same sheet, pre-filled. Started (Valid from ≤ today) → dates locked.
+  function openEditWeeklySheet(t: ScheduleTemplate) {
+    setEditingId(t.id);
+    setDatesLocked(t.valid_from <= todayIso());
+    setAddDay(t.day_of_week);
+    setWTitle(t.title);
+    setWStart(formatTime(t.start_time)); setWEnd(formatTime(t.end_time));
+    setWFrom(t.valid_from); setWUntil(t.valid_until);
+    setUntilEdited(true);   // an existing Until is a deliberate choice — keep it unless out of range
+    setWeeklySheet(true);
+  }
+
 
   // Valid from changed: Until follows (Valid from + 3 months) unless the guardian picked Until
   // themselves — then it's kept, and only reset if it's now outside Valid from … +3 months.
@@ -268,6 +285,7 @@ export default function UserScheduleScreen() {
       p_emoji:       CLASS_ICON,   // still required by the RPC; every class uses the same icon
       p_valid_from:  wFrom,
       p_valid_until: wUntil,
+      p_template_id: editingId,   // null = add; set = update this class (and its cancellations' name / times)
     });
     setWSaving(false);
     if (error) { Alert.alert('Error', error.message); return; }
@@ -362,19 +380,36 @@ export default function UserScheduleScreen() {
                 <>
                   <AppText style={[s.dayLabel, s.dayLabelEmpty]}>{day.toUpperCase()}</AppText>
                   {dayTemplates.map(t => (
-                    <View key={t.id} style={[s.classCard, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
+                    <TouchableOpacity
+                      key={t.id}
+                      style={[s.classCard, { backgroundColor: tileBg, borderColor: 'transparent' }]}
+                      onPress={() => openEditWeeklySheet(t)}
+                      activeOpacity={0.8}
+                      accessibilityHint="Edit this class"
+                    >
                       <AppText style={s.classEmoji}>{CLASS_ICON}</AppText>
                       <View style={s.classInfo}>
                         <AppText style={s.classTitle}>{t.title}</AppText>
                         <AppText style={s.classTime}>
                           {formatTime(t.start_time)} – {formatTime(t.end_time)}
-                          {' · '}Until {formatDate(t.valid_until)}
+                        </AppText>
+                        {/* Third row: date range */}
+                        <AppText style={s.classTime}>
+                          {formatDate(t.valid_from)} – {formatDate(t.valid_until)}
                         </AppText>
                       </View>
-                      <TouchableOpacity style={s.delBtn} onPress={() => deleteTemplate(t.id)}>
-                        <AppText style={s.delBtnTxt}>✕</AppText>
-                      </TouchableOpacity>
-                    </View>
+                      {/* Edit (✏️, also by tapping the card) and remove (✕) */}
+                      <View style={s.cardActions}>
+                        <TouchableOpacity style={s.editBtn} onPress={() => openEditWeeklySheet(t)}
+                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} accessibilityLabel={`Edit ${t.title}`}>
+                          <AppText style={s.editBtnTxt}>✏️</AppText>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={s.delBtn} onPress={() => deleteTemplate(t.id)}
+                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} accessibilityLabel={`Remove ${t.title}`}>
+                          <AppText style={s.delBtnTxt}>✕</AppText>
+                        </TouchableOpacity>
+                      </View>
+                    </TouchableOpacity>
                   ))}
                 </>
               )}
@@ -478,7 +513,7 @@ export default function UserScheduleScreen() {
           <TouchableOpacity style={s.sheetOverlay} activeOpacity={1} onPress={() => setWeeklySheet(false)}>
             <TouchableOpacity style={s.sheet} activeOpacity={1} onPress={() => {}}>
               <View style={s.sheetHandle} />
-              <AppText style={s.sheetTitle}>Add {DAYS[addDay]} Class</AppText>
+              <AppText style={s.sheetTitle}>{editingId ? 'Edit' : 'Add'} {DAYS[addDay]} Class</AppText>
 
               <RequiredLabel text="Class name" />
               <TextInput
@@ -506,14 +541,25 @@ export default function UserScheduleScreen() {
                 <View style={{ flex: 1 }}>
                   <RequiredLabel text="Valid from" />
                   {/* From the first occurrence of the class day up to 3 months ahead */}
-                  <DatePicker value={wFrom} onChange={changeWFrom} minDate={nextWeekdayIso(addDay)} maxDate={addMonths(todayIso(), 3)} />
+                  {datesLocked
+                    ? <View style={[s.fbox, s.fboxLocked]}><AppText style={[s.fboxText, s.fboxTextLocked]}>{formatDate(wFrom)}</AppText></View>
+                    : <DatePicker value={wFrom} onChange={changeWFrom} minDate={nextWeekdayIso(addDay)} maxDate={addMonths(todayIso(), 3)} />}
                 </View>
                 <View style={{ flex: 1 }}>
                   <RequiredLabel text="Until" />
                   {/* Up to Valid from + 3 months — the database's max_3_months limit */}
-                  <DatePicker value={wUntil} onChange={changeWUntil} minDate={wFrom} maxDate={addMonths(wFrom, 3)} />
+                  {datesLocked
+                    ? <View style={[s.fbox, s.fboxLocked]}><AppText style={[s.fboxText, s.fboxTextLocked]}>{formatDate(wUntil)}</AppText></View>
+                    : <DatePicker value={wUntil} onChange={changeWUntil} minDate={wFrom} maxDate={addMonths(wFrom, 3)} />}
                 </View>
               </View>
+              {datesLocked && (
+                <View style={s.lockedNoteBox}>
+                  <AppText style={s.lockedNote}>
+                    Dates can't be changed after a class has started. To end it early, cancel dates in One-off or remove the recurring class.
+                  </AppText>
+                </View>
+              )}
               <AppText style={s.repeatHint}>Repeats every {DAYS[addDay]} · Max 3 months</AppText>
 
               <TouchableOpacity
@@ -685,6 +731,13 @@ const s = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   delBtnTxt: { fontSize: FONT_SIZE.sm, color: NICO.error, fontWeight: FONT_WEIGHT.bold },
+  cardActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  editBtn: {
+    width: scale(28), height: scale(28), borderRadius: scale(14),
+    backgroundColor: 'white', borderWidth: 1.5, borderColor: NICO.border,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  editBtnTxt: { fontSize: FONT_SIZE.sm },
 
   addDayBtn: {
     paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md,
@@ -725,6 +778,11 @@ const s = StyleSheet.create({
     padding: SPACING.md, backgroundColor: NICO.background, marginBottom: SPACING.md,
   },
   fboxText: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
+  // Locked date (editing a class that has started)
+  fboxLocked:     { opacity: 0.55 },
+  fboxTextLocked: { color: NICO.textMuted },
+  lockedNoteBox:  { backgroundColor: NICO.background, borderRadius: RADIUS.md, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, marginBottom: SPACING.md },
+  lockedNote:     { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text, lineHeight: 21 },
 
   saveBtn:    { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.sm },
   btnDisabled:{ opacity: 0.6 },
