@@ -163,16 +163,24 @@ export const LEGAL_CONTENT: Record<LegalSectionKey, LegalSectionContent> = {
         ]
       },
       {
-        "t": "p",
-        "text": "We may also disclose information if required by law, to protect someone’s safety, or as part of a merger or sale of the service (with notice to you)."
-      },
-      {
         "t": "h3",
         "text": "5. Service providers"
       },
       {
         "t": "p",
-        "text": "We use trusted companies to run Co-Heart: hosting, sign-in and storage (Supabase), creating AI tutorial scripts, images and narration (Anthropic, OpenAI, Google), sending account emails (Google Gmail), and playing YouTube videos which guardians link (YouTube). They receive only the information needed for their task. We do **not** send your name, photo or profile to AI providers."
+        "text": "We use trusted companies to run Co-Heart: hosting, sign-in and storage (Supabase), creating AI tutorial scripts, images and narration (Anthropic, OpenAI, Google), sending account emails (Google Gmail), and playing YouTube videos which guardians link (YouTube). They receive only the information needed for their task."
+      },
+      {
+        "t": "p",
+        "text": "YouTube may show ads, and Co-Heart uses YouTube’s no-cookie mode. Guardians select YouTube links for their learner."
+      },
+      {
+        "t": "p",
+        "text": "We do not send your learner’s name, photo, or profile to AI providers when generating tutorials. Do not include personal details in the tutorial description."
+      },
+      {
+        "t": "p",
+        "text": "We may also disclose information if required by law, to protect someone’s safety, or as part of a merger or sale of the service (with notice to you)."
       },
       {
         "t": "h3",

@@ -160,7 +160,7 @@ export default function GuardianActivitiesScreen() {
         </View>
 
         <AppText style={s.setupHint}>
-          These activities will appear every day for all users under your account.
+          These activities will appear every day in your learner's profile
         </AppText>
 
         {/* Preset grid — 3 columns */}
