@@ -114,7 +114,7 @@ export default function TutorialPreviewScreen() {
   const [editingFrame, setEditingFrame] = useState<TutorialFrame | null>(null);
   const [editCaption, setEditCaption] = useState('');
   const [editTts, setEditTts] = useState('');
-  const [editImagePrompt, setEditImagePrompt] = useState('');
+  const [editCharacter, setEditCharacter] = useState('');   // character for image regeneration; kept across slides
   const [submitting, setSubmitting] = useState(false);
   const [regeneratingImage, setRegeneratingImage] = useState(false);
   const [regeneratingTutorial, setRegeneratingTutorial] = useState(false);
@@ -215,10 +215,10 @@ export default function TutorialPreviewScreen() {
   }
 
   function regenerateFrameImage() {
-    // Remind about the character before spending a regeneration (each image is drawn on its own)
-    const guidance = editImagePrompt.trim()
-      ? 'Make sure your description includes the character (girl or boy, age, clothing) — otherwise the AI may draw a different character.'
-      : "You haven't described the image, so caption and narration will be used. Without a character description, the AI may draw a different character from the other slides.";
+    // Tell the guardian what the picture will be based on before spending a regeneration
+    const guidance = editCharacter.trim()
+      ? 'The picture will show the caption & narration with your character.'
+      : 'No character described: the AI may draw a different character from the other slides.';
     Alert.alert(
       'Re-generate image?',
       `${guidance}\n\nThis replaces the current image for this slide and can't be undone.`,
@@ -231,13 +231,15 @@ export default function TutorialPreviewScreen() {
 
   async function doRegenerateFrameImage() {
     if (!editingFrame) return;
-    const guardianDescription = editImagePrompt.trim()
-      || (editCaption
-        ? `${tutorial?.topic ?? ''} — ${editCaption}: ${editTts}`
-        : `${tutorial?.topic ?? ''}: ${editTts}`);
+    // Action always comes from caption + narration; the guardian's text only describes the character.
+    // (Before, typed text replaced the action, so the picture showed the character but not what it does.)
+    const action = editCaption
+      ? `${tutorial?.topic ?? ''} — ${editCaption}: ${editTts}`
+      : `${tutorial?.topic ?? ''}: ${editTts}`;
+    const character = editCharacter.trim();
     const visualStyle = tutorial?.visual_style ?? '2D Animation';
     const imageStyle = tutorial?.image_style ?? 'Simple & Bold';
-    const imagePrompt = `${guardianDescription}. Style: ${visualStyle}, ${imageStyle}. Use soft, muted, low-saturation colours — avoid neon or harshly bright colours, since intense colour can be overstimulating for IDD users.`;
+    const imagePrompt = `${action}.${character ? ` Character: ${character}.` : ''} Style: ${visualStyle}, ${imageStyle}. Use soft, muted, low-saturation colours — avoid neon or harshly bright colours, since intense colour can be overstimulating for IDD users.`;
     setRegeneratingImage(true);
     try {
       const { data, error } = await supabase.functions.invoke('regenerate-frame', {
@@ -543,7 +545,7 @@ export default function TutorialPreviewScreen() {
                       if (currentFrame) {
                         setEditCaption(currentFrame.caption ?? '');
                         setEditTts(currentFrame.tts_text ?? '');
-                        setEditImagePrompt('');
+                        // editCharacter is kept: the same character usually fits every slide of the tutorial
                         setEditingCaption(false);
                         setEditingNarration(false);
                         setEditingFrame(currentFrame);
@@ -759,24 +761,24 @@ export default function TutorialPreviewScreen() {
               {editingFrame?.image_url && (
                 <Image source={{ uri: editingFrame.image_url }} style={s.editorImage} resizeMode="cover" />
               )}
-              <AppText style={s.editorFieldLabel}>What should the image show?</AppText>
+              <AppText style={s.editorFieldLabel}>Describe the character</AppText>
               {/* Each image is drawn on its own, so spell out the child to keep them the same across slides */}
               <AppText style={s.editorFieldHint}>
                 <AppText style={[s.editorFieldHint, s.editorFieldHintAsterisk]}>** </AppText>
-                If you leave this empty then caption & narration are used for action prompt. Describe the character (girl or boy, age, clothing) so this picture matches other slides otherwise AI may draw a different character.
+                The action is taken from the caption & narration. Describe the character (girl or boy, age, clothing) so this picture matches the other slides.
               </AppText>
               <TextInput
                 style={[s.editorInput, { height: 80 }, editorBusy && s.editorInputDisabled]}
-                value={editImagePrompt}
-                onChangeText={t => setEditImagePrompt(t.slice(0, IMAGE_PROMPT_MAX))}
+                value={editCharacter}
+                onChangeText={t => setEditCharacter(t.slice(0, IMAGE_PROMPT_MAX))}
                 editable={!editorBusy}
-                placeholder="e.g. A 13-year-old girl in a yellow t-shirt kicking a soccer ball"
+                placeholder="e.g. A 13-year-old girl with long brown hair in a yellow t-shirt"
                 placeholderTextColor={NICO.textMuted}
                 multiline
                 textAlignVertical="top"
                 maxLength={IMAGE_PROMPT_MAX}
               />
-              <CharCount value={editImagePrompt} max={IMAGE_PROMPT_MAX} style={{ marginBottom: 10 }} />
+              <CharCount value={editCharacter} max={IMAGE_PROMPT_MAX} style={{ marginBottom: 10 }} />
               <TouchableOpacity
                 style={[s.regenBtn, (regeneratingImage || imageRegenBlocked) && s.regenBtnDisabled]}
                 onPress={regenerateFrameImage}
