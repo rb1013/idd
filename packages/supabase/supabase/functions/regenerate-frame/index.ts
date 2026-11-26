@@ -1,13 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   IMAGE_BUCKET, AUDIO_BUCKET, IMMUTABLE_CACHE_SECONDS, StoredFile, storagePathFromUrl, removeFiles,
 } from '../_shared/tutorialStorage.ts';
 import { synthesizeSpeech } from '../_shared/tts.ts';
+import { adminClient, getCaller } from '../_shared/admin.ts';
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!;
-const SUPABASE_URL   = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 // Image model comes from the IMAGE_MODEL secret (Edge Functions → Secrets), so a retired
 // OpenAI model can be swapped without a code change. Read per call so updates apply right away.
@@ -22,9 +20,15 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const supabase = adminClient();
 
   try {
+    // Caller must be signed in; ownership of the tutorial is checked once the frame is loaded
+    const caller = await getCaller(req, supabase);
+    if (!caller) {
+      return new Response(JSON.stringify({ error: 'Not signed in' }), { status: 401, headers: corsHeaders });
+    }
+
     const { frame_id, image_prompt, tts_text, regenerate_audio } = await req.json();
     if (!frame_id) {
       return new Response(JSON.stringify({ error: 'frame_id required' }), { status: 400, headers: corsHeaders });
@@ -33,11 +37,16 @@ serve(async (req) => {
     // Fetch frame + tutorial (verify status allows editing)
     const { data: frame, error: fetchErr } = await supabase
       .from('tutorial_frames')
-      .select('*, tutorials(id, status, thumbnail_url)')
+      .select('*, tutorials(id, status, thumbnail_url, created_by_guardian_id)')
       .eq('id', frame_id)
       .single();
 
     if (fetchErr || !frame) throw new Error('Frame not found');
+
+    // Only the guardian who created the tutorial may edit its slides
+    if ((frame as any).tutorials?.created_by_guardian_id !== caller.id) {
+      return new Response(JSON.stringify({ error: 'You can only edit your own tutorials' }), { status: 403, headers: corsHeaders });
+    }
 
     const tutorialStatus = (frame as any).tutorials?.status;
     if (!['preview', 'rejected', 'approved'].includes(tutorialStatus)) {
@@ -119,7 +128,7 @@ serve(async (req) => {
 });
 
 async function regenerateImage(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof adminClient>,
   prompt: string,
   storagePath: string,
 ): Promise<string | null> {
@@ -165,7 +174,7 @@ async function regenerateImage(
 }
 
 async function regenerateAudio(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof adminClient>,
   text: string,
   storagePath: string,
 ): Promise<string | null> {

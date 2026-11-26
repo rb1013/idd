@@ -1,8 +1,14 @@
 # Supabase API keys — switch from legacy to publishable / secret keys
 
 **Project:** new West project `zmwckczpxvzgwznxzfov` (us-west-1)
-**Status:** plan agreed (option B) — **ready to start**. Prerequisite met: the West move is done and tested on legacy keys (migrations 096–105 on West).
+**Status:** **code done (2026-11-26)** — unused functions removed from the repo, phase 1 (caller checks) + phase 2 (`_shared/admin.ts`) written and type-checked. **Next: your deploy steps** (see "Rollout" below).
 **Written:** 2026-11-25 · **Updated:** 2026-11-26 (checked against current code)
+
+> ⚠️ **Old East project (`xtfrtbrapuloogqpeigv`) is NOT switched — only West is.**
+> - **Verify JWT is still ON** for its functions (except `create-user-account`, which was always off). Nothing was redeployed there with `--no-verify-jwt`.
+> - **`SERVICE_SECRET_KEY` is NOT set** there, so its functions use the **legacy `service_role` key** (the fallback in `_shared/admin.ts`).
+> - Its tutorial **webhook still sends the legacy key** (accepted by `process-tutorial-job`).
+> - So East keeps working **only while legacy keys exist** (until early 2027). If East is ever needed again, repeat rollout steps 3–6 there; otherwise just pause it.
 
 ---
 
@@ -28,6 +34,54 @@
 **Why separate builds (decided 2026-11-26):** if both changes ship in one build, a problem could come from either — separate builds keep the root cause obvious.
 
 ---
+
+## Rollout (after the code) — each step keeps the app working
+
+1. **Delete** the 3 unused functions in the project: `supabase functions delete send-message`, `… send-guardian-message`, `… check-tutorial-quota`.
+2. **Deploy** the 11 changed functions **as they are** (verify-JWT still ON; `create-user-account` keeps `--no-verify-jwt`). Still on legacy keys — `_shared/admin.ts` falls back to the legacy service key. Test: create tutorial, edit slide, approve / reject (admin), tutorial generation, learner account create / delete, guardian 🛡️ actions, sign-up `check-email`.
+3. **Set** `SERVICE_SECRET_KEY = sb_secret_…` (`supabase secrets set`). Functions switch to the new key on their next run — no redeploy. Retest a few.
+4. **First** redeploy `process-tutorial-job` with `--no-verify-jwt`, **then** change the **webhook header** → `Bearer sb_secret_…` (phase 3). Order matters: Supabase's built-in "Verify JWT" check only accepts JWTs, and `sb_secret_…` isn't one — with the check still on, the webhook is refused (401) before our code runs, and tutorials stay on "generating". `process-tutorial-job` checks the key itself (`isServiceRequest`: new key, or legacy until it's off). Test tutorial generation.
+5. **Test round A** (other 10 functions still behind Supabase's check — app calls pass it with the user's login token).
+6. **Redeploy the other 10 with `--no-verify-jwt`**, then **test round B** (nothing should depend on Supabase's check — esp. sign-up `check-email` while logged out, admin portal).
+7. **Apps** → `sb_publishable_…` (phase 4; comment out old `.env` lines). Admin hosting + redeploy.
+8. **Disable legacy keys**, retest everything (phase 5), then the **Xcode 26** build.
+9. **Clean-up:** remove the legacy-key fallback from `_shared/admin.ts` (see "Logic explained") and redeploy.
+
+## Logic explained — how the key fallback works (`_shared/admin.ts`)
+
+"Use the new key if it's set, otherwise the old one":
+
+```ts
+const NEW_SECRET_KEY     = Deno.env.get('SERVICE_SECRET_KEY') ?? '';          // our secret: sb_secret_…
+const LEGACY_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';   // injected by Supabase (legacy)
+
+export const ADMIN_KEY = NEW_SECRET_KEY || LEGACY_SERVICE_KEY;                // new if set, else legacy
+
+export function adminClient() {
+  return createClient(SUPABASE_URL, ADMIN_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+}
+```
+
+| Stage | `SERVICE_SECRET_KEY` set? | Key the functions use |
+|---|---|---|
+| Now / after rollout step 2 (deploy) | No | **Legacy** service key — same as before |
+| After step 3 (`supabase secrets set SERVICE_SECRET_KEY=…`) | Yes | **New** `sb_secret_…` key |
+| After step 8 (legacy keys turned off) | Yes | New key; legacy no longer used |
+
+**The webhook check accepts both** (`isServiceRequest`):
+
+```ts
+return (NEW_SECRET_KEY && token === NEW_SECRET_KEY) || (LEGACY_SERVICE_KEY && token === LEGACY_SERVICE_KEY);
+```
+
+The webhook sends the legacy key before step 4 and the new one after, so `process-tutorial-job` works before, during and after the header change.
+
+**Two separate things (don't mix them up):** the **secret key** is what a function uses **outgoing** (to read / write data with full access). **"Verify JWT"** is Supabase's **incoming** gate in front of a function — it lets a call in only if its `Authorization` header is a JWT (a user's login token or a legacy key). Setting the secret doesn't touch the gate; `--no-verify-jwt` removes it, after which each function's own checks (`getCaller` / `isAdmin` / `isServiceRequest`) are the only protection.
+
+**Details:**
+1. **When the new key takes effect:** the values are read when a function **instance starts**. After `secrets set`, new instances use the new key; an already-running ("warm") one may keep the legacy key for a few minutes until recycled — harmless then (legacy still works). Redeploying after setting the secret makes it immediate (step 6 does).
+2. **Order matters at step 8:** if `SERVICE_SECRET_KEY` were **not** set when legacy keys are turned off, the fallback would pick the dead legacy key and every function would fail. That's why step 3 (and the test rounds) come before step 8.
+3. **Clean-up afterwards (step 9):** once legacy keys are off and everything works, **remove the fallback** — use only `SERVICE_SECRET_KEY` and stop accepting the legacy key in `isServiceRequest`. Then a missing secret fails loudly instead of silently falling back. Redeploy the functions.
 
 ## Phase 1 — functions check their own callers (code)
 

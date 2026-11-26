@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { buildTutorialPrompt } from '../_shared/tutorialPrompt.ts';
 import { quotaMonth } from '../_shared/quotaMonth.ts';
+import { adminClient, getCaller } from '../_shared/admin.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,20 +11,30 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  );
+  const supabase = adminClient();
 
   try {
+    // Caller = the logged-in guardian (from their login token). A guardian_id sent in the body is
+    // ignored — before the key switch it was trusted, so anyone could create tutorials / use up quota
+    // as another guardian.
+    const caller = await getCaller(req, supabase);
+    if (!caller) {
+      return new Response(JSON.stringify({ error: 'Not signed in' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const { data: guardianRow } = await supabase.from('guardians').select('id').eq('id', caller.id).maybeSingle();
+    if (!guardianRow) {
+      return new Response(JSON.stringify({ error: 'Only guardians can create tutorials' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const guardian_id = caller.id;
+
     const body = await req.json();
     const {
-      guardian_id, title, display_name, target_skill, core_action, format,
+      title, display_name, target_skill, core_action, format,
       visual_style, image_style, pacing, tone, duration_seconds,
       comprehension_level, language, background_audio, category_id, is_public,
     } = body;
 
-    if (!guardian_id || !title || !target_skill || !core_action || !format) {
+    if (!title || !target_skill || !core_action || !format) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },

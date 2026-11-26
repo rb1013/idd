@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Tutorial slide files are stored under <tutorialId>/ in these public buckets.
 export const IMAGE_BUCKET = 'tutorial-images';
@@ -21,7 +21,7 @@ export function storagePathFromUrl(url: string | null | undefined, bucket: strin
 
 /** Best-effort delete; a failed cleanup must never fail the request itself. */
 export async function removeFiles(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   files: StoredFile[],
   logTag: string,
 ) {

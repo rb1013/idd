@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { adminClient } from '../_shared/admin.ts';
 import { buildTutorialPrompt } from '../_shared/tutorialPrompt.ts';
 import { quotaMonth } from '../_shared/quotaMonth.ts';
 import { IMAGE_BUCKET, AUDIO_BUCKET, StoredFile, storagePathFromUrl, removeFiles } from '../_shared/tutorialStorage.ts';
@@ -23,11 +23,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-      { auth: { autoRefreshToken: false, persistSession: false } },
-    );
+    const supabase = adminClient();
 
     const { data: { user }, error: authErr } = await supabase.auth.getUser(
       authHeader.replace('Bearer ', ''),

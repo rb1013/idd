@@ -108,10 +108,33 @@ export default function EditUserScreen({ navigation, route }: Props) {
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   }
 
+  // Required fields that are still empty: Social Profile ones, plus County (location page) when saving
+  function missingFields(includeCounty: boolean): string[] {
+    return [
+      !name.trim() && 'Name',
+      !dob         && 'Date of Birth',
+      !gender      && 'Gender',
+      includeCounty && !county && 'County',
+    ].filter(Boolean) as string[];
+  }
+
+  // › arrow: the Social Profile page can't be left until its required fields are filled (same as Create)
+  function goNext() {
+    if (step === 'social') {
+      const missing = missingFields(false);
+      if (missing.length > 0) {
+        Alert.alert('Please fill in all required fields', `Missing: ${missing.join(', ')}`);
+        return;
+      }
+    }
+    if (stepIndex < steps.length - 1) setStep(steps[stepIndex + 1]);
+  }
+
   async function handleSave() {
-    if (!name.trim() || !dob || !gender || !county) { Alert.alert('Please fill in all required fields'); return; }
+    const missing = missingFields(true);
+    if (missing.length > 0) { Alert.alert('Please fill in all required fields', `Missing: ${missing.join(', ')}`); return; }
     // Learners must be 13+ (also catches an existing under-13 date opened in Edit)
-    if (!isLearnerOldEnough(dob)) { Alert.alert(LEARNER_AGE_ALERT.title, LEARNER_AGE_ALERT.message); return; }
+    if (!dob || !isLearnerOldEnough(dob)) { Alert.alert(LEARNER_AGE_ALERT.title, LEARNER_AGE_ALERT.message); return; }
     setLoading(true);
 
     let photo_url = existingPhotoUrl;
@@ -338,7 +361,7 @@ export default function EditUserScreen({ navigation, route }: Props) {
 
         <TouchableOpacity
           style={[styles.arrowBtn, stepIndex === steps.length - 1 && styles.arrowBtnHidden]}
-          onPress={() => stepIndex < steps.length - 1 && setStep(steps[stepIndex + 1])}
+          onPress={goNext}
           disabled={stepIndex === steps.length - 1}
         >
           <AppText style={styles.arrowText}>›</AppText>

@@ -770,7 +770,7 @@ export default function TutorialPreviewScreen() {
                 value={editImagePrompt}
                 onChangeText={t => setEditImagePrompt(t.slice(0, IMAGE_PROMPT_MAX))}
                 editable={!editorBusy}
-                placeholder="e.g. An 8-year-old girl in a yellow t-shirt kicking a soccer ball"
+                placeholder="e.g. A 13-year-old girl in a yellow t-shirt kicking a soccer ball"
                 placeholderTextColor={NICO.textMuted}
                 multiline
                 textAlignVertical="top"

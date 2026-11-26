@@ -1,13 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { IMAGE_BUCKET, AUDIO_BUCKET, IMMUTABLE_CACHE_SECONDS } from '../_shared/tutorialStorage.ts';
 import { synthesizeSpeech } from '../_shared/tts.ts';
 import { quotaMonth } from '../_shared/quotaMonth.ts';
+import { adminClient, isServiceRequest } from '../_shared/admin.ts';
 
 const CLAUDE_API_KEY        = Deno.env.get('CLAUDE_API_KEY')!;
 const OPENAI_API_KEY        = Deno.env.get('OPENAI_API_KEY')!;
-const SUPABASE_URL          = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 // Image model comes from the IMAGE_MODEL secret (Edge Functions → Secrets), so a retired
 // OpenAI model can be swapped without a code change. Read per call so updates apply right away.
@@ -18,7 +16,13 @@ const IMAGE_SIZE   = '1024x1024';
 
 // Triggered by DB Webhook on tutorial_jobs INSERT
 serve(async (req) => {
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  // Only the database webhook may start generation: it sends the admin key as the bearer token
+  // (webhook header). Anyone else is refused — this function runs AI generation and spends credit.
+  if (!isServiceRequest(req)) {
+    return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 });
+  }
+
+  const supabase = adminClient();
 
   let jobId: string;
   let tutorialId: string;
@@ -53,7 +57,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 }
 
 async function processJob(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof adminClient>,
   jobId: string,
   tutorialId: string,
 ) {
@@ -221,7 +225,7 @@ async function generateScript(prompt: string): Promise<{ frames: FrameScript[] }
 // ── OpenAI image generation (model from IMAGE_MODEL secret) ───────────────────
 
 async function generateAndStoreImage(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof adminClient>,
   prompt: string,
   storagePath: string,
 ): Promise<string | null> {
@@ -278,7 +282,7 @@ async function generateAndStoreImage(
 // ── Google Cloud TTS audio generation (_shared/tts.ts) ────────────────────────
 
 async function generateAndStoreAudio(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof adminClient>,
   text: string,
   storagePath: string,
 ): Promise<string | null> {

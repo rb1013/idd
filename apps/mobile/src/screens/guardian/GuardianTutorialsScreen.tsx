@@ -654,7 +654,7 @@ export default function GuardianTutorialsScreen() {
                   <AppText style={styles.pendingNoteAsterisk}>***</AppText> AI generated tutorials may take 1-2 mins to process
                 </AppText>
                 <AppText style={styles.pendingNote}>
-                  <AppText style={styles.pendingNoteAsterisk}>***</AppText> Admin will review your tutorial within 48 hours and you will be notified
+                  <AppText style={styles.pendingNoteAsterisk}>***</AppText> Admin will review your tutorial within 48 hrs & notify you
                 </AppText>
                 <ActiveFilterChips
                   capitalize
