@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { CLASS_ICON } from '../../constants';
 import AppText from '../../components/AppText';
 import { speakLearner } from '../../lib/speech';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -279,7 +280,7 @@ export default function UserHomeScreen() {
                 activeOpacity={0.88}
               >
                 <View style={s.scheduleLeft}>
-                  <AppText style={s.scheduleEmoji}>{item.emoji}</AppText>
+                  <AppText style={s.scheduleEmoji}>{CLASS_ICON}</AppText>
                   <View>
                     <AppText style={[s.scheduleTitle, state === 'past' && s.scheduleTitlePast]}>{item.title}</AppText>
                     <AppText style={s.scheduleTime}>

@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { ScheduleItem } from '../types';
+import { CLASS_ICON } from '../constants';
 
 // Configure how notifications are presented when app is in foreground
 Notifications.setNotificationHandler({
@@ -66,7 +67,7 @@ export async function refreshScheduleNotifications(items: ScheduleItem[]): Promi
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: `${item.emoji} ${item.title} in 15 minutes`,
+        title: `${CLASS_ICON} ${item.title} in 15 minutes`,
         body: `Starting at ${formatTime(item.start_time)}`,
         sound: true,
         data: { type: 'schedule_class', itemId: item.id },

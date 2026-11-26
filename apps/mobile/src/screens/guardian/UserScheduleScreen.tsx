@@ -1,9 +1,10 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, TouchableOpacity, StyleSheet, ScrollView,
   TextInput, Alert, ActivityIndicator, Modal, FlatList,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { CLASS_ICON, CLASS_NAME_MAX } from '../../constants';
 import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
 import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
@@ -30,33 +31,6 @@ const TIMES: string[] = [];
 for (let h = 6; h <= 21; h++) {
   TIMES.push(`${h > 12 ? h - 12 : h === 0 ? 12 : h}:00 ${h < 12 ? 'AM' : 'PM'}`);
   if (h < 21) TIMES.push(`${h > 12 ? h - 12 : h === 0 ? 12 : h}:30 ${h < 12 ? 'AM' : 'PM'}`);
-}
-
-// Smart emoji suggestions by keyword
-const EMOJI_MAP: [string[], string[]][] = [
-  [['piano', 'keyboard'],       ['🎹', '🎵', '🎼', '🎶']],
-  [['music', 'singing', 'choir'], ['🎵', '🎤', '🎼', '🎸']],
-  [['swim', 'pool', 'water'],   ['🏊', '🌊', '💦', '🏅']],
-  [['art', 'draw', 'paint'],    ['🎨', '🖌️', '✏️', '🖍️']],
-  [['dance', 'ballet'],         ['💃', '🕺', '🎭', '🩰']],
-  [['yoga', 'meditation'],      ['🧘', '🌿', '💆', '☮️']],
-  [['gym', 'sport', 'fitness'], ['💪', '🏋️', '🤸', '🏅']],
-  [['read', 'book', 'library'], ['📚', '📖', '📝', '🔤']],
-  [['cook', 'bak', 'kitchen'],  ['🍳', '👨‍🍳', '🥘', '🧁']],
-  [['theatre', 'theater', 'play'], ['🎭', '🎬', '🎪', '🌟']],
-  [['soccer', 'football'],      ['⚽', '🏃', '🥅', '🏆']],
-  [['basketball'],              ['🏀', '🏃', '🤸', '🏆']],
-  [['horse', 'riding'],         ['🐴', '🤠', '🎠', '🏇']],
-  [['game', 'gaming'],          ['🎮', '🕹️', '🧩', '🎯']],
-  [['speech', 'therapy'],       ['🗣️', '💬', '🧠', '💙']],
-];
-
-function suggestEmojis(title: string): string[] {
-  const v = title.toLowerCase();
-  for (const [keys, emojis] of EMOJI_MAP) {
-    if (keys.some(k => v.includes(k))) return emojis;
-  }
-  return ['📅', '⭐', '🎯', '✨'];
 }
 
 function formatTime(t: string): string {
@@ -90,24 +64,37 @@ function todayIso(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function addMonths(iso: string, n: number): string {
-  const d = new Date(iso + 'T00:00:00');
-  d.setMonth(d.getMonth() + n);
-  return d.toISOString().slice(0, 10);
+// Next date (local) that falls on weekday `dow` (0 = Sunday) — today if today is that day.
+// Default "Valid from" for a weekly class, so a Tuesday class doesn't start on a Wednesday.
+function nextWeekdayIso(dow: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + ((dow - d.getDay() + 7) % 7));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// Build array of ISO dates from today to +90 days
-function buildDateOptions(): string[] {
+// Same rule as Postgres `date + interval 'n months'` (the max_3_months check in 013): clamp to the
+// month's last day — Nov 29 + 3 → Feb 28, not Mar 1 (JS setMonth rolls over, which failed the check).
+function addMonths(iso: string, n: number): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const target  = new Date(y, m - 1 + n, 1);                                       // 1st of target month
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  target.setDate(Math.min(d, lastDay));
+  return `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(target.getDate()).padStart(2, '0')}`;
+}
+
+// Every date from `min` to `max` (inclusive, local dates). Each picker gets its own range — was one
+// fixed list (today → +90 days), so "Until" couldn't reach Valid from + 3 months.
+function dateRange(min: string, max: string): string[] {
   const dates: string[] = [];
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 91; i++) {
-    dates.push(d.toISOString().slice(0, 10));
-    d.setDate(d.getDate() + 1);
+  const [y, m, d] = min.split('-').map(Number);
+  const cur = new Date(y, m - 1, d);
+  for (let iso = min; iso <= max; ) {
+    dates.push(iso);
+    cur.setDate(cur.getDate() + 1);
+    iso = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
   }
   return dates;
 }
-const DATE_OPTIONS = buildDateOptions();
 
 // ── Sub-components ────────────────────────────────────────────────────────
 
@@ -145,10 +132,10 @@ function TimePicker({
 }
 
 function DatePicker({
-  value, onChange, minDate,
-}: { value: string; onChange: (v: string) => void; minDate?: string }) {
+  value, onChange, minDate, maxDate,
+}: { value: string; onChange: (v: string) => void; minDate: string; maxDate: string }) {
   const [visible, setVisible] = useState(false);
-  const options = minDate ? DATE_OPTIONS.filter(d => d >= minDate) : DATE_OPTIONS;
+  const options = useMemo(() => dateRange(minDate, maxDate), [minDate, maxDate]);
   return (
     <>
       <TouchableOpacity style={s.fbox} onPress={() => setVisible(true)}>
@@ -184,34 +171,16 @@ function RequiredLabel({ text }: { text: string }) {
   return <AppText style={s.fieldLabel}>{text}<AppText style={s.required}> *</AppText></AppText>;
 }
 
-function EmojiRow({ emojis, selected, onSelect }: { emojis: string[]; selected: string; onSelect: (e: string) => void }) {
-  return (
-    <View style={s.emojiRow}>
-      {emojis.map(e => (
-        <TouchableOpacity
-          key={e}
-          style={[s.emojiChip, selected === e && s.emojiChipSel]}
-          onPress={() => onSelect(e)}
-        >
-          <AppText style={s.emojiChipTxt}>{e}</AppText>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-}
-
 // ── Main screen ───────────────────────────────────────────────────────────
 
 export default function UserScheduleScreen() {
   const route      = useRoute<Route>();
   const navigation = useNavigation<Nav>();
-  const { userId, userName } = route.params;
+  const { userId } = route.params;
   const { guardian } = useAuth();
 
+  // Header shows just "Schedule" (navigator title) — no learner name; the info note explains the page
   useNicoHeader(navigation);
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: `${userName}'s Schedule` });
-  }, [userName]);
 
   const [tab, setTab] = useState<'weekly' | 'oneoff'>('weekly');
   const [templates, setTemplates] = useState<ScheduleTemplate[]>([]);
@@ -222,11 +191,12 @@ export default function UserScheduleScreen() {
   const [weeklySheet, setWeeklySheet] = useState(false);
   const [addDay, setAddDay] = useState(1);
   const [wTitle, setWTitle] = useState('');
-  const [wEmoji, setWEmoji] = useState('📅');
   const [wStart, setWStart] = useState('9:00 AM');
   const [wEnd, setWEnd] = useState('10:00 AM');
   const [wFrom, setWFrom] = useState(todayIso);
   const [wUntil, setWUntil] = useState(() => addMonths(todayIso(), 3));
+  // Has the guardian picked "Until" themselves in this sheet? Until follows Valid from + 3 months until then.
+  const [untilEdited, setUntilEdited] = useState(false);
   const [wSaving, setWSaving] = useState(false);
 
   // One-off sheet state
@@ -234,7 +204,6 @@ export default function UserScheduleScreen() {
   const [ooMode, setOoMode] = useState<'new' | 'cancel'>('new');
   const [ooDate, setOoDate] = useState(todayIso);
   const [ooTitle, setOoTitle] = useState('');
-  const [ooEmoji, setOoEmoji] = useState('📅');
   const [ooStart, setOoStart] = useState('9:00 AM');
   const [ooEnd, setOoEnd] = useState('10:00 AM');
   const [cancelTemplateId, setCancelTemplateId] = useState<string | null>(null);
@@ -245,8 +214,10 @@ export default function UserScheduleScreen() {
   async function load() {
     if (!guardian) return;
     const [{ data: tmpl }, { data: evts }] = await Promise.all([
-      supabase.rpc('get_guardian_templates', { p_guardian_id: guardian.id, p_user_id: userId }),
-      supabase.rpc('get_schedule_events',    { p_guardian_id: guardian.id, p_user_id: userId }),
+      // p_today = the phone's local date (migration 101): DB current_date is UTC, a day ahead in the
+      // California evening. Weekly: only classes not yet ended; One-off: from today on.
+      supabase.rpc('get_guardian_templates', { p_guardian_id: guardian.id, p_user_id: userId, p_today: todayIso() }),
+      supabase.rpc('get_schedule_events',    { p_guardian_id: guardian.id, p_user_id: userId, p_today: todayIso() }),
     ]);
     setTemplates((tmpl || []) as ScheduleTemplate[]);
     setEvents((evts || []) as ScheduleEvent[]);
@@ -255,15 +226,28 @@ export default function UserScheduleScreen() {
 
   function openWeeklySheet(dow: number) {
     setAddDay(dow);
-    setWTitle(''); setWEmoji('📅');
+    setWTitle('');
     setWStart('9:00 AM'); setWEnd('10:00 AM');
-    setWFrom(todayIso()); setWUntil(addMonths(todayIso(), 3));
+    const from = nextWeekdayIso(dow);   // first occurrence of the tapped day, not today
+    setWFrom(from); setWUntil(addMonths(from, 3)); setUntilEdited(false);
     setWeeklySheet(true);
+  }
+
+  // Valid from changed: Until follows (Valid from + 3 months) unless the guardian picked Until
+  // themselves — then it's kept, and only reset if it's now outside Valid from … +3 months.
+  function changeWFrom(v: string) {
+    setWFrom(v);
+    setWUntil(u => (untilEdited && u >= v && u <= addMonths(v, 3)) ? u : addMonths(v, 3));
+  }
+
+  function changeWUntil(v: string) {
+    setWUntil(v);
+    setUntilEdited(true);
   }
 
   function openOneoffSheet() {
     setOoMode('new'); setOoDate(todayIso());
-    setOoTitle(''); setOoEmoji('📅');
+    setOoTitle('');
     setOoStart('9:00 AM'); setOoEnd('10:00 AM');
     setCancelTemplateId(null);
     setOneoffSheet(true);
@@ -281,7 +265,7 @@ export default function UserScheduleScreen() {
       p_start_time:  parseTimeToDb(wStart),
       p_end_time:    parseTimeToDb(wEnd),
       p_title:       wTitle.trim(),
-      p_emoji:       wEmoji,
+      p_emoji:       CLASS_ICON,   // still required by the RPC; every class uses the same icon
       p_valid_from:  wFrom,
       p_valid_until: wUntil,
     });
@@ -314,13 +298,12 @@ export default function UserScheduleScreen() {
 
     // For cancellation, populate title/time from the template
     let title = ooTitle.trim();
-    let emoji = ooEmoji;
     let start = parseTimeToDb(ooStart);
     let end = parseTimeToDb(ooEnd);
 
     if (isCancellation && cancelTemplateId) {
       const tmpl = templates.find(t => t.id === cancelTemplateId);
-      if (tmpl) { title = tmpl.title; emoji = tmpl.emoji; start = tmpl.start_time; end = tmpl.end_time; }
+      if (tmpl) { title = tmpl.title; start = tmpl.start_time; end = tmpl.end_time; }
     }
 
     setOoSaving(true);
@@ -331,7 +314,7 @@ export default function UserScheduleScreen() {
       p_start_time:      start,
       p_end_time:        end,
       p_title:           title,
-      p_emoji:           emoji,
+      p_emoji:           CLASS_ICON,
       p_is_cancellation: isCancellation,
       p_template_id:     cancelTemplateId,
     });
@@ -380,7 +363,7 @@ export default function UserScheduleScreen() {
                   <AppText style={[s.dayLabel, s.dayLabelEmpty]}>{day.toUpperCase()}</AppText>
                   {dayTemplates.map(t => (
                     <View key={t.id} style={[s.classCard, { backgroundColor: tileBg, borderColor: 'transparent' }]}>
-                      <AppText style={s.classEmoji}>{t.emoji}</AppText>
+                      <AppText style={s.classEmoji}>{CLASS_ICON}</AppText>
                       <View style={s.classInfo}>
                         <AppText style={s.classTitle}>{t.title}</AppText>
                         <AppText style={s.classTime}>
@@ -429,7 +412,7 @@ export default function UserScheduleScreen() {
                 {ev.is_cancellation ? ' — cancellation' : ''}
               </AppText>
               <View style={[s.classCard, ev.is_cancellation ? s.cancelCard : { backgroundColor: tileBg, borderColor: 'transparent' }]}>
-                <AppText style={s.classEmoji}>{ev.is_cancellation ? '🚫' : ev.emoji}</AppText>
+                <AppText style={s.classEmoji}>{ev.is_cancellation ? '🚫' : CLASS_ICON}</AppText>
                 <View style={s.classInfo}>
                   <AppText style={[s.classTitle, ev.is_cancellation && { color: NICO.error }]}>{ev.title}</AppText>
                   <AppText style={[s.classTime, ev.is_cancellation && { color: NICO.error }]}>
@@ -456,8 +439,6 @@ export default function UserScheduleScreen() {
 
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color={NICO.primary} /></View>;
 
-  const wSuggestions = suggestEmojis(wTitle);
-  const ooSuggestions = suggestEmojis(ooTitle);
   const cancellable = cancellableTemplatesForDate(ooDate);
 
   return (
@@ -465,16 +446,13 @@ export default function UserScheduleScreen() {
       <RainbowDivider />
 
       <View style={s.topNoteBox}>
-        <AppText style={s.topNote}>
-          <AppText style={s.topNoteAsterisk}>*** </AppText>
-          Add schedule for learner's classes
-        </AppText>
+        <AppText style={[s.topNote, s.topNoteCenter]}>Set up schedule for learner's classes</AppText>
       </View>
 
       {/* Tab bar */}
       <View style={s.tabBar}>
         <TouchableOpacity style={[s.tab, tab === 'weekly' && s.tabActive]} onPress={() => setTab('weekly')} activeOpacity={0.75}>
-          <AppText style={[s.tabTxt, tab === 'weekly' && s.tabTxtActive]}>📅  Weekly</AppText>
+          <AppText style={[s.tabTxt, tab === 'weekly' && s.tabTxtActive]}>📅  Repeats Weekly</AppText>
         </TouchableOpacity>
         <TouchableOpacity style={[s.tab, tab === 'oneoff' && s.tabActive]} onPress={() => setTab('oneoff')} activeOpacity={0.75}>
           <AppText style={[s.tabTxt, tab === 'oneoff' && s.tabTxtActive]}>✨  One-off</AppText>
@@ -506,17 +484,12 @@ export default function UserScheduleScreen() {
               <TextInput
                 style={s.fieldInput}
                 value={wTitle}
+                maxLength={CLASS_NAME_MAX}
                 onChangeText={setWTitle}
                 placeholder="e.g. Piano Lesson"
                 placeholderTextColor={NICO.textMuted}
               />
-
-              <RequiredLabel text="Emoji" />
-              <EmojiRow
-                emojis={wSuggestions}
-                selected={wEmoji}
-                onSelect={setWEmoji}
-              />
+              <AppText style={s.charCount}>{wTitle.length}/{CLASS_NAME_MAX}</AppText>
 
               <View style={s.fieldRow}>
                 <View style={{ flex: 1 }}>
@@ -532,11 +505,13 @@ export default function UserScheduleScreen() {
               <View style={s.fieldRow}>
                 <View style={{ flex: 1 }}>
                   <RequiredLabel text="Valid from" />
-                  <DatePicker value={wFrom} onChange={setWFrom} />
+                  {/* From the first occurrence of the class day up to 3 months ahead */}
+                  <DatePicker value={wFrom} onChange={changeWFrom} minDate={nextWeekdayIso(addDay)} maxDate={addMonths(todayIso(), 3)} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <RequiredLabel text="Until" />
-                  <DatePicker value={wUntil} onChange={v => setWUntil(v)} minDate={wFrom} />
+                  {/* Up to Valid from + 3 months — the database's max_3_months limit */}
+                  <DatePicker value={wUntil} onChange={changeWUntil} minDate={wFrom} maxDate={addMonths(wFrom, 3)} />
                 </View>
               </View>
               <AppText style={s.repeatHint}>Repeats every {DAYS[addDay]} · Max 3 months</AppText>
@@ -578,7 +553,7 @@ export default function UserScheduleScreen() {
               </TouchableOpacity>
 
               <RequiredLabel text={ooMode === 'cancel' ? 'Date to cancel' : 'Date'} />
-              <DatePicker value={ooDate} onChange={v => { setOoDate(v); setCancelTemplateId(null); }} />
+              <DatePicker value={ooDate} onChange={v => { setOoDate(v); setCancelTemplateId(null); }} minDate={todayIso()} maxDate={addMonths(todayIso(), 3)} />
 
               {ooMode === 'new' ? (
                 <>
@@ -586,13 +561,12 @@ export default function UserScheduleScreen() {
                   <TextInput
                     style={s.fieldInput}
                     value={ooTitle}
+                    maxLength={CLASS_NAME_MAX}
                     onChangeText={setOoTitle}
                     placeholder="e.g. Theatre Trip"
                     placeholderTextColor={NICO.textMuted}
                   />
-
-                  <RequiredLabel text="Emoji" />
-                  <EmojiRow emojis={ooSuggestions} selected={ooEmoji} onSelect={setOoEmoji} />
+                  <AppText style={s.charCount}>{ooTitle.length}/{CLASS_NAME_MAX}</AppText>
 
                   <View style={s.fieldRow}>
                     <View style={{ flex: 1 }}>
@@ -628,7 +602,7 @@ export default function UserScheduleScreen() {
                           onPress={() => setCancelTemplateId(t.id)}
                           activeOpacity={0.75}
                         >
-                          <AppText style={s.cancelOptionEmoji}>{t.emoji}</AppText>
+                          <AppText style={s.cancelOptionEmoji}>{CLASS_ICON}</AppText>
                           <AppText style={s.cancelOptionTxt}>
                             {t.title}  {formatTime(t.start_time)}
                           </AppText>
@@ -664,7 +638,7 @@ const s = StyleSheet.create({
     paddingHorizontal: SPACING.base, paddingVertical: SPACING.sm,
   },
   topNote: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
-  topNoteAsterisk: { color: NICO.error, fontWeight: FONT_WEIGHT.black },
+  topNoteCenter: { textAlign: 'center' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: SPACING.sm, padding: SPACING.xl, backgroundColor: NICO.screenBg },
   emptyEmoji: { fontSize: scale(44), marginBottom: SPACING.xs },
   emptyTitle: { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
@@ -735,6 +709,8 @@ const s = StyleSheet.create({
 
   fieldLabel: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold, color: NICO.text, marginBottom: SPACING.xs },
   required:   { fontSize: FONT_SIZE['2xl'], fontWeight: FONT_WEIGHT.black, color: NICO.error },
+  // Class name character count, right under the input
+  charCount: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, textAlign: 'right', marginTop: -SPACING.sm, marginBottom: SPACING.sm },
   fieldInput: {
     borderWidth: 1.5, borderColor: NICO.border, borderRadius: RADIUS.md,
     padding: SPACING.md, fontSize: FONT_SIZE.md, color: NICO.text,
@@ -749,16 +725,6 @@ const s = StyleSheet.create({
     padding: SPACING.md, backgroundColor: NICO.background, marginBottom: SPACING.md,
   },
   fboxText: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
-
-  emojiRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.md },
-  emojiChip: {
-    width: scale(46), height: scale(46), borderRadius: RADIUS.md,
-    backgroundColor: NICO.background,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: 'transparent',
-  },
-  emojiChipSel: { backgroundColor: NICO.primaryLight, borderColor: NICO.primary },
-  emojiChipTxt: { fontSize: scale(24) },
 
   saveBtn:    { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.sm },
   btnDisabled:{ opacity: 0.6 },
