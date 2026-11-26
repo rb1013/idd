@@ -34,8 +34,8 @@
 | `process-tutorial-job` | Only the database webhook | Request must carry the **secret key** (compared in code) |
 | `check-email` | Anyone (sign-up, logged out) | Stays open by design — only answers "is this email taken?" |
 | `check-tutorial-quota` | Nobody (no caller in the apps) | Delete it, or lock to logged-in guardians |
-| `create-user-account`, `delete-guardian`, `delete-learner`, `guardian-action`, `regenerate-tutorial`, `send-message` | — | Already check the caller (`auth.getUser`) — no change needed |
-| ~~`send-guardian-message`~~ | — | **No longer used** — guardian chat inserts directly (migration 099). Delete the function; nothing to migrate |
+| `create-user-account`, `delete-guardian`, `delete-learner`, `guardian-action`, `regenerate-tutorial` | — | Already check the caller (`auth.getUser`) — no change needed |
+| ~~`send-guardian-message`~~, ~~`send-message`~~ | — | **No longer used** — guardian and learner chat insert directly (migrations 099, 100). Delete the functions; nothing to migrate |
 
 - Check the user with **`auth.getClaims(token)`** (verifies the token locally) instead of `auth.getUser(token)` (an extra network call to Supabase each time) — also makes chat sending a little faster (see `chat-time.md`).
 - Today `create-user-account` is the only function deployed with JWT verification **off**; after this, **all** are.

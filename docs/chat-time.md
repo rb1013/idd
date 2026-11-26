@@ -103,6 +103,56 @@ The other person sees the message as soon as it's saved, through the live chat c
 
 ---
 
+## 7. Guardian chat — done (direct insert, 2026-11-25)
+
+- Migration **099**: insert rule on `guardian_messages` (send as yourself · participant · no guardian block via `private.guardian_conversation_blocked`) + `guardian_messages_before_insert` trigger (trim · reject empty · blocked words via `contains_blocked_word` · server `created_at`). Run on **West and East**.
+- `GuardianChatScreen.tsx` inserts directly; refusal (42501) → neutral "This conversation is no longer available" (block not revealed).
+- `send-guardian-message` is no longer used — delete it when convenient.
+
+---
+
+## 8. Learner chat — direct insert (same pattern) — **code done 2026-11-25**: migration **100** + `ChatScreen.tsx`; run 100 on West (and East), then test and delete `send-message`
+
+### Finding: learner chat already has a weak direct-insert door
+`messages` has the insert rule **"Participants can send messages"**: `WITH CHECK (owns_user_profile(sender_id))`. `owns_user_profile` is true for the learner's own login **or their guardian**, so either can insert straight into `messages` (outside the app) into **any** conversation — no participant, blocked-word, learner-block or Disable Messaging check. The `send-message` function is only the app's path. **Fix regardless of speed.**
+
+### What the checks become
+| Check | `send-message` today | New insert rule / trigger |
+|---|---|---|
+| Sender is my learner login | ✅ | ✅ `user_profiles.auth_user_id = auth.uid()` (learner login **only**) |
+| Sender is in the conversation | ✅ | ✅ |
+| Blocked words | ✅ | ✅ trigger (`contains_blocked_word`) |
+| Learner block (`blocked_learners`, either way) | ❌ missing | ✅ new `private.learner_conversation_blocked()` |
+| Disable Messaging (`messaging_disabled`) | ❌ app only | ✅ |
+| Still friends | ❌ | ❌ **not added** (decided) |
+| Reported learner | ❌ | ❌ **keep chatting** (decided) |
+
+### Decisions (2026-11-25)
+1. **Learner login only.** Learner mode signs the app in as the learner's own account (`LearnerSelectScreen.tsx:130`), so a guardian sending from the learner's chat **is the learner** to the database (`sender_id` = learner) — allowed. Guardian mode sending as the learner (the old loophole) — refused. Disable Messaging and learner blocks apply to whoever is in learner mode. Guardians can still **read** their learner's chats (read rule unchanged) and use the 🛡️ PIN actions (`guardian-action`).
+2. **No "still friends" check** — a removed friend's chat isn't shown anyway.
+3. **Reported learners: keep chatting.**
+4. **Refusal wording** (block, messaging off, not a participant): "You can't send messages in this chat right now."
+
+### Changes
+1. **Migration (100)**
+   - Drop "Participants can send messages"; create a new insert rule: sender = my learner login **and** participant **and** `NOT private.learner_conversation_blocked(conversation_id, sender_id)` **and** sender's `messaging_disabled` is false.
+   - `private.learner_conversation_blocked()` — like the guardian helper: true if the sender and the other participant have a `blocked_learners` row either way (owner rights; not on the API).
+   - Before-insert trigger on `messages`: trim · reject empty · blocked words → `BLOCKED_WORDS` · `created_at = now()` · `read_at = null`.
+   - Still no update / delete rules.
+2. **App — `ChatScreen.tsx` `sendMessage`**: `supabase.from('messages').insert({ conversation_id, sender_id: activeUser.id, content }).select().single()`; blocked word → existing kind-words banner + sound; refusal (42501) → "You can't send messages in this chat right now."; keep the duplicate check.
+3. **Function**: delete `send-message` afterwards (also removes it from `supabase-keys.md`).
+4. **Run** the migration on West (and East, to keep the fallback in step).
+
+### Test
+- normal message / symbol card / phrase → appears once, live on the other device
+- blocked word → kind-words banner, nothing saved
+- learner blocked either way → refused, including with the chat already open
+- Disable Messaging on → refused (also when a guardian sends from learner mode)
+- empty message → refused
+- guardian-mode direct insert as the learner (API) → refused
+
+---
+
 ## Open question
 
-1. Include fixes 1–3 from §5, or only options 2 and 3?
+1. ~~Include fixes 1–3 from §5, or only options 2 and 3?~~ — superseded: guardian chat moved to direct insert (§7); learner chat planned the same way (§8), which covers fixes 1–3.

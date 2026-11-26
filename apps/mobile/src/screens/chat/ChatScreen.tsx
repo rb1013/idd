@@ -4,7 +4,7 @@ import {
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
   Alert, Image, Modal,
 } from 'react-native';
-import { containsProfanity } from '../../lib/contentFilter';
+import { containsProfanity, isBlockedWordsError } from '../../lib/contentFilter';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { speakLearner } from '../../lib/speech';
 // import { Audio } from 'expo-av'; // requires native rebuild — enable when running npx expo run:ios
@@ -262,31 +262,31 @@ export default function ChatScreen() {
     if (fromInput) setText('');
     setBlockedVisible(false);
 
-    // Layer 2: edge function validates against custom list then inserts
-    const { data, error } = await supabase.functions.invoke('send-message', {
-      body: { conversation_id: conversationId, sender_id: activeUser.id, content: trimmed },
-      headers: { Authorization: `Bearer ${session?.access_token}` },
-    });
+    // Direct insert (migration 100): the database checks the sender is this learner login, messaging
+    // isn't disabled, they're in the chat, no learner block either way, and blocked words (layer 2) —
+    // replaces the send-message edge function
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({ conversation_id: conversationId, sender_id: activeUser.id, content: trimmed })
+      .select()
+      .single();
 
-    if (error || data?.error) {
-      if (data?.error === 'blocked') {
+    if (error) {
+      if (isBlockedWordsError(error)) {
         setBlockedVisible(true);
         playBlockedFeedback();
-        if (fromInput) setText(trimmed);
+      } else if (error.code === '42501') {
+        // Refused by the insert rule: learner block, messaging disabled, or not in this chat
+        Alert.alert("Couldn't send", "You can't send messages in this chat right now.");
       } else {
-        let detail = data?.error ?? error?.message ?? 'Failed to send';
-        try {
-          const body = await (error as any)?.context?.json?.();
-          if (body?.error) detail = `${body.error}${body.detail ? ': ' + body.detail : ''}`;
-        } catch {}
-        Alert.alert('Send error', detail);
-        if (fromInput) setText(trimmed);
+        Alert.alert('Send error', error.message);
       }
+      if (fromInput) setText(trimmed);
       return;
     }
 
-    if (data?.message) {
-      setMessages(prev => prev.some(m => m.id === data.message.id) ? prev : [...prev, data.message as Message]);
+    if (data) {
+      setMessages(prev => prev.some(m => m.id === data.id) ? prev : [...prev, data as Message]);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }
   }
