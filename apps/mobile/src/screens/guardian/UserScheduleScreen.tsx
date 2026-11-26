@@ -277,7 +277,7 @@ export default function UserScheduleScreen() {
 
   async function deleteTemplate(id: string) {
     if (!guardian) return;
-    Alert.alert('Remove class', 'Remove this recurring class?', [
+    Alert.alert('Remove class', 'This removes the weekly class and its One-off cancellations. Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove', style: 'destructive',
