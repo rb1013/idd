@@ -21,8 +21,7 @@ import { GuardianNavParamList } from '../../navigation';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
-type Learner = { id: string; name: string; photo_url: string | null; tutorialCount: number };
-type Stats   = { learners: number; tutorials: number; activities: number };
+type Learner = { id: string; name: string; photo_url: string | null };
 
 type TileDef = { label: string; emoji: string; sub: string; ci: number; screen: keyof GuardianNavParamList };
 
@@ -50,7 +49,6 @@ export default function GuardianHomeScreen() {
   const navigation = useNavigation<Nav>();
   const { guardian } = useAuth();
   const [learners, setLearners]                   = useState<Learner[]>([]);
-  const [stats, setStats]                         = useState<Stats>({ learners: 0, tutorials: 0, activities: 0 });
   const [messagingDisabled, setMessagingDisabled] = useState(false);
   const [togglingMsg, setTogglingMsg]             = useState(false);
   const [showMessagingInfo, setShowMessagingInfo] = useState(false);
@@ -75,15 +73,13 @@ export default function GuardianHomeScreen() {
   );
 
   async function loadData(guardianId: string) {
+    // (Tutorial / activity counts removed — they filled a `stats` value nothing displayed, and the
+    // activity count queried a table that doesn't exist.)
     const [
       { data: profiles },
-      { count: tutorialCount },
-      { count: activityCount },
       { count: pendingCount },
     ] = await Promise.all([
       supabase.from('user_profiles').select('id, name, photo_url').eq('guardian_id', guardianId),
-      supabase.from('tutorials').select('id', { count: 'exact', head: true }).eq('created_by_guardian_id', guardianId),
-      supabase.from('guardian_activity_presets').select('id', { count: 'exact', head: true }).eq('guardian_id', guardianId),
       supabase.from('guardian_connections').select('id', { count: 'exact', head: true }).eq('addressee_id', guardianId).eq('status', 'pending'),
     ]);
     setPendingConnections(pendingCount ?? 0);
@@ -91,31 +87,16 @@ export default function GuardianHomeScreen() {
     const profileList = profiles ?? [];
     const learnerIds  = profileList.map(p => p.id);
 
-    const [enriched, { count: pendingFriendCount }] = await Promise.all([
-      Promise.all(
-        profileList.map(async p => {
-          const { count } = await supabase
-            .from('user_tutorials')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', p.id);
-          return { ...p, tutorialCount: count ?? 0 } as Learner;
-        })
-      ),
-      // Incoming = someone else's learner asked to friend one of mine — mirrors the
-      // 'incoming' direction LearnerFriendsScreen's own Requests tab computes.
-      learnerIds.length > 0
-        ? supabase.from('friendships').select('id', { count: 'exact', head: true })
-            .in('addressee_id', learnerIds).eq('status', 'pending')
-        : Promise.resolve({ count: 0 }),
-    ]);
+    // (Per-learner linked-tutorial count removed — stored as tutorialCount but never displayed.)
+    // Incoming = someone else's learner asked to friend one of mine — mirrors the
+    // 'incoming' direction LearnerFriendsScreen's own Requests tab computes.
+    const { count: pendingFriendCount } = learnerIds.length > 0
+      ? await supabase.from('friendships').select('id', { count: 'exact', head: true })
+          .in('addressee_id', learnerIds).eq('status', 'pending')
+      : { count: 0 };
     setPendingFriendRequests(pendingFriendCount ?? 0);
 
-    setLearners(enriched);
-    setStats({
-      learners:   profileList.length,
-      tutorials:  tutorialCount  ?? 0,
-      activities: activityCount  ?? 0,
-    });
+    setLearners(profileList as Learner[]);
 
     if (profileList.length > 0) {
       supabase.from('user_profiles').select('messaging_disabled, tts_disabled').eq('id', profileList[0].id).single()
