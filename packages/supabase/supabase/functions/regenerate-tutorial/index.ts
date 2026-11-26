@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { buildTutorialPrompt } from '../_shared/tutorialPrompt.ts';
+import { quotaMonth } from '../_shared/quotaMonth.ts';
 import { IMAGE_BUCKET, AUDIO_BUCKET, StoredFile, storagePathFromUrl, removeFiles } from '../_shared/tutorialStorage.ts';
 
 const corsHeaders = {
@@ -82,7 +83,7 @@ Deno.serve(async (req) => {
 
     // Check + charge monthly quota — same pattern as create-tutorial
     const guardian_id = user.id;
-    const month = new Date().toISOString().slice(0, 7);
+    const month = quotaMonth();   // California month, not UTC
     const [{ data: quota }, { data: appSettings }] = await Promise.all([
       supabase.from('guardian_tutorial_quota').select('count').eq('guardian_id', guardian_id).eq('month', month).single(),
       supabase.from('app_settings').select('tutorial_quota_limit, tutorial_max_frames').eq('id', 1).single(),

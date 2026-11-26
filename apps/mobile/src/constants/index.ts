@@ -235,3 +235,10 @@ export function calcAge(dob: string | null | undefined): number | null {
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
   return age;
 }
+
+/** Monthly tutorial quota key 'YYYY-MM' — the phone's LOCAL month. toISOString() is UTC and rolled over
+ *  to next month at 4–5 pm on the last day in California. Servers use the California month
+ *  (functions/_shared/quotaMonth.ts) — the same for California users. */
+export function localQuotaMonth(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}

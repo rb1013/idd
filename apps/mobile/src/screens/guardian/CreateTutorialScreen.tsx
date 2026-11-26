@@ -8,6 +8,7 @@ import RainbowDivider from '../../components/RainbowDivider';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { localQuotaMonth } from '../../constants';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { GuardianNavParamList } from '../../navigation';
@@ -54,7 +55,7 @@ export default function CreateTutorialScreen() {
 
   async function loadQuota(guardianId: string) {
     const [{ data }, { data: settings }] = await Promise.all([
-      supabase.from('guardian_tutorial_quota').select('count').eq('guardian_id', guardianId).eq('month', new Date().toISOString().slice(0, 7)).single(),
+      supabase.from('guardian_tutorial_quota').select('count').eq('guardian_id', guardianId).eq('month', localQuotaMonth()).single(),
       supabase.from('app_settings').select('tutorial_quota_limit, tutorial_default_duration').single(),
     ]);
     const limit = settings?.tutorial_quota_limit ?? 10;

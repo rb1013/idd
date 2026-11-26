@@ -10,7 +10,7 @@ import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navig
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
-import { TUTORIAL_COMPREHENSION, TUTORIAL_NAME_SEARCH_MAX } from '../../constants';
+import { TUTORIAL_COMPREHENSION, TUTORIAL_NAME_SEARCH_MAX, localQuotaMonth } from '../../constants';
 import { GuardianNavParamList } from '../../navigation';
 import type { Tutorial, TutorialStatus, TutorialSource } from '../../types';
 import { useVisibleCount } from '../../hooks/useVisibleCount';
@@ -126,6 +126,7 @@ export default function GuardianTutorialsScreen() {
   const [myFilterLevels, setMyFilterLevels]       = useState<string[]>([]);
   const [showMyMoreFilters, setShowMyMoreFilters] = useState(false);
   const [quota, setQuota]               = useState<{ used: number; limit: number } | null>(null);
+  const quotaReached = !!quota && quota.used >= quota.limit;
 
   // ── Pending tab ───────────────────────────────────────────────────────────
   const [pendingSearch, setPendingSearch]             = useState('');
@@ -167,7 +168,7 @@ export default function GuardianTutorialsScreen() {
     if (!myLoadedRef.current) setLoadingMy(true);
     const [{ data: tuts }, { data: quotaRow }, { data: settings }] = await Promise.all([
       supabase.from('tutorials').select(LIST_COLUMNS).eq('created_by_guardian_id', guardianId).order('created_at', { ascending: false }),
-      supabase.from('guardian_tutorial_quota').select('count').eq('guardian_id', guardianId).eq('month', new Date().toISOString().slice(0, 7)).single(),
+      supabase.from('guardian_tutorial_quota').select('count').eq('guardian_id', guardianId).eq('month', localQuotaMonth()).single(),
       supabase.from('app_settings').select('tutorial_quota_limit').single(),
     ]);
     setMyTutorials((tuts as Tutorial[]) || []);
@@ -791,20 +792,23 @@ export default function GuardianTutorialsScreen() {
             </LinearGradient>
           )}
 
+          {/* Disabled (not tappable) once this month's AI quota is used up */}
           <TouchableOpacity
-            style={[styles.createCard, { backgroundColor: BUTTERFLY_TILES[0].bg, borderColor: 'transparent' }, quota?.used !== undefined && quota.used >= quota.limit && { opacity: 0.6 }]}
-            onPress={() => {
-              if (quota && quota.used >= quota.limit) { Alert.alert('Quota reached', `You have used all ${quota.limit} tutorials for this month.`); return; }
-              navigation.navigate('CreateTutorial');
-            }}
+            style={[styles.createCard, { backgroundColor: BUTTERFLY_TILES[0].bg, borderColor: 'transparent' }, quotaReached && styles.createCardDisabled]}
+            onPress={() => navigation.navigate('CreateTutorial')}
+            disabled={quotaReached}
             activeOpacity={0.85}
+            accessibilityState={{ disabled: quotaReached }}
           >
             <AppText style={styles.createEmoji}>✨</AppText>
             <View style={styles.createCardContent}>
               <AppText style={styles.createHeading}>AI-Generated Tutorial</AppText>
               <AppText style={styles.createBody}>AI creates a personalised slideshow for your learner.</AppText>
+              {quotaReached && (
+                <AppText style={styles.createBodyWarning}>Monthly limit reached — available again next month.</AppText>
+              )}
             </View>
-            <AppText style={styles.createChevron}>›</AppText>
+            {!quotaReached && <AppText style={styles.createChevron}>›</AppText>}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -971,6 +975,7 @@ const styles = StyleSheet.create({
   },
   createEmoji:       { fontSize: 34 },
   createCardContent: { flex: 1, gap: SPACING.xs },
+  createCardDisabled: { opacity: 0.45 },
   createHeading:     { ...TEXT_STYLE.bodyMedium, fontSize: FONT_SIZE.xl },
   createBody:        { ...TEXT_STYLE.hint, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 18 },
   createBodyWarning: { color: NICO.error, fontWeight: FONT_WEIGHT.extraBold },

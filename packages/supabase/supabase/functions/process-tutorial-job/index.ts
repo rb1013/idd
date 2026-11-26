@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { IMAGE_BUCKET, AUDIO_BUCKET, IMMUTABLE_CACHE_SECONDS } from '../_shared/tutorialStorage.ts';
 import { synthesizeSpeech } from '../_shared/tts.ts';
+import { quotaMonth } from '../_shared/quotaMonth.ts';
 
 const CLAUDE_API_KEY        = Deno.env.get('CLAUDE_API_KEY')!;
 const OPENAI_API_KEY        = Deno.env.get('OPENAI_API_KEY')!;
@@ -159,7 +160,7 @@ async function processJob(
         .eq('id', tutorialId)
         .single();
       if (failed?.created_by_guardian_id) {
-        const month = failed.created_at.slice(0, 7);
+        const month = quotaMonth(new Date(failed.created_at));   // same California month it was charged to
         const { data: quotaRow } = await supabase
           .from('guardian_tutorial_quota')
           .select('count')
