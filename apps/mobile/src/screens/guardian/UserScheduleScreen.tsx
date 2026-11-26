@@ -64,6 +64,13 @@ function todayIso(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// Tomorrow (local) — earliest date an edited one-off class can move to
+function tomorrowIso(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 // Next date (local) that falls on weekday `dow` (0 = Sunday) — today if today is that day.
 // Default "Valid from" for a weekly class, so a Tuesday class doesn't start on a Wednesday.
 function nextWeekdayIso(dow: number): string {
@@ -206,6 +213,8 @@ export default function UserScheduleScreen() {
   // One-off sheet state
   const [oneoffSheet, setOneoffSheet] = useState(false);
   const [ooMode, setOoMode] = useState<'new' | 'cancel'>('new');
+  // Editing a future one-off class (null = adding). Cancellations and today's one-offs aren't editable.
+  const [ooEditingId, setOoEditingId] = useState<string | null>(null);
   const [ooDate, setOoDate] = useState(todayIso);
   const [ooTitle, setOoTitle] = useState('');
   const [ooStart, setOoStart] = useState('9:00 AM');
@@ -263,12 +272,24 @@ export default function UserScheduleScreen() {
   }
 
   function openOneoffSheet() {
+    setOoEditingId(null);
     setOoMode('new'); setOoDate(todayIso());
     setOoTitle('');
     setOoStart('9:00 AM'); setOoEnd('10:00 AM');
     setCancelTemplateId(null);
     setOneoffSheet(true);
   }
+  // ✏️ on a future one-off class → same sheet, pre-filled, "new class" mode only
+  function openEditOneoff(ev: ScheduleEvent) {
+    setOoEditingId(ev.id);
+    setOoMode('new');
+    setOoDate(ev.event_date);
+    setOoTitle(ev.title);
+    setOoStart(formatTime(ev.start_time)); setOoEnd(formatTime(ev.end_time));
+    setCancelTemplateId(null);
+    setOneoffSheet(true);
+  }
+
 
   async function saveWeeklyClass() {
     if (!guardian) return;
@@ -325,6 +346,28 @@ export default function UserScheduleScreen() {
     }
 
     setOoSaving(true);
+    if (ooEditingId) {
+      // Edit a future one-off class (migration 104 refuses today / past, and cancellations)
+      const { error: editError } = await supabase.rpc('update_schedule_event', {
+        p_guardian_id: guardian.id,
+        p_event_id:    ooEditingId,
+        p_event_date:  ooDate,
+        p_start_time:  start,
+        p_end_time:    end,
+        p_title:       title,
+        p_today:       todayIso(),
+      });
+      setOoSaving(false);
+      if (editError) {
+        Alert.alert('Error', editError.message.includes('ONE_OFF_')
+          ? 'This class can no longer be edited. Remove it and add a new one instead.'
+          : editError.message);
+        return;
+      }
+      setOneoffSheet(false);
+      load();
+      return;
+    }
     const { error } = await supabase.rpc('add_schedule_event', {
       p_guardian_id:     guardian.id,
       p_user_id:         userId,
@@ -440,13 +483,20 @@ export default function UserScheduleScreen() {
       <ScrollView contentContainerStyle={s.tabContent}>
         {events.map((ev, index) => {
           const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
+          // Only future one-off classes can be edited (not today's, not cancellations) — no ✏️ otherwise
+          const editable = !ev.is_cancellation && ev.event_date > todayIso();
           return (
             <View key={ev.id}>
               <AppText style={s.ooDateLabel}>
                 {formatDateLong(ev.event_date)}
                 {ev.is_cancellation ? ' — cancellation' : ''}
               </AppText>
-              <View style={[s.classCard, ev.is_cancellation ? s.cancelCard : { backgroundColor: tileBg, borderColor: 'transparent' }]}>
+              <TouchableOpacity
+                style={[s.classCard, ev.is_cancellation ? s.cancelCard : { backgroundColor: tileBg, borderColor: 'transparent' }]}
+                onPress={editable ? () => openEditOneoff(ev) : undefined}
+                disabled={!editable}
+                activeOpacity={0.8}
+              >
                 <AppText style={s.classEmoji}>{ev.is_cancellation ? '🚫' : CLASS_ICON}</AppText>
                 <View style={s.classInfo}>
                   <AppText style={[s.classTitle, ev.is_cancellation && { color: NICO.error }]}>{ev.title}</AppText>
@@ -458,10 +508,19 @@ export default function UserScheduleScreen() {
                 {ev.is_cancellation && (
                   <View style={s.cancelBadge}><AppText style={s.cancelBadgeTxt}>CANCELLED</AppText></View>
                 )}
-                <TouchableOpacity style={s.delBtn} onPress={() => deleteEvent(ev.id)}>
-                  <AppText style={s.delBtnTxt}>✕</AppText>
-                </TouchableOpacity>
-              </View>
+                <View style={s.cardActions}>
+                  {editable && (
+                    <TouchableOpacity style={s.editBtn} onPress={() => openEditOneoff(ev)}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} accessibilityLabel={`Edit ${ev.title}`}>
+                      <AppText style={s.editBtnTxt}>✏️</AppText>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity style={s.delBtn} onPress={() => deleteEvent(ev.id)}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} accessibilityLabel={`Remove ${ev.title}`}>
+                    <AppText style={s.delBtnTxt}>✕</AppText>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
             </View>
           );
         })}
@@ -499,7 +558,9 @@ export default function UserScheduleScreen() {
         {tab === 'oneoff' && (
           <View style={s.ooTopRow}>
             <TouchableOpacity style={s.addPill} onPress={openOneoffSheet} activeOpacity={0.8}>
-              <AppText style={s.addPillTxt}>+ Add</AppText>
+              {/* Bigger "+" so it reads clearly next to "Add" */}
+              <AppText style={s.addPillPlus}>+</AppText>
+              <AppText style={s.addPillTxt}>Add</AppText>
             </TouchableOpacity>
           </View>
         )}
@@ -580,9 +641,10 @@ export default function UserScheduleScreen() {
           <TouchableOpacity style={s.sheetOverlay} activeOpacity={1} onPress={() => setOneoffSheet(false)}>
             <TouchableOpacity style={s.sheet} activeOpacity={1} onPress={() => {}}>
               <View style={s.sheetHandle} />
-              <AppText style={s.sheetTitle}>Add One-off Event</AppText>
+              <AppText style={s.sheetTitle}>{ooEditingId ? 'Edit One-off Class' : 'Add One-off Event'}</AppText>
 
-              {/* Radio */}
+              {/* Radio — hidden when editing (only a one-off class can be edited) */}
+              {!ooEditingId && (<>
               <TouchableOpacity style={[s.radio, ooMode === 'new' && s.radioSel]} onPress={() => setOoMode('new')}>
                 <View style={[s.radioDot, ooMode === 'new' && s.radioDotSel]} />
                 <View>
@@ -597,9 +659,10 @@ export default function UserScheduleScreen() {
                   <AppText style={s.radioSub}>Mark one occurrence as cancelled</AppText>
                 </View>
               </TouchableOpacity>
+              </>)}
 
               <RequiredLabel text={ooMode === 'cancel' ? 'Date to cancel' : 'Date'} />
-              <DatePicker value={ooDate} onChange={v => { setOoDate(v); setCancelTemplateId(null); }} minDate={todayIso()} maxDate={addMonths(todayIso(), 3)} />
+              <DatePicker value={ooDate} onChange={v => { setOoDate(v); setCancelTemplateId(null); }} minDate={ooEditingId ? tomorrowIso() : todayIso()} maxDate={addMonths(todayIso(), 3)} />
 
               {ooMode === 'new' ? (
                 <>
@@ -650,7 +713,7 @@ export default function UserScheduleScreen() {
                         >
                           <AppText style={s.cancelOptionEmoji}>{CLASS_ICON}</AppText>
                           <AppText style={s.cancelOptionTxt}>
-                            {t.title}  {formatTime(t.start_time)}
+                            {t.title}  {formatTime(t.start_time)} – {formatTime(t.end_time)}
                           </AppText>
                           {isSel && <AppText style={s.cancelOptionCheck}>✓</AppText>}
                         </TouchableOpacity>
@@ -704,7 +767,8 @@ const s = StyleSheet.create({
   tabPane:      { flex: 1, backgroundColor: NICO.screenBg },
 
   ooTopRow: { alignItems: 'flex-end', paddingHorizontal: SPACING.base, paddingTop: SPACING.sm, paddingBottom: SPACING.xs },
-  addPill: { ...BTN_SIZE.sm, ...BTN_VARIANT.primary, justifyContent: 'center' },
+  addPill: { ...BTN_SIZE.sm, ...BTN_VARIANT.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.xs },
+  addPillPlus: { color: NICO.textOnAccent, fontSize: FONT_SIZE.xl, fontWeight: FONT_WEIGHT.extraBold, lineHeight: FONT_SIZE.xl + 2 },
   addPillTxt: { color: NICO.textOnAccent, fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold },
 
   tabContent: { padding: SPACING.base, paddingBottom: 40 },
