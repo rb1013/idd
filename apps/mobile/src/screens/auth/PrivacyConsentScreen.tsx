@@ -1,10 +1,10 @@
-import React from 'react';
-import { View, TouchableOpacity, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
+import React, { useState } from 'react';
+import { View, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import AppText from '../../components/AppText';
 import ContentContainer from '../../components/ContentContainer';
-import { PRIVACY_TERMS_URL } from '../../constants/legal';
+import LegalSheet from '../../components/LegalSheet';
 import {
   NICO, TEXT_STYLE, SPACING, FONT_SIZE, FONT_WEIGHT, BTN_SIZE, BTN_VARIANT,
 } from '../../constants/theme';
@@ -16,12 +16,8 @@ import {
 export default function PrivacyConsentScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
-
-  function openPolicy() {
-    Linking.openURL(PRIVACY_TERMS_URL).catch(() =>
-      Alert.alert("Couldn't open the page", `Please visit ${PRIVACY_TERMS_URL}`),
-    );
-  }
+  // Privacy Policy & Terms open in-app (bottom sheet), not the website
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   function decline() {
     Alert.alert(
@@ -46,7 +42,7 @@ export default function PrivacyConsentScreen() {
             We don't sell data or use it for advertising, and we have zero tolerance for abusive content.
           </AppText>
 
-          <TouchableOpacity onPress={openPolicy} activeOpacity={0.7} accessibilityRole="link">
+          <TouchableOpacity onPress={() => setPolicyOpen(true)} activeOpacity={0.7} accessibilityRole="link">
             <AppText style={styles.link}>Read the Privacy Policy & Terms of Service</AppText>
           </TouchableOpacity>
 
@@ -64,6 +60,8 @@ export default function PrivacyConsentScreen() {
           </View>
         </ContentContainer>
       </ScrollView>
+
+      <LegalSheet visible={policyOpen} initialTab="privacy" onClose={() => setPolicyOpen(false)} />
     </View>
   );
 }

@@ -3,6 +3,8 @@ import { View, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-n
 import AppText from '../../components/AppText';
 import RainbowDivider from '../../components/RainbowDivider';
 import ContentContainer from '../../components/ContentContainer';
+import LegalSheet from '../../components/LegalSheet';
+import { LegalSectionKey } from '../../constants/legalContent';
 import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
 import useNicoHeader from '../../hooks/useNicoHeader';
 import { useNavigation } from '@react-navigation/native';
@@ -31,6 +33,13 @@ interface ServiceCategory {
 // BUTTERFLY_TILES indices to use for category headings, in order — purple,
 // green, orange — picked for clear contrast between adjacent headings.
 const HEADING_COLOR_INDEXES = [5, 1, 2];
+
+// Policies: plain text rows (no colour / arrow); each opens the in-app LegalSheet
+const POLICIES: { key: LegalSectionKey; label: string }[] = [
+  { key: 'privacy', label: 'Privacy Policy' },
+  { key: 'terms',   label: 'Terms of Service' },
+  { key: 'credits', label: 'Credits & Licenses' },
+];
 
 const CATEGORIES: ServiceCategory[] = [
   {
@@ -97,6 +106,7 @@ export default function ResourcesScreen() {
   // Collapsed by default so every category header is visible up front — the
   // user shouldn't have to scroll past one category's cards to discover the next.
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [legalTab, setLegalTab] = useState<LegalSectionKey | null>(null);
 
   function toggleCategory(title: string) {
     setExpanded(prev => {
@@ -126,6 +136,22 @@ export default function ResourcesScreen() {
               {/* Plain text, not a link */}
               <AppText style={s.contactEmail} selectable>{SUPPORT_EMAIL}</AppText>
             </View>
+          </View>
+
+          {/* Policies — open in-app (nothing opens the website) */}
+          <AppText style={s.pageTitle}>Policies</AppText>
+          <View style={s.policyList}>
+            {POLICIES.map((p, i) => (
+              <TouchableOpacity
+                key={p.key}
+                style={[s.policyRow, i > 0 && s.policyRowDivider]}
+                onPress={() => setLegalTab(p.key)}
+                activeOpacity={0.6}
+                accessibilityRole="button"
+              >
+                <AppText style={s.policyText}>{p.label}</AppText>
+              </TouchableOpacity>
+            ))}
           </View>
 
           <AppText style={s.pageTitle}>California Support Services</AppText>
@@ -171,6 +197,8 @@ export default function ResourcesScreen() {
         </ContentContainer>
       </ScrollView>
 
+      <LegalSheet visible={legalTab !== null} initialTab={legalTab ?? 'privacy'} onClose={() => setLegalTab(null)} />
+
       <GuardianFloatingTabBar />
     </View>
   );
@@ -188,6 +216,10 @@ const s = StyleSheet.create({
   pageSubtitle: { ...TEXT_STYLE.hint, fontSize: FONT_SIZE.md, lineHeight: 22, textAlign: 'justify', marginBottom: SPACING.xl },
 
   contactCard: { marginBottom: SPACING.xl },
+  policyList:       { marginBottom: SPACING.xl },
+  policyRow:        { paddingVertical: SPACING.md },
+  policyRowDivider: { borderTopWidth: 1, borderTopColor: NICO.border },
+  policyText:       { fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text },
   contactRow:  { flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap' },
   // Already the darkest text colour (NICO.text) — heavier weight so it reads darker
   contactText: { fontWeight: FONT_WEIGHT.bold, textAlign: 'left' },

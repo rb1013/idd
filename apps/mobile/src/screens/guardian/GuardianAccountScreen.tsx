@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useState } from 'react';
 import {
   View, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator,
-  Image, Alert, Linking,
+  Image, Alert,
 } from 'react-native';
 import AppText from '../../components/AppText';
 import ContentContainer from '../../components/ContentContainer';
@@ -14,7 +14,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { GuardianNavParamList } from '../../navigation';
-import { PRIVACY_TERMS_URL } from '../../constants/legal';
+import LegalFooter from '../../components/LegalFooter';
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, BTN_SIZE, BTN_VARIANT, FONT_SIZE, FONT_WEIGHT,
 } from '../../constants/theme';
@@ -70,12 +70,6 @@ export default function GuardianAccountScreen() {
     }
   }
 
-  function openPolicy() {
-    Linking.openURL(PRIVACY_TERMS_URL).catch(() =>
-      Alert.alert("Couldn't open the page", `Please visit ${PRIVACY_TERMS_URL}`),
-    );
-  }
-
   function handleDeleteAccount() {
     Alert.alert(
       'Delete account',
@@ -117,7 +111,7 @@ export default function GuardianAccountScreen() {
   return (
     <View style={s.screen}>
     <ScrollView style={s.root} contentContainerStyle={s.inner} showsVerticalScrollIndicator={false}>
-      <ContentContainer>
+      <ContentContainer style={s.content}>
 
         {/* Avatar */}
         <TouchableOpacity style={s.avatarWrap} onPress={pickPhoto} activeOpacity={0.8} disabled={uploading}>
@@ -174,12 +168,6 @@ export default function GuardianAccountScreen() {
           )}
         </View>
 
-        {/* Privacy Policy & Terms (Apple 5.1.1 — reachable after sign-up, not only on PrivacyConsent).
-            Above Edit Profile so it's visible without scrolling on small phones. */}
-        <TouchableOpacity style={s.legalBtn} onPress={openPolicy} activeOpacity={0.7} accessibilityRole="link">
-          <AppText style={s.legalBtnText}>Privacy Policy & Terms of Service</AppText>
-        </TouchableOpacity>
-
         {/* Edit Profile */}
         <TouchableOpacity
           style={s.editBtn}
@@ -194,6 +182,8 @@ export default function GuardianAccountScreen() {
           <AppText style={s.deleteBtnText}>Delete Account</AppText>
         </TouchableOpacity>
 
+        {/* Privacy · Terms · Credits · Contact Us (Apple 5.1.1 — policy reachable after sign-up) */}
+        <LegalFooter />
       </ContentContainer>
     </ScrollView>
     <GuardianFloatingTabBar />
@@ -213,7 +203,9 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: NICO.screenBg },
   root:  { flex: 1, backgroundColor: NICO.screenBg },
-  inner: { padding: SPACING.base, paddingBottom: SPACING['3xl'], alignItems: 'stretch' },
+  // flexGrow + content flexGrow: the footer sits at the bottom of the screen when content is short
+  inner: { padding: SPACING.base, paddingBottom: SPACING['3xl'], alignItems: 'stretch', flexGrow: 1 },
+  content: { flexGrow: 1 },
 
   avatarWrap: { alignSelf: 'center', position: 'relative', marginTop: SPACING.md, marginBottom: SPACING.xs },
   avatar:     { width: 96, height: 96, borderRadius: 48 },
@@ -251,8 +243,6 @@ const s = StyleSheet.create({
   editBtn:     { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, marginTop: SPACING.md },
   editBtnText: { ...TEXT_STYLE.buttonPrimary },
 
-  legalBtn:      { marginTop: SPACING.md, padding: SPACING.sm, alignItems: 'center' },
-  legalBtnText:  { ...TEXT_STYLE.labelSmall, color: NICO.link, textDecorationLine: 'underline' },
 
   deleteBtn:     { marginTop: SPACING.md, padding: SPACING.base, alignItems: 'center' },
   deleteBtnText: { ...TEXT_STYLE.labelSmall, color: NICO.error },

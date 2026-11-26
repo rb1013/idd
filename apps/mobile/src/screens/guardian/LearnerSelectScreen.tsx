@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
 import AppLogo, { BRAND_LOGO, BRAND_TAGLINE, BRAND_TAGLINE_STYLE } from '../../components/AppLogo';
 import ContentContainer from '../../components/ContentContainer';
+import LegalFooter from '../../components/LegalFooter';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
@@ -243,6 +244,8 @@ export default function LearnerSelectScreen() {
           </View>
         </ContentContainer>
 
+        {/* Privacy · Terms · Credits · Contact Us */}
+        <LegalFooter />
       </ScrollView>
 
       {/* PIN Modal */}

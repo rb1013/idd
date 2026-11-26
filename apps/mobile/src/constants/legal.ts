@@ -1,6 +1,6 @@
-// Public Privacy Policy & Terms of Service (one page). Single source of truth: the app links to
-// it rather than copying the text, so the policy can change without an app release.
-export const PRIVACY_TERMS_URL = 'https://www.yianetwork.org/co-heart/privacy';
+// Privacy Policy, Terms of Service and Credits & Licenses are shown in-app (components/LegalSheet,
+// content in constants/legalContent.ts — copied from the YIA website page, which stays the master).
+// The app no longer opens the website for them.
 
 // Contact Us (Support page): Co-Heart support email
 export const SUPPORT_EMAIL = 'coheartsupport@gmail.com';

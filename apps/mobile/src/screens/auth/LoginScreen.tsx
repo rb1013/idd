@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
 import AppLogo, { BRAND_LOGO, BRAND_TAGLINE, BRAND_TAGLINE_STYLE } from '../../components/AppLogo';
 import ContentContainer from '../../components/ContentContainer';
+import LegalFooter from '../../components/LegalFooter';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { saveGuardianCredentials } from '../../lib/biometricStore';
@@ -131,6 +132,9 @@ export default function LoginScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>{/* form */}
         </ContentContainer>
+
+        {/* Privacy · Terms · Credits · Contact Us — readable before signing in */}
+        <LegalFooter />
       </ScrollView>
     </KeyboardAvoidingView>
   );

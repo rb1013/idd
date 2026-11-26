@@ -1,7 +1,7 @@
 # Co-Heart — Credits & Licenses
 
 **Last updated:** 2026-11-22 (symbols: ARASAAC only)
-**Published:** on the website privacy page (yianetwork.org/co-heart/privacy), and in `PRIVACY_POLICY_AND_TERMS.md` (Part 3). Keep all three in sync.
+**Published:** on the website privacy page (yianetwork.org/co-heart/privacy), in the app (`apps/mobile/src/constants/legalContent.ts` → footer → Credits & Licenses), and in `PRIVACY_POLICY_AND_TERMS.md` (Part 3). Keep all in sync — the website is the master.
 
 ## Notes
 1. **Symbols (confirmed 2026-11-22):** all 25 picture symbols are **ARASAAC** pictograms, reviewed and stored in our own Storage (`aac-symbols` bucket; files in `packages/supabase/seed/aac-symbols/`, see its README). The app no longer searches OpenSymbols. If a symbol from another library is ever added, add its credit here.

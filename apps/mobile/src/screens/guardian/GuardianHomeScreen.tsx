@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
 import ContentContainer from '../../components/ContentContainer';
 import GuardianFloatingTabBar from '../../components/GuardianFloatingTabBar';
+import LegalFooter from '../../components/LegalFooter';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -440,6 +441,9 @@ export default function GuardianHomeScreen() {
               </>
             )}
           </ContentContainer>
+
+          {/* Privacy · Terms · Credits · Contact Us — bottom of the learner panel (grows to fill the screen) */}
+          <LegalFooter />
         </View>
       </ScrollView>
 

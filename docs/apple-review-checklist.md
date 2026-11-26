@@ -98,6 +98,7 @@ Tasks:
 - [x] Finish legal review of `PRIVACY_POLICY_AND_TERMS.md` and publish it at a **public URL** (https://www.yianetwork.org/co-heart/privacy)
 - [x] Link **Terms** and **Privacy Policy** on sign-up, with agreement required to continue: "Before you continue" page (`PrivacyConsentScreen.tsx`) with Agree / Decline; acceptance time saved as `guardians.terms_accepted_at` (migration 091) — 2026-11-18
 - [x] Link both from the guardian **Account** screen (`GuardianAccountScreen.tsx`, "Privacy Policy & Terms of Service" link) — 2026-11-18
+- [x] 2026-11-25: replaced by an in-app **footer** (Privacy Policy · Terms of Service · Credits & Licenses · Contact Us, © Co-Heart) on the dashboard, Account, Login and Learner select, plus the sign-up consent link — all open in-app bottom sheets (`LegalFooter` / `LegalSheet` / `ContactSheet`, content in `constants/legalContent.ts`). The app no longer opens the website; the public URL stays for App Store Connect.
 - [x] Add the privacy policy URL in App Store Connect
 - [x] Migration `091_guardian_terms_accepted_at.sql` applied
 
