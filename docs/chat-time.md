@@ -1,7 +1,7 @@
 # Chat — why a message takes ~1 second to appear (discussion)
 
 **Functions:** `packages/supabase/supabase/functions/send-message` (learner chat), `send-guardian-message` (guardian chat), `_shared/blockedWords.ts`
-**Status:** discussion — **no code changes yet**. Chosen direction: options **2 + 3**. Open question at the end.
+**Status:** **guardian chat** — replaced by a direct database insert (migration 099, `GuardianChatScreen.tsx`, 2026-11-25): no function, no sequential steps; the database checks sender, participant, guardian block and blocked words. **Learner chat** (`send-message`) — still the function; options 2 + 3 below still apply to it.
 **Written:** 2026-11-24
 
 ---

@@ -3,7 +3,7 @@ import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
-import { containsProfanity, showKindWordsAlert } from '../../lib/contentFilter';
+import { containsProfanity, isBlockedWordsError, showKindWordsAlert } from '../../lib/contentFilter';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -31,7 +31,7 @@ interface GuardianMessage {
 }
 
 export default function GuardianChatScreen() {
-  const { guardian, session } = useAuth();
+  const { guardian } = useAuth();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const navigation = useNavigation<Nav>();
@@ -128,36 +128,32 @@ export default function GuardianChatScreen() {
     setSending(true);
     setText('');
 
-    // Layer 2: edge function validates against custom list then inserts
-    const { data, error } = await supabase.functions.invoke('send-guardian-message', {
-      body: { conversation_id: conversationId, content: trimmed },
-      headers: { Authorization: `Bearer ${session?.access_token}` },
-    });
+    // Direct insert (migration 099): the database checks sender, participant, guardian block and
+    // blocked words (layer 2) — replaces the send-guardian-message edge function (6 sequential steps)
+    const { data, error } = await supabase
+      .from('guardian_messages')
+      .insert({ conversation_id: conversationId, sender_id: guardian.id, content: trimmed })
+      .select()
+      .single();
 
     setSending(false);
 
-    if (error || data?.error) {
-      if (data?.error === 'blocked') {
+    if (error) {
+      if (isBlockedWordsError(error)) {
         showKindWordsAlert('message');
+      } else if (error.code === '42501') {
+        // Refused by the insert rule: a guardian block (either way) or no longer in this chat.
+        // Don't reveal which — show a neutral message.
+        Alert.alert("Couldn't send message", 'This conversation is no longer available.');
       } else {
-        let detail = data?.error ?? error?.message ?? 'Failed to send';
-        try {
-          const body = await (error as any)?.context?.json?.();
-          if (body?.error) detail = `${body.error}${body.detail ? ': ' + body.detail : ''}`;
-        } catch {}
-        // Guardian block (either way): don't reveal it — show a neutral message
-        if (detail.startsWith('GUARDIAN_BLOCKED')) {
-          Alert.alert("Couldn't send message", 'This conversation is no longer available.');
-        } else {
-          Alert.alert('Send error', detail);
-        }
+        Alert.alert('Send error', error.message);
       }
       setText(trimmed);
       return;
     }
 
-    if (data?.message) {
-      setMessages(prev => prev.some(m => m.id === data.message.id) ? prev : [...prev, data.message as GuardianMessage]);
+    if (data) {
+      setMessages(prev => prev.some(m => m.id === data.id) ? prev : [...prev, data as GuardianMessage]);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }
   }
