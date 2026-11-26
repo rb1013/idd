@@ -25,7 +25,7 @@ const { width } = Dimensions.get('window');
 // Slide editor text limits (shown to the guardian as "used/limit" under each box)
 const CAPTION_MAX      = 50;
 const NARRATION_MAX    = 150;
-const IMAGE_PROMPT_MAX = 150;
+const IMAGE_PROMPT_MAX = 100;
 
 /** Live "12/50" counter under a text box; turns highlighted when the limit is reached. */
 function CharCount({ value, max, style }: { value: string; max: number; style?: object }) {
@@ -215,9 +215,13 @@ export default function TutorialPreviewScreen() {
   }
 
   function regenerateFrameImage() {
+    // Remind about the character before spending a regeneration (each image is drawn on its own)
+    const guidance = editImagePrompt.trim()
+      ? 'Make sure your description includes the character (girl or boy, age, clothing) — otherwise the AI may draw a different character.'
+      : "You haven't described the image, so caption and narration will be used. Without a character description, the AI may draw a different character from the other slides.";
     Alert.alert(
-      'Regenerate Image',
-      'This will replace the current image for this slide. This cannot be undone.',
+      'Re-generate image?',
+      `${guidance}\n\nThis replaces the current image for this slide and can't be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Regenerate', onPress: doRegenerateFrameImage },
@@ -757,7 +761,10 @@ export default function TutorialPreviewScreen() {
               )}
               <AppText style={s.editorFieldLabel}>What should the image show?</AppText>
               {/* Each image is drawn on its own, so spell out the child to keep them the same across slides */}
-              <AppText style={s.editorFieldHint}>Describe the character clearly: girl or boy, age, clothing, and the action.</AppText>
+              <AppText style={s.editorFieldHint}>
+                <AppText style={[s.editorFieldHint, s.editorFieldHintAsterisk]}>** </AppText>
+                If you leave this empty then caption & narration are used for action prompt. Describe the character (girl or boy, age, clothing) so this picture matches other slides otherwise AI may draw a different character.
+              </AppText>
               <TextInput
                 style={[s.editorInput, { height: 80 }, editorBusy && s.editorInputDisabled]}
                 value={editImagePrompt}
@@ -902,7 +909,9 @@ const s = StyleSheet.create({
   editorDivider:     { height: 1, backgroundColor: NICO.border, marginHorizontal: SPACING.lg },
   editorFieldRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   editorFieldLabel:  { ...TEXT_STYLE.fieldLabel },
-  editorFieldHint:   { fontSize: FONT_SIZE.sm, color: NICO.text, lineHeight: 18, marginTop: 2, marginBottom: SPACING.xs },
+  // Already the darkest text colour (NICO.text) — semi-bold so it reads darker
+  editorFieldHint:   { fontSize: FONT_SIZE.sm, color: NICO.text, fontWeight: FONT_WEIGHT.semiBold, lineHeight: 18, marginTop: 2, marginBottom: SPACING.xs },
+  editorFieldHintAsterisk: { color: NICO.error, fontWeight: FONT_WEIGHT.extraBold },
   editorFieldValue:  { ...TEXT_STYLE.fieldValue, lineHeight: 22 },
   editorPencilBtn:   { padding: 4 },
   editorPencilText:  { fontSize: FONT_SIZE.lg },

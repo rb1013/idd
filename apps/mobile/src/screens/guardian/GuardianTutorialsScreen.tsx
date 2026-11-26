@@ -641,9 +641,12 @@ export default function GuardianTutorialsScreen() {
             return (
               <>
                 <View style={[styles.filterBar, { justifyContent: 'space-between' }]}>
-                  <TouchableOpacity onPress={() => guardian && loadMy(guardian.id)} activeOpacity={0.65} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <AppText style={styles.refreshLink}>🔄 Refresh</AppText>
-                  </TouchableOpacity>
+                  {/* Rainbow (butterfly) border, like the search boxes */}
+                  <LinearGradient colors={[...BUTTERFLY_BORDER.colors]} start={BUTTERFLY_BORDER.start} end={BUTTERFLY_BORDER.end} style={styles.refreshGradient}>
+                    <TouchableOpacity style={styles.refreshInner} onPress={() => guardian && loadMy(guardian.id)} activeOpacity={0.65} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <AppText style={styles.refreshLink}>🔄 Refresh</AppText>
+                    </TouchableOpacity>
+                  </LinearGradient>
                   <MoreFiltersLink onPress={() => setShowPendingMoreFilters(true)} isActive={hasPendingMore} />
                 </View>
                 <AppText style={styles.pendingNote}>
@@ -1048,6 +1051,8 @@ const styles = StyleSheet.create({
   refreshLink: {
     fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.medium, color: NICO.primary,
   },
+  refreshGradient: { padding: BUTTERFLY_BORDER.width, borderRadius: RADIUS.full },
+  refreshInner:    { backgroundColor: NICO.screenBg, borderRadius: RADIUS.full, paddingVertical: SPACING.xs, paddingHorizontal: SPACING.md },
   pendingNote: {
     fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.semiBold, color: NICO.text,
     paddingHorizontal: SPACING.base, paddingBottom: SPACING.sm,
