@@ -207,6 +207,7 @@ export const LEARNER_MIN_AGE = 13;
 
 /** Guardian name length (sign-up, Edit Profile, and the guardian-name search filter). */
 export const GUARDIAN_NAME_MAX = 20;
+export const GUARDIAN_MESSAGE_MAX = 100;   // Guardian chat: one message
 
 /** Latest date of birth allowed for a learner (today minus LEARNER_MIN_AGE years) — the date picker's maximum. */
 export function learnerLatestDob(): Date {

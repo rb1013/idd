@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Modal, View, Text, StyleSheet, TouchableOpacity,
+  Modal, View, Text, StyleSheet, TouchableOpacity, Pressable,
   Image, ActivityIndicator, FlatList, ScrollView,
 } from 'react-native';
 import { speakLearner } from '../../lib/speech';
@@ -40,8 +40,10 @@ export default function CommunicationBoard({ visible, onClose, onSend }: Props) 
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1}>
-        <View style={styles.sheet} onStartShouldSetResponder={() => true}>
+      {/* Tap-to-close layer sits BEHIND the sheet (not wrapping it), so scrolling inside works */}
+      <View style={styles.backdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
+        <View style={styles.sheet}>
           <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.75}>
             <Text style={styles.closeBtnText}>✕</Text>
           </TouchableOpacity>
@@ -58,7 +60,8 @@ export default function CommunicationBoard({ visible, onClose, onSend }: Props) 
               </TouchableOpacity>
             </View>
           ) : (
-          <ScrollView showsVerticalScrollIndicator={false}>
+          // Scrolls once the board is taller than the sheet's max height (admins can add phrases / symbols)
+          <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
             {/* Introductory phrases */}
             <Text style={styles.sectionLabel}>Say hello 👋</Text>
             <View style={styles.phraseGrid}>
@@ -105,7 +108,7 @@ export default function CommunicationBoard({ visible, onClose, onSend }: Props) 
           </ScrollView>
           )}
         </View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 }
@@ -122,7 +125,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     paddingBottom: 32,
     paddingHorizontal: 12,
+    maxHeight: '80%',   // board scrolls inside; the ✕ above it stays on screen
   },
+  scroll: { flexShrink: 1 },
   closeBtn: {
     width: 52, height: 52, borderRadius: 26,
     backgroundColor: '#E53E3E',

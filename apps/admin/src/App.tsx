@@ -14,6 +14,8 @@ import TutorialSkillsPage from './pages/TutorialSkillsPage';
 import AppSettingsPage from './pages/AppSettingsPage';
 import ReportsPage from './pages/ReportsPage';
 import BlockedWordsPage from './pages/BlockedWordsPage';
+import AacPhrasesPage from './pages/AacPhrasesPage';
+import AacSymbolsPage from './pages/AacSymbolsPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
@@ -51,6 +53,8 @@ function App() {
             <Route path="/settings" element={<AppSettingsPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/blocked-words" element={<BlockedWordsPage />} />
+            <Route path="/chat-phrases" element={<AacPhrasesPage />} />
+            <Route path="/chat-symbols" element={<AacSymbolsPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

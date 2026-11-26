@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useHeaderHeight } from '@react-navigation/elements';
+import { GUARDIAN_MESSAGE_MAX } from '../../constants';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { GuardianNavParamList } from '../../navigation';
@@ -207,7 +208,7 @@ export default function GuardianChatScreen() {
             onSubmitEditing={sendMessage}
             submitBehavior="submit"
             multiline
-            maxLength={500}
+            maxLength={GUARDIAN_MESSAGE_MAX}
           />
           <TouchableOpacity
             style={[styles.sendBtn, (!text.trim() || sending) && styles.sendBtnDisabled]}
@@ -217,6 +218,8 @@ export default function GuardianChatScreen() {
             {sending ? <ActivityIndicator color={NICO.textOnAccent} /> : <Text style={styles.sendBtnIcon}>➤</Text>}
           </TouchableOpacity>
         </View>
+        {/* Character count, under the text box */}
+        <Text style={styles.charCount}>{text.length}/{GUARDIAN_MESSAGE_MAX}</Text>
       </View>
     </KeyboardAvoidingView>
   );
@@ -265,5 +268,6 @@ const styles = StyleSheet.create({
     ...SHADOW.btnPrimary,
   },
   sendBtnDisabled: { opacity: 0.4 },
+  charCount: { fontSize: FONT_SIZE.xs, color: NICO.textMuted, marginTop: 4, marginLeft: SPACING.base },
   sendBtnIcon: { fontSize: FONT_SIZE['2xl'], color: NICO.textOnAccent, marginLeft: 2 },
 });
