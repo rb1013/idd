@@ -37,13 +37,15 @@
 
 ## Rollout (after the code) — each step keeps the app working
 
+**Progress (West):** steps 1–7 ✅ done 2026-11-26 (round A passed; round B replaced by `packages/supabase/check-functions-auth.sh` — turning Verify JWT off only removes a gate; both `.env` files on `sb_publishable_…`, all app + admin checks passed). Step 8 ✅ legacy keys disabled on West 2026-11-26. **Next: Xcode 26 build, then step 9 (clean-up).**
+
 1. **Delete** the 3 unused functions in the project: `supabase functions delete send-message`, `… send-guardian-message`, `… check-tutorial-quota`.
 2. **Deploy** the 11 changed functions **as they are** (verify-JWT still ON; `create-user-account` keeps `--no-verify-jwt`). Still on legacy keys — `_shared/admin.ts` falls back to the legacy service key. Test: create tutorial, edit slide, approve / reject (admin), tutorial generation, learner account create / delete, guardian 🛡️ actions, sign-up `check-email`.
 3. **Set** `SERVICE_SECRET_KEY = sb_secret_…` (`supabase secrets set`). Functions switch to the new key on their next run — no redeploy. Retest a few.
 4. **First** redeploy `process-tutorial-job` with `--no-verify-jwt`, **then** change the **webhook header** → `Bearer sb_secret_…` (phase 3). Order matters: Supabase's built-in "Verify JWT" check only accepts JWTs, and `sb_secret_…` isn't one — with the check still on, the webhook is refused (401) before our code runs, and tutorials stay on "generating". `process-tutorial-job` checks the key itself (`isServiceRequest`: new key, or legacy until it's off). Test tutorial generation.
 5. **Test round A** (other 10 functions still behind Supabase's check — app calls pass it with the user's login token).
 6. **Redeploy the other 10 with `--no-verify-jwt`**, then **test round B** (nothing should depend on Supabase's check — esp. sign-up `check-email` while logged out, admin portal).
-7. **Apps** → `sb_publishable_…` (phase 4; comment out old `.env` lines). Admin hosting + redeploy.
+7. **Apps** → `sb_publishable_…` (phase 4; comment out old `.env` lines). Admin portal is local only — restart it.
 8. **Disable legacy keys**, retest everything (phase 5), then the **Xcode 26** build.
 9. **Clean-up:** remove the legacy-key fallback from `_shared/admin.ts` (see "Logic explained") and redeploy.
 
@@ -138,13 +140,13 @@ Integrations → Database Webhooks → `on_tutorial_job_insert` → change the h
 | App | Variable | New value |
 |---|---|---|
 | Mobile `apps/mobile/.env` | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | `sb_publishable_…` |
-| Admin `apps/admin/.env` (+ hosting settings) | `VITE_SUPABASE_ANON_KEY` | `sb_publishable_…` |
+| Admin `apps/admin/.env` (local only) | `VITE_SUPABASE_ANON_KEY` | `sb_publishable_…` |
 
 - **`.env` edits:** comment out the current (legacy) lines with a short note and add the new lines below with their own note — don't overwrite (same as the West switch; rollback = swap which block is commented).
 - Code that reads the key: `apps/mobile/src/lib/supabase.ts`, the direct `delete-learner` call in `EditUserScreen.tsx:171`, `apps/admin/src/lib/supabase.ts`. Nothing else. (Verified: the `delete-learner` call sends the user's login token as `Authorization` and the key only as `apikey`, so it works with a publishable key.)
 - Optional: rename the variables to `…PUBLISHABLE_KEY`.
 - **Mobile:** restart Expo with `-c`; a new build is needed for TestFlight / App Store — built with **Xcode 26**, separate from the Expo 58 build (see Order).
-- **Admin portal:** update the same variable in the **hosting settings** and **redeploy**. Check: an admin can log in, approve / reject a tutorial, edit chat phrases, upload a chat symbol.
+- **Admin portal:** runs **locally only** (not hosted) — just restart `npm run dev` after the `.env` edit. (If it's ever hosted, set the same variable in the hosting settings.) Check: an admin can log in, approve / reject a tutorial, edit chat phrases, upload a chat symbol.
 
 **Not affected (verified 2026-11-26):** live chat, storage uploads and direct inserts (they use the user's login token, not the key type); the YIA website (its own Supabase project); `supabase-js` versions (apps ^2.107, functions esm.sh `@2`) support the new keys. The tutorial webhook (phase 3) is the only database-side user of a legacy key — no `pg_cron`, nothing in Vault, no other database → function calls.
 
