@@ -1,4 +1,4 @@
-// Co-Heart Privacy Policy, Terms of Service and Credits & Licenses — shown in-app in LegalSheet
+// Co-Heart Privacy Policy, Terms of Service, Credits & Licenses and FAQ — shown in-app in LegalSheet
 // (footer links, privacy consent at sign-up). Nothing in the app opens the website for these.
 //
 // MASTER COPY: the YIA website page yia/src/app/(site)/co-heart/privacy/page.tsx.
@@ -9,14 +9,19 @@
 // In-app differences from the website: Privacy §5 "Service providers" is a short paragraph naming the
 // providers by purpose instead of the website's table (2026-11-25). Section numbers match the website.
 //
+// FAQ: copied 2026-11-28 from the YIA website (MASTER COPY yia/src/features/co-heart/faq.tsx, page
+// /co-heart/faq). Website-only parts turned into plain text: the "Co-Heart support form" link → the
+// support email, the red-shield image → 🛡️, italics → quotes. In-app, the FAQ tab shows groups and
+// questions as collapsible sections (LegalSheet); the website shows everything open.
+//
 // Inline **bold** is marked with double asterisks (rendered by LegalSheet).
 
 export type LegalBlock =
   | { t: 'h3' | 'h4' | 'p'; text: string }
-  | { t: 'ul'; items: string[] }
+  | { t: 'ul' | 'ol'; items: string[] }
   | { t: 'table'; head: string[]; rows: string[][] };
 
-export type LegalSectionKey = 'privacy' | 'terms' | 'credits';
+export type LegalSectionKey = 'privacy' | 'terms' | 'credits' | 'faq';
 
 export interface LegalSectionContent {
   title: string;
@@ -29,7 +34,7 @@ export const LEGAL_CONTENT: Record<LegalSectionKey, LegalSectionContent> = {
     "blocks": [
       {
         "t": "p",
-        "text": "Co-Heart is a mobile app for guardians (parents, family members, and caregivers) supporting learners with intellectual and developmental disabilities (IDD). This policy explains what information we collect, how we use it, who we share it with, and the choices you have."
+        "text": "Co-Heart is a mobile app for guardians (parents, family members, and caregivers) supporting learners (children and young people aged 13 or older with intellectual and developmental disabilities (IDD) in their care). This policy explains what information we collect, how we use it, who we share it with, and the choices you have."
       },
       {
         "t": "h3",
@@ -443,6 +448,507 @@ export const LEGAL_CONTENT: Record<LegalSectionKey, LegalSectionContent> = {
       {
         "t": "p",
         "text": "All trademarks belong to their respective owners."
+      }
+    ]
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "blocks": [
+      {
+        "t": "h3",
+        "text": "Getting started"
+      },
+      {
+        "t": "h4",
+        "text": "Who is Co-Heart for?"
+      },
+      {
+        "t": "p",
+        "text": "Two people share the app:"
+      },
+      {
+        "t": "ul",
+        "items": [
+          "**Guardians**: parents, family members, or caregivers (18 or older) who set up and manage a learner’s account. Guardians create the learner’s profile, plan their weekly schedule and daily activities, choose or create tutorials for them, and approve their friends and chats. Guardians can also connect with other families nearby, join community events, and take part in discussions.",
+          "**Learners**: the child or young person with IDD, aged 13 or older, that the guardian supports. In Co-Heart we call them the “learner.” Learners get their own simple view with large buttons, where they see today’s schedule, tick off their daily activities (like brushing teeth or packing a bag), and learn new skills from short tutorials: narrated step-by-step slideshows or videos chosen by their guardian. They can also chat with friends using picture symbols and ready-made phrases, with no open typing."
+        ]
+      },
+      {
+        "t": "h4",
+        "text": "Where can I get the app?"
+      },
+      {
+        "t": "p",
+        "text": "Co-Heart will be available for iPhone. If you’d like to know when it’s ready, email us at **coheartsupport@gmail.com**."
+      },
+      {
+        "t": "h4",
+        "text": "Is there an Android version?"
+      },
+      {
+        "t": "p",
+        "text": "Not yet. Co-Heart is for iPhone only for now."
+      },
+      {
+        "t": "h4",
+        "text": "Who can use Co-Heart?"
+      },
+      {
+        "t": "p",
+        "text": "Co-Heart is built for families in California."
+      },
+      {
+        "t": "h3",
+        "text": "Accounts & signing in"
+      },
+      {
+        "t": "h4",
+        "text": "How do I create an account?"
+      },
+      {
+        "t": "p",
+        "text": "Guardians sign up in the app. You’ll:"
+      },
+      {
+        "t": "ol",
+        "items": [
+          "Agree to the Privacy Policy and Terms of Service, then confirm you’re 18 or older.",
+          "Enter your name, email, county, and a password.",
+          "Choose a 6-digit Guardian PIN.",
+          "Enter the 6-digit code we email you to verify your address."
+        ]
+      },
+      {
+        "t": "h4",
+        "text": "What are the password rules?"
+      },
+      {
+        "t": "p",
+        "text": "At least 6 characters, including at least one uppercase letter, one lowercase letter, and one number."
+      },
+      {
+        "t": "h4",
+        "text": "I didn’t get the verification or reset email."
+      },
+      {
+        "t": "ul",
+        "items": [
+          "Check your spam or junk folder.",
+          "Wait a minute or two and use **Resend code**.",
+          "Make sure the email address is spelled correctly.",
+          "Codes expire after a short time, so use the newest one you received."
+        ]
+      },
+      {
+        "t": "h4",
+        "text": "I forgot my password."
+      },
+      {
+        "t": "p",
+        "text": "On the sign-in screen, tap **Forgot password?**, enter your email, and type in the 6-digit code we send you. You can then choose a new password."
+      },
+      {
+        "t": "h4",
+        "text": "Does my learner need their own account?"
+      },
+      {
+        "t": "p",
+        "text": "The guardian creates the learner’s profile. From then on, the guardian switches the app into learner mode and hands the device over, so the learner doesn’t need to remember a password."
+      },
+      {
+        "t": "h3",
+        "text": "Guardian mode, learner mode & the PIN"
+      },
+      {
+        "t": "h4",
+        "text": "How do I switch between guardian and learner mode?"
+      },
+      {
+        "t": "p",
+        "text": "After signing in, you’ll see two options:"
+      },
+      {
+        "t": "ul",
+        "items": [
+          "**Mentor & Connect**: guardian mode, where you manage everything. This needs your Guardian PIN.",
+          "**Grow & Connect**: learner mode, the simplified experience for your learner."
+        ]
+      },
+      {
+        "t": "h4",
+        "text": "What is the Guardian PIN for?"
+      },
+      {
+        "t": "p",
+        "text": "The PIN keeps guardian controls away from your learner. You need it to:"
+      },
+      {
+        "t": "ul",
+        "items": [
+          "Enter guardian mode.",
+          "Block, report, or delete a chat from inside your learner’s chat screen."
+        ]
+      },
+      {
+        "t": "h4",
+        "text": "I forgot my Guardian PIN."
+      },
+      {
+        "t": "p",
+        "text": "On the PIN screen, tap **Forgot PIN?**, enter your account password, and choose a new 6-digit PIN."
+      },
+      {
+        "t": "h3",
+        "text": "Your learner"
+      },
+      {
+        "t": "h4",
+        "text": "What can I set up for my learner?"
+      },
+      {
+        "t": "p",
+        "text": "Their profile (name, birthday, photo, county, likes, dislikes, abilities, languages, and comprehension level), their weekly schedule, their daily activities, their tutorials, and their friends."
+      },
+      {
+        "t": "h4",
+        "text": "Can my learner see or change their own profile?"
+      },
+      {
+        "t": "p",
+        "text": "No. Learner profiles are fully managed by the guardian."
+      },
+      {
+        "t": "h4",
+        "text": "Can I add more than one learner?"
+      },
+      {
+        "t": "p",
+        "text": "No. Each guardian account has one learner. If your family has more than one learner with IDD, create a separate guardian account for each learner, using a different email address."
+      },
+      {
+        "t": "h4",
+        "text": "Can my learner block another learner?"
+      },
+      {
+        "t": "p",
+        "text": "No, learners can never block anyone. Only a guardian can, on behalf of their own learner."
+      },
+      {
+        "t": "h4",
+        "text": "How do I block a learner?"
+      },
+      {
+        "t": "p",
+        "text": "From the learner’s chat: 🛡️ red shield → 6-digit Guardian PIN → 🚫 **Block User**, with an optional reason, then confirm."
+      },
+      {
+        "t": "h4",
+        "text": "Why can I only block a learner from the chat?"
+      },
+      {
+        "t": "p",
+        "text": "Chat is the only place learners interact, so that’s where a reason to block comes from. That’s why there’s no Block button on learner cards or profiles."
+      },
+      {
+        "t": "h4",
+        "text": "What happens when I block a learner?"
+      },
+      {
+        "t": "ul",
+        "items": [
+          "They’re hidden from your learner’s friends list and from Find Friends.",
+          "Your learner can’t chat with them.",
+          "The other family isn’t sent a notification.",
+          "Other friendships aren’t affected, and blocking a learner doesn’t block their guardian."
+        ]
+      },
+      {
+        "t": "h4",
+        "text": "Where can I see or undo a block?"
+      },
+      {
+        "t": "p",
+        "text": "**Manage Friends → Blocked**, which shows the reason, with **Unblock**."
+      },
+      {
+        "t": "h3",
+        "text": "Schedule & daily activities"
+      },
+      {
+        "t": "h4",
+        "text": "How does the schedule work?"
+      },
+      {
+        "t": "p",
+        "text": "Add recurring weekly classes (day, time, and date range) or one-time events. You can cancel a single class without removing the whole series. Your learner sees today’s schedule on their home screen, color-coded as happening now, coming up, or finished."
+      },
+      {
+        "t": "h4",
+        "text": "What are daily activities?"
+      },
+      {
+        "t": "p",
+        "text": "A checklist your learner ticks off each day, with things like brushing teeth or packing a bag. Pick up to 10 activities from the preset list."
+      },
+      {
+        "t": "h4",
+        "text": "Can I see whether my learner completed their activities?"
+      },
+      {
+        "t": "p",
+        "text": "Yes. The activities report shows the last 7 days. Older activity history is deleted automatically."
+      },
+      {
+        "t": "h3",
+        "text": "Tutorials"
+      },
+      {
+        "t": "h4",
+        "text": "What are tutorials?"
+      },
+      {
+        "t": "p",
+        "text": "Short lessons that teach a skill step by step. Learners watch them as a narrated, auto-advancing slideshow or as a video."
+      },
+      {
+        "t": "h4",
+        "text": "What kinds of tutorials can I add?"
+      },
+      {
+        "t": "ul",
+        "items": [
+          "**AI-generated tutorials**: describe the skill and the main action, and Co-Heart creates an illustrated slideshow for you.",
+          "**YouTube videos**: link any public YouTube video.",
+          "**Library tutorials**: browse tutorials other guardians have made that our team has approved, and add them for your learner."
+        ]
+      },
+      {
+        "t": "h4",
+        "text": "Do AI-generated tutorials need to be approved?"
+      },
+      {
+        "t": "p",
+        "text": "Only if you share them. When you create a tutorial, you choose whether to **Share with other guardians**:"
+      },
+      {
+        "t": "ul",
+        "items": [
+          "**Not shared (private)**: ready to use as soon as it’s generated, with no review needed. Private tutorials don’t appear in the shared library and aren’t shown to other families.",
+          "**Shared (public)**: after it’s generated, preview it and tap **Submit for Review**. The Co-Heart team checks it before it appears in the shared library for all guardians. You’ll get a notification when it’s approved or if it needs changes, and you can withdraw it from review at any time."
+        ]
+      },
+      {
+        "t": "h4",
+        "text": "Is there a limit on AI-generated tutorials?"
+      },
+      {
+        "t": "p",
+        "text": "Yes, each guardian can create a limited number per month (currently 10). The count resets at the start of each month."
+      },
+      {
+        "t": "h4",
+        "text": "How long are AI-generated tutorials, and what language are they in?"
+      },
+      {
+        "t": "p",
+        "text": "AI-generated tutorials are always in **English** and run about 30–40 seconds: a few short slides, each with a simple caption and spoken narration."
+      },
+      {
+        "t": "h4",
+        "text": "Can other families see the YouTube videos I link?"
+      },
+      {
+        "t": "p",
+        "text": "No. Linked YouTube videos are private: only you and your learner can see them."
+      },
+      {
+        "t": "h4",
+        "text": "Will my learner see ads in YouTube videos?"
+      },
+      {
+        "t": "p",
+        "text": "Co-Heart never shows ads. But YouTube videos are played by YouTube, and YouTube may show ads before or during some videos. We play them in YouTube’s privacy-enhanced mode to limit tracking. To avoid ads, choose videos from channels that don’t run ads, or use AI-generated tutorials, which never have ads."
+      },
+      {
+        "t": "h4",
+        "text": "Something went wrong generating my tutorial. What should I do?"
+      },
+      {
+        "t": "p",
+        "text": "Email us at **coheartsupport@gmail.com** and let us know which tutorial it was."
+      },
+      {
+        "t": "h3",
+        "text": "Friends & chat"
+      },
+      {
+        "t": "h4",
+        "text": "How does my learner make friends?"
+      },
+      {
+        "t": "p",
+        "text": "You manage your learner’s friends: review and accept friend requests, and search for other learners to connect with. Before connecting, you can see a short public profile, including the other learner’s guardian."
+      },
+      {
+        "t": "h4",
+        "text": "Can my learner type messages freely?"
+      },
+      {
+        "t": "p",
+        "text": "No. To keep chat safe, learners communicate using pre-written phrases and picture-symbol cards (a communication board), not open typing. A profanity filter also checks every message as an extra safeguard."
+      },
+      {
+        "t": "h4",
+        "text": "Can I turn off messaging for my learner?"
+      },
+      {
+        "t": "p",
+        "text": "Yes. On your dashboard, in your learner’s zone, switch on “Disable Messaging” (tap **ⓘ** next to it for details). While it’s on, your learner can’t open or send messages in any of their friend chats. Their friends list stays as it is, and you can switch messaging back on at any time."
+      },
+      {
+        "t": "h4",
+        "text": "What can I do if someone bothers my learner?"
+      },
+      {
+        "t": "p",
+        "text": "Open your learner’s chat with that person and tap the 🛡️ red shield at the top of the screen. Enter your 6-digit Guardian PIN (it continues automatically once all 6 digits are entered), then choose an action:"
+      },
+      {
+        "t": "ul",
+        "items": [
+          "🗑️ **Delete Chat**: removes the conversation.",
+          "🚫 **Block User**: removes them from your learner’s friends list. You can unblock them later from the Learner’s Friends page.",
+          "📢 **Report User**: sends a report to our team, who will review it within 24 hours. They stay your learner’s friend unless you also block them."
+        ]
+      },
+      {
+        "t": "p",
+        "text": "The PIN keeps these controls away from your learner. If you need help, email us at **coheartsupport@gmail.com**."
+      },
+      {
+        "t": "h3",
+        "text": "Connecting with other guardians"
+      },
+      {
+        "t": "h4",
+        "text": "Can I connect with other guardians?"
+      },
+      {
+        "t": "p",
+        "text": "Yes. Use the **Find** tab to search by name, county, or Regional Support Category, send a connection request, and message guardians once you’re connected. Before connecting, you’ll only see a short preview (photo, name, county, and category tags)."
+      },
+      {
+        "t": "h4",
+        "text": "Can I see other guardians’ phone numbers or addresses?"
+      },
+      {
+        "t": "p",
+        "text": "No. Co-Heart doesn’t ask for anyone’s phone number or home address, so they’re never shown in the app. If you’d like to stay in touch or meet up, connect with the guardian and message them in the app to share details yourselves."
+      },
+      {
+        "t": "h4",
+        "text": "What else is in the community section?"
+      },
+      {
+        "t": "ul",
+        "items": [
+          "**Events**: browse or create community events and RSVP - tap Going to RSVP (tap again to cancel).",
+          "**Discussions**: post topics and reply to other guardians. You can edit or delete your own posts.",
+          "**Resources**: helpful information and support links."
+        ]
+      },
+      {
+        "t": "h4",
+        "text": "How do I report something?"
+      },
+      {
+        "t": "p",
+        "text": "Tap the 🚩 on the item, choose a reason (Offensive, Spam, Harassment, or Sensitive), and tap **Report**. You can report:"
+      },
+      {
+        "t": "ul",
+        "items": [
+          "a discussion post or reply",
+          "an event (open it from the Events list)",
+          "a guardian chat (🚩 at the top of the chat)",
+          "a guardian’s profile (on their profile card or in Connections)"
+        ]
+      },
+      {
+        "t": "p",
+        "text": "Our team reviews every report within 24 hours. The person you report is not told who reported them. You can’t report your own content, and each item can be reported once — after that the 🚩 is dimmed and shows **Already Reported**. For anything urgent, email us at **coheartsupport@gmail.com**."
+      },
+      {
+        "t": "p",
+        "text": "To report someone in your learner’s chat, use the guardian controls inside that chat (see “What can I do if someone bothers my learner?”)."
+      },
+      {
+        "t": "h4",
+        "text": "How do I block a guardian?"
+      },
+      {
+        "t": "p",
+        "text": "Tap 🚫 next to their name (on their profile card, at the top of your chat, or on their card in Connections), then tap **Block**. You won’t see each other’s posts, events, or profile, and you can’t message each other. Your connection and any RSVPs between you are removed. They aren’t told. You aren’t sent a notification about a block, but on learner cards and profiles, each of you will see the other’s guardian shown as “Guardian: Blocked”."
+      },
+      {
+        "t": "p",
+        "text": "Your learners’ friendship isn’t affected."
+      },
+      {
+        "t": "h4",
+        "text": "How do I unblock someone?"
+      },
+      {
+        "t": "p",
+        "text": "Go to **Connections → Blocked** and tap **Unblock**. You won’t be reconnected; send a new request if you’d like to connect again."
+      },
+      {
+        "t": "h3",
+        "text": "Privacy, safety & your data"
+      },
+      {
+        "t": "h4",
+        "text": "Who can see my learner’s information?"
+      },
+      {
+        "t": "p",
+        "text": "Your learner’s full profile is visible to you. Other families see only a short public summary when your learners are friends or are considering connecting."
+      },
+      {
+        "t": "h4",
+        "text": "How long is data kept?"
+      },
+      {
+        "t": "p",
+        "text": "Activity check-off history is kept for 7 days, then deleted automatically. Other information stays until you change or delete it."
+      },
+      {
+        "t": "h4",
+        "text": "How do I delete my account?"
+      },
+      {
+        "t": "p",
+        "text": "In guardian mode, go to **Account → Delete account**. This permanently deletes your account and your learner’s profile, and can’t be undone."
+      },
+      {
+        "t": "h3",
+        "text": "Help & feedback"
+      },
+      {
+        "t": "h4",
+        "text": "How do I contact support?"
+      },
+      {
+        "t": "p",
+        "text": "Email us at **coheartsupport@gmail.com**."
+      },
+      {
+        "t": "h4",
+        "text": "I found a bug. Where do I report it?"
+      },
+      {
+        "t": "p",
+        "text": "Email us at **coheartsupport@gmail.com**. Tell us what you were doing, what you expected, and what happened."
       }
     ]
   }

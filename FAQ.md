@@ -8,8 +8,8 @@ Co-Heart is an app for guardians supporting learners with intellectual and devel
 
 ### Who is Co-Heart for?
 Two people share the app:
-- **Guardians** — parents, family members, or caregivers who set up and manage a learner's account.
-- **Learners** — the person with IDD, who uses a simplified version with large buttons and no open typing.
+- **Guardians:** parents, family members, or caregivers (18 or older) who set up and manage a learner’s account. Guardians create the learner’s profile, plan their weekly schedule and daily activities, choose or create tutorials for them, and approve their friends and chats. Guardians can also connect with other families nearby, join community events, and take part in discussions.
+- **Learners:** the child or young person with IDD, aged 13 or older, that the guardian supports. In Co-Heart we call them the “learner.” Learners get their own simple view with large buttons, where they see today’s schedule, tick off their daily activities (like brushing teeth or packing a bag), and learn new skills from short tutorials: narrated step-by-step slideshows or videos chosen by their guardian. They can also chat with friends using picture symbols and ready-made phrases, with no open typing.
 
 ### Where can I get the app?
 Co-Heart is currently in testing on **iOS only** (iPhone/iPad), through TestFlight. To request an invite, email **reyaansh.bansal@gmail.com** with the subject **"Co-Heart TestFlight"**. Use the email address linked to your Apple ID — that's where the invitation is sent.

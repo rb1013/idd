@@ -34,11 +34,12 @@ interface ServiceCategory {
 // green, orange — picked for clear contrast between adjacent headings.
 const HEADING_COLOR_INDEXES = [5, 1, 2];
 
-// Policies: plain text rows (no colour / arrow); each opens the in-app LegalSheet
+// Policies & FAQ: plain text rows (no colour / arrow); each opens the in-app LegalSheet
 const POLICIES: { key: LegalSectionKey; label: string }[] = [
   { key: 'privacy', label: 'Privacy Policy' },
   { key: 'terms',   label: 'Terms of Service' },
   { key: 'credits', label: 'Credits & Licenses' },
+  { key: 'faq',     label: 'Frequently Asked Questions (FAQ)' },
 ];
 
 const CATEGORIES: ServiceCategory[] = [
@@ -138,8 +139,8 @@ export default function ResourcesScreen() {
             </View>
           </View>
 
-          {/* Policies — open in-app (nothing opens the website) */}
-          <AppText style={s.pageTitle}>Policies</AppText>
+          {/* Policies & FAQ — open in-app (nothing opens the website) */}
+          <AppText style={s.pageTitle}>Policies & FAQ</AppText>
           <View style={s.policyList}>
             {POLICIES.map((p, i) => (
               <TouchableOpacity

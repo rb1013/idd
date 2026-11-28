@@ -9,6 +9,7 @@ const TABS: { key: LegalSectionKey; label: string }[] = [
   { key: 'privacy', label: 'Privacy' },
   { key: 'terms',   label: 'Terms' },
   { key: 'credits', label: 'Credits' },
+  { key: 'faq',     label: 'FAQ' },
 ];
 
 interface Props {
@@ -18,17 +19,21 @@ interface Props {
   onClose: () => void;
 }
 
-/** Privacy Policy / Terms of Service / Credits & Licenses, read in-app (content: constants/legalContent.ts). */
+/** Privacy Policy / Terms of Service / Credits & Licenses / FAQ, read in-app (content: constants/legalContent.ts). */
 export default function LegalSheet({ visible, initialTab = 'privacy', onClose }: Props) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<LegalSectionKey>(initialTab);
   const scrollRef = useRef<ScrollViewInstance>(null);
 
+  // FAQ open/closed state resets (all collapsed) each time the sheet opens or the FAQ tab is chosen
+  const [faqKey, setFaqKey] = useState(0);
+
   // Open on the tab the caller asked for
-  useEffect(() => { if (visible) setTab(initialTab); }, [visible, initialTab]);
+  useEffect(() => { if (visible) { setTab(initialTab); setFaqKey(k => k + 1); } }, [visible, initialTab]);
 
   function switchTab(key: LegalSectionKey) {
     setTab(key);
+    if (key === 'faq') setFaqKey(k => k + 1);
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }
 
@@ -59,11 +64,80 @@ export default function LegalSheet({ visible, initialTab = 'privacy', onClose }:
           </View>
 
           <ScrollView ref={scrollRef} style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator>
-            {section.blocks.map((b, i) => <Block key={`${tab}-${i}`} block={b} />)}
+            {tab === 'faq'
+              // key: remount on every open so all groups / questions start collapsed again
+              ? <Faq key={faqKey} blocks={section.blocks} />
+              : section.blocks.map((b, i) => <Block key={`${tab}-${i}`} block={b} />)}
           </ScrollView>
         </View>
       </View>
     </Modal>
+  );
+}
+
+interface FaqGroup { title: string; questions: { q: string; answer: LegalBlock[] }[] }
+
+/** FAQ blocks (h3 group → h4 question → answer blocks) grouped for the collapsible view. */
+function groupFaq(blocks: LegalBlock[]): FaqGroup[] {
+  const groups: FaqGroup[] = [];
+  for (const b of blocks) {
+    if (b.t === 'h3') groups.push({ title: b.text, questions: [] });
+    else if (b.t === 'h4') groups[groups.length - 1]?.questions.push({ q: b.text, answer: [] });
+    else groups[groups.length - 1]?.questions.at(-1)?.answer.push(b);
+  }
+  return groups;
+}
+
+/**
+ * FAQ tab only: two levels of collapsible sections. Shows the group titles; tap a group to list its
+ * questions, tap a question to show its answer. Several can be open at once. (The website shows it all open.)
+ */
+function Faq({ blocks }: { blocks: LegalBlock[] }) {
+  const groups = groupFaq(blocks);
+  const [open, setOpen] = useState<Set<string>>(new Set());   // 'g3' = group 3, 'g3q1' = its 2nd question
+
+  function toggle(id: string) {
+    setOpen(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  return (
+    <View style={s.faq}>
+      {groups.map((g, gi) => {
+        const gId = `g${gi}`;
+        const gOpen = open.has(gId);
+        return (
+          <View key={gId} style={s.faqGroup}>
+            <TouchableOpacity style={s.faqGroupHdr} onPress={() => toggle(gId)} activeOpacity={0.7}
+              accessibilityRole="button" accessibilityState={{ expanded: gOpen }}>
+              <AppText style={s.faqGroupTitle}>{g.title}</AppText>
+              <AppText style={s.faqChevron}>{gOpen ? '▾' : '▸'}</AppText>
+            </TouchableOpacity>
+            {gOpen && g.questions.map((item, qi) => {
+              const qId = `${gId}q${qi}`;
+              const qOpen = open.has(qId);
+              return (
+                <View key={qId} style={[s.faqItem, qi > 0 && s.faqItemDivider]}>
+                  <TouchableOpacity style={s.faqQuestion} onPress={() => toggle(qId)} activeOpacity={0.7}
+                    accessibilityRole="button" accessibilityState={{ expanded: qOpen }}>
+                    <Rich text={item.q} style={[s.h4, s.faqQuestionText]} />
+                    <AppText style={s.faqChevronSmall}>{qOpen ? '▾' : '▸'}</AppText>
+                  </TouchableOpacity>
+                  {qOpen && (
+                    <View style={s.faqAnswer}>
+                      {item.answer.map((b, i) => <Block key={i} block={b} />)}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        );
+      })}
+    </View>
   );
 }
 
@@ -83,11 +157,12 @@ function Block({ block }: { block: LegalBlock }) {
     case 'h4': return <Rich text={block.text} style={s.h4} />;
     case 'p':  return <Rich text={block.text} style={s.p} />;
     case 'ul':
+    case 'ol':
       return (
         <View style={s.list}>
           {block.items.map((item, i) => (
             <View key={i} style={s.li}>
-              <AppText style={s.bullet}>•</AppText>
+              <AppText style={s.bullet}>{block.t === 'ol' ? `${i + 1}.` : '•'}</AppText>
               <Rich text={item} style={[s.p, s.liText]} />
             </View>
           ))}
@@ -152,6 +227,19 @@ const s = StyleSheet.create({
   li:     { flexDirection: 'row', gap: SPACING.sm },
   bullet: { fontSize: FONT_SIZE.md, color: NICO.text, lineHeight: 21 },
   liText: { flex: 1 },
+
+  // FAQ (collapsible)
+  faq:             { gap: SPACING.sm },
+  faqGroup:        { backgroundColor: NICO.surface, borderRadius: RADIUS.md, overflow: 'hidden' },
+  faqGroupHdr:     { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingHorizontal: SPACING.md, paddingVertical: SPACING.md },
+  faqGroupTitle:   { flex: 1, fontSize: FONT_SIZE.lg, fontWeight: FONT_WEIGHT.extraBold, color: NICO.text },
+  faqChevron:      { fontSize: FONT_SIZE.lg, color: NICO.textMuted },
+  faqItem:         { paddingHorizontal: SPACING.md },
+  faqItemDivider:  { borderTopWidth: 1, borderTopColor: NICO.border },
+  faqQuestion:     { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.sm },
+  faqQuestionText: { flex: 1, marginTop: 0 },
+  faqChevronSmall: { fontSize: FONT_SIZE.md, color: NICO.textMuted },
+  faqAnswer:       { gap: SPACING.sm, paddingBottom: SPACING.md },
 
   card:      { backgroundColor: NICO.backgroundLight, borderRadius: RADIUS.md, padding: SPACING.md, gap: SPACING.xs },
   cardTitle: { fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.regular, color: NICO.text },

@@ -10,7 +10,7 @@
 
 # Part 1 — Privacy Policy
 
-Co-Heart is a mobile app for **guardians** (parents, family members, and caregivers) supporting **learners** with intellectual and developmental disabilities (IDD). This policy explains what information we collect, how we use it, who we share it with, and the choices you have.
+Co-Heart is a mobile app for **guardians** (parents, family members, and caregivers) supporting **learners** (children and young people aged 13 or older with intellectual and developmental disabilities (IDD) in their care). This policy explains what information we collect, how we use it, who we share it with, and the choices you have.
 
 ## 1. Who can use Co-Heart
 

@@ -7,7 +7,7 @@ import { LegalSectionKey } from '../constants/legalContent';
 import { NICO, SPACING, FONT_SIZE, FONT_WEIGHT } from '../constants/theme';
 
 /**
- * Footer links — Privacy Policy · Terms of Service · Credits & Licenses · Contact Us — and © year.
+ * Footer links — Privacy Policy · Terms of Service · Credits & Licenses · FAQ · Contact Us — and © year.
  * Every link opens a bottom sheet in the app (nothing opens the website).
  * Used on: guardian dashboard, Account, Login, Learner select.
  * Put it last in a screen's scroll content; `marginTop: 'auto'` pins it to the bottom on short screens
@@ -21,13 +21,14 @@ export default function LegalFooter({ style }: { style?: ViewStyle }) {
     { label: 'Privacy Policy',     onPress: () => setLegalTab('privacy') },
     { label: 'Terms of Service',   onPress: () => setLegalTab('terms') },
     { label: 'Credits & Licenses', onPress: () => setLegalTab('credits') },
+    { label: 'FAQ',                onPress: () => setLegalTab('faq') },
     { label: 'Contact Us',         onPress: () => setContactOpen(true) },
   ];
 
   return (
     <View style={[s.footer, style]}>
       {/* Separate buttons, not links nested in one Text — nested-text taps are unreliable on iOS */}
-      {/* Two fixed rows (Privacy · Terms / Credits · Contact) so a wrap never leaves a stray "·" */}
+      {/* Two fixed rows (Privacy · Terms / Credits · FAQ · Contact) so a wrap never leaves a stray "·" */}
       {[links.slice(0, 2), links.slice(2)].map((row, r) => (
         <View key={r} style={s.links}>
           {row.map((l, i) => (
