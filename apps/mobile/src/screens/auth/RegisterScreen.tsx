@@ -13,7 +13,7 @@ import DropdownPicker from '../../components/DropdownPicker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { FIXED_STATE } from '../../constants/usStates';
-import { GUARDIAN_NAME_MAX } from '../../constants';
+import { GUARDIAN_NAME_MAX, PASSWORD_MAX_LENGTH } from '../../constants';
 import { CA_COUNTIES } from '../../constants/caCounties';
 // Phone input commented out: not used by any feature (guardians.phone is nullable). Uncomment to restore.
 // import { validatePhone, buildE164, sanitizePhoneInput, PHONE_MAX_LENGTH } from '../../constants/countryCodes';
@@ -189,6 +189,7 @@ export default function RegisterScreen() {
           onChangeText={setPassword}
           placeholder={PASSWORD_HINT}
           secureTextEntry
+          maxLength={PASSWORD_MAX_LENGTH}
           placeholderTextColor={NICO.textMuted}
         />
 
@@ -199,6 +200,7 @@ export default function RegisterScreen() {
           onChangeText={setConfirm}
           placeholder="Repeat password"
           secureTextEntry
+          maxLength={PASSWORD_MAX_LENGTH}
           placeholderTextColor={NICO.textMuted}
         />
 

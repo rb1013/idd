@@ -1,6 +1,7 @@
 # Expo SDK upgrade (56 → 58) — iOS 27 scene lifecycle
 
-**Status:** decided to upgrade **before launch** — **not started**. Meanwhile, option A works: a TestFlight build archived with **Xcode 26.6** (`DTSDKName iphoneos26.5`) launches on iOS 27 (verified 2026-11-26). On macOS 27, Xcode 26 opens only from Terminal: `/Applications/Xcode-26.app/Contents/MacOS/Xcode`.
+**Status:** ✅ **upgraded to SDK 58.1 / React Native 0.88.1** (branch `expo-58`, merged into `development` 2026-11-27; validated on iOS 27.2.1). Next: TestFlight build with Xcode 27. Open: iPad window resizing, RN 0.88 shadow ADVICE warning (LearnerSelect `cardBorder`).
+**History:** decided to upgrade **before launch**. Meanwhile, option A works: a TestFlight build archived with **Xcode 26.6** (`DTSDKName iphoneos26.5`) launches on iOS 27 (verified 2026-11-26). On macOS 27, Xcode 26 opens only from Terminal: `/Applications/Xcode-26.app/Contents/MacOS/Xcode`.
 
 **Switching Xcode for builds** (pods, React Native build scripts and `xcodebuild` follow `xcode-select`):
 ```bash

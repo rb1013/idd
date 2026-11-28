@@ -157,6 +157,9 @@ export const DISCUSSION_REPLY_MAX   = 100;
 // emoji: the keyword → emoji list was removed (2026-11-25). The DB emoji column keeps its '📅' default.
 export const CLASS_ICON = '📅';
 export const CLASS_NAME_MAX = 25;   // Schedule: class name (weekly and one-off)
+// Guardian password boxes (sign-up, reset, login, Reset PIN): typing limit only — the rules
+// (min length, upper / lower / digit) stay in lib/validators.ts. Supabase Auth's own max is 72.
+export const PASSWORD_MAX_LENGTH = 64;
 export const DISCUSSION_ARCHIVE_MONTHS = 4;      // Discussions list loads only the last N months. Hard-coded: fetching app_settings.discussion_archive_months first added a wait before the list query (admin field kept for later)
 export const DISCUSSION_TITLE_SEARCH_MAX = 30;   // 'Search by title' box (All / My tabs)
 export const TUTORIAL_NAME_SEARCH_MAX = 30;      // 'Search by name' boxes in Tutorials (Search / My Tutorials / Pending)

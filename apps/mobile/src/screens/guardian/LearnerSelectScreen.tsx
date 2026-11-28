@@ -21,6 +21,7 @@ import {
   NICO, TEXT_STYLE, SPACING, RADIUS, SHADOW, INPUT, BTN_SIZE, BTN_VARIANT,
   BUTTERFLY_BORDER, BUTTERFLY_TILES, FONT_SIZE, FONT_WEIGHT,
 } from '../../constants/theme';
+import { PASSWORD_MAX_LENGTH } from '../../constants';
 
 type Nav = NativeStackNavigationProp<GuardianNavParamList>;
 
@@ -302,6 +303,7 @@ export default function LearnerSelectScreen() {
                   value={verifyPassword}
                   onChangeText={setVerifyPassword}
                   secureTextEntry
+                  maxLength={PASSWORD_MAX_LENGTH}
                   placeholder="Account password"
                   placeholderTextColor={NICO.textMuted}
                   autoFocus

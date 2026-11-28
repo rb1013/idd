@@ -294,7 +294,7 @@ export default function GuardianTutorialsScreen() {
       {/* Tab bar */}
       <View style={styles.tabBar}>
         {(['search', 'my', 'pending', 'create'] as Tab[]).map(tab => {
-          const labels: Record<Tab, string> = { search: 'Search', my: 'My Tutorials', pending: 'Pending', create: 'Create' };
+          const labels: Record<Tab, string> = { search: 'Library', my: 'My Tutorials', pending: 'Pending', create: 'Create' };
           const active = activeTab === tab;
           return (
             <TouchableOpacity

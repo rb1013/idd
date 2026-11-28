@@ -15,6 +15,7 @@ import {
   NICO, TEXT_STYLE, SPACING, RADIUS, INPUT, BTN_SIZE, BTN_VARIANT, BUTTERFLY_BORDER,
   FONT_SIZE, FONT_WEIGHT,
 } from '../../constants/theme';
+import { PASSWORD_MAX_LENGTH } from '../../constants';
 import { RootStackParamList } from '../../navigation';
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'Login'> };
@@ -92,6 +93,7 @@ export default function LoginScreen({ navigation }: Props) {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              maxLength={PASSWORD_MAX_LENGTH}
               placeholderTextColor={NICO.textMuted}
             />
           </LinearGradient>

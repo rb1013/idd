@@ -12,6 +12,7 @@ import { loadGuardianCredentials, saveGuardianCredentials } from '../../lib/biom
 import {
   NICO, TEXT_STYLE, SPACING, RADIUS, INPUT, BTN_SIZE, BTN_VARIANT, BUTTERFLY_BORDER,
 } from '../../constants/theme';
+import { PASSWORD_MAX_LENGTH } from '../../constants';
 
 export default function ResetPasswordScreen() {
   const [password, setPassword]   = useState('');
@@ -74,6 +75,7 @@ export default function ResetPasswordScreen() {
               placeholder={PASSWORD_HINT}
               placeholderTextColor={NICO.textMuted}
               secureTextEntry
+              maxLength={PASSWORD_MAX_LENGTH}
               autoFocus
               editable={!loading}
             />
@@ -92,6 +94,7 @@ export default function ResetPasswordScreen() {
               placeholder="Confirm new password"
               placeholderTextColor={NICO.textMuted}
               secureTextEntry
+              maxLength={PASSWORD_MAX_LENGTH}
               editable={!loading}
             />
           </LinearGradient>

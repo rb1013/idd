@@ -44,6 +44,7 @@ export default function CreateTutorialScreen() {
   const [defaultDuration, setDefaultDuration] = useState(25);
   const [targetSkills, setTargetSkills] = useState<string[]>([]);
   const [showSkillPicker, setShowSkillPicker] = useState(false);
+  const [showShareInfo, setShowShareInfo] = useState(false);
 
   const title = [targetSkill, coreAction].filter(Boolean).join(': ');
 
@@ -120,8 +121,42 @@ export default function CreateTutorialScreen() {
       )}
 
       <View style={s.infoBanner}>
-        <AppText style={s.infoText}>ℹ️  Shared tutorials are reviewed by an admin before becoming visible to other guardians.</AppText>
+        <AppText style={s.infoText}>
+          ℹ️  Shared tutorials are reviewed by an admin before becoming visible to other guardians.
+          It is enabled by default below. If you want to create a private tutorial only for your learner then disable the toggle below.
+        </AppText>
       </View>
+
+      {/* Share toggle — same row / toggle pattern as "Disable Messaging" on the guardian dashboard */}
+      <TouchableOpacity style={s.settingRow} onPress={() => setIsPublic(v => !v)} activeOpacity={0.8}>
+        <View style={s.settingInfo}>
+          <AppText style={s.settingLabel}>Share with other guardians</AppText>
+          <TouchableOpacity
+            onPress={() => setShowShareInfo(true)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.7}
+          >
+            <AppText style={s.infoIcon}>ⓘ</AppText>
+          </TouchableOpacity>
+        </View>
+        <View style={[s.toggle, isPublic && s.toggleOn]}>
+          <View style={[s.toggleThumb, isPublic && s.toggleThumbOn]} />
+        </View>
+      </TouchableOpacity>
+
+      <Modal visible={showShareInfo} transparent animationType="fade" onRequestClose={() => setShowShareInfo(false)}>
+        <TouchableOpacity style={s.infoOverlay} activeOpacity={1} onPress={() => setShowShareInfo(false)}>
+          <View style={s.infoCard} onStartShouldSetResponder={() => true}>
+            <AppText style={s.infoTitle}>Sharing</AppText>
+            <AppText style={s.infoBody}>
+              When approved, this tutorial will appear in the shared library for all guardians to use.
+            </AppText>
+            <TouchableOpacity style={s.infoDismiss} onPress={() => setShowShareInfo(false)} activeOpacity={0.8}>
+              <AppText style={s.infoDismissText}>Got it</AppText>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Form card */}
       <View style={s.formCard}>
@@ -194,16 +229,6 @@ export default function CreateTutorialScreen() {
             />
           </LinearGradient>
           <AppText style={s.charCount}>{displayName.length}/40</AppText>
-        </FieldBlock>
-
-        <Divider />
-
-        <FieldBlock label="Share with other guardians" hint="When approved, this tutorial will appear in the shared library for all guardians to use.">
-          <TouchableOpacity style={s.shareToggleRow} onPress={() => setIsPublic(v => !v)} activeOpacity={0.7}>
-            <View style={[s.shareToggle, isPublic && s.shareToggleOn]}>
-              <View style={[s.shareThumb, isPublic && s.shareThumbOn]} />
-            </View>
-          </TouchableOpacity>
         </FieldBlock>
       </View>
 
@@ -321,12 +346,34 @@ const s = StyleSheet.create({
   selectClear:      { fontSize: FONT_SIZE.md, color: NICO.textMuted, fontWeight: FONT_WEIGHT.bold, paddingHorizontal: 4 },
   selectChevron:    { fontSize: FONT_SIZE.xl, color: NICO.textMuted, lineHeight: 26 },
 
-  // Share toggle
-  shareToggleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  shareToggle:    { width: 52, height: 30, borderRadius: 15, backgroundColor: NICO.border, justifyContent: 'center', padding: 2 },
-  shareToggleOn:  { backgroundColor: NICO.primary },
-  shareThumb:     { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff' },
-  shareThumbOn:   { alignSelf: 'flex-end' },
+  // Share toggle — same as the "Disable Messaging" row on GuardianHomeScreen (teal, BUTTERFLY_TILES[0])
+  settingRow: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.md,
+    backgroundColor: BUTTERFLY_TILES[0].bg,
+    borderRadius:    RADIUS.md,
+    padding:         SPACING.md,
+  },
+  settingInfo:   { flex: 1, flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
+  settingLabel:  { ...TEXT_STYLE.bodyMedium, flex: 1 },
+  infoIcon:      { fontSize: FONT_SIZE.lg, color: NICO.text, fontWeight: FONT_WEIGHT.extraBold },
+  toggle: {
+    width: 46, height: 26, borderRadius: 13,
+    backgroundColor: NICO.border, justifyContent: 'center', padding: 2,
+  },
+  toggleOn:      { backgroundColor: BUTTERFLY_TILES[0].accent },
+  toggleThumb:   { width: 22, height: 22, borderRadius: 11, backgroundColor: NICO.surface },
+  toggleThumbOn: { alignSelf: 'flex-end' },
+
+  // Share info modal (same as the dashboard's messaging info modal)
+  infoOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: SPACING.xl },
+  infoCard: {
+    backgroundColor: NICO.screenBg, borderRadius: RADIUS.xl,
+    padding: SPACING.lg, gap: SPACING.md, maxWidth: 360, width: '100%',
+  },
+  infoTitle:       { ...TEXT_STYLE.cardTitle, fontSize: FONT_SIZE.xl },
+  infoBody:        { ...TEXT_STYLE.body, lineHeight: 22, color: NICO.text },
+  infoDismiss:     { ...BTN_SIZE.md, ...BTN_VARIANT.primary, alignSelf: 'flex-end' },
+  infoDismissText: { ...TEXT_STYLE.buttonPrimary },
 
   // Submit
   submitBtn:        { ...BTN_SIZE.lg, ...BTN_VARIANT.primary, ...SHADOW.md },
