@@ -146,7 +146,7 @@ export default function DiscussionDetailScreen() {
                 </AppText>
               )}
             </View>
-          ) : null
+          ) : undefined
         }
         ListEmptyComponent={
           <View style={s.noReplies}>

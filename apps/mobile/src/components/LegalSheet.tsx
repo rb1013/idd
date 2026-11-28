@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal, View, ScrollView, TouchableOpacity, Pressable, StyleSheet } from 'react-native';
+import { Modal, View, ScrollView, TouchableOpacity, Pressable, StyleSheet, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppText from './AppText';
 import { LEGAL_CONTENT, LegalBlock, LegalSectionKey } from '../constants/legalContent';
@@ -22,7 +22,7 @@ interface Props {
 export default function LegalSheet({ visible, initialTab = 'privacy', onClose }: Props) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<LegalSectionKey>(initialTab);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
 
   // Open on the tab the caller asked for
   useEffect(() => { if (visible) setTab(initialTab); }, [visible, initialTab]);

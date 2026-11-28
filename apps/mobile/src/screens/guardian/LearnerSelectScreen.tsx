@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import {
   View, ScrollView, TouchableOpacity, StyleSheet,
   Image, ActivityIndicator, Alert, Modal, TextInput,
+  type TextInputInstance,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppText from '../../components/AppText';
@@ -47,7 +48,7 @@ export default function LearnerSelectScreen() {
   const [verifyPassword, setVerifyPassword] = useState('');
   const [newPin, setNewPin]               = useState('');
   const [confirmPin, setConfirmPin]       = useState('');
-  const pinInputRef = useRef<TextInput>(null);
+  const pinInputRef = useRef<TextInputInstance>(null);
 
   useFocusEffect(useCallback(() => { load(); }, [guardian?.id]));
 

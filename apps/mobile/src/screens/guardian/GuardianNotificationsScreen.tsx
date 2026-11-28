@@ -233,7 +233,7 @@ export default function GuardianNotificationsScreen() {
                 <AppText style={s.tutorialsHintAsterisk}>*** </AppText>
                 Tutorial approvals and rejections from the last 48 hours will appear here.
               </AppText>
-            ) : null
+            ) : undefined
           }
           ListEmptyComponent={
             <View style={s.empty}>

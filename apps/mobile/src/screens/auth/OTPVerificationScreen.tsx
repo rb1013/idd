@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import {
   View, TextInput, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView,
+  type TextInputInstance,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import AppText from '../../components/AppText';
@@ -23,7 +24,7 @@ export default function OTPVerificationScreen() {
   const [resending, setResending] = useState(false);
   const [resent, setResent]       = useState(false);
 
-  const inputs = useRef<(TextInput | null)[]>([]);
+  const inputs = useRef<(TextInputInstance | null)[]>([]);
 
   function handleChange(text: string, index: number) {
     const digit = text.replace(/[^0-9]/g, '').slice(-1);

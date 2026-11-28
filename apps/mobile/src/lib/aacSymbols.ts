@@ -103,7 +103,7 @@ export async function refreshBoard(cached: AACBoard | null): Promise<AACBoard> {
     }
   }
 
-  boardFile.write(JSON.stringify(board));
+  await boardFile.write(JSON.stringify(board));   // async since SDK 58 — wait so a failed save reaches the caller
   return board;
 }
 

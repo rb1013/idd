@@ -523,7 +523,7 @@ export default function DiscussionsScreen() {
               <View style={s.capMessage}>
                 <AppText style={s.capMessageText}>Use filters to search records</AppText>
               </View>
-            ) : null
+            ) : undefined
           }
           ListEmptyComponent={
             <View style={s.empty}>

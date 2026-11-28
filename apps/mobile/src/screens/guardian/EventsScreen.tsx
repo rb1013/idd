@@ -536,7 +536,7 @@ export default function EventsScreen() {
           );
         }}
         ListFooterComponent={(() => {
-          if (isPastView) return null;   // at most 20, no paging
+          if (isPastView) return undefined;   // at most 20, no paging
           const showMore    = tab === 'mine' ? showLoadMoreMine : tab === 'attending' ? showLoadMoreAttending : showLoadMoreUpcoming;
           const doPaginate  = tab === 'mine' ? loadMoreMine     : tab === 'attending' ? loadMoreAttending     : loadMoreUpcoming;
           const ps          = tab === 'mine' ? pageSizeMine     : tab === 'attending' ? pageSizeAttending     : pageSizeUpcoming;
@@ -551,7 +551,7 @@ export default function EventsScreen() {
               <AppText style={s.capMessageText}>Use filters to search records</AppText>
             </View>
           );
-          return null;
+          return undefined;
         })()}
         ListEmptyComponent={
           <View style={s.empty}>

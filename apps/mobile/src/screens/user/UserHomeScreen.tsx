@@ -227,7 +227,7 @@ export default function UserHomeScreen() {
 
   return (
     <View style={s.root}>
-      <StatusBar barStyle="dark-content" backgroundColor={NICO.background} />
+      <StatusBar barStyle="dark-content" />
       <SafeAreaView edges={['top']} style={s.safeHeader}>
         <LinearGradient
           colors={[...BUTTERFLY_BORDER.colors]}

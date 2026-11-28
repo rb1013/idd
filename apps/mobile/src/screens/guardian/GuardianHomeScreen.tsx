@@ -169,7 +169,7 @@ export default function GuardianHomeScreen() {
 
   return (
     <View style={s.root}>
-      <StatusBar barStyle="dark-content" backgroundColor={NICO.background} />
+      <StatusBar barStyle="dark-content" />
 
       {/* ── Header ── */}
       <SafeAreaView edges={['top']} style={s.safeHeader}>

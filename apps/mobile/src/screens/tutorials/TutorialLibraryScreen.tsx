@@ -308,7 +308,7 @@ export default function TutorialLibraryScreen() {
               <View style={s.capMessage}>
                 <AppText style={s.capMessageText}>Use filters to search records</AppText>
               </View>
-            ) : null
+            ) : undefined
           }
           renderItem={({ item: t, index }) => {
             const isLinked = linkedTutorialIds.has(t.id);

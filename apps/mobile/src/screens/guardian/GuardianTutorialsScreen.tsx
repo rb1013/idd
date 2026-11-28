@@ -364,7 +364,7 @@ export default function GuardianTutorialsScreen() {
                   <View style={styles.capMessage}>
                     <AppText style={styles.capMessageText}>Use filters to search records</AppText>
                   </View>
-                ) : null
+                ) : undefined
               }
               renderItem={({ item: t, index }) => {
                 const toggling = togglingId === t.id;
@@ -550,7 +550,7 @@ export default function GuardianTutorialsScreen() {
               ListHeaderComponent={
                 filteredMy.length > 0
                   ? <AppText style={styles.listCount}>{filteredMy.length} tutorial{filteredMy.length !== 1 ? 's' : ''}</AppText>
-                  : null
+                  : undefined
               }
               ListFooterComponent={
                 showLoadMoreMy ? (
@@ -559,7 +559,7 @@ export default function GuardianTutorialsScreen() {
                   </TouchableOpacity>
                 ) : showCapMy ? (
                   <View style={styles.capMessage}><AppText style={styles.capMessageText}>Use filters to search records</AppText></View>
-                ) : null
+                ) : undefined
               }
               renderItem={({ item: t, index }) => {
                 const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
@@ -710,14 +710,14 @@ export default function GuardianTutorialsScreen() {
               ListHeaderComponent={
                 filteredPending.length > 0
                   ? <AppText style={styles.listCount}>{filteredPending.length} tutorial{filteredPending.length !== 1 ? 's' : ''}</AppText>
-                  : null
+                  : undefined
               }
               ListFooterComponent={
                 showLoadMorePending ? (
                   <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMorePending} activeOpacity={0.7}>
                     <AppText style={styles.loadMoreText}>Load {pageSizePending} more</AppText>
                   </TouchableOpacity>
-                ) : null
+                ) : undefined
               }
               renderItem={({ item: t, index }) => {
                 const tileBg = BUTTERFLY_TILES[index % BUTTERFLY_TILES.length].bg;
