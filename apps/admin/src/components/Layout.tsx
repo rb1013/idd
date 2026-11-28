@@ -9,7 +9,7 @@ const METADATA_ITEMS = [
   { to: '/event-categories',      label: 'Event Categories' },
   { to: '/discussion-categories', label: 'Discussion Categories' },
   { to: '/tutorial-skills',  label: 'Tutorial Skills' },
-  { to: '/medical-conditions', label: 'Medical Conditions' },
+  { to: '/medical-conditions', label: 'Regional Support Categories' },
   { to: '/chat-phrases',     label: 'Chat Phrases' },   // learner chat board (aac_phrases)
   { to: '/chat-symbols',     label: 'Chat Symbols' },   // learner chat board (aac_symbols + images)
 ];

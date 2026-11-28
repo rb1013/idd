@@ -60,6 +60,7 @@ export default function GuardianVerificationScreen() {
           <AppText style={styles.paragraph}>
             To protect our community and comply with child privacy laws, we must verify that you
             are an adult guardian before you can create a learner profile or search for friends.
+            You must be {MIN_AGE} years of age or older to sign up as a guardian.
           </AppText>
 
           <AppText style={styles.label}>Please enter your Date of Birth</AppText>

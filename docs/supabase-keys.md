@@ -1,7 +1,7 @@
 # Supabase API keys — switch from legacy to publishable / secret keys
 
 **Project:** new West project `zmwckczpxvzgwznxzfov` (us-west-1)
-**Status:** **code done (2026-11-26)** — unused functions removed from the repo, phase 1 (caller checks) + phase 2 (`_shared/admin.ts`) written and type-checked. **Next: your deploy steps** (see "Rollout" below).
+**Status:** ✅ **complete on West (2026-11-27)** — apps on `sb_publishable_…`, functions on `sb_secret_…` with their own caller checks, legacy keys disabled, legacy fallback removed. East not switched (see below).
 **Written:** 2026-11-25 · **Updated:** 2026-11-26 (checked against current code)
 
 > ⚠️ **Old East project (`xtfrtbrapuloogqpeigv`) is NOT switched — only West is.**
@@ -9,6 +9,7 @@
 > - **`SERVICE_SECRET_KEY` is NOT set** there, so its functions use the **legacy `service_role` key** (the fallback in `_shared/admin.ts`).
 > - Its tutorial **webhook still sends the legacy key** (accepted by `process-tutorial-job`).
 > - So East keeps working **only while legacy keys exist** (until early 2027). If East is ever needed again, repeat rollout steps 3–6 there; otherwise just pause it.
+> - 🚫 **After step 9, do NOT deploy functions to East.** Step 9 removes the legacy-key fallback from `_shared/admin.ts`; East has no `SERVICE_SECRET_KEY`, so newly deployed functions there would have no admin key and fail. East's **already-deployed** functions are frozen copies with the fallback and keep working — redeploying is what breaks them. (To deploy there anyway, first do rollout steps 3–6 on East.)
 
 ---
 
@@ -37,7 +38,7 @@
 
 ## Rollout (after the code) — each step keeps the app working
 
-**Progress (West):** steps 1–7 ✅ done 2026-11-26 (round A passed; round B replaced by `packages/supabase/check-functions-auth.sh` — turning Verify JWT off only removes a gate; both `.env` files on `sb_publishable_…`, all app + admin checks passed). Step 8 ✅ legacy keys disabled on West 2026-11-26. **Next: Xcode 26 build, then step 9 (clean-up).**
+**Progress (West):** steps 1–7 ✅ done 2026-11-26 (round A passed; round B replaced by `packages/supabase/check-functions-auth.sh` — turning Verify JWT off only removes a gate; both `.env` files on `sb_publishable_…`, all app + admin checks passed). Step 8 ✅ legacy keys disabled on West 2026-11-26. Xcode 26 TestFlight build ✅ verified 2026-11-27. Step 9 ✅ 2026-11-27 (fallback removed from `_shared/admin.ts`, 11 redeployed to West, all checks passed). **Key switch complete on West.**
 
 1. **Delete** the 3 unused functions in the project: `supabase functions delete send-message`, `… send-guardian-message`, `… check-tutorial-quota`.
 2. **Deploy** the 11 changed functions **as they are** (verify-JWT still ON; `create-user-account` keeps `--no-verify-jwt`). Still on legacy keys — `_shared/admin.ts` falls back to the legacy service key. Test: create tutorial, edit slide, approve / reject (admin), tutorial generation, learner account create / delete, guardian 🛡️ actions, sign-up `check-email`.
@@ -50,6 +51,8 @@
 9. **Clean-up:** remove the legacy-key fallback from `_shared/admin.ts` (see "Logic explained") and redeploy.
 
 ## Logic explained — how the key fallback works (`_shared/admin.ts`)
+
+> **History:** this fallback was removed in step 9 (2026-11-27). `_shared/admin.ts` now uses only `SERVICE_SECRET_KEY` (missing → the function fails with "SERVICE_SECRET_KEY secret is not set") and `isServiceRequest` accepts only that key. Kept below to explain how the switch-over worked.
 
 "Use the new key if it's set, otherwise the old one":
 

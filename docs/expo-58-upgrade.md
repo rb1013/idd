@@ -1,6 +1,22 @@
 # Expo SDK upgrade (56 → 58) — iOS 27 scene lifecycle
 
-**Status:** decided to upgrade **before launch** — **not started**.
+**Status:** decided to upgrade **before launch** — **not started**. Meanwhile, option A works: a TestFlight build archived with **Xcode 26.6** (`DTSDKName iphoneos26.5`) launches on iOS 27 (verified 2026-11-26). On macOS 27, Xcode 26 opens only from Terminal: `/Applications/Xcode-26.app/Contents/MacOS/Xcode`.
+
+**Switching Xcode for builds** (pods, React Native build scripts and `xcodebuild` follow `xcode-select`):
+```bash
+# Before a TestFlight build with Xcode 26 (until this upgrade ships)
+sudo xcode-select -s /Applications/Xcode-26.app/Contents/Developer
+xcodebuild -version        # → Xcode 26.6
+/Applications/Xcode-26.app/Contents/MacOS/Xcode    # open the app (keep this Terminal open)
+
+# Back to Xcode 27 afterwards (default)
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+xcodebuild -version        # → Xcode 27.x
+```
+Check the archive before uploading — `DTSDKName` must start with `iphoneos26`:
+```bash
+plutil -p "$(ls -td ~/Library/Developer/Xcode/Archives/*/*.xcarchive | head -1)/Products/Applications/CoHeart.app/Info.plist" | grep -E 'DTSDKName|DTXcode"'
+```
 
 **Order (decided 2026-11-26) — one change per build, so a problem's cause is obvious:**
 1. Supabase key switch (`supabase-keys.md`).

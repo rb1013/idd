@@ -35,11 +35,11 @@ export default function MedicalConditionsPage() {
 
   return (
     <div>
-      <h1 style={styles.heading}>Medical Conditions</h1>
-      <p style={styles.sub}>These conditions appear as selectable options both when a guardian edits their learner's health information, and when a guardian sets their "Learner Situation" on their own account.</p>
+      <h1 style={styles.heading}>Regional Support Categories</h1>
+      <p style={styles.sub}>These categories appear as selectable options both when a guardian edits their learner's health information, and when a guardian sets their "Learner Situation" on their own account.</p>
 
       <form onSubmit={addCondition} style={styles.form}>
-        <h3 style={styles.formTitle}>Add Condition</h3>
+        <h3 style={styles.formTitle}>Add Category</h3>
         <div style={styles.row}>
           <input
             style={{ ...styles.input, flex: 1 }}
@@ -62,7 +62,7 @@ export default function MedicalConditionsPage() {
               <button style={styles.deleteChip} onClick={() => deleteCondition(c.id, c.label)} title="Delete">✕</button>
             </div>
           ))}
-          {conditions.length === 0 && <p style={styles.empty}>No conditions yet. Add one above.</p>}
+          {conditions.length === 0 && <p style={styles.empty}>No categories yet. Add one above.</p>}
         </div>
       )}
     </div>
