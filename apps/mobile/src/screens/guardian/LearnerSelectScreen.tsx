@@ -389,6 +389,9 @@ const s = StyleSheet.create({
     width:        '100%',
     borderRadius: RADIUS['2xl'],
     padding:      BUTTERFLY_BORDER.width,
+    // Solid colour under the gradient (fully covered by it) so iOS can draw the shadow cheaply —
+    // fixes RN 0.88's "LinearGradientView has a shadow set but cannot calculate shadow efficiently"
+    backgroundColor: NICO.surface,
     shadowColor:  '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
