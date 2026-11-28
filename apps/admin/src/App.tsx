@@ -16,6 +16,7 @@ import ReportsPage from './pages/ReportsPage';
 import BlockedWordsPage from './pages/BlockedWordsPage';
 import AacPhrasesPage from './pages/AacPhrasesPage';
 import AacSymbolsPage from './pages/AacSymbolsPage';
+import ActivitiesPage from './pages/ActivitiesPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
@@ -55,6 +56,7 @@ function App() {
             <Route path="/blocked-words" element={<BlockedWordsPage />} />
             <Route path="/chat-phrases" element={<AacPhrasesPage />} />
             <Route path="/chat-symbols" element={<AacSymbolsPage />} />
+            <Route path="/activities" element={<ActivitiesPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

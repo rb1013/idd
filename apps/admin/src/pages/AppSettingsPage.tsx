@@ -47,12 +47,17 @@ export default function AppSettingsPage() {
   const [savingArchiveMonths, setSavingArchiveMonths] = useState(false);
   const [savedArchiveMonths, setSavedArchiveMonths]   = useState(false);
 
+  const [activityMax, setActivityMax]           = useState<number>(10);
+  const [draftActivityMax, setDraftActivityMax] = useState<string>('10');
+  const [savingActivityMax, setSavingActivityMax] = useState(false);
+  const [savedActivityMax, setSavedActivityMax]   = useState(false);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { load(); }, []);
 
   async function load() {
-    const { data } = await supabase.from('app_settings').select('tutorial_quota_limit, tutorial_default_duration, tutorial_image_timeout_ms, tutorial_max_frames, report_snapshot_limit, pagination_page_size, notif_tutorial_window_hours, notif_discussion_limit, discussion_archive_months').single();
+    const { data } = await supabase.from('app_settings').select('tutorial_quota_limit, tutorial_default_duration, tutorial_image_timeout_ms, tutorial_max_frames, report_snapshot_limit, pagination_page_size, notif_tutorial_window_hours, notif_discussion_limit, discussion_archive_months, activity_max_daily').single();
     if (data) {
       setQuotaLimit(data.tutorial_quota_limit);
       setDraftQuota(String(data.tutorial_quota_limit));
@@ -72,6 +77,8 @@ export default function AppSettingsPage() {
       setDraftDiscussionLimit(String(data.notif_discussion_limit ?? 30));
       setArchiveMonths(data.discussion_archive_months ?? 3);
       setDraftArchiveMonths(String(data.discussion_archive_months ?? 3));
+      setActivityMax(data.activity_max_daily ?? 10);
+      setDraftActivityMax(String(data.activity_max_daily ?? 10));
     }
     setLoading(false);
   }
@@ -184,6 +191,18 @@ export default function AppSettingsPage() {
     setTimeout(() => setSavedArchiveMonths(false), 2500);
   }
 
+  async function saveActivityMax(e: React.FormEvent) {
+    e.preventDefault();
+    const val = parseInt(draftActivityMax, 10);
+    if (isNaN(val) || val < 1) return;
+    setSavingActivityMax(true);
+    await supabase.from('app_settings').update({ activity_max_daily: val, updated_at: new Date().toISOString() }).eq('id', 1);
+    setActivityMax(val);
+    setSavingActivityMax(false);
+    setSavedActivityMax(true);
+    setTimeout(() => setSavedActivityMax(false), 2500);
+  }
+
   if (loading) return <div style={{ padding: 32 }}>Loading…</div>;
 
   const dirtyTutorialWindow  = parseInt(draftTutorialWindow, 10) !== tutorialWindow;
@@ -195,6 +214,7 @@ export default function AppSettingsPage() {
   const dirtySnapshot = parseInt(draftSnapshot, 10) !== snapshotLimit;
   const dirtyPageSize = parseInt(draftPageSize, 10) !== pageSize;
   const dirtyArchiveMonths = parseInt(draftArchiveMonths, 10) !== archiveMonths;
+  const dirtyActivityMax   = parseInt(draftActivityMax, 10) !== activityMax;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
@@ -265,6 +285,17 @@ export default function AppSettingsPage() {
           saving={savingArchiveMonths} saved={savedArchiveMonths} dirty={dirtyArchiveMonths}
           invalid={isNaN(parseInt(draftArchiveMonths, 10)) || parseInt(draftArchiveMonths, 10) < 1}
           min={1} max={24}
+        />
+      </SectionCard>
+
+      <SectionCard title="Activities">
+        <SettingRow
+          label="Max Daily Activities"
+          description="How many daily activities a guardian can pick for their learners (Activities tile). Not used by the mobile app yet — it still allows 10 until the app is updated."
+          draft={draftActivityMax} onDraftChange={setDraftActivityMax} onSave={saveActivityMax}
+          saving={savingActivityMax} saved={savedActivityMax} dirty={dirtyActivityMax}
+          invalid={isNaN(parseInt(draftActivityMax, 10)) || parseInt(draftActivityMax, 10) < 1}
+          min={1} max={30}
         />
       </SectionCard>
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 
-const METADATA_PATHS = ['/categories', '/event-categories', '/medical-conditions', '/tutorial-skills', '/discussion-categories', '/chat-phrases', '/chat-symbols'];
+const METADATA_PATHS = ['/categories', '/event-categories', '/medical-conditions', '/tutorial-skills', '/discussion-categories', '/chat-phrases', '/chat-symbols', '/activities'];
 
 const METADATA_ITEMS = [
   { to: '/categories',       label: 'Learner Categories' },
@@ -12,6 +12,7 @@ const METADATA_ITEMS = [
   { to: '/medical-conditions', label: 'Regional Support Categories' },
   { to: '/chat-phrases',     label: 'Chat Phrases' },   // learner chat board (aac_phrases)
   { to: '/chat-symbols',     label: 'Chat Symbols' },   // learner chat board (aac_symbols + images)
+  { to: '/activities',       label: 'Daily Activities' }, // guardian Activities tile (activity_presets)
 ];
 
 const TOP_ITEMS = [
